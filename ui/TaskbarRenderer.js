@@ -101,6 +101,24 @@ class TaskbarRendererClass {
         const clock = document.getElementById('clock');
         if (clock) {
             clock.addEventListener('click', () => this.handleClockClick());
+            // Start clock updates
+            this.updateClock();
+            setInterval(() => this.updateClock(), 1000);
+        }
+    }
+
+    /**
+     * Update clock display
+     */
+    updateClock() {
+        const clock = document.getElementById('clock');
+        if (clock) {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            clock.textContent = `${displayHours}:${minutes} ${ampm}`;
         }
     }
 
