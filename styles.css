@@ -1,0 +1,1962 @@
+/**
+ * Seth Morrow OS - Styles
+ * Windows 95 themed CSS with modern enhancements
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* ============================================
+   CSS Variables - Theme Colors
+   ============================================ */
+:root {
+    --win95-gray: #c0c0c0;
+    --win95-blue: #000080;
+    --win95-teal: #008080;
+    --win95-dark: #808080;
+    --win95-light: #ffffff;
+    --win95-darkest: #000000;
+    --desktop-bg: #008080;
+    --accent-color: #000080;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'VT323', monospace;
+    background: var(--desktop-bg);
+    height: 100vh;
+    overflow: hidden;
+    cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><polygon points="0,0 0,14 4,10 6,14 8,13 6,9 12,9" fill="white" stroke="black" stroke-width="1"/></svg>') 0 0, auto;
+}
+
+/* ============================================
+   Boot Screen
+   ============================================ */
+.boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    z-index: 100000;
+    animation: fadeOut 0.5s ease-out 2.5s forwards;
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+.boot-logo {
+    font-size: 56px;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: rainbow 3s linear infinite;
+}
+
+@keyframes rainbow {
+    to { filter: hue-rotate(360deg); }
+}
+
+.boot-version {
+    font-size: 18px;
+    color: #888;
+    margin-bottom: 20px;
+}
+
+.boot-tips {
+    font-size: 14px;
+    color: #666;
+    margin-top: 20px;
+}
+
+.loading-bar {
+    width: 300px;
+    height: 30px;
+    border: 2px solid #333;
+    margin-top: 20px;
+    padding: 3px;
+    background: #111;
+}
+
+.loading-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0000aa, #00aaff);
+    width: 0%;
+    animation: load 2.5s ease-out forwards;
+}
+
+@keyframes load {
+    to { width: 100%; }
+}
+
+/* ============================================
+   CRT Effect Overlay
+   ============================================ */
+.crt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 99999;
+    display: none;
+}
+
+.crt-overlay.active {
+    display: block;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1) 0px,
+        rgba(0, 0, 0, 0.1) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+    0% { opacity: 0.97; }
+    50% { opacity: 1; }
+    100% { opacity: 0.98; }
+}
+
+/* ============================================
+   Screensaver
+   ============================================ */
+.screensaver {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    z-index: 99998;
+    display: none;
+    cursor: none;
+}
+
+.screensaver.active {
+    display: block;
+}
+
+.flying-toasters {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.toaster {
+    position: absolute;
+    font-size: 48px;
+    animation: fly 10s linear infinite;
+}
+
+@keyframes fly {
+    from {
+        transform: translate(100vw, -50px) rotate(0deg);
+    }
+    to {
+        transform: translate(-100px, 100vh) rotate(360deg);
+    }
+}
+
+.screensaver-text {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #333;
+    font-size: 14px;
+}
+
+/* ============================================
+   Desktop
+   ============================================ */
+.desktop {
+    padding: 20px;
+    height: calc(100vh - 50px);
+    position: relative;
+    background-image: var(--wallpaper-url, none);
+    background-size: cover;
+    background-position: center;
+}
+
+/* ============================================
+   Desktop Icons
+   ============================================ */
+.icon {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    padding: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background 0.1s;
+    width: 100px;
+    user-select: none;
+}
+
+.icon.dragging {
+    opacity: 0.7;
+    z-index: 1000;
+}
+
+.icon:hover,
+.icon:focus {
+    background: rgba(0, 0, 128, 0.3);
+    border: 2px dotted white;
+    outline: none;
+}
+
+.icon.selected {
+    background: rgba(0, 0, 128, 0.5);
+    border: 2px dotted white;
+}
+
+.icon-image {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 5px;
+    font-size: 48px;
+    filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.5));
+    transition: transform 0.1s;
+    pointer-events: none;
+}
+
+.icon:hover .icon-image {
+    transform: scale(1.1);
+}
+
+.icon-label {
+    color: white;
+    font-size: 16px;
+    text-align: center;
+    text-shadow: 1px 1px 2px black, -1px -1px 2px black, 1px -1px 2px black, -1px 1px 2px black;
+    word-wrap: break-word;
+    max-width: 90px;
+    pointer-events: none;
+}
+
+/* ============================================
+   Selection Box
+   ============================================ */
+.selection-box {
+    position: fixed;
+    border: 1px dotted #fff;
+    background-color: rgba(0, 0, 128, 0.3);
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+}
+
+.selection-box.active {
+    display: block;
+}
+
+/* ============================================
+   Clippy Assistant
+   ============================================ */
+.clippy {
+    position: fixed;
+    bottom: 80px;
+    right: 30px;
+    z-index: 100000;
+    display: none;
+    pointer-events: auto;
+}
+
+.clippy.active {
+    display: block;
+    animation: clippyBounce 0.5s ease-out;
+}
+
+@keyframes clippyBounce {
+    0% { transform: scale(0) rotate(-180deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+.clippy-character {
+    font-size: 64px;
+    cursor: pointer;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+    animation: clippyWiggle 3s ease-in-out infinite;
+}
+
+@keyframes clippyWiggle {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.clippy-bubble {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    background: #ffffcc;
+    border: 2px solid #000;
+    border-radius: 10px;
+    padding: 15px;
+    width: 250px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+    display: none;
+}
+
+.clippy-bubble.active {
+    display: block;
+}
+
+.clippy-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    right: 30px;
+    border: 10px solid transparent;
+    border-top-color: #ffffcc;
+}
+
+.clippy-text {
+    font-size: 16px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.clippy-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.clippy-btn {
+    padding: 5px 15px;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    font-family: 'VT323', monospace;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.clippy-btn:active {
+    border: 2px inset var(--win95-gray);
+}
+
+.clippy-close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 24px;
+    height: 24px;
+    background: #ff6b6b;
+    border: 2px solid #000;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* ============================================
+   Desktop Pet
+   ============================================ */
+.desktop-pet {
+    position: fixed;
+    bottom: 55px;
+    left: 0;
+    font-size: 32px;
+    z-index: 8999;
+    cursor: pointer;
+    display: none;
+    transition: transform 0.1s;
+}
+
+.desktop-pet.active {
+    display: block;
+    animation: walkPet 20s linear infinite;
+}
+
+.desktop-pet:hover {
+    transform: scale(1.3);
+}
+
+@keyframes walkPet {
+    0% { left: -50px; transform: scaleX(1); }
+    49% { left: calc(100vw + 50px); transform: scaleX(1); }
+    50% { left: calc(100vw + 50px); transform: scaleX(-1); }
+    100% { left: -50px; transform: scaleX(-1); }
+}
+
+/* ============================================
+   Context Menu
+   ============================================ */
+.context-menu {
+    position: fixed;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    padding: 2px;
+    min-width: 180px;
+    z-index: 10001;
+    display: none;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+}
+
+.context-menu.active {
+    display: block;
+}
+
+.context-item {
+    padding: 6px 25px 6px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.context-item:hover {
+    background: var(--win95-blue);
+    color: white;
+}
+
+.context-divider {
+    height: 2px;
+    background: var(--win95-dark);
+    margin: 2px 0;
+    box-shadow: 0 1px 0 var(--win95-light);
+}
+
+.context-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    min-width: 150px;
+    display: none;
+    padding: 2px;
+}
+
+.submenu-trigger:hover .context-submenu {
+    display: block;
+}
+
+.submenu-arrow {
+    font-size: 10px;
+}
+
+/* ============================================
+   Taskbar
+   ============================================ */
+.taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: var(--win95-gray);
+    border-top: 2px solid var(--win95-light);
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    box-shadow: inset 0 1px 0 var(--win95-light);
+    z-index: 9999;
+}
+
+.start-button {
+    height: 40px;
+    padding: 0 20px;
+    background: var(--win95-gray);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    border-top: 2px solid var(--win95-light);
+    border-left: 2px solid var(--win95-light);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-shadow: inset 1px 1px 0 var(--win95-light), inset -1px -1px 0 var(--win95-dark);
+}
+
+.start-button:active,
+.start-button.active {
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid var(--win95-light);
+    border-bottom: 2px solid var(--win95-light);
+    padding-top: 2px;
+    padding-left: 22px;
+}
+
+.start-button:hover {
+    background: #d4d4d4;
+}
+
+.windows-flag {
+    width: 20px;
+    height: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    transform: rotate(-5deg);
+    background: 
+        linear-gradient(135deg, #f00 0%, #f00 100%) 0 0 / 9px 9px no-repeat,
+        linear-gradient(135deg, #0f0 0%, #0f0 100%) 10px 0 / 9px 9px no-repeat,
+        linear-gradient(135deg, #00f 0%, #00f 100%) 0 10px / 9px 9px no-repeat,
+        linear-gradient(135deg, #ff0 0%, #ff0 100%) 10px 10px / 9px 9px no-repeat;
+}
+
+.taskbar-divider {
+    width: 2px;
+    height: 36px;
+    background: var(--win95-dark);
+    margin: 0 4px;
+    box-shadow: 1px 0 0 var(--win95-light);
+}
+
+.taskbar-divider-small {
+    width: 1px;
+    height: 24px;
+    background: var(--win95-dark);
+    margin: 0 4px;
+    box-shadow: 1px 0 0 var(--win95-light);
+}
+
+.quick-launch {
+    display: flex;
+    gap: 2px;
+    padding: 0 4px;
+}
+
+.quick-launch-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-launch-btn:hover {
+    background: rgba(255,255,255,0.3);
+    border: 1px solid var(--win95-light);
+}
+
+.taskbar-buttons {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    overflow-x: auto;
+    padding: 0 4px;
+}
+
+.taskbar-button {
+    height: 36px;
+    padding: 0 15px;
+    background: var(--win95-gray);
+    border: none;
+    border-top: 2px solid var(--win95-light);
+    border-left: 2px solid var(--win95-light);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.taskbar-button.active {
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid var(--win95-light);
+    border-bottom: 2px solid var(--win95-light);
+    background: #b0b0b0;
+}
+
+.taskbar-button:hover {
+    background: #d0d0d0;
+}
+
+.system-tray {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    height: 36px;
+    background: var(--win95-gray);
+    border: 1px inset var(--win95-gray);
+    gap: 4px;
+}
+
+.tray-icon {
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.tray-icon:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+.taskbar-time {
+    padding: 0 12px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.taskbar-time:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+/* ============================================
+   Start Menu
+   ============================================ */
+.start-menu {
+    position: fixed;
+    bottom: 50px;
+    left: 2px;
+    background: var(--win95-gray);
+    border-top: 2px solid var(--win95-light);
+    border-left: 2px solid var(--win95-light);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 10000;
+}
+
+.start-menu.active {
+    display: flex;
+    animation: slideUp 0.15s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.start-menu-sidebar {
+    width: 30px;
+    background: linear-gradient(180deg, #808080 0%, var(--win95-blue) 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 10px;
+}
+
+.sidebar-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    color: #c0c0c0;
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 #000;
+    letter-spacing: 2px;
+}
+
+.start-menu-content {
+    min-width: 220px;
+}
+
+.start-menu-items {
+    padding: 2px;
+}
+
+.start-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 30px 8px 12px;
+    text-decoration: none;
+    color: #000;
+    font-size: 18px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    position: relative;
+}
+
+.start-menu-item:hover {
+    background: var(--win95-blue);
+    color: white;
+}
+
+.start-menu-icon {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+}
+
+.start-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    min-width: 180px;
+    display: none;
+    padding: 2px;
+    z-index: 10001;
+}
+
+.submenu-trigger:hover > .start-submenu {
+    display: block;
+}
+
+.start-menu-divider {
+    height: 2px;
+    background: var(--win95-dark);
+    margin: 2px 4px;
+    box-shadow: 0 1px 0 var(--win95-light);
+}
+
+/* ============================================
+   Windows
+   ============================================ */
+.window {
+    position: absolute;
+    background: var(--win95-gray);
+    border-top: 2px solid var(--win95-light);
+    border-left: 2px solid var(--win95-light);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    min-width: 300px;
+    display: none;
+    z-index: 1000;
+}
+
+.window.active {
+    display: block;
+}
+
+.window.maximized {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100vh - 50px) !important;
+}
+
+.window.minimizing {
+    animation: minimizeWindow 0.3s ease-out forwards;
+}
+
+@keyframes minimizeWindow {
+    to {
+        transform: scale(0.1) translateY(100vh);
+        opacity: 0;
+    }
+}
+
+.window.restoring {
+    animation: restoreWindow 0.3s ease-out forwards;
+}
+
+@keyframes restoreWindow {
+    from {
+        transform: scale(0.1) translateY(100vh);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.title-bar {
+    background: linear-gradient(90deg, var(--win95-blue) 0%, #1084d0 100%);
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: move;
+    user-select: none;
+}
+
+.window:not(.focused) .title-bar {
+    background: linear-gradient(90deg, #808080 0%, #a0a0a0 100%);
+}
+
+.title-text {
+    padding-left: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.window-controls {
+    display: flex;
+    gap: 2px;
+}
+
+.window-button {
+    width: 22px;
+    height: 20px;
+    background: var(--win95-gray);
+    border: none;
+    border-top: 2px solid var(--win95-light);
+    border-left: 2px solid var(--win95-light);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: 'VT323', monospace;
+}
+
+.window-button:active {
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid var(--win95-light);
+    border-bottom: 2px solid var(--win95-light);
+}
+
+.window-button:hover {
+    background: #d0d0d0;
+}
+
+.window-content {
+    padding: 20px;
+    background: var(--win95-gray);
+    font-size: 18px;
+    line-height: 1.6;
+    overflow-y: auto;
+    max-height: calc(100vh - 150px);
+}
+
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: se-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--win95-dark) 50%, var(--win95-dark) 60%, transparent 60%, transparent 70%, var(--win95-dark) 70%, var(--win95-dark) 80%, transparent 80%);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn {
+    padding: 8px 20px;
+    background: var(--win95-gray);
+    border: none;
+    border-top: 2px solid var(--win95-light);
+    border-left: 2px solid var(--win95-light);
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    cursor: pointer;
+    margin-right: 5px;
+    margin-top: 5px;
+}
+
+.btn:active {
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid var(--win95-light);
+    border-bottom: 2px solid var(--win95-light);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn:hover:not(:disabled) {
+    background: #d0d0d0;
+}
+
+.btn-primary {
+    background: var(--win95-blue);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #0000a0;
+}
+
+.btn-danger {
+    background: #cc0000;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #ff0000;
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 14px;
+}
+
+/* ============================================
+   Forms
+   ============================================ */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 18px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    border: 2px inset var(--win95-gray);
+    background: white;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--win95-blue);
+}
+
+/* ============================================
+   Tabs
+   ============================================ */
+.tab-container {
+    margin-bottom: 10px;
+}
+
+.tab-buttons {
+    display: flex;
+    gap: 2px;
+}
+
+.tab-btn {
+    padding: 8px 20px;
+    background: var(--win95-gray);
+    border: 2px solid;
+    border-color: var(--win95-light) var(--win95-dark) var(--win95-gray) var(--win95-light);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: -2px;
+}
+
+.tab-btn.active {
+    background: var(--win95-gray);
+    border-bottom-color: var(--win95-gray);
+    position: relative;
+    z-index: 1;
+}
+
+.tab-content {
+    border: 2px solid;
+    border-color: var(--win95-light) var(--win95-dark) var(--win95-dark) var(--win95-light);
+    padding: 15px;
+    background: var(--win95-gray);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* ============================================
+   Emoji Picker
+   ============================================ */
+.emoji-picker {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    padding: 10px;
+    border: 2px inset var(--win95-gray);
+    margin-bottom: 10px;
+}
+
+.emoji-option {
+    font-size: 28px;
+    cursor: pointer;
+    padding: 5px;
+    text-align: center;
+    border: 2px solid transparent;
+    border-radius: 3px;
+}
+
+.emoji-option:hover {
+    background: var(--win95-blue);
+    border-color: white;
+}
+
+.emoji-option.selected {
+    background: var(--win95-blue);
+    border-color: white;
+}
+
+/* ============================================
+   Icon List
+   ============================================ */
+.icon-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 2px inset var(--win95-gray);
+    padding: 5px;
+    background: white;
+    margin-bottom: 10px;
+}
+
+.icon-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.icon-list-item:last-child {
+    border-bottom: none;
+}
+
+.icon-list-item:hover {
+    background: #e8e8e8;
+}
+
+/* ============================================
+   Color Grid
+   ============================================ */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+    margin: 10px 0;
+}
+
+.theme-color {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    border: 2px outset var(--win95-gray);
+}
+
+.theme-color:hover,
+.theme-color.active {
+    border: 2px inset var(--win95-gray);
+}
+
+/* ============================================
+   Calendar Popup
+   ============================================ */
+.calendar-popup {
+    position: fixed;
+    bottom: 55px;
+    right: 5px;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    padding: 10px;
+    z-index: 10000;
+    display: none;
+}
+
+.calendar-popup.active {
+    display: block;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+}
+
+.calendar-day {
+    padding: 5px;
+    font-size: 14px;
+}
+
+.calendar-day.header {
+    font-weight: bold;
+    color: var(--win95-blue);
+}
+
+.calendar-day.today {
+    background: var(--win95-blue);
+    color: white;
+}
+
+/* ============================================
+   Dialog Box
+   ============================================ */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 99990;
+    display: none;
+}
+
+.dialog-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dialog-box {
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    padding: 20px;
+    min-width: 300px;
+    text-align: center;
+}
+
+.dialog-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.dialog-text {
+    margin-bottom: 20px;
+    font-size: 18px;
+    white-space: pre-wrap;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* ============================================
+   Achievement Toast
+   ============================================ */
+.achievement-toast {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    background: linear-gradient(180deg, #ffd700 0%, #ff8c00 100%);
+    border: 3px outset #ffd700;
+    padding: 15px 20px;
+    z-index: 99999;
+    display: none;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+}
+
+.achievement-toast.active {
+    display: block;
+    animation: achievementSlide 0.5s ease-out;
+}
+
+@keyframes achievementSlide {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.achievement-icon {
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+
+.achievement-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.achievement-desc {
+    font-size: 14px;
+    color: #333;
+}
+
+/* ============================================
+   BSOD
+   ============================================ */
+.bsod {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #0000aa;
+    color: #fff;
+    display: none;
+    z-index: 999999;
+    padding: 50px;
+    font-family: 'VT323', monospace;
+}
+
+.bsod.active {
+    display: block;
+}
+
+.bsod-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.bsod h1 {
+    background: #aaa;
+    color: #0000aa;
+    display: inline-block;
+    padding: 2px 10px;
+    margin-bottom: 30px;
+}
+
+.bsod p {
+    font-size: 20px;
+    line-height: 1.6;
+}
+
+/* ============================================
+   Calculator (Pixel Perfect)
+   ============================================ */
+.calculator {
+    background: var(--win95-gray);
+    padding: 10px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* Force hide scrollbars if 1px off */
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box; /* Critical: includes padding in width/height */
+}
+
+.calc-display {
+    background: #ffffff;
+    padding: 0 8px; /* Remove vertical padding, let line-height handle it */
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    line-height: 36px; /* Vertically center text */
+    text-align: right;
+    
+    /* Authentic Sunken Border */
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    
+    height: 40px;
+    margin-bottom: 5px;
+    box-sizing: border-box;
+}
+
+.calc-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* 5 rows * 36px + 4 gaps * 5px = ~200px height */
+    grid-template-rows: repeat(5, 36px); 
+    gap: 5px;
+    flex: 1; /* Take up remaining space */
+}
+
+.calc-btn {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    background: var(--win95-gray);
+    
+    /* 3D Button Bevel */
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-shadow: 1px 1px 0 #808080; /* Shadow for extra depth */
+    
+    /* Reset defaults */
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calc-btn:active {
+    /* Pressed Effect */
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: translate(1px, 1px);
+    box-shadow: none;
+}
+
+.calc-btn:hover {
+    background: #d4d4d4;
+}
+
+/* Specific Button Colors/Sizes */
+.calc-btn.btn-danger {
+    color: #cc0000; 
+}
+
+.calc-btn-zero {
+    grid-column: span 2;
+}
+
+.calc-btn-equal {
+    grid-row: span 2;
+    background: var(--win95-blue);
+    color: white;
+}
+.calc-btn-equal:hover {
+    background: #0000a0;
+}
+
+/* ============================================
+   Terminal
+   ============================================ */
+.terminal {
+    background: #000;
+    color: #0f0;
+    padding: 10px;
+    font-family: 'VT323', monospace;
+    height: 380px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.terminal-content-wrapper {
+    position: relative;
+    z-index: 2;
+    overflow-y: auto;
+    height: 100%;
+    width: 100%;
+}
+
+.matrix-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.3;
+    display: none;
+}
+
+.matrix-mode .matrix-canvas {
+    display: block;
+    opacity: 0.9;
+}
+
+.terminal-output {
+    margin-bottom: 5px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.terminal-input-line {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terminal-prompt {
+    color: #0f0;
+    white-space: nowrap;
+}
+
+.terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #0f0;
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    outline: none;
+    caret-color: #0f0;
+}
+
+/* ============================================
+   Notepad
+   ============================================ */
+.notepad-toolbar {
+    padding: 5px;
+    background: var(--win95-gray);
+    border-bottom: 1px solid var(--win95-dark);
+    display: flex;
+    gap: 5px;
+}
+
+.notepad-content {
+    width: 100%;
+    height: 380px;
+    background: white;
+    border: 2px inset var(--win95-gray);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    padding: 10px;
+    resize: none;
+    outline: none;
+}
+
+/* ============================================
+   Paint
+   ============================================ */
+.paint-container {
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+}
+
+.paint-toolbar {
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    background: var(--win95-gray);
+    border-bottom: 1px solid var(--win95-dark);
+    flex-wrap: wrap;
+}
+
+.color-picker {
+    display: flex;
+    gap: 2px;
+}
+
+.color-option {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    border: 2px outset var(--win95-gray);
+}
+
+.color-option.active,
+.color-option:hover {
+    border: 2px inset var(--win95-gray);
+}
+
+.paint-canvas-container {
+    flex: 1;
+    overflow: auto;
+    background: #808080;
+    padding: 10px;
+}
+
+.paint-canvas {
+    background: white;
+    cursor: crosshair;
+    border: 1px solid #000;
+}
+
+/* ============================================
+   Minesweeper (Updated for authentic look)
+   ============================================ */
+.minesweeper-window {
+    background: #c0c0c0;
+    padding: 6px; 
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: fit-content; /* Critical for auto-sizing */
+    margin: 0 auto;
+}
+
+/* --- The Sunken Effects --- */
+.inset-border {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+.mine-grid-wrapper {
+    border-top: 3px solid #808080; /* Deep inset */
+    border-left: 3px solid #808080;
+    border-right: 3px solid #fff;
+    border-bottom: 3px solid #fff;
+    display: inline-block;
+}
+
+/* --- Header Info --- */
+.ms-header-inset {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    padding: 6px;
+    margin-bottom: 6px;
+}
+
+.mine-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.digital-display {
+    background: #000;
+    color: #ff0000;
+    font-family: 'Courier New', monospace; 
+    font-size: 22px;
+    font-weight: bold;
+    padding: 2px 4px;
+    min-width: 42px;
+    text-align: right;
+    line-height: 1;
+}
+
+.mine-face-btn {
+    width: 26px;
+    height: 26px;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    background: #c0c0c0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.mine-face-btn:active {
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+/* --- Grid & Cells --- */
+.mine-grid {
+    display: grid;
+    background: #808080;
+}
+
+.mine-cell {
+    width: 24px;
+    height: 24px;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Win95 Font Specs */
+    font-family: "Times New Roman", Times, serif;
+    font-weight: 900;
+    font-size: 16px;
+    cursor: default;
+}
+
+.mine-cell.revealed {
+    border: 1px solid #808080;
+    border-right: none; 
+    border-bottom: none;
+    width: 23px;
+    height: 23px;
+    padding-top: 1px;
+    padding-left: 1px;
+}
+
+.mine-cell.flagged:after {
+    content: '🚩';
+    font-size: 14px;
+    margin-top: -2px; 
+    margin-left: -1px;
+}
+
+.mine-cell.mine {
+    background: #c0c0c0; /* Default mine is gray */
+}
+
+/* The Killer Mine */
+.mine-cell.mine-hit {
+    background-color: #ff0000 !important;
+}
+
+/* False Flag */
+.mine-cell.false-flag:after {
+    content: '❌'; 
+    position: absolute;
+    font-size: 16px;
+    color: red;
+}
+.mine-cell.false-flag:before {
+    content: '💣';
+}
+
+/* Numbers */
+.val-1 { color: #0000ff; }
+.val-2 { color: #008000; }
+.val-3 { color: #ff0000; }
+.val-4 { color: #000080; }
+.val-5 { color: #800000; }
+.val-6 { color: #008080; }
+.val-7 { color: #000000; }
+.val-8 { color: #808080; }
+
+
+/* ============================================
+   Snake Game
+   ============================================ */
+.snake-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}
+
+.snake-info {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.snake-canvas {
+    border: 3px inset var(--win95-gray);
+    background: #000;
+}
+
+.snake-controls {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+/* ============================================
+   Media Player
+   ============================================ */
+.media-player {
+    padding: 10px;
+}
+
+.media-display {
+    background: #000;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    border: 2px inset var(--win95-gray);
+}
+
+.media-visualizer {
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 40px;
+}
+
+.media-bar {
+    width: 8px;
+    background: #0f0;
+    animation: pulse 0.5s ease-in-out infinite alternate;
+    animation-play-state: paused;
+}
+
+.media-bar.playing {
+    animation-play-state: running;
+}
+
+@keyframes pulse {
+    from { height: 10px; }
+    to { height: 40px; }
+}
+
+.media-controls {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.media-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    cursor: pointer;
+}
+
+.media-btn:active {
+    border: 2px inset var(--win95-gray);
+}
+
+.media-playlist {
+    border: 2px inset var(--win95-gray);
+    background: white;
+    height: 150px;
+    overflow-y: auto;
+}
+
+.playlist-item {
+    padding: 5px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.playlist-item:hover {
+    background: var(--win95-blue);
+    color: white;
+}
+
+.playlist-item.playing {
+    background: #e0e0ff;
+}
+  
+  
+  
+  /* ============================================
+   Solitaire Game
+   ============================================ */
+  
+  .solitaire-top-row {
+    display: flex;
+    gap: 10px; /* Space between piles */
+    margin-bottom: 20px;
+    height: 160px; /* Approx card height */
+}
+
+.solitaire-tableau-row {
+    display: flex;
+    justify-content: space-between; /* Spread columns evenly */
+    height: 100%; /* Fill remaining green space */
+}
+
+.tableau-column {
+    width: 100px; /* Approx card width */
+    min-height: 200px; /* Make sure drop target is clickable even if empty */
+    display: flex;
+    flex-direction: column; 
+    position: relative;
+}
+
+/* Crucial for stacking */
+.tableau-column .card {
+    /* Standard flow is fine with negative margins, 
+       or use position:absolute if you prefer strict coordinate control */
+    position: relative; 
+    z-index: 1;
+}
+
+/* ============================================
+   DOOM Game
+   ============================================ */
+/* Fix for DOOM App sizing */
+.doom-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.doom-wrapper iframe {
+    width: 100% !important;
+    height: 100% !important;
+    border: none;
+}
+/* ============================================
+   DOOM / DOSBox Fixes
+   ============================================ */
+
+/* Force the container to fill the window body */
+.doom-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Force the generated canvas to stretch */
+.doom-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain; /* Ensures aspect ratio (4:3) is preserved */
+    display: block;
+}
+
+/* Hide the default JS-DOS overlay UI if it interferes */
+.dosbox-container .dosbox-overlay {
+    background: transparent !important;
+}
+/* ============================================
+   Asteroids Game
+   ============================================ */
+.asteroids-container {
+    background: #000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.asteroids-hud {
+    background: #111;
+    color: #0f0; /* Retro terminal green */
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    padding: 5px 10px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #333;
+    font-size: 16px;
+}
+
+.asteroids-controls {
+    background: #111;
+    color: #888;
+    font-size: 11px;
+    text-align: center;
+    padding: 3px;
+    border-top: 1px solid #333;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* Disco mode */
+.disco-mode {
+    animation: disco 0.5s linear infinite;
+}
+
+@keyframes disco {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+/* Celebration particles */
+.celebration {
+    position: fixed;
+    pointer-events: none;
+    z-index: 99999;
+    font-size: 40px;
+    animation: celebrate 2s ease-out forwards;
+}
+
+@keyframes celebrate {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ============================================
+   Mobile Responsive
+   ============================================ */
+@media (max-width: 768px) {
+    .window {
+        max-width: 95vw !important;
+        max-height: 80vh !important;
+    }
+    
+    .window-content {
+        max-height: 60vh;
+    }
+    
+    .icon {
+        width: 80px;
+    }
+    
+    .icon-image {
+        width: 40px;
+        height: 40px;
+        font-size: 40px;
+    }
+    
+    .icon-label {
+        font-size: 14px;
+    }
+    
+    .start-menu {
+        width: calc(100vw - 4px);
+    }
+    
+    .start-submenu {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .quick-launch {
+        display: none;
+    }
+}

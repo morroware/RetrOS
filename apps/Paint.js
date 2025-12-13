@@ -1,0 +1,309 @@
+/**
+ * Paint App (Final Polish)
+ * Windows 95 style painting with optimized layout for 800x600
+ */
+
+import AppBase from './AppBase.js';
+
+class Paint extends AppBase {
+    constructor() {
+        super({
+            id: 'paint',
+            name: 'Paint',
+            icon: '🖌️',
+            width: 830,
+            height: 625,
+            resizable: false
+        });
+
+        this.ctx = null;
+        this.painting = false;
+        this.tool = 'brush'; // brush, eraser, bucket
+        this.color = '#000000';
+        this.lastX = 0;
+        this.lastY = 0;
+        this.brushSize = 3;
+    }
+
+    onOpen() {
+        const colors = [
+            '#000000', '#808080', '#800000', '#808000', '#008000', '#008080', '#000080', '#800080',
+            '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff'
+        ];
+
+        // We use flex-col to stack toolbar and canvas
+        // The canvas container gets flex-grow to fill the rest of the 600px height
+        return `
+            <div class="paint-container" style="height: 100%; display: flex; flex-direction: column; background: #c0c0c0;">
+                
+                <div class="paint-toolbar" style="padding: 6px; border-bottom: 2px solid #808080;">
+                    
+                    <div style="display:flex; gap: 8px; margin-bottom: 6px; align-items: center;">
+                        
+                        <div class="inset-border" style="background: #c0c0c0; padding: 2px; display: flex; gap: 2px;">
+                            <button class="btn btn-sm active-tool" data-tool="brush" title="Brush" style="width: 32px; height: 32px; font-size: 18px;">🖌️</button>
+                            <button class="btn btn-sm" data-tool="bucket" title="Fill" style="width: 32px; height: 32px; font-size: 18px;">🪣</button>
+                            <button class="btn btn-sm" data-tool="eraser" title="Eraser" style="width: 32px; height: 32px; font-size: 18px;">🧽</button>
+                        </div>
+
+                        <div style="width: 2px; height: 30px; background: #808080; border-right: 1px solid #fff;"></div>
+
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <label style="font-size: 12px;">Size:</label>
+                            <select id="brushSize" class="inset-border" style="height: 24px;">
+                                <option value="1">1px</option>
+                                <option value="3" selected>3px</option>
+                                <option value="5">5px</option>
+                                <option value="8">8px</option>
+                                <option value="12">12px</option>
+                            </select>
+                        </div>
+
+                        <div style="flex: 1;"></div>
+
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-sm" id="btnClear">New</button>
+                            <button class="btn btn-sm" id="btnSave">💾 Save</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <div class="inset-border" style="width: 32px; height: 32px; background: #000; border: 2px solid #808080;" id="currentColorDisplay"></div>
+
+                        <div class="inset-border" style="padding: 2px; background: #fff;">
+                            <div class="color-picker" style="display: grid; grid-template-columns: repeat(16, 1fr); gap: 1px;">
+                                ${colors.map(c => `
+                                    <div class="color-option ${c === '#000000' ? 'active' : ''}" 
+                                         style="background:${c}; width: 18px; height: 18px; border: 1px solid #808080; cursor: pointer;" 
+                                         data-color="${c}"></div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div style="position: relative; width: 24px; height: 24px;">
+                            <span style="font-size: 18px; position: absolute; left: 2px; top: -2px; pointer-events: none;">🌈</span>
+                            <input type="color" id="customColor" value="#000000" style="opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="paint-canvas-wrapper inset-border" style="flex: 1; overflow: auto; background: #808080; position: relative; margin: 5px;">
+                    <canvas id="paintCanvas" width="770" height="460" style="background: #fff; display: block; cursor: crosshair;"></canvas>
+                </div>
+
+                <div style="height: 24px; border-top: 2px solid #fff; background: #c0c0c0; padding: 2px 5px; font-size: 12px; display: flex; align-items: center; gap: 10px;">
+                    <span id="toolStatus">Tool: Brush</span>
+                    <span style="border-left: 1px solid #808080; border-right: 1px solid #fff; height: 14px;"></span>
+                    <span id="coordsStatus">0, 0px</span>
+                </div>
+            </div>
+        `;
+    }
+
+    onMount() {
+        const canvas = this.getElement('#paintCanvas');
+        if (!canvas) return;
+
+        this.ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Initialize white background explicitly
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+
+        // --- Event Listeners ---
+
+        // Drawing
+        canvas.addEventListener('mousedown', (e) => this.handleStart(e));
+        canvas.addEventListener('mousemove', (e) => this.handleMove(e));
+        canvas.addEventListener('mouseup', () => this.stopPaint());
+        canvas.addEventListener('mouseleave', () => {
+            this.stopPaint();
+            this.updateCoords(null);
+        });
+
+        // Tools
+        this.getElements('[data-tool]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.tool = btn.dataset.tool;
+                this.getElements('[data-tool]').forEach(b => {
+                    b.classList.remove('active-tool');
+                    b.style.background = ''; // Reset background
+                });
+                btn.classList.add('active-tool');
+                btn.style.background = '#e0e0e0'; // Active state look
+                
+                this.updateCursor(canvas);
+                this.updateStatus(`Tool: ${this.tool.charAt(0).toUpperCase() + this.tool.slice(1)}`);
+            });
+        });
+
+        // Colors
+        this.getElements('.color-option').forEach(el => {
+            el.addEventListener('click', () => {
+                this.setColor(el.dataset.color);
+                this.getElements('.color-option').forEach(o => o.style.border = '1px solid #808080'); // Reset borders
+                el.style.border = '1px solid #fff'; // Highlight active
+                el.style.outline = '1px solid #000';
+            });
+        });
+
+        // Inputs
+        this.getElement('#customColor')?.addEventListener('input', (e) => this.setColor(e.target.value));
+        this.getElement('#brushSize')?.addEventListener('change', (e) => this.brushSize = parseInt(e.target.value));
+        
+        // Actions
+        this.getElement('#btnClear')?.addEventListener('click', () => this.clearCanvas());
+        this.getElement('#btnSave')?.addEventListener('click', () => this.saveImage());
+    }
+
+    setColor(c) {
+        this.color = c;
+        if (this.tool === 'eraser') this.tool = 'brush'; 
+        
+        // Update the big preview box
+        const preview = this.getElement('#currentColorDisplay');
+        if (preview) preview.style.background = c;
+    }
+
+    updateCursor(canvas) {
+        if (this.tool === 'bucket') canvas.style.cursor = 'cell';
+        else if (this.tool === 'eraser') canvas.style.cursor = 'grab'; // Or a custom square cursor
+        else canvas.style.cursor = 'crosshair';
+    }
+
+    updateStatus(text) {
+        const el = this.getElement('#toolStatus');
+        if (el) el.textContent = text;
+    }
+
+    updateCoords(e) {
+        const el = this.getElement('#coordsStatus');
+        if (!el) return;
+        if (!e) {
+            el.textContent = '';
+            return;
+        }
+        const { x, y } = this.getCoords(e);
+        el.textContent = `${x}, ${y}px`;
+    }
+
+    handleStart(e) {
+        const { x, y } = this.getCoords(e);
+
+        if (this.tool === 'bucket') {
+            this.floodFill(x, y, this.hexToRgba(this.color));
+        } else {
+            this.painting = true;
+            this.lastX = x;
+            this.lastY = y;
+            this.draw(x, y); 
+        }
+    }
+
+    handleMove(e) {
+        this.updateCoords(e);
+        if (!this.painting) return;
+        const { x, y } = this.getCoords(e);
+        this.draw(x, y);
+        this.lastX = x;
+        this.lastY = y;
+    }
+
+    getCoords(e) {
+        const canvas = this.getElement('#paintCanvas');
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: Math.floor(e.clientX - rect.left),
+            y: Math.floor(e.clientY - rect.top)
+        };
+    }
+
+    draw(x, y) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lastX, this.lastY);
+        this.ctx.lineTo(x, y);
+        
+        if (this.tool === 'eraser') {
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = this.brushSize * 4; // Eraser needs to be bigger
+        } else {
+            this.ctx.strokeStyle = this.color;
+            this.ctx.lineWidth = this.brushSize;
+        }
+        
+        this.ctx.stroke();
+        this.ctx.closePath();
+    }
+
+    stopPaint() {
+        this.painting = false;
+        this.ctx.beginPath();
+    }
+
+    // Stack-based flood fill
+    floodFill(startX, startY, fillColor) {
+        const canvas = this.getElement('#paintCanvas');
+        const w = canvas.width;
+        const h = canvas.height;
+        const imageData = this.ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        const startPos = (startY * w + startX) * 4;
+        const startR = data[startPos];
+        const startG = data[startPos + 1];
+        const startB = data[startPos + 2];
+        const startA = data[startPos + 3];
+
+        if (startR === fillColor.r && startG === fillColor.g && startB === fillColor.b) return;
+
+        const stack = [[startX, startY]];
+
+        while (stack.length) {
+            const [x, y] = stack.pop();
+            const pos = (y * w + x) * 4;
+
+            if (x < 0 || x >= w || y < 0 || y >= h) continue;
+
+            if (data[pos] === startR && data[pos+1] === startG && data[pos+2] === startB && data[pos+3] === startA) {
+                data[pos] = fillColor.r;
+                data[pos+1] = fillColor.g;
+                data[pos+2] = fillColor.b;
+                data[pos+3] = 255;
+
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+        }
+
+        this.ctx.putImageData(imageData, 0, 0);
+    }
+
+    hexToRgba(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
+
+    clearCanvas() {
+        const canvas = this.getElement('#paintCanvas');
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    saveImage() {
+        const canvas = this.getElement('#paintCanvas');
+        const link = document.createElement('a');
+        link.download = `art_${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+}
+
+export default Paint;

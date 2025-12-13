@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seth Morrow OS - Desktop</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Boot Screen -->
+    <div class="boot-screen" id="bootScreen">
+        <div class="boot-logo">SETH MORROW OS</div>
+        <div class="boot-version">Version 95.0 - Modular Edition</div>
+        <div>Starting Windows 95...</div>
+        <div class="loading-bar">
+            <div class="loading-fill"></div>
+        </div>
+        <div class="boot-tips">
+            <span id="bootTip">Loading your personalized experience...</span>
+        </div>
+    </div>
+    
+    <!-- CRT Effect Overlay -->
+    <div class="crt-overlay" id="crtOverlay"></div>
+    
+    <!-- Screensaver -->
+    <div class="screensaver" id="screensaver">
+        <div class="flying-toasters" id="flyingToasters"></div>
+        <div class="screensaver-text">Move mouse or press any key to wake</div>
+    </div>
+    
+    <!-- Desktop -->
+    <div class="desktop" id="desktop">
+        <!-- Icons rendered by DesktopRenderer -->
+        
+        <!-- Clippy Assistant -->
+        <div class="clippy" id="clippy">
+            <div class="clippy-character" id="clippyCharacter">📎</div>
+            <div class="clippy-bubble" id="clippyBubble">
+                <div class="clippy-text" id="clippyText"></div>
+                <div class="clippy-buttons">
+                    <button class="clippy-btn" id="clippyYes">Thanks!</button>
+                    <button class="clippy-btn" id="clippyNo">Go away</button>
+                </div>
+                <button class="clippy-close" id="clippyClose">×</button>
+            </div>
+        </div>
+        
+        <!-- Desktop Pet -->
+        <div class="desktop-pet" id="desktopPet">🐕</div>
+    </div>
+    
+    <!-- Right-click Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <!-- Content rendered by ContextMenuRenderer -->
+    </div>
+    
+    <!-- Start Menu -->
+    <div class="start-menu" id="startMenu">
+        <div class="start-menu-sidebar">
+            <span class="sidebar-text">Seth Morrow OS 95</span>
+        </div>
+        <div class="start-menu-content">
+            <div class="start-menu-items" id="startMenuItems">
+                <!-- Content rendered by StartMenuRenderer -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Taskbar -->
+    <div class="taskbar" id="taskbar">
+        <button class="start-button" id="startButton">
+            <div class="start-logo">
+                <div class="windows-flag"></div>
+            </div>
+            <span>Start</span>
+        </button>
+        <div class="taskbar-divider"></div>
+        <div class="quick-launch" id="quickLaunch">
+            <button class="quick-launch-btn" data-app="terminal" title="Terminal">💻</button>
+            <button class="quick-launch-btn" data-app="notepad" title="Notepad">📝</button>
+            <button class="quick-launch-btn" data-link="https://sethmorrow.com" title="Internet">🌀</button>
+        </div>
+        <div class="taskbar-divider"></div>
+        <div class="taskbar-buttons" id="taskbarButtons">
+            <!-- Window buttons rendered by TaskbarRenderer -->
+        </div>
+        <div class="system-tray" id="systemTray">
+            <div class="tray-icon" id="volumeIcon" title="Volume">📊</div>
+            <div class="tray-icon" id="networkIcon" title="Connected">📶</div>
+            <div class="taskbar-divider-small"></div>
+            <div class="taskbar-time" id="clock">12:00 PM</div>
+        </div>
+    </div>
+    
+    <!-- Calendar Popup -->
+    <div class="calendar-popup" id="calendarPopup">
+        <!-- Content rendered by TaskbarRenderer -->
+    </div>
+    
+    <!-- Selection Box (for multi-select) -->
+    <div class="selection-box" id="selectionBox"></div>
+    
+    <!-- BSOD Screen -->
+    <div class="bsod" id="bsod">
+        <div class="bsod-content">
+            <h1>Seth Morrow OS</h1>
+            <p>A fatal exception 0E has occurred at 0028:C0011E36 in VXD VMM(01) + 00010E36.</p>
+            <br>
+            <p>* Press any key to terminate the current application.</p>
+            <p>* Press CTRL+ALT+DEL again to restart your computer.</p>
+            <br>
+            <p>Press any key to continue _</p>
+        </div>
+    </div>
+    
+    <!-- Dialog Overlay (for alerts) -->
+    <div class="dialog-overlay" id="dialogOverlay">
+        <div class="dialog-box" id="dialogBox">
+            <div class="dialog-icon" id="dialogIcon">ℹ️</div>
+            <div class="dialog-text" id="dialogText"></div>
+            <div class="dialog-buttons">
+                <button class="btn btn-primary" id="dialogOk">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Achievement Toast -->
+    <div class="achievement-toast" id="achievementToast">
+        <div class="achievement-icon" id="achievementIcon">🏆</div>
+        <div class="achievement-title">Achievement Unlocked!</div>
+        <div class="achievement-desc" id="achievementDesc"></div>
+    </div>
+
+    <!-- Main Script (ES Modules) -->
+    <script type="module" src="index.js"></script>
+</body>
+</html>
