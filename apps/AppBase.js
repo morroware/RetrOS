@@ -1,12 +1,17 @@
 /**
  * AppBase - Base class for all applications
  * Provides common functionality and lifecycle methods
- * 
+ *
+ * MULTI-INSTANCE SUPPORT:
+ * All helper methods automatically scope to the current window context.
+ * Apps don't need to track windowIds - just use this.getElement(), this.setState(), etc.
+ *
  * Apps extend this class and implement:
  *   - onOpen(): Return HTML content
  *   - onClose(): Cleanup (optional)
  *   - onFocus(): Handle focus (optional)
  *   - onBlur(): Handle blur (optional)
+ *   - onMount(): Post-render initialization (optional)
  */
 
 import EventBus from '../core/EventBus.js';
@@ -26,19 +31,22 @@ class AppBase {
         this.height = config.height || 'auto';
         this.resizable = config.resizable !== false;
         this.singleton = config.singleton === true; // Default: allow multiple instances
-        
+
         // Menu/category properties (used by AppRegistry for Start Menu)
         this.category = config.category || 'accessories';
         this.showInMenu = config.showInMenu !== false;
 
         // Runtime state - track all open instances
-        this.openWindows = new Map(); // windowId -> { boundHandlers }
+        this.openWindows = new Map(); // windowId -> { state, boundHandlers, eventUnsubscribers }
         this.instanceCounter = 0;
-        
+
+        // Current window context - automatically set before lifecycle calls
+        // This allows getElement(), instanceState(), etc. to work without passing windowId
+        this._currentWindowId = null;
+
         // Legacy support for single-window apps
         this.windowId = null;
         this.isOpen = false;
-        this.boundHandlers = new Map(); // Track bound handlers for cleanup
     }
 
     // ===== LIFECYCLE METHODS (Override in subclass) =====
@@ -52,10 +60,13 @@ class AppBase {
     }
 
     /**
-     * Called when app closes - cleanup resources
+     * Called after window is created and in DOM
+     * Use for initializing canvas, adding event listeners, etc.
+     * Note: All helper methods (getElement, addHandler, etc.) automatically
+     * target the correct window - no need to track windowId!
      */
-    onClose() {
-        // Override for cleanup
+    onMount() {
+        // Override for post-render initialization
     }
 
     /**
@@ -73,11 +84,10 @@ class AppBase {
     }
 
     /**
-     * Called after window is created and in DOM
-     * Use for initializing canvas, adding event listeners, etc.
+     * Called when app closes - cleanup resources
      */
-    onMount() {
-        // Override for post-render initialization
+    onClose() {
+        // Override for cleanup
     }
 
     // ===== PUBLIC API =====
@@ -97,6 +107,16 @@ class AppBase {
         this.instanceCounter++;
         const windowId = this.singleton ? this.id : `${this.id}-${this.instanceCounter}`;
 
+        // Set context BEFORE calling onOpen so it can use helpers if needed
+        this._currentWindowId = windowId;
+
+        // Initialize instance data structure
+        this.openWindows.set(windowId, {
+            state: {},                    // Per-instance state storage
+            boundHandlers: new Map(),     // DOM event handlers for cleanup
+            eventUnsubscribers: []        // EventBus subscriptions for cleanup
+        });
+
         // Get content from subclass
         const content = this.onOpen();
 
@@ -112,11 +132,6 @@ class AppBase {
             onClose: () => this.handleClose(windowId)
         });
 
-        // Track this window instance
-        this.openWindows.set(windowId, {
-            boundHandlers: new Map()
-        });
-        
         // Legacy support
         this.windowId = windowId;
         this.isOpen = true;
@@ -125,20 +140,21 @@ class AppBase {
         this.setupFocusTracking(windowId);
 
         // Call mount hook after slight delay (let DOM render)
-        // Store windowId in closure for mount
-        const currentWindowId = windowId;
-        setTimeout(() => this.onMount(currentWindowId), 50);
+        setTimeout(() => {
+            // Set context before calling onMount
+            this._currentWindowId = windowId;
+            this.onMount();
+        }, 50);
     }
 
     /**
-     * Close the application (closes the most recent window, or specific windowId)
+     * Close the application (closes current context window, or specific windowId)
      * @param {string} [windowId] - Optional specific window to close
      */
     close(windowId) {
-        if (windowId) {
-            WindowManager.close(windowId);
-        } else if (this.windowId) {
-            WindowManager.close(this.windowId);
+        const targetId = windowId || this._currentWindowId || this.windowId;
+        if (targetId) {
+            WindowManager.close(targetId);
         }
     }
 
@@ -146,8 +162,8 @@ class AppBase {
      * Close all windows of this app
      */
     closeAll() {
-        for (const windowId of this.openWindows.keys()) {
-            WindowManager.close(windowId);
+        for (const wid of this.openWindows.keys()) {
+            WindowManager.close(wid);
         }
     }
 
@@ -156,9 +172,12 @@ class AppBase {
      * @param {string} windowId - The window ID being closed
      */
     handleClose(windowId) {
+        // Set context for onClose
+        this._currentWindowId = windowId;
+
         // Get instance data
         const instanceData = this.openWindows.get(windowId);
-        
+
         // Cleanup bound handlers for this specific window
         if (instanceData) {
             // Clean up DOM event handlers
@@ -169,112 +188,191 @@ class AppBase {
                     });
                 });
             }
-            
+
             // Clean up EventBus subscriptions
             if (instanceData.eventUnsubscribers) {
                 instanceData.eventUnsubscribers.forEach(unsub => unsub());
             }
         }
-        
+
+        // Call subclass cleanup
+        this.onClose();
+
         // Remove from tracked windows
         this.openWindows.delete(windowId);
-        
-        // Call subclass cleanup
-        this.onClose(windowId);
 
         // Update legacy properties
         if (this.openWindows.size === 0) {
             this.isOpen = false;
             this.windowId = null;
+            this._currentWindowId = null;
         } else {
             // Set windowId to another open window
             this.windowId = this.openWindows.keys().next().value;
+            this._currentWindowId = this.windowId;
         }
     }
 
-    // ===== HELPER METHODS =====
+    // ===== INSTANCE STATE MANAGEMENT =====
+    // These methods store state per-window, so multiple instances don't conflict
 
     /**
-     * Get the window element
-     * @param {string} [windowId] - Optional window ID (defaults to most recent)
+     * Get instance-specific state value
+     * @param {string} key - State key
+     * @param {*} defaultValue - Default if not set
+     * @returns {*} The state value
+     */
+    getInstanceState(key, defaultValue = undefined) {
+        const windowId = this._currentWindowId;
+        const instanceData = this.openWindows.get(windowId);
+        if (!instanceData) return defaultValue;
+        return key in instanceData.state ? instanceData.state[key] : defaultValue;
+    }
+
+    /**
+     * Set instance-specific state value
+     * @param {string} key - State key
+     * @param {*} value - Value to set
+     */
+    setInstanceState(key, value) {
+        const windowId = this._currentWindowId;
+        const instanceData = this.openWindows.get(windowId);
+        if (instanceData) {
+            instanceData.state[key] = value;
+        }
+    }
+
+    /**
+     * Get all instance state as an object
+     * @returns {Object} The instance state object
+     */
+    getAllInstanceState() {
+        const windowId = this._currentWindowId;
+        const instanceData = this.openWindows.get(windowId);
+        return instanceData ? { ...instanceData.state } : {};
+    }
+
+    /**
+     * Update multiple instance state values at once
+     * @param {Object} updates - Object of key-value pairs to update
+     */
+    updateInstanceState(updates) {
+        const windowId = this._currentWindowId;
+        const instanceData = this.openWindows.get(windowId);
+        if (instanceData) {
+            Object.assign(instanceData.state, updates);
+        }
+    }
+
+    // ===== DOM HELPER METHODS =====
+    // All automatically scoped to current window context
+
+    /**
+     * Get the window element for current context
      * @returns {HTMLElement|null}
      */
-    getWindow(windowId) {
-        const id = windowId || this.windowId;
+    getWindow() {
+        const id = this._currentWindowId;
         return id ? document.getElementById(`window-${id}`) : null;
     }
 
     /**
-     * Get element within window by selector, or the window content if no selector
-     * @param {string} [selector] - CSS selector (optional)
-     * @param {string} [windowId] - Optional window ID
+     * Get element within current window by selector
+     * @param {string} [selector] - CSS selector (optional, returns content if omitted)
      * @returns {HTMLElement|null}
      */
-    getElement(selector, windowId) {
-        const window = this.getWindow(windowId);
-        if (!window) return null;
-        
-        // If no selector, return the window content element
+    getElement(selector) {
+        const windowEl = this.getWindow();
+        if (!windowEl) return null;
+
         if (!selector) {
-            return window.querySelector('.window-content');
+            return windowEl.querySelector('.window-content');
         }
-        
-        return window.querySelector(selector);
+
+        return windowEl.querySelector(selector);
     }
 
     /**
-     * Get all elements within window by selector
+     * Get all elements within current window by selector
      * @param {string} selector - CSS selector
-     * @param {string} [windowId] - Optional window ID
      * @returns {NodeList}
      */
-    getElements(selector, windowId) {
-        const window = this.getWindow(windowId);
-        return window ? window.querySelectorAll(selector) : [];
+    getElements(selector) {
+        const windowEl = this.getWindow();
+        return windowEl ? windowEl.querySelectorAll(selector) : [];
     }
 
     /**
      * Update window content
      * @param {string} html - New HTML content
-     * @param {string} [windowId] - Optional window ID
      */
-    setContent(html, windowId) {
-        const window = this.getWindow(windowId);
-        const content = window?.querySelector('.window-content');
+    setContent(html) {
+        const windowEl = this.getWindow();
+        const content = windowEl?.querySelector('.window-content');
         if (content) {
             content.innerHTML = html;
-            this.onMount(windowId); // Re-run mount for new content
+            this.onMount(); // Re-run mount for new content
         }
     }
 
     /**
-     * Add event listener with automatic cleanup
+     * Get the current window ID (for advanced use cases)
+     * @returns {string|null}
+     */
+    getCurrentWindowId() {
+        return this._currentWindowId;
+    }
+
+    // ===== EVENT HANDLING =====
+
+    /**
+     * Add event listener with automatic cleanup when window closes
      * @param {HTMLElement|Document|Window} target - Event target
      * @param {string} event - Event name
      * @param {Function} handler - Event handler
      * @param {Object} options - Event options
      */
     addHandler(target, event, handler, options = {}) {
-        const boundHandler = handler.bind(this);
+        const windowId = this._currentWindowId;
+        const instanceData = this.openWindows.get(windowId);
+        if (!instanceData) return;
+
+        // Bind handler to this app instance AND capture windowId in closure
+        const capturedWindowId = windowId;
+        const boundHandler = (...args) => {
+            // Set context before calling handler
+            this._currentWindowId = capturedWindowId;
+            return handler.call(this, ...args);
+        };
+
         target.addEventListener(event, boundHandler, options);
-        
+
         // Track for cleanup
-        if (!this.boundHandlers.has(target)) {
-            this.boundHandlers.set(target, []);
+        if (!instanceData.boundHandlers.has(target)) {
+            instanceData.boundHandlers.set(target, []);
         }
-        this.boundHandlers.get(target).push({ event, handler: boundHandler, options });
+        instanceData.boundHandlers.get(target).push({ event, handler: boundHandler, options });
     }
 
     /**
-     * Remove all tracked event handlers
+     * Subscribe to EventBus event with automatic cleanup
+     * @param {string} event - Event name
+     * @param {Function} handler - Event handler
      */
-    cleanupHandlers() {
-        this.boundHandlers.forEach((handlers, target) => {
-            handlers.forEach(({ event, handler, options }) => {
-                target.removeEventListener(event, handler, options);
-            });
-        });
-        this.boundHandlers.clear();
+    onEvent(event, handler) {
+        const windowId = this._currentWindowId;
+        const instanceData = this.openWindows.get(windowId);
+        if (!instanceData) return;
+
+        const capturedWindowId = windowId;
+        const boundHandler = (...args) => {
+            this._currentWindowId = capturedWindowId;
+            return handler.call(this, ...args);
+        };
+
+        const unsubscribe = EventBus.on(event, boundHandler);
+        instanceData.eventUnsubscribers.push(unsubscribe);
+        return unsubscribe;
     }
 
     /**
@@ -287,7 +385,7 @@ class AppBase {
     }
 
     /**
-     * Subscribe to an event
+     * Subscribe to an event (legacy - prefer onEvent for auto-cleanup)
      * @param {string} event - Event name
      * @param {Function} handler - Event handler
      * @returns {Function} Unsubscribe function
@@ -296,8 +394,10 @@ class AppBase {
         return EventBus.on(event, handler);
     }
 
+    // ===== GLOBAL STATE (shared across instances) =====
+
     /**
-     * Get state value
+     * Get global state value
      * @param {string} path - State path
      * @returns {*}
      */
@@ -306,7 +406,7 @@ class AppBase {
     }
 
     /**
-     * Set state value
+     * Set global state value
      * @param {string} path - State path
      * @param {*} value - New value
      * @param {boolean} persist - Persist to storage
@@ -314,6 +414,8 @@ class AppBase {
     setState(path, value, persist = false) {
         StateManager.setState(path, value, persist);
     }
+
+    // ===== UTILITY METHODS =====
 
     /**
      * Play a sound
@@ -347,25 +449,23 @@ class AppBase {
      */
     setupFocusTracking(windowId) {
         const checkFocus = ({ id }) => {
-            // Check if this window or any of our windows got focus
             if (id === windowId) {
-                this.onFocus(windowId);
+                this._currentWindowId = windowId;
+                this.onFocus();
             } else if (this.openWindows.has(windowId)) {
-                this.onBlur(windowId);
+                // Another window got focus, we lost it
+                const prevContext = this._currentWindowId;
+                this._currentWindowId = windowId;
+                this.onBlur();
+                this._currentWindowId = prevContext;
             }
         };
 
-        EventBus.on('window:focus', checkFocus);
-        
-        // Store the unsubscribe function for this specific window
+        const unsubscribe = EventBus.on('window:focus', checkFocus);
+
         const instanceData = this.openWindows.get(windowId);
         if (instanceData) {
-            if (!instanceData.eventUnsubscribers) {
-                instanceData.eventUnsubscribers = [];
-            }
-            instanceData.eventUnsubscribers.push(() => {
-                EventBus.off('window:focus', checkFocus);
-            });
+            instanceData.eventUnsubscribers.push(unsubscribe);
         }
     }
 }
