@@ -17,6 +17,10 @@ import Doom from './Doom.js';
 import Solitaire from './Solitaire.js';
 import MediaPlayer from './MediaPlayer.js';
 import Browser from './Browser.js';
+import ControlPanel from './ControlPanel.js';
+import AdminPanel from './AdminPanel.js';
+import MyComputer from './MyComputer.js';
+import RecycleBin from './RecycleBin.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -84,10 +88,15 @@ class AppRegistryClass {
         // --- Multimedia ---
         this.register(new MediaPlayer(), { category: 'multimedia' });
 
+        // --- System Apps ---
+        this.register(new MyComputer(), { category: 'system' });
+        this.register(new RecycleBin(), { category: 'system' });
+        this.register(new ControlPanel(), { category: 'settings' });
+        this.register(new AdminPanel(), { category: 'system' });
+
         // --- System Utilities (Placeholders) ---
         this.register(new SimpleApp('taskmgr', 'Task Manager', '📊', 'Task Manager is under construction.'), { category: 'system' });
-        
-        this.register(new SimpleApp('controlpanel', 'Control Panel', '⚙️', 'Control Panel settings coming soon.'), { category: 'settings' });
+
         this.register(new SimpleApp('display', 'Display Properties', '🖥️', 'Display settings coming soon.'), { category: 'settings' });
         this.register(new SimpleApp('sounds', 'Sound Settings', '🔊', 'Sound settings coming soon.'), { category: 'settings' });
         
