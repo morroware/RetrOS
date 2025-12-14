@@ -381,6 +381,18 @@ class WindowManagerClass {
      * End resize
      */
     handleResizeEnd() {
+        if (this.resizingWindow) {
+            const { id, element } = this.resizingWindow;
+            const rect = element.getBoundingClientRect();
+
+            // Emit resize event with final dimensions
+            EventBus.emit(Events.WINDOW_RESIZE, {
+                id,
+                width: rect.width,
+                height: rect.height
+            });
+        }
+
         this.resizingWindow = null;
         document.removeEventListener('mousemove', this.boundResizeMove);
         document.removeEventListener('mouseup', this.boundResizeEnd);

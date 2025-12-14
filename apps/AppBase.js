@@ -84,6 +84,14 @@ class AppBase {
     }
 
     /**
+     * Called when window is resized
+     * @param {Object} dimensions - New dimensions {width, height}
+     */
+    onResize(dimensions) {
+        // Override if needed
+    }
+
+    /**
      * Called when app closes - cleanup resources
      */
     onClose() {
@@ -138,6 +146,9 @@ class AppBase {
 
         // Setup focus/blur tracking for this window
         this.setupFocusTracking(windowId);
+
+        // Setup resize tracking for this window
+        this.setupResizeTracking(windowId);
 
         // Call mount hook after slight delay (let DOM render)
         setTimeout(() => {
@@ -462,6 +473,26 @@ class AppBase {
         };
 
         const unsubscribe = EventBus.on('window:focus', checkFocus);
+
+        const instanceData = this.openWindows.get(windowId);
+        if (instanceData) {
+            instanceData.eventUnsubscribers.push(unsubscribe);
+        }
+    }
+
+    /**
+     * Setup resize tracking
+     * @param {string} windowId - The window ID to track
+     */
+    setupResizeTracking(windowId) {
+        const handleResize = ({ id, width, height }) => {
+            if (id === windowId) {
+                this._currentWindowId = windowId;
+                this.onResize({ width, height });
+            }
+        };
+
+        const unsubscribe = EventBus.on('window:resize', handleResize);
 
         const instanceData = this.openWindows.get(windowId);
         if (instanceData) {
