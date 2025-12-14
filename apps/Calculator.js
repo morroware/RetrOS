@@ -1,6 +1,6 @@
 /**
- * Calculator App (Pixel Perfect Fix)
- * Fixed dimensions to prevent scrollbars
+ * Calculator App
+ * Supports multiple independent instances using instance state
  */
 
 import AppBase from './AppBase.js';
@@ -11,23 +11,23 @@ class Calculator extends AppBase {
             id: 'calculator',
             name: 'Calculator',
             icon: '🔢',
-            // EXACT DIMENSIONS to fit the CSS grid perfectly
-            width: 250, 
-            height: 285, 
-            resizable: false // Disable resizing to maintain the layout integrity
+            width: 250,
+            height: 285,
+            resizable: false
         });
-
-        this.displayValue = '0';
-        this.firstOperand = null;
-        this.waitingForSecondOperand = false;
-        this.operator = null;
     }
 
     onOpen() {
+        // Initialize instance state for this calculator window
+        this.setInstanceState('displayValue', '0');
+        this.setInstanceState('firstOperand', null);
+        this.setInstanceState('waitingForSecondOperand', false);
+        this.setInstanceState('operator', null);
+
         return `
             <div class="calculator">
                 <div class="calc-display inset-border" id="display">0</div>
-                
+
                 <div class="calc-buttons">
                     <button class="calc-btn btn-danger" data-action="clear">C</button>
                     <button class="calc-btn" data-action="operator" data-op="/">÷</button>
@@ -42,7 +42,7 @@ class Calculator extends AppBase {
                     <button class="calc-btn" data-num="4">4</button>
                     <button class="calc-btn" data-num="5">5</button>
                     <button class="calc-btn" data-num="6">6</button>
-                    
+
                     <button class="calc-btn calc-btn-equal" data-action="equal">=</button>
 
                     <button class="calc-btn" data-num="1">1</button>
@@ -58,13 +58,13 @@ class Calculator extends AppBase {
 
     onMount() {
         const buttonsContainer = this.getElement('.calc-buttons');
-        
-        // Event Delegation
+
+        // Event Delegation - addHandler auto-scopes to this window
         this.addHandler(buttonsContainer, 'click', (e) => {
-            const target = e.target.closest('button'); 
+            const target = e.target.closest('button');
             if (!target) return;
 
-            target.blur(); // Remove focus so "Enter" doesn't re-trigger click
+            target.blur();
 
             if (target.dataset.num) {
                 this.inputDigit(target.dataset.num);
@@ -80,7 +80,38 @@ class Calculator extends AppBase {
             this.updateDisplay();
         });
 
+        // Keyboard support - only responds when this window is active
         this.addHandler(document, 'keydown', (e) => this.handleKeyboard(e));
+    }
+
+    // --- State Helpers (use instance state) ---
+
+    get displayValue() {
+        return this.getInstanceState('displayValue', '0');
+    }
+    set displayValue(val) {
+        this.setInstanceState('displayValue', val);
+    }
+
+    get firstOperand() {
+        return this.getInstanceState('firstOperand', null);
+    }
+    set firstOperand(val) {
+        this.setInstanceState('firstOperand', val);
+    }
+
+    get waitingForSecondOperand() {
+        return this.getInstanceState('waitingForSecondOperand', false);
+    }
+    set waitingForSecondOperand(val) {
+        this.setInstanceState('waitingForSecondOperand', val);
+    }
+
+    get operator() {
+        return this.getInstanceState('operator', null);
+    }
+    set operator(val) {
+        this.setInstanceState('operator', val);
     }
 
     // --- Logic ---
@@ -101,7 +132,7 @@ class Calculator extends AppBase {
             return;
         }
         if (!this.displayValue.includes('.')) {
-            this.displayValue += '.';
+            this.displayValue = this.displayValue + '.';
         }
     }
 
@@ -129,7 +160,7 @@ class Calculator extends AppBase {
         if (!this.operator || this.firstOperand === null) return;
         const inputValue = parseFloat(this.displayValue);
         const result = this.calculate(this.firstOperand, inputValue, this.operator);
-        
+
         this.displayValue = String(parseFloat(result.toFixed(7)));
         this.firstOperand = null;
         this.operator = null;
@@ -157,7 +188,9 @@ class Calculator extends AppBase {
     }
 
     handleKeyboard(e) {
-        if (!this.getElement('.calculator')) return;
+        // Only respond if our window is active
+        if (!this.getWindow()?.classList.contains('active')) return;
+
         const key = e.key;
         if (/[0-9]/.test(key)) this.inputDigit(key);
         else if (key === '.') this.inputDecimal();
