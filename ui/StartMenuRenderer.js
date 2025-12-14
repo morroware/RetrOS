@@ -85,10 +85,11 @@ class StartMenuRendererClass {
     }
 
     renderProgramsSection() {
-        // FIXED: Dynamically fetch apps by category instead of hardcoding IDs
+        // Dynamically fetch apps by category
         const accessories = AppRegistry.getByCategory('accessories');
         const games = AppRegistry.getByCategory('games');
         const multimedia = AppRegistry.getByCategory('multimedia');
+        const internet = AppRegistry.getByCategory('internet');
 
         const customItems = StateManager.getState('menuItems') || [];
         const links = (StateManager.getState('icons') || []).filter(i => i.type === 'link');
@@ -106,6 +107,17 @@ class StartMenuRendererClass {
                 <span>Programs</span>
                 <span class="submenu-arrow">▶</span>
                 <div class="start-submenu">
+                    ${internet.length > 0 ? `
+                    <div class="start-menu-item submenu-trigger">
+                        <span class="start-menu-icon">🌐</span>
+                        <span>Internet</span>
+                        <span class="submenu-arrow">▶</span>
+                        <div class="start-submenu">
+                            ${renderAppList(internet)}
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <div class="start-menu-item submenu-trigger">
                         <span class="start-menu-icon">📂</span>
                         <span>Accessories</span>
@@ -115,7 +127,7 @@ class StartMenuRendererClass {
                             ${renderAppList(multimedia)}
                         </div>
                     </div>
-                    
+
                     <div class="start-menu-item submenu-trigger">
                         <span class="start-menu-icon">🎮</span>
                         <span>Games</span>
@@ -124,7 +136,7 @@ class StartMenuRendererClass {
                             ${renderAppList(games)}
                         </div>
                     </div>
-                    
+
                     ${links.length > 0 ? `
                         <div class="start-menu-divider"></div>
                         ${links.map(link => `

@@ -13,8 +13,10 @@ import Paint from './Paint.js';
 import Minesweeper from './Minesweeper.js';
 import Snake from './Snake.js';
 import Asteroids from './Asteroids.js';
-import Doom from './Doom.js'; // <--- Import
+import Doom from './Doom.js';
 import Solitaire from './Solitaire.js';
+import MediaPlayer from './MediaPlayer.js';
+import Browser from './Browser.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -73,10 +75,16 @@ class AppRegistryClass {
         this.register(new Minesweeper(), { category: 'games' });
         this.register(new Snake(), { category: 'games' });
         this.register(new Asteroids(), { category: 'games' });
-        this.register(new Doom(), { category: 'games' }); // <--- Register
+        this.register(new Doom(), { category: 'games' });
         this.register(new Solitaire(), { category: 'games', showInMenu: true });
+
+        // --- Internet ---
+        this.register(new Browser(), { category: 'internet' });
+
+        // --- Multimedia ---
+        this.register(new MediaPlayer(), { category: 'multimedia' });
+
         // --- System Utilities (Placeholders) ---
-        this.register(new SimpleApp('mediaplayer', 'Media Player', '💿', 'Media Player is under construction.'), { category: 'multimedia' });
         this.register(new SimpleApp('taskmgr', 'Task Manager', '📊', 'Task Manager is under construction.'), { category: 'system' });
         
         this.register(new SimpleApp('controlpanel', 'Control Panel', '⚙️', 'Control Panel settings coming soon.'), { category: 'settings' });
