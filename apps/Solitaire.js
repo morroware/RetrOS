@@ -16,7 +16,8 @@ class Solitaire extends AppBase {
             width: 765,
             height: 625,
             resizable: false,
-            category: 'games'
+            category: 'games',
+            singleton: true // One game at a time
         });
 
         this.resetState();

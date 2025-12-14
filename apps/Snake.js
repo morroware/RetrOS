@@ -14,8 +14,9 @@ class Snake extends AppBase {
             name: 'Snake',
             icon: '🐍',
             width: 360,
-            height: 460, // Slightly taller to accommodate padding fix
-            resizable: false
+            height: 460,
+            resizable: false,
+            singleton: true // One game at a time
         });
 
         // Config
