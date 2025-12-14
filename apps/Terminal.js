@@ -207,10 +207,10 @@ class Terminal extends AppBase {
             'C:\\>SET PATH=C:\\DOS;C:\\WINDOWS;C:\\UTILS',
             'C:\\>ZOS.EXE',
             '',
-            '╔══════════════════════════════════════════════════════════════╗',
-            '║                    SETH MORROW OS v95.0                      ║',
-            '║                  "Where do you want to go today?"            ║',
-            '╚══════════════════════════════════════════════════════════════╝',
+            '+================================================================+',
+            '|                    SETH MORROW OS v95.0                        |',
+            '|                "Where do you want to go today?"                |',
+            '+================================================================+',
             '',
             'Type "help" for commands, "neuromancer" to play a cyberpunk adventure.',
             ''
@@ -404,12 +404,12 @@ HINTS: Try the Konami code, or explore Secret folder...`;
 
     cmdAbout() {
         return `
-╔══════════════════════════════════════╗
-║     SETH MORROW OS v95.0             ║
-║     A retro Windows 95 experience    ║
-║     © 2024 Seth Morrow               ║
-║     Built with 💖 and nostalgia      ║
-╚══════════════════════════════════════╝`;
++======================================+
+|       SETH MORROW OS v95.0           |
+|   A retro Windows 95 experience      |
+|       (c) 2024 Seth Morrow           |
+|    Built with <3 and nostalgia       |
++======================================+`;
     }
 
     cmdClear() {
