@@ -117,6 +117,7 @@ export const Events = {
     WINDOW_MINIMIZE: 'window:minimize',
     WINDOW_MAXIMIZE: 'window:maximize',
     WINDOW_RESTORE: 'window:restore',
+    WINDOW_RESIZE: 'window:resize',
 
     // Taskbar events
     TASKBAR_UPDATE: 'taskbar:update',

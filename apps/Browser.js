@@ -25,6 +25,11 @@ class Browser extends AppBase {
     onOpen() {
         return `
             <style>
+                /* Override window-content padding for proper sizing */
+                #window-browser .window-content {
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                }
                 .browser-app {
                     display: flex;
                     flex-direction: column;
@@ -81,8 +86,12 @@ class Browser extends AppBase {
                     border: 2px inset #808080;
                     margin: 4px;
                     position: relative;
+                    overflow: hidden;
                 }
                 .browser-iframe {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
                     width: 100%;
                     height: 100%;
                     border: none;
