@@ -13,10 +13,10 @@ class Minesweeper extends AppBase {
             id: 'minesweeper',
             name: 'Minesweeper',
             icon: '💣',
-            // 9 cols * 24px = 216px. + 18px for borders/padding = 234px
-            width: 234, 
+            width: 234,
             height: 'auto',
-            resizable: false
+            resizable: false,
+            singleton: true // One game at a time
         });
 
         this.rows = 9;

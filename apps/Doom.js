@@ -14,7 +14,8 @@ class Doom extends AppBase {
             width: 660,
             height: 560,
             resizable: true,
-            category: 'games'
+            category: 'games',
+            singleton: true // One game at a time
         });
         
         this.isFocused = false;

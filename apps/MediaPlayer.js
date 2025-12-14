@@ -13,7 +13,8 @@ class MediaPlayer extends AppBase {
             icon: '📻',
             width: 350,
             height: 400,
-            resizable: false
+            resizable: false,
+            singleton: true // One player at a time
         });
 
         this.playing = false;

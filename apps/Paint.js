@@ -13,7 +13,8 @@ class Paint extends AppBase {
             icon: '🖌️',
             width: 830,
             height: 625,
-            resizable: false
+            resizable: false,
+            singleton: true // One canvas at a time
         });
 
         this.ctx = null;

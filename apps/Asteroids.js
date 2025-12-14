@@ -14,7 +14,8 @@ class Asteroids extends AppBase {
             icon: '🚀',
             width: 600,
             height: 480,
-            resizable: false
+            resizable: false,
+            singleton: true // One game at a time
         });
 
         // Game Constants
