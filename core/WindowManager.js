@@ -67,7 +67,7 @@ class WindowManagerClass {
         // Create window element
         const windowEl = document.createElement('div');
         windowEl.id = `window-${id}`;
-        windowEl.className = 'window active';
+        windowEl.className = 'window open active'; // 'open' = visible, 'active' = focused
         windowEl.style.width = typeof width === 'number' ? `${width}px` : width;
         if (height !== 'auto') {
             windowEl.style.height = typeof height === 'number' ? `${height}px` : height;
@@ -193,9 +193,10 @@ class WindowManagerClass {
         if (!windowEl) return;
 
         windowEl.classList.add('minimizing');
-        
+
         setTimeout(() => {
             windowEl.classList.remove('active', 'minimizing');
+            windowEl.classList.add('minimized'); // Hide the window
             StateManager.updateWindow(id, { minimized: true });
             EventBus.emit(Events.WINDOW_MINIMIZE, { id });
         }, 300);
@@ -211,16 +212,16 @@ class WindowManagerClass {
         const windowEl = document.getElementById(`window-${id}`);
         if (!windowEl) return;
 
+        windowEl.classList.remove('minimized'); // Show the window
         windowEl.classList.add('restoring');
-        windowEl.classList.add('active');
-        
+
         setTimeout(() => {
             windowEl.classList.remove('restoring');
         }, 300);
 
         StateManager.updateWindow(id, { minimized: false });
         this.focus(id);
-        
+
         EventBus.emit(Events.WINDOW_RESTORE, { id });
     }
 
