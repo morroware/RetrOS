@@ -764,8 +764,19 @@ body {
     z-index: 1000;
 }
 
-.window.active {
+/* Window is visible when open */
+.window.open {
     display: block;
+}
+
+/* Minimized windows are hidden */
+.window.minimized {
+    display: none;
+}
+
+/* Focused window gets higher z-index (active class is for focus styling) */
+.window.active {
+    /* Focus is handled by z-index, not display */
 }
 
 .window.maximized {
