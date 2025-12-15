@@ -4,6 +4,7 @@
  */
 
 import AppBase from './AppBase.js';
+import WindowManager from '../core/WindowManager.js';
 
 class Browser extends AppBase {
     constructor() {
@@ -158,6 +159,12 @@ class Browser extends AppBase {
     }
 
     onMount() {
+        // Maximize browser window on open for better viewing
+        const windowId = this.getCurrentWindowId();
+        if (windowId) {
+            WindowManager.maximize(windowId);
+        }
+
         const addressInput = this.getElement('#addressInput');
         const frame = this.getElement('#browserFrame');
         const loading = this.getElement('#loadingMsg');
