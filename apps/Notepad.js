@@ -151,8 +151,9 @@ class Notepad extends AppBase {
         const textarea = this.getElement('#notepadText');
         if (!textarea) return;
 
-        // Generate a default filename with timestamp
-        const timestamp = new Date().toISOString().slice(0, 10);
+        // Generate a default filename with full timestamp (date + time) for unique names
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         const defaultName = `note_${timestamp}.txt`;
         const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
 
