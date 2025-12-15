@@ -6,6 +6,7 @@
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from './AppRegistry.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class MyComputer extends AppBase {
     constructor() {
@@ -19,41 +20,6 @@ class MyComputer extends AppBase {
             singleton: true,
             category: 'system'
         });
-
-        // Virtual file system
-        this.drives = [
-            {
-                id: 'c',
-                letter: 'C:',
-                label: 'Local Disk',
-                icon: '💾',
-                type: 'hard',
-                used: 2.4,
-                total: 10,
-                folders: [
-                    { name: 'Windows', icon: '🪟', size: '1.2 GB', modified: '1995-08-24' },
-                    { name: 'Program Files', icon: '📁', size: '800 MB', modified: '1995-11-15' },
-                    { name: 'Users', icon: '👥', size: '400 MB', modified: '2025-12-14' },
-                    { name: 'Temp', icon: '🗑️', size: '50 MB', modified: '2025-12-14' }
-                ]
-            },
-            {
-                id: 'd',
-                letter: 'D:',
-                label: 'CD-ROM',
-                icon: '💿',
-                type: 'cdrom',
-                isEmpty: true
-            },
-            {
-                id: 'a',
-                letter: 'A:',
-                label: 'Floppy Disk',
-                icon: '💾',
-                type: 'floppy',
-                isEmpty: true
-            }
-        ];
 
         this.systemFolders = [
             { name: 'My Documents', icon: '📄', app: 'notepad', desc: 'Personal files and documents' },
@@ -282,8 +248,8 @@ class MyComputer extends AppBase {
     }
 
     onMount() {
-        // Initialize view state
-        this.setInstanceState('currentView', 'root');
+        // Initialize view state - start at root (My Computer)
+        this.setInstanceState('currentPath', []);
         this.setInstanceState('viewMode', 'grid');
         this.setInstanceState('history', []);
 
@@ -294,14 +260,49 @@ class MyComputer extends AppBase {
         this.updateStatus();
     }
 
+    getDrives() {
+        // Get drives from FileSystemManager
+        const drives = [];
+        const rootItems = FileSystemManager.listDirectory([]);
+
+        for (const item of rootItems) {
+            if (item.type === 'drive') {
+                const icon = item.name === 'C:' ? '💾' : (item.name === 'D:' ? '💿' : '💾');
+                const type = item.name === 'C:' ? 'hard' : (item.name === 'D:' ? 'cdrom' : 'floppy');
+
+                // Calculate drive size
+                const totalBytes = FileSystemManager.getDirectorySize([item.name]);
+                const totalGB = totalBytes / (1024 * 1024 * 1024);
+
+                // Check if drive is empty
+                const contents = FileSystemManager.listDirectory([item.name]);
+                const isEmpty = contents.length === 0;
+
+                drives.push({
+                    id: item.name.toLowerCase().replace(':', ''),
+                    letter: item.name,
+                    label: item.label || 'Local Disk',
+                    icon: icon,
+                    type: type,
+                    used: totalGB,
+                    total: type === 'hard' ? 10 : 0.65,
+                    isEmpty: isEmpty
+                });
+            }
+        }
+
+        return drives;
+    }
+
     renderRootView() {
-        const { drives, systemFolders } = this;
+        const drives = this.getDrives();
+        const { systemFolders } = this;
 
         return `
             <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #000080;">💻 My Computer</h3>
             <div class="mycomputer-view-grid">
                 ${drives.map(drive => `
-                    <div class="mycomputer-item drive-item" data-drive="${drive.id}">
+                    <div class="mycomputer-item drive-item" data-drive="${drive.letter}">
                         <div class="mycomputer-item-icon">${drive.icon}</div>
                         <div class="mycomputer-item-label">${drive.label} (${drive.letter})</div>
                     </div>
@@ -321,59 +322,106 @@ class MyComputer extends AppBase {
         `;
     }
 
-    renderDriveView(driveId) {
-        const drive = this.drives.find(d => d.id === driveId);
-        if (!drive) return '<div>Drive not found</div>';
+    renderDirectoryView(path) {
+        try {
+            const items = FileSystemManager.listDirectory(path);
 
-        if (drive.isEmpty) {
-            return `
-                <div style="text-align: center; padding: 60px 20px;">
-                    <div style="font-size: 64px; margin-bottom: 20px;">${drive.icon}</div>
-                    <div style="font-size: 14px; color: #666;">
-                        There is no disk in the drive.<br>
-                        Please insert a disk into drive ${drive.letter}
-                    </div>
-                </div>
-            `;
+            // Check if it's a drive root
+            const isDriveRoot = path.length === 1;
+
+            let html = '';
+
+            // Show drive info if we're at a drive root
+            if (isDriveRoot) {
+                const drives = this.getDrives();
+                const drive = drives.find(d => d.letter === path[0]);
+
+                if (drive && drive.isEmpty) {
+                    return `
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">${drive.icon}</div>
+                            <div style="font-size: 14px; color: #666;">
+                                There is no disk in the drive.<br>
+                                Please insert a disk into drive ${drive.letter}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (drive) {
+                    const usedPercent = (drive.used / drive.total * 100).toFixed(1);
+
+                    html += `
+                        <div class="mycomputer-drive-info">
+                            <div class="mycomputer-drive-header">
+                                <div class="mycomputer-drive-icon">${drive.icon}</div>
+                                <div class="mycomputer-drive-details">
+                                    <h3>${drive.label} (${drive.letter})</h3>
+                                    <p>Type: ${drive.type === 'hard' ? 'Local Disk' : 'Removable Disk'}</p>
+                                    <p>File System: FAT32</p>
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
+                                    <span>Used: ${drive.used.toFixed(2)} GB</span>
+                                    <span>Free: ${(drive.total - drive.used).toFixed(2)} GB</span>
+                                </div>
+                                <div class="mycomputer-progress">
+                                    <div class="mycomputer-progress-bar" style="width: ${usedPercent}%"></div>
+                                    <div class="mycomputer-progress-text">${usedPercent}% used</div>
+                                </div>
+                                <div style="margin-top: 5px; font-size: 11px; text-align: right;">
+                                    Capacity: ${drive.total} GB
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Convert items to display format
+            const displayItems = items.map(item => {
+                let icon = '📄';
+                if (item.type === 'directory') {
+                    icon = '📁';
+                    // Special icons for known folders
+                    if (item.name === 'Windows') icon = '🪟';
+                    else if (item.name === 'Users') icon = '👥';
+                    else if (item.name === 'Temp') icon = '🗑️';
+                    else if (item.name === 'Documents') icon = '📄';
+                    else if (item.name === 'Pictures') icon = '🖼️';
+                    else if (item.name === 'Projects') icon = '💼';
+                } else if (item.type === 'file') {
+                    if (item.extension === 'txt' || item.extension === 'md') icon = '📝';
+                    else if (item.extension === 'exe') icon = '⚙️';
+                    else if (item.extension === 'log') icon = '📋';
+                }
+
+                return {
+                    name: item.name,
+                    icon: icon,
+                    type: item.type,
+                    size: item.type === 'file' ? FileSystemManager.formatSize(item.size) : '',
+                    modified: item.modified ? new Date(item.modified).toLocaleDateString() : ''
+                };
+            });
+
+            html += `<h3 style="margin: 0 0 15px 0; font-size: 14px; color: #000080;">📁 ${isDriveRoot ? 'Folders and Files' : 'Contents'}</h3>`;
+            html += this.getInstanceState('viewMode') === 'grid' ?
+                this.renderGridView(displayItems) :
+                this.renderListView(displayItems);
+
+            return html;
+        } catch (e) {
+            return `<div style="padding: 20px; color: red;">Error loading directory: ${e.message}</div>`;
         }
-
-        const usedPercent = (drive.used / drive.total * 100).toFixed(1);
-
-        return `
-            <div class="mycomputer-drive-info">
-                <div class="mycomputer-drive-header">
-                    <div class="mycomputer-drive-icon">${drive.icon}</div>
-                    <div class="mycomputer-drive-details">
-                        <h3>${drive.label} (${drive.letter})</h3>
-                        <p>Type: ${drive.type === 'hard' ? 'Local Disk' : 'Removable Disk'}</p>
-                        <p>File System: FAT32</p>
-                    </div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
-                        <span>Used: ${drive.used} GB</span>
-                        <span>Free: ${(drive.total - drive.used).toFixed(1)} GB</span>
-                    </div>
-                    <div class="mycomputer-progress">
-                        <div class="mycomputer-progress-bar" style="width: ${usedPercent}%"></div>
-                        <div class="mycomputer-progress-text">${usedPercent}% used</div>
-                    </div>
-                    <div style="margin-top: 5px; font-size: 11px; text-align: right;">
-                        Capacity: ${drive.total} GB
-                    </div>
-                </div>
-            </div>
-
-            <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #000080;">📁 Folders</h3>
-            ${this.getInstanceState('viewMode') === 'grid' ? this.renderGridView(drive.folders) : this.renderListView(drive.folders)}
-        `;
     }
 
     renderGridView(items) {
         return `
             <div class="mycomputer-view-grid">
                 ${items.map((item, idx) => `
-                    <div class="mycomputer-item file-item" data-index="${idx}">
+                    <div class="mycomputer-item ${item.type}-item" data-index="${idx}" data-name="${item.name}" data-type="${item.type}">
                         <div class="mycomputer-item-icon">${item.icon}</div>
                         <div class="mycomputer-item-label">${item.name}</div>
                     </div>
@@ -386,7 +434,7 @@ class MyComputer extends AppBase {
         return `
             <div class="mycomputer-view-list">
                 ${items.map((item, idx) => `
-                    <div class="mycomputer-list-item file-item" data-index="${idx}">
+                    <div class="mycomputer-list-item ${item.type}-item" data-index="${idx}" data-name="${item.name}" data-type="${item.type}">
                         <div class="mycomputer-list-icon">${item.icon}</div>
                         <div class="mycomputer-list-name">${item.name}</div>
                         <div class="mycomputer-list-size">${item.size || ''}</div>
@@ -430,16 +478,18 @@ class MyComputer extends AppBase {
     }
 
     setupContentHandlers() {
-        // Drive items
+        // Drive items (only on root view)
         const driveItems = this.getElements('.drive-item');
         driveItems.forEach(item => {
             this.addHandler(item, 'dblclick', (e) => {
-                const driveId = e.currentTarget.dataset.drive;
-                this.navigateToDrive(driveId);
+                const driveLetter = e.currentTarget.dataset.drive;
+                if (driveLetter) {
+                    this.navigateToPath([driveLetter]);
+                }
             });
         });
 
-        // Folder items
+        // System folder items (only on root view)
         const folderItems = this.getElements('.folder-item');
         folderItems.forEach(item => {
             this.addHandler(item, 'dblclick', (e) => {
@@ -450,27 +500,73 @@ class MyComputer extends AppBase {
             });
         });
 
-        // File items (for selection)
-        const fileItems = this.getElements('.file-item, .drive-item, .folder-item');
+        // Directory items (in file system)
+        const directoryItems = this.getElements('.directory-item');
+        directoryItems.forEach(item => {
+            this.addHandler(item, 'dblclick', (e) => {
+                const dirName = e.currentTarget.dataset.name;
+                if (dirName) {
+                    const currentPath = this.getInstanceState('currentPath') || [];
+                    const newPath = [...currentPath, dirName];
+                    this.navigateToPath(newPath);
+                }
+            });
+        });
+
+        // File items - open with appropriate app
+        const fileItems = this.getElements('.file-item');
         fileItems.forEach(item => {
+            this.addHandler(item, 'dblclick', (e) => {
+                const fileName = e.currentTarget.dataset.name;
+                if (fileName) {
+                    this.openFile(fileName);
+                }
+            });
+        });
+
+        // Selection for all items
+        const allItems = this.getElements('.drive-item, .folder-item, .directory-item, .file-item');
+        allItems.forEach(item => {
             this.addHandler(item, 'click', (e) => {
-                fileItems.forEach(fi => fi.classList.remove('selected'));
+                allItems.forEach(i => i.classList.remove('selected'));
                 e.currentTarget.classList.add('selected');
             });
         });
     }
 
-    navigateToDrive(driveId) {
-        const drive = this.drives.find(d => d.id === driveId);
-        if (!drive) return;
+    openFile(fileName) {
+        const currentPath = this.getInstanceState('currentPath') || [];
+        const filePath = [...currentPath, fileName];
 
-        // Save current view to history
+        try {
+            const fileInfo = FileSystemManager.getInfo(filePath);
+
+            // Determine which app to use based on file extension
+            if (fileInfo.extension === 'txt' || fileInfo.extension === 'md' || fileInfo.extension === 'log') {
+                // Open in Notepad
+                AppRegistry.launch('notepad', { filePath });
+            } else if (fileInfo.extension === 'png' || fileInfo.extension === 'jpg' || fileInfo.extension === 'bmp') {
+                // Open in Paint
+                AppRegistry.launch('paint', { filePath });
+            } else {
+                console.log('No app registered for this file type:', fileInfo.extension);
+            }
+        } catch (e) {
+            console.error('Error opening file:', e);
+        }
+    }
+
+    navigateToPath(path) {
+        // Save current path to history
         const history = this.getInstanceState('history') || [];
-        history.push(this.getInstanceState('currentView'));
-        this.setInstanceState('history', history);
+        const currentPath = this.getInstanceState('currentPath') || [];
+        if (currentPath.length > 0 || path.length > 0) {
+            history.push([...currentPath]);
+            this.setInstanceState('history', history);
+        }
 
-        // Navigate to drive
-        this.setInstanceState('currentView', `drive:${driveId}`);
+        // Navigate to new path
+        this.setInstanceState('currentPath', path);
         this.refreshView();
     }
 
@@ -478,39 +574,49 @@ class MyComputer extends AppBase {
         const history = this.getInstanceState('history') || [];
         if (history.length === 0) return;
 
-        const previousView = history.pop();
+        const previousPath = history.pop();
         this.setInstanceState('history', history);
-        this.setInstanceState('currentView', previousView);
+        this.setInstanceState('currentPath', previousPath);
         this.refreshView();
     }
 
     navigateUp() {
-        this.setInstanceState('currentView', 'root');
-        this.setInstanceState('history', []);
+        const currentPath = this.getInstanceState('currentPath') || [];
+        if (currentPath.length === 0) return; // Already at root
+
+        // Save to history
+        const history = this.getInstanceState('history') || [];
+        history.push([...currentPath]);
+        this.setInstanceState('history', history);
+
+        // Go up one level
+        const newPath = currentPath.slice(0, -1);
+        this.setInstanceState('currentPath', newPath);
         this.refreshView();
     }
 
     refreshView() {
-        const currentView = this.getInstanceState('currentView');
+        const currentPath = this.getInstanceState('currentPath') || [];
         const content = this.getElement('#content');
         const addressBar = this.getElement('#address-bar');
         const backBtn = this.getElement('#back-btn');
         const upBtn = this.getElement('#up-btn');
+        const history = this.getInstanceState('history') || [];
 
         let html = '';
         let address = 'My Computer';
 
-        if (currentView === 'root') {
+        if (currentPath.length === 0) {
+            // Root view - show drives and system folders
             html = this.renderRootView();
             address = 'My Computer';
-            backBtn.disabled = true;
+            backBtn.disabled = history.length === 0;
             upBtn.disabled = true;
-        } else if (currentView.startsWith('drive:')) {
-            const driveId = currentView.split(':')[1];
-            const drive = this.drives.find(d => d.id === driveId);
-            html = this.renderDriveView(driveId);
-            address = `My Computer\\${drive ? drive.label : driveId}`;
-            backBtn.disabled = false;
+        } else {
+            // Directory view - show contents
+            html = this.renderDirectoryView(currentPath);
+            address = 'My Computer\\' + currentPath.join('\\');
+            backBtn.disabled = history.length === 0;
             upBtn.disabled = false;
         }
 
@@ -525,20 +631,24 @@ class MyComputer extends AppBase {
     updateStatus() {
         const statusText = this.getElement('#status-text');
         const statusItems = this.getElement('#status-items');
-        const currentView = this.getInstanceState('currentView');
+        const currentPath = this.getInstanceState('currentPath') || [];
 
         if (!statusText || !statusItems) return;
 
-        if (currentView === 'root') {
-            const totalDrives = this.drives.length;
+        if (currentPath.length === 0) {
+            // Root view
+            const drives = this.getDrives();
             statusText.textContent = 'My Computer';
-            statusItems.textContent = `${totalDrives} drive(s)`;
-        } else if (currentView.startsWith('drive:')) {
-            const driveId = currentView.split(':')[1];
-            const drive = this.drives.find(d => d.id === driveId);
-            if (drive && !drive.isEmpty) {
-                statusText.textContent = `${drive.label} (${drive.letter})`;
-                statusItems.textContent = `${drive.folders.length} item(s)`;
+            statusItems.textContent = `${drives.length} drive(s)`;
+        } else {
+            // Directory view
+            try {
+                const items = FileSystemManager.listDirectory(currentPath);
+                statusText.textContent = currentPath.join('\\');
+                statusItems.textContent = `${items.length} item(s)`;
+            } catch (e) {
+                statusText.textContent = 'Error';
+                statusItems.textContent = '';
             }
         }
     }

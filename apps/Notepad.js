@@ -5,6 +5,7 @@
 
 import AppBase from './AppBase.js';
 import StorageManager from '../core/StorageManager.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class Notepad extends AppBase {
     constructor() {
@@ -19,23 +20,63 @@ class Notepad extends AppBase {
         this.storageKey = 'notepadContent';
     }
 
-    onOpen() {
-        const saved = StorageManager.get(this.storageKey) || '';
-        
+    onOpen(params = {}) {
+        // Check if we're opening a specific file
+        const filePath = params.filePath;
+        let content = '';
+        let fileName = 'Untitled';
+
+        if (filePath) {
+            try {
+                content = FileSystemManager.readFile(filePath);
+                fileName = filePath[filePath.length - 1];
+                this.setInstanceState('currentFile', filePath);
+                this.setInstanceState('fileName', fileName);
+            } catch (e) {
+                console.error('Error loading file:', e);
+                content = '';
+            }
+        } else {
+            // Load from StorageManager (legacy support)
+            content = StorageManager.get(this.storageKey) || '';
+            this.setInstanceState('currentFile', null);
+            this.setInstanceState('fileName', 'Untitled');
+        }
+
+        // Update window title
+        this.updateTitle(fileName);
+
         return `
             <div class="notepad-toolbar">
+                <button class="btn" id="btnOpen">📂 Open</button>
                 <button class="btn" id="btnSave">💾 Save</button>
+                <button class="btn" id="btnSaveAs">💾 Save As</button>
                 <button class="btn" id="btnClear">🗑️ Clear</button>
                 <button class="btn" id="btnDownload">📥 Download</button>
             </div>
-            <textarea class="notepad-content" id="notepadText" 
-                placeholder="Start typing... (Ctrl+S to save)">${this.escapeHtml(saved)}</textarea>
+            <div id="currentFilePath" style="padding: 4px 8px; background: #f0f0f0; font-size: 11px; border-bottom: 1px solid #808080;">
+                File: <span id="filePathDisplay">${this.getInstanceState('currentFile') ? this.getInstanceState('currentFile').join('/') : 'Unsaved'}</span>
+            </div>
+            <textarea class="notepad-content" id="notepadText"
+                placeholder="Start typing... (Ctrl+S to save)">${this.escapeHtml(content)}</textarea>
         `;
+    }
+
+    updateTitle(fileName) {
+        const window = this.getWindow();
+        if (window) {
+            const titleBar = window.querySelector('.window-title');
+            if (titleBar) {
+                titleBar.textContent = `${fileName} - Notepad`;
+            }
+        }
     }
 
     onMount() {
         // Button handlers
+        this.getElement('#btnOpen')?.addEventListener('click', () => this.openFile());
         this.getElement('#btnSave')?.addEventListener('click', () => this.save());
+        this.getElement('#btnSaveAs')?.addEventListener('click', () => this.saveAs());
         this.getElement('#btnClear')?.addEventListener('click', () => this.clear());
         this.getElement('#btnDownload')?.addEventListener('click', () => this.download());
 
@@ -58,11 +99,82 @@ class Notepad extends AppBase {
         }
     }
 
+    openFile() {
+        // Show a simple file picker dialog
+        const path = prompt('Enter file path (e.g., C:/Users/Seth/Documents/filename.txt):');
+        if (!path) return;
+
+        try {
+            const parsedPath = FileSystemManager.parsePath(path);
+            const content = FileSystemManager.readFile(parsedPath);
+            const fileName = parsedPath[parsedPath.length - 1];
+
+            const textarea = this.getElement('#notepadText');
+            if (textarea) {
+                textarea.value = content;
+            }
+
+            this.setInstanceState('currentFile', parsedPath);
+            this.setInstanceState('fileName', fileName);
+            this.updateTitle(fileName);
+            this.updateFilePathDisplay();
+            this.alert('📂 File opened!');
+        } catch (e) {
+            alert(`Error opening file: ${e.message}`);
+        }
+    }
+
     save() {
         const textarea = this.getElement('#notepadText');
-        if (textarea) {
-            StorageManager.set(this.storageKey, textarea.value);
-            this.alert('💾 Note saved!');
+        if (!textarea) return;
+
+        const currentFile = this.getInstanceState('currentFile');
+
+        if (currentFile) {
+            // Save to existing file
+            try {
+                FileSystemManager.writeFile(currentFile, textarea.value);
+                this.alert('💾 File saved!');
+            } catch (e) {
+                alert(`Error saving file: ${e.message}`);
+            }
+        } else {
+            // No file selected, prompt for Save As
+            this.saveAs();
+        }
+
+        // Also save to StorageManager for legacy support
+        StorageManager.set(this.storageKey, textarea.value);
+    }
+
+    saveAs() {
+        const textarea = this.getElement('#notepadText');
+        if (!textarea) return;
+
+        const path = prompt('Enter file path to save (e.g., C:/Users/Seth/Documents/myfile.txt):', 'C:/Users/Seth/Documents/newfile.txt');
+        if (!path) return;
+
+        try {
+            const parsedPath = FileSystemManager.parsePath(path);
+            const fileName = parsedPath[parsedPath.length - 1];
+
+            FileSystemManager.writeFile(parsedPath, textarea.value);
+
+            this.setInstanceState('currentFile', parsedPath);
+            this.setInstanceState('fileName', fileName);
+            this.updateTitle(fileName);
+            this.updateFilePathDisplay();
+            this.alert('💾 File saved!');
+        } catch (e) {
+            alert(`Error saving file: ${e.message}`);
+        }
+    }
+
+    updateFilePathDisplay() {
+        const display = this.getElement('#filePathDisplay');
+        const currentFile = this.getInstanceState('currentFile');
+        if (display) {
+            display.textContent = currentFile ? currentFile.join('/') : 'Unsaved';
         }
     }
 

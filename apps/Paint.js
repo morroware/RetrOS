@@ -4,6 +4,7 @@
  */
 
 import AppBase from './AppBase.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class Paint extends AppBase {
     constructor() {
@@ -26,7 +27,16 @@ class Paint extends AppBase {
         this.brushSize = 3;
     }
 
-    onOpen() {
+    onOpen(params = {}) {
+        // Store file path if opening a specific file
+        if (params.filePath) {
+            this.setInstanceState('currentFile', params.filePath);
+            this.setInstanceState('fileName', params.filePath[params.filePath.length - 1]);
+        } else {
+            this.setInstanceState('currentFile', null);
+            this.setInstanceState('fileName', 'Untitled');
+        }
+
         const colors = [
             '#000000', '#808080', '#800000', '#808000', '#008000', '#008080', '#000080', '#800080',
             '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff'
@@ -64,7 +74,9 @@ class Paint extends AppBase {
 
                         <div style="display: flex; gap: 5px;">
                             <button class="btn btn-sm" id="btnClear">New</button>
+                            <button class="btn btn-sm" id="btnOpen">📂 Open</button>
                             <button class="btn btn-sm" id="btnSave">💾 Save</button>
+                            <button class="btn btn-sm" id="btnSaveAs">💾 Save As</button>
                         </div>
                     </div>
 
@@ -106,12 +118,18 @@ class Paint extends AppBase {
         if (!canvas) return;
 
         this.ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
+
         // Initialize white background explicitly
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(0, 0, canvas.width, canvas.height);
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
+
+        // Load image if file was specified
+        const currentFile = this.getInstanceState('currentFile');
+        if (currentFile) {
+            this.loadImageFromFile(currentFile);
+        }
 
         // --- Event Listeners ---
 
@@ -156,7 +174,9 @@ class Paint extends AppBase {
         
         // Actions
         this.getElement('#btnClear')?.addEventListener('click', () => this.clearCanvas());
+        this.getElement('#btnOpen')?.addEventListener('click', () => this.openImage());
         this.getElement('#btnSave')?.addEventListener('click', () => this.saveImage());
+        this.getElement('#btnSaveAs')?.addEventListener('click', () => this.saveImageAs());
     }
 
     setColor(c) {
@@ -298,12 +318,78 @@ class Paint extends AppBase {
         this.ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    loadImageFromFile(filePath) {
+        try {
+            const content = FileSystemManager.readFile(filePath);
+            const canvas = this.getElement('#paintCanvas');
+            if (!canvas) return;
+
+            const img = new Image();
+            img.onload = () => {
+                this.ctx.drawImage(img, 0, 0);
+            };
+            img.src = content; // content should be a data URL
+        } catch (e) {
+            console.error('Error loading image:', e);
+            alert(`Error loading image: ${e.message}`);
+        }
+    }
+
+    openImage() {
+        const path = prompt('Enter image file path (e.g., C:/Users/Seth/Pictures/image.png):');
+        if (!path) return;
+
+        try {
+            const parsedPath = FileSystemManager.parsePath(path);
+            const fileName = parsedPath[parsedPath.length - 1];
+
+            this.loadImageFromFile(parsedPath);
+
+            this.setInstanceState('currentFile', parsedPath);
+            this.setInstanceState('fileName', fileName);
+            this.alert('📂 Image opened!');
+        } catch (e) {
+            alert(`Error opening image: ${e.message}`);
+        }
+    }
+
     saveImage() {
-        const canvas = this.getElement('#paintCanvas');
-        const link = document.createElement('a');
-        link.download = `art_${Date.now()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
+        const currentFile = this.getInstanceState('currentFile');
+
+        if (currentFile) {
+            // Save to existing file
+            try {
+                const canvas = this.getElement('#paintCanvas');
+                const dataURL = canvas.toDataURL('image/png');
+                FileSystemManager.writeFile(currentFile, dataURL, 'png');
+                this.alert('💾 Image saved!');
+            } catch (e) {
+                alert(`Error saving image: ${e.message}`);
+            }
+        } else {
+            // No file selected, prompt for Save As
+            this.saveImageAs();
+        }
+    }
+
+    saveImageAs() {
+        const path = prompt('Enter file path to save (e.g., C:/Users/Seth/Pictures/myart.png):', 'C:/Users/Seth/Pictures/artwork.png');
+        if (!path) return;
+
+        try {
+            const parsedPath = FileSystemManager.parsePath(path);
+            const fileName = parsedPath[parsedPath.length - 1];
+
+            const canvas = this.getElement('#paintCanvas');
+            const dataURL = canvas.toDataURL('image/png');
+            FileSystemManager.writeFile(parsedPath, dataURL, 'png');
+
+            this.setInstanceState('currentFile', parsedPath);
+            this.setInstanceState('fileName', fileName);
+            this.alert('💾 Image saved!');
+        } catch (e) {
+            alert(`Error saving image: ${e.message}`);
+        }
     }
 }
 

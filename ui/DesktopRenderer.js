@@ -6,6 +6,7 @@
 import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from '../apps/AppRegistry.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class DesktopRendererClass {
     constructor() {
@@ -42,6 +43,11 @@ class DesktopRendererClass {
         // Listen for render requests
         EventBus.on('desktop:render', () => this.render());
 
+        // Listen for file system changes
+        EventBus.on('filesystem:changed', () => this.render());
+        EventBus.on('filesystem:file:changed', () => this.render());
+        EventBus.on('filesystem:directory:changed', () => this.render());
+
         // Setup desktop events
         this.setupDesktopEvents();
 
@@ -63,8 +69,76 @@ class DesktopRendererClass {
             }
         });
 
-        // Render icons
+        // Render app/link icons from StateManager
         icons.forEach(icon => this.renderIcon(icon));
+
+        // Render file icons from Desktop folder
+        this.renderFileIcons();
+    }
+
+    /**
+     * Render file icons from the Desktop folder
+     */
+    renderFileIcons() {
+        try {
+            const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+            const files = FileSystemManager.listDirectory(desktopPath);
+
+            let nextY = 10; // Start position for file icons
+            const existingIcons = StateManager.getState('icons') || [];
+
+            // Calculate next available Y position based on existing icons
+            if (existingIcons.length > 0) {
+                const maxY = Math.max(...existingIcons.map(i => i.y || 0));
+                nextY = maxY + 100; // Add spacing
+            }
+
+            files.forEach((file, index) => {
+                const fileIcon = {
+                    id: `file_${file.name}`,
+                    emoji: this.getFileEmoji(file),
+                    label: file.name,
+                    type: 'file',
+                    filePath: [...desktopPath, file.name],
+                    fileType: file.type,
+                    extension: file.extension,
+                    x: 10,
+                    y: nextY + (index * 90)
+                };
+
+                this.renderIcon(fileIcon);
+            });
+        } catch (e) {
+            console.log('Desktop folder empty or not found:', e.message);
+        }
+    }
+
+    /**
+     * Get emoji icon for file based on type
+     * @param {Object} file - File metadata
+     * @returns {string} Emoji
+     */
+    getFileEmoji(file) {
+        if (file.type === 'directory') {
+            return '📁';
+        } else if (file.type === 'file') {
+            switch (file.extension) {
+                case 'txt':
+                case 'md':
+                    return '📝';
+                case 'png':
+                case 'jpg':
+                case 'bmp':
+                    return '🖼️';
+                case 'exe':
+                    return '⚙️';
+                case 'log':
+                    return '📋';
+                default:
+                    return '📄';
+            }
+        }
+        return '📄';
     }
 
     /**
@@ -107,6 +181,31 @@ class DesktopRendererClass {
             window.open(icon.url, '_blank');
         } else if (icon.type === 'app') {
             AppRegistry.launch(icon.id);
+        } else if (icon.type === 'file') {
+            // Open file in appropriate app
+            this.openFile(icon);
+        }
+    }
+
+    /**
+     * Open a file in the appropriate application
+     * @param {Object} icon - File icon data
+     */
+    openFile(icon) {
+        const { filePath, extension, fileType } = icon;
+
+        if (fileType === 'directory') {
+            // Open directory in My Computer
+            AppRegistry.launch('mycomputer', { initialPath: filePath });
+        } else {
+            // Open file based on extension
+            if (extension === 'txt' || extension === 'md' || extension === 'log') {
+                AppRegistry.launch('notepad', { filePath });
+            } else if (extension === 'png' || extension === 'jpg' || extension === 'bmp') {
+                AppRegistry.launch('paint', { filePath });
+            } else {
+                console.log('No app registered for file type:', extension);
+            }
         }
     }
 

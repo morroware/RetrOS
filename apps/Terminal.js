@@ -7,6 +7,7 @@
 import AppBase from './AppBase.js';
 import EventBus from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class Terminal extends AppBase {
     constructor() {
@@ -23,36 +24,7 @@ class Terminal extends AppBase {
         this.godMode = false;
         this.activeProcess = null;
         this.currentPath = ['C:', 'Users', 'Seth'];
-        this.fileSystem = this.initFileSystem();
         this.zork = null;
-    }
-
-    initFileSystem() {
-        return {
-            'C:': {
-                'Windows': {
-                    'System32': {
-                        'cmd.exe': '[Binary]',
-                        'drivers': {},
-                    }
-                },
-                'Users': {
-                    'Seth': {
-                        'Documents': {
-                            'resume.txt': 'Seth Morrow - Developer\nSkills: JS, Python, Linux',
-                            'ideas.txt': '1. Build a portfolio OS\n2. Add more easter eggs'
-                        },
-                        'Projects': {
-                            'ZOS': { 'readme.md': '# Seth Morrow OS\nA retro experience.' }
-                        },
-                        'Secret': {
-                            'aperture.log': 'The cake is a lie.',
-                            'hal9000.txt': 'I cannot do that, Dave.'
-                        }
-                    }
-                }
-            }
-        };
     }
 
     onOpen() {
@@ -419,31 +391,39 @@ HINTS: Try the Konami code, or explore Secret folder...`;
     }
 
     cmdDir() {
-        const dir = this.getCurrentDir();
-        if (!dir) return 'Invalid path.';
-        
-        let out = '\n Directory of ' + this.currentPath.join('\\') + '\n\n';
-        for (const [name, val] of Object.entries(dir)) {
-            if (typeof val === 'object') {
-                out += `  <DIR>          ${name}\n`;
-            } else {
-                out += `  ${String(val.length).padStart(12)}  ${name}\n`;
+        try {
+            const items = FileSystemManager.listDirectory(this.currentPath);
+
+            let out = '\n Directory of ' + this.currentPath.join('\\') + '\n\n';
+
+            for (const item of items) {
+                if (item.type === 'directory' || item.type === 'drive') {
+                    out += `  <DIR>          ${item.name}\n`;
+                } else if (item.type === 'file') {
+                    out += `  ${String(item.size).padStart(12)}  ${item.name}\n`;
+                }
             }
+
+            return out;
+        } catch (e) {
+            return 'Invalid path.';
         }
-        return out;
     }
 
     cmdCd(args) {
         const target = args[0];
         if (!target) return this.currentPath.join('\\');
-        
+
         if (target === '..') {
             if (this.currentPath.length > 1) this.currentPath.pop();
         } else if (target === '\\' || target === '/') {
             this.currentPath = ['C:'];
         } else {
-            const dir = this.getCurrentDir();
-            if (dir && dir[target] && typeof dir[target] === 'object') {
+            // Try to navigate to the target directory
+            const newPath = [...this.currentPath, target];
+            const node = FileSystemManager.getNode(newPath);
+
+            if (node && (node.type === 'directory' || node.type === 'drive' || node.children)) {
                 this.currentPath.push(target);
             } else {
                 return 'Path not found.';
@@ -455,20 +435,28 @@ HINTS: Try the Konami code, or explore Secret folder...`;
 
     cmdType(args) {
         if (!args[0]) return 'Usage: type <filename>';
-        const dir = this.getCurrentDir();
-        if (dir && dir[args[0]] && typeof dir[args[0]] === 'string') {
-            return dir[args[0]];
+
+        try {
+            const filePath = [...this.currentPath, args[0]];
+            const content = FileSystemManager.readFile(filePath);
+            return content;
+        } catch (e) {
+            return 'File not found.';
         }
-        return 'File not found.';
     }
 
     getCurrentDir() {
-        let curr = this.fileSystem;
-        for (const p of this.currentPath) {
-            curr = curr[p];
-            if (!curr) return null;
+        try {
+            const items = FileSystemManager.listDirectory(this.currentPath);
+            // Convert to old format for tab completion
+            const dir = {};
+            for (const item of items) {
+                dir[item.name] = item.type === 'file' ? item.content : {};
+            }
+            return dir;
+        } catch (e) {
+            return null;
         }
-        return curr;
     }
 
     cmdIpConfig() {

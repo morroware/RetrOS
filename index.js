@@ -11,6 +11,7 @@ import StorageManager from './core/StorageManager.js';
 import StateManager from './core/StateManager.js';
 import EventBus, { Events } from './core/EventBus.js';
 import WindowManager from './core/WindowManager.js';
+import FileSystemManager from './core/FileSystemManager.js';
 
 // === UI RENDERERS ===
 import TaskbarRenderer from './ui/TaskbarRenderer.js';
