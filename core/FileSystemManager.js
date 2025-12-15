@@ -436,10 +436,11 @@ class FileSystemManager {
   }
 
   /**
-   * Delete a directory (must be empty)
+   * Delete a directory (must be empty unless recursive is true)
    * @param {string|string[]} path - Directory path
+   * @param {boolean} recursive - If true, delete contents recursively
    */
-  deleteDirectory(path) {
+  deleteDirectory(path, recursive = false) {
     const parts = this.parsePath(path);
     const dirName = parts[parts.length - 1];
     const parentPath = parts.slice(0, -1);
@@ -463,12 +464,33 @@ class FileSystemManager {
     }
 
     if (dir.children && Object.keys(dir.children).length > 0) {
-      throw new Error(`Directory not empty: ${path}`);
+      if (!recursive) {
+        throw new Error(`Directory not empty: ${path}`);
+      }
+      // Recursively delete contents
+      this.deleteDirectoryRecursive(parts);
     }
 
     delete children[dirName];
     this.saveFileSystem();
     EventBus.emit('filesystem:directory:changed', { path: parts.join('/'), action: 'delete' });
+  }
+
+  /**
+   * Recursively delete all contents of a directory
+   * @param {string[]} path - Directory path as array
+   */
+  deleteDirectoryRecursive(path) {
+    const node = this.getNode(path);
+    if (!node || !node.children) return;
+
+    for (const [name, item] of Object.entries(node.children)) {
+      const itemPath = [...path, name];
+      if (item.type === 'directory') {
+        this.deleteDirectoryRecursive(itemPath);
+      }
+      // File will be deleted when parent is deleted
+    }
   }
 
   /**

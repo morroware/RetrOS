@@ -327,10 +327,26 @@ class Terminal extends AppBase {
             'cd': () => this.cmdCd(args),
             'type': () => this.cmdType(args),
             'cat': () => this.cmdType(args),
+            'mkdir': () => this.cmdMkdir(args),
+            'md': () => this.cmdMkdir(args),
+            'rmdir': () => this.cmdRmdir(args),
+            'rd': () => this.cmdRmdir(args),
+            'del': () => this.cmdDel(args),
+            'rm': () => this.cmdDel(args),
+            'erase': () => this.cmdDel(args),
+            'touch': () => this.cmdTouch(args),
+            'copy': () => this.cmdCopy(args),
+            'cp': () => this.cmdCopy(args),
+            'move': () => this.cmdMove(args),
+            'mv': () => this.cmdMove(args),
+            'ren': () => this.cmdMove(args),
+            'rename': () => this.cmdMove(args),
+            'edit': () => this.cmdEdit(args),
+            'notepad': () => this.cmdEdit(args),
             'whoami': () => this.godMode ? 'root (GOD MODE)' : 'seth\\user',
             'date': () => new Date().toString(),
             'ver': () => 'Seth Morrow OS [Version 95.0]',
-            'echo': () => args.join(' '),
+            'echo': () => this.cmdEcho(args, trimmed),
             'ipconfig': () => this.cmdIpConfig(),
             'ifconfig': () => this.cmdIpConfig(),
             'ping': () => this.cmdPing(args),
@@ -365,13 +381,14 @@ class Terminal extends AppBase {
     cmdHelp() {
         return `
 COMMANDS:
-  FILE:    dir, cd, type, cls
+  FILE:    dir, cd, type, cls, mkdir, rmdir, del, touch, copy, move, edit
   SYSTEM:  whoami, date, ver, echo, about
   NETWORK: ipconfig, ping
   FUN:     neuromancer, matrix, disco, party, cowsay, fortune
   OTHER:   sudo, bsod, exit
 
-HINTS: Try the Konami code, or explore Secret folder...`;
+HINTS: Try the Konami code, or explore Secret folder...
+       Use 'echo text > file.txt' to create files!`;
     }
 
     cmdAbout() {
@@ -443,6 +460,179 @@ HINTS: Try the Konami code, or explore Secret folder...`;
         } catch (e) {
             return 'File not found.';
         }
+    }
+
+    cmdMkdir(args) {
+        if (!args[0]) return 'Usage: mkdir <dirname>';
+
+        try {
+            const dirPath = this.resolvePath(args[0]);
+            FileSystemManager.createDirectory(dirPath);
+            return `Directory created: ${args[0]}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+    }
+
+    cmdRmdir(args) {
+        if (!args[0]) return 'Usage: rmdir <dirname>';
+
+        try {
+            const dirPath = this.resolvePath(args[0]);
+            FileSystemManager.deleteDirectory(dirPath);
+            return `Directory removed: ${args[0]}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+    }
+
+    cmdDel(args) {
+        if (!args[0]) return 'Usage: del <filename>';
+
+        try {
+            const filePath = this.resolvePath(args[0]);
+            FileSystemManager.deleteFile(filePath);
+            return `File deleted: ${args[0]}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+    }
+
+    cmdTouch(args) {
+        if (!args[0]) return 'Usage: touch <filename>';
+
+        try {
+            const filePath = this.resolvePath(args[0]);
+            // Check if file exists
+            if (FileSystemManager.exists(filePath)) {
+                return `File already exists: ${args[0]}`;
+            }
+            FileSystemManager.writeFile(filePath, '', 'txt');
+            return `File created: ${args[0]}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+    }
+
+    cmdCopy(args) {
+        if (args.length < 2) return 'Usage: copy <source> <destination>';
+
+        try {
+            const srcPath = this.resolvePath(args[0]);
+            const destPath = this.resolvePath(args[1]);
+
+            // Read source file
+            const content = FileSystemManager.readFile(srcPath);
+            const srcInfo = FileSystemManager.getInfo(srcPath);
+
+            // Write to destination
+            FileSystemManager.writeFile(destPath, content, srcInfo.extension);
+            return `File copied: ${args[0]} -> ${args[1]}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+    }
+
+    cmdMove(args) {
+        if (args.length < 2) return 'Usage: move <source> <destination>';
+
+        try {
+            const srcPath = this.resolvePath(args[0]);
+            const destPath = this.resolvePath(args[1]);
+
+            // Read source file
+            const content = FileSystemManager.readFile(srcPath);
+            const srcInfo = FileSystemManager.getInfo(srcPath);
+
+            // Write to destination
+            FileSystemManager.writeFile(destPath, content, srcInfo.extension);
+
+            // Delete source
+            FileSystemManager.deleteFile(srcPath);
+
+            return `File moved: ${args[0]} -> ${args[1]}`;
+        } catch (e) {
+            return `Error: ${e.message}`;
+        }
+    }
+
+    cmdEdit(args) {
+        if (!args[0]) return 'Usage: edit <filename>';
+
+        const filePath = this.resolvePath(args[0]);
+
+        // Launch Notepad with the file
+        import('./AppRegistry.js').then(module => {
+            const AppRegistry = module.default;
+            AppRegistry.launch('notepad', { filePath });
+        });
+
+        return `Opening ${args[0]} in Notepad...`;
+    }
+
+    cmdEcho(args, fullCommand) {
+        // Check for output redirection: echo text > file.txt or echo text >> file.txt
+        const redirectMatch = fullCommand.match(/^echo\s+(.*?)\s*(?:(>>?)\s*(.+))$/i);
+
+        if (redirectMatch) {
+            const text = redirectMatch[1].trim();
+            const appendMode = redirectMatch[2] === '>>';
+            const fileName = redirectMatch[3].trim();
+
+            try {
+                const filePath = this.resolvePath(fileName);
+
+                if (appendMode && FileSystemManager.exists(filePath)) {
+                    // Append to existing file
+                    const existingContent = FileSystemManager.readFile(filePath);
+                    FileSystemManager.writeFile(filePath, existingContent + '\n' + text);
+                } else {
+                    // Create new or overwrite
+                    FileSystemManager.writeFile(filePath, text);
+                }
+
+                return null; // Silent on success
+            } catch (e) {
+                return `Error: ${e.message}`;
+            }
+        }
+
+        // No redirection, just echo the text
+        return args.join(' ');
+    }
+
+    /**
+     * Resolve a path relative to current directory or as absolute
+     */
+    resolvePath(pathStr) {
+        if (!pathStr) return [...this.currentPath];
+
+        // Handle absolute paths (starting with drive letter)
+        if (pathStr.match(/^[A-Za-z]:/)) {
+            return FileSystemManager.parsePath(pathStr);
+        }
+
+        // Handle parent directory
+        if (pathStr === '..') {
+            if (this.currentPath.length > 1) {
+                return this.currentPath.slice(0, -1);
+            }
+            return [...this.currentPath];
+        }
+
+        // Handle relative paths
+        const parts = pathStr.replace(/\\/g, '/').split('/').filter(p => p.length > 0);
+        let result = [...this.currentPath];
+
+        for (const part of parts) {
+            if (part === '..') {
+                if (result.length > 1) result.pop();
+            } else if (part !== '.') {
+                result.push(part);
+            }
+        }
+
+        return result;
     }
 
     getCurrentDir() {

@@ -7,6 +7,7 @@ import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from '../apps/AppRegistry.js';
 import WindowManager from '../core/WindowManager.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class ContextMenuRendererClass {
     constructor() {
@@ -93,9 +94,14 @@ class ContextMenuRendererClass {
                 New
                 <span class="submenu-arrow">▶</span>
                 <div class="context-submenu">
-                    <div class="context-item" data-action="new-text">📄 Text Document</div>
+                    <div class="context-item" data-action="new-folder">📁 Folder</div>
+                    <div class="context-divider"></div>
+                    <div class="context-item" data-action="new-text">📝 Text Document</div>
+                    <div class="context-item" data-action="new-image">🖼️ Bitmap Image</div>
                 </div>
             </div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="open-terminal">💻 Open Terminal Here</div>
             <div class="context-divider"></div>
             <div class="context-item" data-action="properties">Properties</div>
         `;
@@ -103,10 +109,29 @@ class ContextMenuRendererClass {
 
     iconMenu(context) {
         const icon = context.icon;
+
+        // Different menu for files vs apps
+        if (icon.type === 'file') {
+            const isTextFile = ['txt', 'md', 'log'].includes(icon.extension);
+            const isImageFile = ['png', 'jpg', 'bmp'].includes(icon.extension);
+
+            return `
+                <div class="context-item" data-action="open"><strong>Open</strong></div>
+                ${isTextFile ? '<div class="context-item" data-action="edit-notepad">Edit with Notepad</div>' : ''}
+                ${isImageFile ? '<div class="context-item" data-action="edit-paint">Edit with Paint</div>' : ''}
+                <div class="context-divider"></div>
+                <div class="context-item" data-action="rename">Rename</div>
+                <div class="context-item" data-action="delete">Delete</div>
+                <div class="context-divider"></div>
+                <div class="context-item" data-action="properties">Properties</div>
+            `;
+        }
+
+        // App icons
         return `
             <div class="context-item" data-action="open"><strong>Open</strong></div>
             <div class="context-divider"></div>
-            <div class="context-item" data-action="delete">Delete</div>
+            <div class="context-item" data-action="delete">Remove from Desktop</div>
             <div class="context-item" data-action="properties">Properties</div>
         `;
     }
@@ -134,6 +159,8 @@ class ContextMenuRendererClass {
         const context = this.currentContext;
         this.hide();
 
+        const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+
         switch (action) {
             case 'arrange':
                 EventBus.emit('desktop:arrange');
@@ -141,8 +168,17 @@ class ContextMenuRendererClass {
             case 'refresh':
                 EventBus.emit('desktop:refresh');
                 break;
+            case 'new-folder':
+                this.createNewFolder(desktopPath);
+                break;
             case 'new-text':
-                AppRegistry.launch('notepad');
+                this.createNewTextFile(desktopPath);
+                break;
+            case 'new-image':
+                AppRegistry.launch('paint');
+                break;
+            case 'open-terminal':
+                AppRegistry.launch('terminal');
                 break;
             case 'properties':
                 AppRegistry.launch('display');
@@ -151,14 +187,37 @@ class ContextMenuRendererClass {
                 if (context?.icon) {
                     if (context.icon.type === 'link') {
                         window.open(context.icon.url, '_blank');
+                    } else if (context.icon.type === 'file') {
+                        // Open file in appropriate app
+                        this.openFileIcon(context.icon);
                     } else {
                         AppRegistry.launch(context.icon.id);
                     }
                 }
                 break;
+            case 'edit-notepad':
+                if (context?.icon?.filePath) {
+                    AppRegistry.launch('notepad', { filePath: context.icon.filePath });
+                }
+                break;
+            case 'edit-paint':
+                if (context?.icon?.filePath) {
+                    AppRegistry.launch('paint', { filePath: context.icon.filePath });
+                }
+                break;
+            case 'rename':
+                if (context?.icon?.type === 'file') {
+                    this.renameFileIcon(context.icon);
+                }
+                break;
             case 'delete':
                 if (context?.icon) {
-                    StateManager.recycleIcon(context.icon.id);
+                    // If it's a file from the filesystem, delete it
+                    if (context.icon.type === 'file' && context.icon.filePath) {
+                        this.deleteFileIcon(context.icon);
+                    } else {
+                        StateManager.recycleIcon(context.icon.id);
+                    }
                     EventBus.emit('desktop:render');
                 }
                 break;
@@ -174,6 +233,106 @@ class ContextMenuRendererClass {
             case 'close':
                 if (context?.windowId) WindowManager.close(context.windowId);
                 break;
+        }
+    }
+
+    createNewFolder(basePath) {
+        const name = prompt('Enter folder name:', 'New Folder');
+        if (!name) return;
+
+        try {
+            const folderPath = [...basePath, name];
+            FileSystemManager.createDirectory(folderPath);
+            EventBus.emit('desktop:refresh');
+        } catch (e) {
+            alert(`Error creating folder: ${e.message}`);
+        }
+    }
+
+    createNewTextFile(basePath) {
+        const name = prompt('Enter file name:', 'New Text Document.txt');
+        if (!name) return;
+
+        try {
+            let fileName = name;
+            if (!fileName.includes('.')) {
+                fileName += '.txt';
+            }
+            const filePath = [...basePath, fileName];
+            FileSystemManager.writeFile(filePath, '', 'txt');
+
+            // Open in Notepad
+            AppRegistry.launch('notepad', { filePath });
+        } catch (e) {
+            alert(`Error creating file: ${e.message}`);
+        }
+    }
+
+    openFileIcon(icon) {
+        const { filePath, extension, fileType } = icon;
+
+        if (fileType === 'directory') {
+            AppRegistry.launch('mycomputer', { initialPath: filePath });
+        } else if (extension === 'txt' || extension === 'md' || extension === 'log') {
+            AppRegistry.launch('notepad', { filePath });
+        } else if (extension === 'png' || extension === 'jpg' || extension === 'bmp') {
+            AppRegistry.launch('paint', { filePath });
+        }
+    }
+
+    deleteFileIcon(icon) {
+        const { filePath, fileType } = icon;
+
+        if (!confirm(`Delete "${icon.label}"?`)) return;
+
+        try {
+            if (fileType === 'directory') {
+                // Try normal delete first
+                try {
+                    FileSystemManager.deleteDirectory(filePath);
+                } catch (e) {
+                    if (e.message.includes('not empty')) {
+                        // Ask if user wants to delete recursively
+                        if (confirm(`"${icon.label}" is not empty. Delete all contents?`)) {
+                            FileSystemManager.deleteDirectory(filePath, true);
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
+            } else {
+                FileSystemManager.deleteFile(filePath);
+            }
+        } catch (e) {
+            alert(`Error deleting: ${e.message}`);
+        }
+    }
+
+    renameFileIcon(icon) {
+        const { filePath, fileType } = icon;
+        const oldName = icon.label;
+
+        const newName = prompt(`Rename "${oldName}" to:`, oldName);
+        if (!newName || newName === oldName) return;
+
+        try {
+            // Read the content
+            const content = FileSystemManager.readFile(filePath);
+            const info = FileSystemManager.getInfo(filePath);
+
+            // Create new file path
+            const parentPath = filePath.slice(0, -1);
+            const newFilePath = [...parentPath, newName];
+
+            // Write to new location
+            FileSystemManager.writeFile(newFilePath, content, info.extension);
+
+            // Delete old file
+            FileSystemManager.deleteFile(filePath);
+
+            EventBus.emit('desktop:refresh');
+        } catch (e) {
+            alert(`Error renaming: ${e.message}`);
         }
     }
 }

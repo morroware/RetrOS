@@ -373,12 +373,26 @@ class Paint extends AppBase {
     }
 
     saveImageAs() {
-        const path = prompt('Enter file path to save (e.g., C:/Users/Seth/Pictures/myart.png):', 'C:/Users/Seth/Pictures/artwork.png');
+        // Generate a default filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const defaultName = `drawing_${timestamp}.png`;
+        const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
+
+        const path = prompt(
+            'Save image to:\n\nTip: Save to Desktop for easy access!\nOr use Pictures folder: C:/Users/Seth/Pictures/',
+            defaultPath
+        );
         if (!path) return;
 
         try {
             const parsedPath = FileSystemManager.parsePath(path);
-            const fileName = parsedPath[parsedPath.length - 1];
+            let fileName = parsedPath[parsedPath.length - 1];
+
+            // Ensure .png extension
+            if (!fileName.toLowerCase().endsWith('.png')) {
+                fileName += '.png';
+                parsedPath[parsedPath.length - 1] = fileName;
+            }
 
             const canvas = this.getElement('#paintCanvas');
             const dataURL = canvas.toDataURL('image/png');
@@ -386,7 +400,7 @@ class Paint extends AppBase {
 
             this.setInstanceState('currentFile', parsedPath);
             this.setInstanceState('fileName', fileName);
-            this.alert('💾 Image saved!');
+            this.alert('💾 Image saved to ' + parsedPath.join('/'));
         } catch (e) {
             alert(`Error saving image: ${e.message}`);
         }

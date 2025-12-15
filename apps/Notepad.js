@@ -151,12 +151,26 @@ class Notepad extends AppBase {
         const textarea = this.getElement('#notepadText');
         if (!textarea) return;
 
-        const path = prompt('Enter file path to save (e.g., C:/Users/Seth/Documents/myfile.txt):', 'C:/Users/Seth/Documents/newfile.txt');
+        // Generate a default filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const defaultName = `note_${timestamp}.txt`;
+        const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
+
+        const path = prompt(
+            'Save file to:\n\nTip: Save to Desktop for easy access!\nOr use Documents: C:/Users/Seth/Documents/',
+            defaultPath
+        );
         if (!path) return;
 
         try {
             const parsedPath = FileSystemManager.parsePath(path);
-            const fileName = parsedPath[parsedPath.length - 1];
+            let fileName = parsedPath[parsedPath.length - 1];
+
+            // Ensure .txt extension if no extension provided
+            if (!fileName.includes('.')) {
+                fileName += '.txt';
+                parsedPath[parsedPath.length - 1] = fileName;
+            }
 
             FileSystemManager.writeFile(parsedPath, textarea.value);
 
@@ -164,7 +178,7 @@ class Notepad extends AppBase {
             this.setInstanceState('fileName', fileName);
             this.updateTitle(fileName);
             this.updateFilePathDisplay();
-            this.alert('💾 File saved!');
+            this.alert('💾 File saved to ' + parsedPath.join('/'));
         } catch (e) {
             alert(`Error saving file: ${e.message}`);
         }
