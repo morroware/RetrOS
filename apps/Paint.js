@@ -313,6 +313,20 @@ class Paint extends AppBase {
     }
 
     clearCanvas() {
+        // Reset file state - this is now a NEW untitled document
+        this.setInstanceState('currentFile', null);
+        this.setInstanceState('fileName', 'Untitled');
+
+        // Update window title
+        const window = this.getWindow();
+        if (window) {
+            const titleBar = window.querySelector('.window-title');
+            if (titleBar) {
+                titleBar.textContent = 'Untitled - Paint';
+            }
+        }
+
+        // Clear the canvas
         const canvas = this.getElement('#paintCanvas');
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -329,9 +343,23 @@ class Paint extends AppBase {
                 this.ctx.drawImage(img, 0, 0);
             };
             img.src = content; // content should be a data URL
+
+            // Update window title
+            this.updateWindowTitle();
         } catch (e) {
             console.error('Error loading image:', e);
             alert(`Error loading image: ${e.message}`);
+        }
+    }
+
+    updateWindowTitle() {
+        const fileName = this.getInstanceState('fileName') || 'Untitled';
+        const window = this.getWindow();
+        if (window) {
+            const titleBar = window.querySelector('.window-title');
+            if (titleBar) {
+                titleBar.textContent = `${fileName} - Paint`;
+            }
         }
     }
 
@@ -343,10 +371,10 @@ class Paint extends AppBase {
             const parsedPath = FileSystemManager.parsePath(path);
             const fileName = parsedPath[parsedPath.length - 1];
 
-            this.loadImageFromFile(parsedPath);
-
             this.setInstanceState('currentFile', parsedPath);
             this.setInstanceState('fileName', fileName);
+            this.loadImageFromFile(parsedPath);
+            this.updateWindowTitle();
             this.alert('📂 Image opened!');
         } catch (e) {
             alert(`Error opening image: ${e.message}`);
@@ -400,6 +428,7 @@ class Paint extends AppBase {
 
             this.setInstanceState('currentFile', parsedPath);
             this.setInstanceState('fileName', fileName);
+            this.updateWindowTitle();
             this.alert('💾 Image saved to ' + parsedPath.join('/'));
         } catch (e) {
             alert(`Error saving image: ${e.message}`);

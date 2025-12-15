@@ -48,10 +48,10 @@ class Notepad extends AppBase {
 
         return `
             <div class="notepad-toolbar">
+                <button class="btn" id="btnNew">📄 New</button>
                 <button class="btn" id="btnOpen">📂 Open</button>
                 <button class="btn" id="btnSave">💾 Save</button>
                 <button class="btn" id="btnSaveAs">💾 Save As</button>
-                <button class="btn" id="btnClear">🗑️ Clear</button>
                 <button class="btn" id="btnDownload">📥 Download</button>
             </div>
             <div id="currentFilePath" style="padding: 4px 8px; background: #f0f0f0; font-size: 11px; border-bottom: 1px solid #808080;">
@@ -74,10 +74,10 @@ class Notepad extends AppBase {
 
     onMount() {
         // Button handlers
+        this.getElement('#btnNew')?.addEventListener('click', () => this.newDocument());
         this.getElement('#btnOpen')?.addEventListener('click', () => this.openFile());
         this.getElement('#btnSave')?.addEventListener('click', () => this.save());
         this.getElement('#btnSaveAs')?.addEventListener('click', () => this.saveAs());
-        this.getElement('#btnClear')?.addEventListener('click', () => this.clear());
         this.getElement('#btnDownload')?.addEventListener('click', () => this.download());
 
         // Keyboard shortcut
@@ -192,14 +192,30 @@ class Notepad extends AppBase {
         }
     }
 
-    clear() {
-        if (confirm('Clear all text?')) {
-            const textarea = this.getElement('#notepadText');
-            if (textarea) {
-                textarea.value = '';
+    newDocument() {
+        // Check if there's unsaved content
+        const textarea = this.getElement('#notepadText');
+        if (textarea && textarea.value.trim()) {
+            if (!confirm('Create new document? Unsaved changes will be lost.')) {
+                return;
             }
-            StorageManager.remove(this.storageKey);
         }
+
+        // Reset file state - this is now a NEW untitled document
+        this.setInstanceState('currentFile', null);
+        this.setInstanceState('fileName', 'Untitled');
+
+        // Clear textarea
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        // Update UI
+        this.updateTitle('Untitled');
+        this.updateFilePathDisplay();
+
+        // Clear legacy storage
+        StorageManager.remove(this.storageKey);
     }
 
     download() {
