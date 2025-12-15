@@ -17,9 +17,9 @@ class WindowManagerClass {
         this.dragOffset = { x: 0, y: 0 };
         // Window counter for z-index
         this.zCounter = 1000;
-        // Minimum window dimensions
-        this.minWidth = 300;
-        this.minHeight = 200;
+        // Minimum window dimensions (must match CSS .window min-width)
+        this.minWidth = 200;
+        this.minHeight = 150;
         // Bound handlers for cleanup
         this.boundDragMove = this.handleDragMove.bind(this);
         this.boundDragEnd = this.handleDragEnd.bind(this);
