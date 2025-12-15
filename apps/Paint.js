@@ -338,11 +338,27 @@ class Paint extends AppBase {
             const canvas = this.getElement('#paintCanvas');
             if (!canvas) return;
 
+            // Validate content is a data URL
+            if (typeof content !== 'string') {
+                throw new Error('Invalid file content - expected image data');
+            }
+
+            if (!content.startsWith('data:image/')) {
+                throw new Error('Invalid image format - file is not a valid image');
+            }
+
             const img = new Image();
             img.onload = () => {
+                // Clear canvas and draw the loaded image
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, canvas.width, canvas.height);
                 this.ctx.drawImage(img, 0, 0);
             };
-            img.src = content; // content should be a data URL
+            img.onerror = () => {
+                alert('Failed to load image - the file may be corrupted');
+                console.error('Image load error for:', filePath);
+            };
+            img.src = content;
 
             // Update window title
             this.updateWindowTitle();
