@@ -15,7 +15,7 @@ class Paint extends AppBase {
             width: 830,
             height: 625,
             resizable: false,
-            singleton: true // One canvas at a time
+            singleton: false // Allow multiple Paint windows for working on multiple images
         });
 
         this.ctx = null;
@@ -417,8 +417,9 @@ class Paint extends AppBase {
     }
 
     saveImageAs() {
-        // Generate a default filename with timestamp
-        const timestamp = new Date().toISOString().slice(0, 10);
+        // Generate a default filename with full timestamp (date + time) for unique names
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         const defaultName = `drawing_${timestamp}.png`;
         const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
 
