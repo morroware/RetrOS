@@ -313,6 +313,20 @@ class Paint extends AppBase {
     }
 
     clearCanvas() {
+        // Reset file state - this is now a NEW untitled document
+        this.setInstanceState('currentFile', null);
+        this.setInstanceState('fileName', 'Untitled');
+
+        // Update window title
+        const window = this.getWindow();
+        if (window) {
+            const titleBar = window.querySelector('.window-title');
+            if (titleBar) {
+                titleBar.textContent = 'Untitled - Paint';
+            }
+        }
+
+        // Clear the canvas
         const canvas = this.getElement('#paintCanvas');
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -329,9 +343,23 @@ class Paint extends AppBase {
                 this.ctx.drawImage(img, 0, 0);
             };
             img.src = content; // content should be a data URL
+
+            // Update window title
+            this.updateWindowTitle();
         } catch (e) {
             console.error('Error loading image:', e);
             alert(`Error loading image: ${e.message}`);
+        }
+    }
+
+    updateWindowTitle() {
+        const fileName = this.getInstanceState('fileName') || 'Untitled';
+        const window = this.getWindow();
+        if (window) {
+            const titleBar = window.querySelector('.window-title');
+            if (titleBar) {
+                titleBar.textContent = `${fileName} - Paint`;
+            }
         }
     }
 
@@ -343,10 +371,10 @@ class Paint extends AppBase {
             const parsedPath = FileSystemManager.parsePath(path);
             const fileName = parsedPath[parsedPath.length - 1];
 
-            this.loadImageFromFile(parsedPath);
-
             this.setInstanceState('currentFile', parsedPath);
             this.setInstanceState('fileName', fileName);
+            this.loadImageFromFile(parsedPath);
+            this.updateWindowTitle();
             this.alert('📂 Image opened!');
         } catch (e) {
             alert(`Error opening image: ${e.message}`);
@@ -373,12 +401,26 @@ class Paint extends AppBase {
     }
 
     saveImageAs() {
-        const path = prompt('Enter file path to save (e.g., C:/Users/Seth/Pictures/myart.png):', 'C:/Users/Seth/Pictures/artwork.png');
+        // Generate a default filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const defaultName = `drawing_${timestamp}.png`;
+        const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
+
+        const path = prompt(
+            'Save image to:\n\nTip: Save to Desktop for easy access!\nOr use Pictures folder: C:/Users/Seth/Pictures/',
+            defaultPath
+        );
         if (!path) return;
 
         try {
             const parsedPath = FileSystemManager.parsePath(path);
-            const fileName = parsedPath[parsedPath.length - 1];
+            let fileName = parsedPath[parsedPath.length - 1];
+
+            // Ensure .png extension
+            if (!fileName.toLowerCase().endsWith('.png')) {
+                fileName += '.png';
+                parsedPath[parsedPath.length - 1] = fileName;
+            }
 
             const canvas = this.getElement('#paintCanvas');
             const dataURL = canvas.toDataURL('image/png');
@@ -386,7 +428,8 @@ class Paint extends AppBase {
 
             this.setInstanceState('currentFile', parsedPath);
             this.setInstanceState('fileName', fileName);
-            this.alert('💾 Image saved!');
+            this.updateWindowTitle();
+            this.alert('💾 Image saved to ' + parsedPath.join('/'));
         } catch (e) {
             alert(`Error saving image: ${e.message}`);
         }

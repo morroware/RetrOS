@@ -7,6 +7,7 @@ import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from './AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import EventBus from '../core/EventBus.js';
 
 class MyComputer extends AppBase {
     constructor() {
@@ -256,8 +257,23 @@ class MyComputer extends AppBase {
         // Setup toolbar buttons
         this.setupToolbarHandlers();
 
+        // Subscribe to filesystem changes for real-time updates
+        this.fsChangeHandler = () => this.refreshView();
+        EventBus.on('filesystem:changed', this.fsChangeHandler);
+        EventBus.on('filesystem:file:changed', this.fsChangeHandler);
+        EventBus.on('filesystem:directory:changed', this.fsChangeHandler);
+
         // Update status
         this.updateStatus();
+    }
+
+    onClose() {
+        // Clean up filesystem event listeners
+        if (this.fsChangeHandler) {
+            EventBus.off('filesystem:changed', this.fsChangeHandler);
+            EventBus.off('filesystem:file:changed', this.fsChangeHandler);
+            EventBus.off('filesystem:directory:changed', this.fsChangeHandler);
+        }
     }
 
     getDrives() {

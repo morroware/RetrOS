@@ -48,10 +48,10 @@ class Notepad extends AppBase {
 
         return `
             <div class="notepad-toolbar">
+                <button class="btn" id="btnNew">📄 New</button>
                 <button class="btn" id="btnOpen">📂 Open</button>
                 <button class="btn" id="btnSave">💾 Save</button>
                 <button class="btn" id="btnSaveAs">💾 Save As</button>
-                <button class="btn" id="btnClear">🗑️ Clear</button>
                 <button class="btn" id="btnDownload">📥 Download</button>
             </div>
             <div id="currentFilePath" style="padding: 4px 8px; background: #f0f0f0; font-size: 11px; border-bottom: 1px solid #808080;">
@@ -74,10 +74,10 @@ class Notepad extends AppBase {
 
     onMount() {
         // Button handlers
+        this.getElement('#btnNew')?.addEventListener('click', () => this.newDocument());
         this.getElement('#btnOpen')?.addEventListener('click', () => this.openFile());
         this.getElement('#btnSave')?.addEventListener('click', () => this.save());
         this.getElement('#btnSaveAs')?.addEventListener('click', () => this.saveAs());
-        this.getElement('#btnClear')?.addEventListener('click', () => this.clear());
         this.getElement('#btnDownload')?.addEventListener('click', () => this.download());
 
         // Keyboard shortcut
@@ -151,12 +151,26 @@ class Notepad extends AppBase {
         const textarea = this.getElement('#notepadText');
         if (!textarea) return;
 
-        const path = prompt('Enter file path to save (e.g., C:/Users/Seth/Documents/myfile.txt):', 'C:/Users/Seth/Documents/newfile.txt');
+        // Generate a default filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const defaultName = `note_${timestamp}.txt`;
+        const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
+
+        const path = prompt(
+            'Save file to:\n\nTip: Save to Desktop for easy access!\nOr use Documents: C:/Users/Seth/Documents/',
+            defaultPath
+        );
         if (!path) return;
 
         try {
             const parsedPath = FileSystemManager.parsePath(path);
-            const fileName = parsedPath[parsedPath.length - 1];
+            let fileName = parsedPath[parsedPath.length - 1];
+
+            // Ensure .txt extension if no extension provided
+            if (!fileName.includes('.')) {
+                fileName += '.txt';
+                parsedPath[parsedPath.length - 1] = fileName;
+            }
 
             FileSystemManager.writeFile(parsedPath, textarea.value);
 
@@ -164,7 +178,7 @@ class Notepad extends AppBase {
             this.setInstanceState('fileName', fileName);
             this.updateTitle(fileName);
             this.updateFilePathDisplay();
-            this.alert('💾 File saved!');
+            this.alert('💾 File saved to ' + parsedPath.join('/'));
         } catch (e) {
             alert(`Error saving file: ${e.message}`);
         }
@@ -178,14 +192,30 @@ class Notepad extends AppBase {
         }
     }
 
-    clear() {
-        if (confirm('Clear all text?')) {
-            const textarea = this.getElement('#notepadText');
-            if (textarea) {
-                textarea.value = '';
+    newDocument() {
+        // Check if there's unsaved content
+        const textarea = this.getElement('#notepadText');
+        if (textarea && textarea.value.trim()) {
+            if (!confirm('Create new document? Unsaved changes will be lost.')) {
+                return;
             }
-            StorageManager.remove(this.storageKey);
         }
+
+        // Reset file state - this is now a NEW untitled document
+        this.setInstanceState('currentFile', null);
+        this.setInstanceState('fileName', 'Untitled');
+
+        // Clear textarea
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        // Update UI
+        this.updateTitle('Untitled');
+        this.updateFilePathDisplay();
+
+        // Clear legacy storage
+        StorageManager.remove(this.storageKey);
     }
 
     download() {
