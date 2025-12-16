@@ -444,11 +444,41 @@ class AppBase {
     // ===== UTILITY METHODS =====
 
     /**
-     * Play a sound
-     * @param {string} type - Sound type
+     * Play a sound effect by type (uses SoundSystem)
+     * @param {string} type - Sound type (click, error, startup, etc.)
+     * @param {boolean} force - Play even if sound is disabled
      */
-    playSound(type) {
-        EventBus.emit('sound:play', { type });
+    playSound(type, force = false) {
+        EventBus.emit('sound:play', { type, force });
+    }
+
+    /**
+     * Play an audio file (MP3, WAV, etc.)
+     * @param {string} src - Path or URL to audio file
+     * @param {Object} options - Playback options
+     * @param {number} options.volume - Volume (0-1)
+     * @param {boolean} options.loop - Loop the audio
+     * @param {boolean} options.force - Play even if sound is disabled
+     * @param {Function} options.onEnded - Callback when audio ends
+     * @param {Function} options.onError - Callback on error
+     */
+    playAudio(src, options = {}) {
+        EventBus.emit('audio:play', { src, ...options });
+    }
+
+    /**
+     * Stop playing an audio file
+     * @param {string} src - Source of audio to stop
+     */
+    stopAudio(src) {
+        EventBus.emit('audio:stop', { src });
+    }
+
+    /**
+     * Stop all currently playing audio
+     */
+    stopAllAudio() {
+        EventBus.emit('audio:stopall');
     }
 
     /**

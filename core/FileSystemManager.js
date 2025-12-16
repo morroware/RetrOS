@@ -51,7 +51,78 @@ class FileSystemManager {
               },
               'Media': {
                 type: 'directory',
-                children: {}
+                children: {
+                  'startup.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 102400,
+                    src: 'assets/sounds/startup.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  },
+                  'click.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 8192,
+                    src: 'assets/sounds/click.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  },
+                  'error.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 16384,
+                    src: 'assets/sounds/error.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  },
+                  'notify.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 12288,
+                    src: 'assets/sounds/notify.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  },
+                  'shutdown.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 81920,
+                    src: 'assets/sounds/shutdown.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  },
+                  'tada.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 32768,
+                    src: 'assets/sounds/tada.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  },
+                  'chord.mp3': {
+                    type: 'file',
+                    content: '[Audio File]',
+                    extension: 'mp3',
+                    mimeType: 'audio/mpeg',
+                    size: 24576,
+                    src: 'assets/sounds/achievement.mp3',
+                    created: new Date('2024-01-01').toISOString(),
+                    modified: new Date('2024-01-01').toISOString()
+                  }
+                }
               }
             }
           },

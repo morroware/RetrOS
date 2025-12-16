@@ -1,9 +1,21 @@
 /**
  * Media Player App
- * Simulated media player with visualizer
+ * Full-featured audio player with MP3 support
+ *
+ * Features:
+ * - Play MP3 files from URLs or local paths
+ * - Playlist management
+ * - Volume control
+ * - Seek/progress bar
+ * - Visualizer
+ * - File browser integration
  */
 
 import AppBase from './AppBase.js';
+import EventBus, { Events } from '../core/EventBus.js';
+import SoundSystem from '../features/SoundSystem.js';
+import FileSystemManager from '../core/FileSystemManager.js';
+import StorageManager from '../core/StorageManager.js';
 
 class MediaPlayer extends AppBase {
     constructor() {
@@ -11,33 +23,61 @@ class MediaPlayer extends AppBase {
             id: 'mediaplayer',
             name: 'Media Player',
             icon: '📻',
-            width: 350,
-            height: 400,
-            resizable: false,
-            singleton: true // One player at a time
+            width: 400,
+            height: 500,
+            resizable: true,
+            singleton: true
         });
 
-        this.playing = false;
-        this.currentTrack = 0;
-        this.playlist = [
-            { name: 'Dial-up Nostalgia', duration: '0:56' },
-            { name: 'Windows Startup', duration: '0:06' },
-            { name: 'Error Sound', duration: '0:02' },
-            { name: 'Click Sound', duration: '0:01' },
-            { name: 'Victory Fanfare', duration: '0:08' }
+        // Default playlist with sample tracks (URLs to free audio)
+        this.defaultPlaylist = [
+            {
+                name: 'Windows 95 Startup',
+                src: 'assets/sounds/startup.mp3',
+                duration: null
+            },
+            {
+                name: 'Click Sound',
+                src: 'assets/sounds/click.mp3',
+                duration: null
+            },
+            {
+                name: 'Error Sound',
+                src: 'assets/sounds/error.mp3',
+                duration: null
+            },
+            {
+                name: 'Notification',
+                src: 'assets/sounds/notify.mp3',
+                duration: null
+            }
         ];
     }
 
     onOpen() {
-        const bars = Array(12).fill(0).map((_, i) => 
-            `<div class="media-bar" style="animation-delay: ${i * 0.1}s; animation-play-state: paused;"></div>`
+        // Load saved playlist or use default
+        const savedPlaylist = StorageManager.get('mediaPlayerPlaylist');
+        const playlist = savedPlaylist || this.defaultPlaylist;
+        this.setInstanceState('playlist', playlist);
+        this.setInstanceState('currentTrack', 0);
+        this.setInstanceState('playing', false);
+        this.setInstanceState('currentTime', 0);
+        this.setInstanceState('duration', 0);
+        this.setInstanceState('volume', SoundSystem.getVolume());
+        this.setInstanceState('audio', null);
+        this.setInstanceState('repeat', false);
+        this.setInstanceState('shuffle', false);
+
+        const bars = Array(16).fill(0).map((_, i) =>
+            `<div class="media-bar" data-bar="${i}" style="animation-delay: ${i * 0.05}s;"></div>`
         ).join('');
 
-        const tracks = this.playlist.map((track, i) => `
+        const tracks = playlist.map((track, i) => `
             <div class="playlist-item" data-track="${i}">
-                <span>🎵</span>
-                <span>${track.name}</span>
-                <span style="margin-left:auto;color:#666;">${track.duration}</span>
+                <span class="track-icon">🎵</span>
+                <span class="track-name">${this.escapeHtml(track.name)}</span>
+                <span class="track-duration">${track.duration ? this.formatTime(track.duration) : '--:--'}</span>
+                <button class="track-remove" data-remove="${i}" title="Remove">×</button>
             </div>
         `).join('');
 
@@ -45,84 +85,530 @@ class MediaPlayer extends AppBase {
             <div class="media-player">
                 <div class="media-display">
                     <div class="media-visualizer" id="visualizer">${bars}</div>
+                    <div class="media-info">
+                        <div class="media-title" id="currentTitle">No track selected</div>
+                        <div class="media-time">
+                            <span id="currentTime">0:00</span>
+                            <span>/</span>
+                            <span id="totalTime">0:00</span>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="media-progress-container">
+                    <input type="range" class="media-progress" id="progressBar"
+                           min="0" max="100" value="0" step="0.1">
+                </div>
+
                 <div class="media-controls">
-                    <button class="media-btn" id="btnPrev">â®</button>
-                    <button class="media-btn" id="btnPlay">▶</button>
-                    <button class="media-btn" id="btnStop">â¹</button>
-                    <button class="media-btn" id="btnNext">â­</button>
+                    <button class="media-btn media-btn-small" id="btnShuffle" title="Shuffle">🔀</button>
+                    <button class="media-btn" id="btnPrev" title="Previous">⏮</button>
+                    <button class="media-btn media-btn-large" id="btnPlay" title="Play">▶</button>
+                    <button class="media-btn" id="btnStop" title="Stop">⏹</button>
+                    <button class="media-btn" id="btnNext" title="Next">⏭</button>
+                    <button class="media-btn media-btn-small" id="btnRepeat" title="Repeat">🔁</button>
                 </div>
+
+                <div class="media-volume-container">
+                    <span class="volume-icon" id="volumeIcon">🔊</span>
+                    <input type="range" class="media-volume" id="volumeSlider"
+                           min="0" max="100" value="${Math.round(this.getInstanceState('volume') * 100)}">
+                    <span class="volume-value" id="volumeValue">${Math.round(this.getInstanceState('volume') * 100)}%</span>
+                </div>
+
+                <div class="media-playlist-header">
+                    <span>Playlist</span>
+                    <div class="playlist-buttons">
+                        <button class="playlist-btn" id="btnAddUrl" title="Add from URL">🌐</button>
+                        <button class="playlist-btn" id="btnAddFile" title="Add from file">📁</button>
+                        <button class="playlist-btn" id="btnClear" title="Clear playlist">🗑️</button>
+                    </div>
+                </div>
+
                 <div class="media-playlist" id="playlist">${tracks}</div>
+
+                <div class="media-status" id="status">Ready</div>
             </div>
         `;
     }
 
     onMount() {
-        this.getElement('#btnPrev')?.addEventListener('click', () => this.prev());
-        this.getElement('#btnPlay')?.addEventListener('click', () => this.togglePlay());
-        this.getElement('#btnStop')?.addEventListener('click', () => this.stop());
-        this.getElement('#btnNext')?.addEventListener('click', () => this.next());
+        // Control buttons
+        this.addHandler(this.getElement('#btnPlay'), 'click', () => this.togglePlay());
+        this.addHandler(this.getElement('#btnStop'), 'click', () => this.stop());
+        this.addHandler(this.getElement('#btnPrev'), 'click', () => this.prev());
+        this.addHandler(this.getElement('#btnNext'), 'click', () => this.next());
+        this.addHandler(this.getElement('#btnShuffle'), 'click', () => this.toggleShuffle());
+        this.addHandler(this.getElement('#btnRepeat'), 'click', () => this.toggleRepeat());
 
+        // Progress bar
+        this.addHandler(this.getElement('#progressBar'), 'input', (e) => this.seek(e.target.value));
+
+        // Volume control
+        this.addHandler(this.getElement('#volumeSlider'), 'input', (e) => this.setVolume(e.target.value));
+        this.addHandler(this.getElement('#volumeIcon'), 'click', () => this.toggleMute());
+
+        // Playlist buttons
+        this.addHandler(this.getElement('#btnAddUrl'), 'click', () => this.showAddUrlDialog());
+        this.addHandler(this.getElement('#btnAddFile'), 'click', () => this.showFileDialog());
+        this.addHandler(this.getElement('#btnClear'), 'click', () => this.clearPlaylist());
+
+        // Playlist item clicks
         this.getElements('.playlist-item').forEach(el => {
-            el.addEventListener('click', () => {
-                this.currentTrack = parseInt(el.dataset.track);
-                this.play();
+            this.addHandler(el, 'dblclick', () => {
+                const trackIndex = parseInt(el.dataset.track);
+                this.setInstanceState('currentTrack', trackIndex);
+                this.loadAndPlay(trackIndex);
+            });
+        });
+
+        // Remove buttons
+        this.getElements('.track-remove').forEach(el => {
+            this.addHandler(el, 'click', (e) => {
+                e.stopPropagation();
+                this.removeTrack(parseInt(el.dataset.remove));
+            });
+        });
+
+        // Listen for audio events
+        this.onEvent(Events.AUDIO_ENDED, () => this.onTrackEnded());
+        this.onEvent(Events.VOLUME_CHANGE, ({ volume }) => this.onVolumeChanged(volume));
+
+        // Update UI state
+        this.updateShuffleButton();
+        this.updateRepeatButton();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatTime(seconds) {
+        if (!seconds || isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    togglePlay() {
+        const audio = this.getInstanceState('audio');
+        if (audio) {
+            if (audio.paused) {
+                audio.play().catch(e => this.setStatus('Playback error'));
+                this.setInstanceState('playing', true);
+            } else {
+                audio.pause();
+                this.setInstanceState('playing', false);
+            }
+            this.updatePlayButton();
+            this.updateVisualizer();
+        } else {
+            // No audio loaded, start from current track
+            this.loadAndPlay(this.getInstanceState('currentTrack'));
+        }
+    }
+
+    loadAndPlay(trackIndex) {
+        const playlist = this.getInstanceState('playlist');
+        if (!playlist || trackIndex < 0 || trackIndex >= playlist.length) return;
+
+        // Stop current audio
+        this.stopAudio();
+
+        const track = playlist[trackIndex];
+        this.setInstanceState('currentTrack', trackIndex);
+
+        this.setStatus(`Loading: ${track.name}`);
+        this.updateCurrentTitle(track.name);
+        this.updatePlaylistHighlight(trackIndex);
+
+        try {
+            const audio = new Audio(track.src);
+            audio.volume = this.getInstanceState('volume');
+
+            audio.addEventListener('loadedmetadata', () => {
+                this.setInstanceState('duration', audio.duration);
+                this.updateTotalTime(audio.duration);
+
+                // Update track duration in playlist
+                const playlist = this.getInstanceState('playlist');
+                if (playlist[trackIndex]) {
+                    playlist[trackIndex].duration = audio.duration;
+                    this.setInstanceState('playlist', playlist);
+                    this.savePlaylist();
+                }
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                this.setInstanceState('currentTime', audio.currentTime);
+                this.updateProgress(audio.currentTime, audio.duration);
+            });
+
+            audio.addEventListener('ended', () => {
+                this.onTrackEnded();
+            });
+
+            audio.addEventListener('error', (e) => {
+                this.setStatus(`Error loading: ${track.name}`);
+                this.setInstanceState('playing', false);
+                this.updatePlayButton();
+                this.updateVisualizer();
+            });
+
+            audio.addEventListener('canplay', () => {
+                this.setStatus(`Now playing: ${track.name}`);
+            });
+
+            this.setInstanceState('audio', audio);
+
+            audio.play()
+                .then(() => {
+                    this.setInstanceState('playing', true);
+                    this.updatePlayButton();
+                    this.updateVisualizer();
+                })
+                .catch(e => {
+                    this.setStatus('Click to play (browser policy)');
+                });
+
+        } catch (e) {
+            this.setStatus(`Error: ${e.message}`);
+        }
+    }
+
+    stopAudio() {
+        const audio = this.getInstanceState('audio');
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.src = '';
+            this.setInstanceState('audio', null);
+        }
+    }
+
+    stop() {
+        this.stopAudio();
+        this.setInstanceState('playing', false);
+        this.setInstanceState('currentTime', 0);
+        this.updatePlayButton();
+        this.updateVisualizer();
+        this.updateProgress(0, 0);
+        this.setStatus('Stopped');
+    }
+
+    prev() {
+        this.playSound('click');
+        let trackIndex = this.getInstanceState('currentTrack') - 1;
+        const playlist = this.getInstanceState('playlist');
+
+        if (trackIndex < 0) {
+            trackIndex = playlist.length - 1;
+        }
+
+        this.loadAndPlay(trackIndex);
+    }
+
+    next() {
+        this.playSound('click');
+        const playlist = this.getInstanceState('playlist');
+        let trackIndex;
+
+        if (this.getInstanceState('shuffle')) {
+            trackIndex = Math.floor(Math.random() * playlist.length);
+        } else {
+            trackIndex = this.getInstanceState('currentTrack') + 1;
+            if (trackIndex >= playlist.length) {
+                trackIndex = 0;
+            }
+        }
+
+        this.loadAndPlay(trackIndex);
+    }
+
+    onTrackEnded() {
+        const repeat = this.getInstanceState('repeat');
+        const shuffle = this.getInstanceState('shuffle');
+        const playlist = this.getInstanceState('playlist');
+        const currentTrack = this.getInstanceState('currentTrack');
+
+        if (repeat) {
+            // Repeat current track
+            this.loadAndPlay(currentTrack);
+        } else if (shuffle) {
+            // Random next track
+            const nextTrack = Math.floor(Math.random() * playlist.length);
+            this.loadAndPlay(nextTrack);
+        } else if (currentTrack < playlist.length - 1) {
+            // Play next track
+            this.loadAndPlay(currentTrack + 1);
+        } else {
+            // End of playlist
+            this.stop();
+            this.setStatus('Playlist ended');
+        }
+    }
+
+    seek(percent) {
+        const audio = this.getInstanceState('audio');
+        if (audio && audio.duration) {
+            audio.currentTime = (percent / 100) * audio.duration;
+        }
+    }
+
+    setVolume(value) {
+        const volume = value / 100;
+        this.setInstanceState('volume', volume);
+
+        const audio = this.getInstanceState('audio');
+        if (audio) {
+            audio.volume = volume;
+        }
+
+        SoundSystem.setVolume(volume);
+        this.updateVolumeDisplay(volume);
+    }
+
+    toggleMute() {
+        const volume = this.getInstanceState('volume');
+        if (volume > 0) {
+            this.setInstanceState('prevVolume', volume);
+            this.setVolume(0);
+            this.getElement('#volumeSlider').value = 0;
+        } else {
+            const prevVolume = this.getInstanceState('prevVolume') || 0.5;
+            this.setVolume(prevVolume * 100);
+            this.getElement('#volumeSlider').value = prevVolume * 100;
+        }
+    }
+
+    toggleShuffle() {
+        const shuffle = !this.getInstanceState('shuffle');
+        this.setInstanceState('shuffle', shuffle);
+        this.updateShuffleButton();
+        this.playSound('click');
+    }
+
+    toggleRepeat() {
+        const repeat = !this.getInstanceState('repeat');
+        this.setInstanceState('repeat', repeat);
+        this.updateRepeatButton();
+        this.playSound('click');
+    }
+
+    onVolumeChanged(volume) {
+        this.setInstanceState('volume', volume);
+        this.updateVolumeDisplay(volume);
+        const slider = this.getElement('#volumeSlider');
+        if (slider) {
+            slider.value = Math.round(volume * 100);
+        }
+    }
+
+    // UI Update Methods
+    updatePlayButton() {
+        const btn = this.getElement('#btnPlay');
+        if (btn) {
+            btn.textContent = this.getInstanceState('playing') ? '⏸' : '▶';
+            btn.title = this.getInstanceState('playing') ? 'Pause' : 'Play';
+        }
+    }
+
+    updateVisualizer() {
+        const playing = this.getInstanceState('playing');
+        this.getElements('.media-bar').forEach(bar => {
+            bar.style.animationPlayState = playing ? 'running' : 'paused';
+        });
+    }
+
+    updateProgress(currentTime, duration) {
+        const progressBar = this.getElement('#progressBar');
+        const currentTimeEl = this.getElement('#currentTime');
+
+        if (progressBar && duration) {
+            progressBar.value = (currentTime / duration) * 100;
+        }
+        if (currentTimeEl) {
+            currentTimeEl.textContent = this.formatTime(currentTime);
+        }
+    }
+
+    updateTotalTime(duration) {
+        const totalTimeEl = this.getElement('#totalTime');
+        if (totalTimeEl) {
+            totalTimeEl.textContent = this.formatTime(duration);
+        }
+    }
+
+    updateCurrentTitle(title) {
+        const titleEl = this.getElement('#currentTitle');
+        if (titleEl) {
+            titleEl.textContent = title;
+        }
+    }
+
+    updateVolumeDisplay(volume) {
+        const icon = this.getElement('#volumeIcon');
+        const value = this.getElement('#volumeValue');
+
+        if (icon) {
+            if (volume === 0) icon.textContent = '🔇';
+            else if (volume < 0.3) icon.textContent = '🔈';
+            else if (volume < 0.7) icon.textContent = '🔉';
+            else icon.textContent = '🔊';
+        }
+        if (value) {
+            value.textContent = `${Math.round(volume * 100)}%`;
+        }
+    }
+
+    updateShuffleButton() {
+        const btn = this.getElement('#btnShuffle');
+        if (btn) {
+            btn.classList.toggle('active', this.getInstanceState('shuffle'));
+        }
+    }
+
+    updateRepeatButton() {
+        const btn = this.getElement('#btnRepeat');
+        if (btn) {
+            btn.classList.toggle('active', this.getInstanceState('repeat'));
+        }
+    }
+
+    updatePlaylistHighlight(trackIndex) {
+        this.getElements('.playlist-item').forEach((el, i) => {
+            el.classList.toggle('playing', i === trackIndex);
+            el.classList.toggle('active', i === trackIndex);
+        });
+    }
+
+    setStatus(message) {
+        const statusEl = this.getElement('#status');
+        if (statusEl) {
+            statusEl.textContent = message;
+        }
+    }
+
+    // Playlist Management
+    showAddUrlDialog() {
+        const url = prompt('Enter audio URL (MP3, WAV, OGG):');
+        if (url) {
+            const name = prompt('Enter track name:', url.split('/').pop().replace(/\.[^/.]+$/, ''));
+            if (name) {
+                this.addTrack({ name, src: url, duration: null });
+            }
+        }
+    }
+
+    showFileDialog() {
+        // Create a temporary file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'audio/*';
+        input.multiple = true;
+
+        input.addEventListener('change', (e) => {
+            const files = e.target.files;
+            for (const file of files) {
+                const url = URL.createObjectURL(file);
+                this.addTrack({
+                    name: file.name.replace(/\.[^/.]+$/, ''),
+                    src: url,
+                    duration: null,
+                    isBlob: true
+                });
+            }
+        });
+
+        input.click();
+    }
+
+    addTrack(track) {
+        const playlist = this.getInstanceState('playlist');
+        playlist.push(track);
+        this.setInstanceState('playlist', playlist);
+        this.savePlaylist();
+        this.refreshPlaylist();
+        this.setStatus(`Added: ${track.name}`);
+    }
+
+    removeTrack(index) {
+        const playlist = this.getInstanceState('playlist');
+        const currentTrack = this.getInstanceState('currentTrack');
+
+        if (index === currentTrack && this.getInstanceState('playing')) {
+            this.stop();
+        }
+
+        playlist.splice(index, 1);
+        this.setInstanceState('playlist', playlist);
+
+        // Adjust current track if needed
+        if (currentTrack >= playlist.length) {
+            this.setInstanceState('currentTrack', Math.max(0, playlist.length - 1));
+        } else if (index < currentTrack) {
+            this.setInstanceState('currentTrack', currentTrack - 1);
+        }
+
+        this.savePlaylist();
+        this.refreshPlaylist();
+        this.setStatus('Track removed');
+    }
+
+    clearPlaylist() {
+        if (confirm('Clear entire playlist?')) {
+            this.stop();
+            this.setInstanceState('playlist', []);
+            this.setInstanceState('currentTrack', 0);
+            this.savePlaylist();
+            this.refreshPlaylist();
+            this.setStatus('Playlist cleared');
+        }
+    }
+
+    refreshPlaylist() {
+        const playlist = this.getInstanceState('playlist');
+        const playlistEl = this.getElement('#playlist');
+
+        if (!playlistEl) return;
+
+        playlistEl.innerHTML = playlist.map((track, i) => `
+            <div class="playlist-item ${i === this.getInstanceState('currentTrack') ? 'active' : ''}" data-track="${i}">
+                <span class="track-icon">🎵</span>
+                <span class="track-name">${this.escapeHtml(track.name)}</span>
+                <span class="track-duration">${track.duration ? this.formatTime(track.duration) : '--:--'}</span>
+                <button class="track-remove" data-remove="${i}" title="Remove">×</button>
+            </div>
+        `).join('');
+
+        // Rebind event handlers
+        this.getElements('.playlist-item').forEach(el => {
+            el.addEventListener('dblclick', () => {
+                const trackIndex = parseInt(el.dataset.track);
+                this.setInstanceState('currentTrack', trackIndex);
+                this.loadAndPlay(trackIndex);
+            });
+        });
+
+        this.getElements('.track-remove').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeTrack(parseInt(el.dataset.remove));
             });
         });
     }
 
-    togglePlay() {
-        if (this.playing) {
-            this.pause();
-        } else {
-            this.play();
-        }
+    savePlaylist() {
+        const playlist = this.getInstanceState('playlist');
+        // Don't save blob URLs
+        const saveable = playlist.filter(t => !t.isBlob);
+        StorageManager.set('mediaPlayerPlaylist', saveable);
     }
 
-    play() {
-        this.playing = true;
-        this.updateUI();
-        this.playSound('startup');
-    }
-
-    pause() {
-        this.playing = false;
-        this.updateUI();
-    }
-
-    stop() {
-        this.playing = false;
-        this.updateUI();
-    }
-
-    prev() {
-        this.currentTrack = (this.currentTrack - 1 + this.playlist.length) % this.playlist.length;
-        if (this.playing) this.play();
-        this.updateUI();
-        this.playSound('click');
-    }
-
-    next() {
-        this.currentTrack = (this.currentTrack + 1) % this.playlist.length;
-        if (this.playing) this.play();
-        this.updateUI();
-        this.playSound('click');
-    }
-
-    updateUI() {
-        // Update play button
-        const playBtn = this.getElement('#btnPlay');
-        if (playBtn) playBtn.textContent = this.playing ? 'â¸' : '▶';
-
-        // Update visualizer
-        this.getElements('.media-bar').forEach(bar => {
-            bar.style.animationPlayState = this.playing ? 'running' : 'paused';
-        });
-
-        // Update playlist
-        this.getElements('.playlist-item').forEach((el, i) => {
-            el.classList.toggle('playing', i === this.currentTrack && this.playing);
-        });
+    onClose() {
+        this.stopAudio();
     }
 }
 
