@@ -641,6 +641,119 @@ class FileSystemManager {
   }
 
   /**
+   * Move a file or directory from one path to another
+   * @param {string|string[]} sourcePath - Source path
+   * @param {string|string[]} destPath - Destination directory path
+   * @returns {boolean} True if successful
+   */
+  moveItem(sourcePath, destPath) {
+    const srcParts = this.parsePath(sourcePath);
+    const destParts = this.parsePath(destPath);
+
+    const srcName = srcParts[srcParts.length - 1];
+    const srcParentPath = srcParts.slice(0, -1);
+
+    // Get source node info
+    const srcParent = this.getNode(srcParentPath);
+    if (!srcParent) {
+      throw new Error(`Source parent not found: ${srcParentPath.join('/')}`);
+    }
+
+    const srcChildren = srcParent.children || srcParent;
+    const srcNode = srcChildren[srcName];
+    if (!srcNode) {
+      throw new Error(`Source not found: ${sourcePath}`);
+    }
+
+    // Get destination node
+    const destNode = this.getNode(destParts);
+    if (!destNode) {
+      throw new Error(`Destination not found: ${destPath}`);
+    }
+
+    const destChildren = destNode.children || destNode;
+    if (typeof destChildren !== 'object') {
+      throw new Error(`Destination is not a directory: ${destPath}`);
+    }
+
+    // Check if file already exists at destination
+    if (destChildren[srcName]) {
+      throw new Error(`Item already exists at destination: ${srcName}`);
+    }
+
+    // Copy to destination
+    destChildren[srcName] = JSON.parse(JSON.stringify(srcNode));
+
+    // Remove from source
+    delete srcChildren[srcName];
+
+    this.saveFileSystem();
+    EventBus.emit('filesystem:file:changed', {
+      path: srcParts.join('/'),
+      destPath: [...destParts, srcName].join('/'),
+      action: 'move'
+    });
+
+    return true;
+  }
+
+  /**
+   * Copy a file or directory from one path to another
+   * @param {string|string[]} sourcePath - Source path
+   * @param {string|string[]} destPath - Destination directory path
+   * @returns {boolean} True if successful
+   */
+  copyItem(sourcePath, destPath) {
+    const srcParts = this.parsePath(sourcePath);
+    const destParts = this.parsePath(destPath);
+
+    const srcName = srcParts[srcParts.length - 1];
+
+    // Get source node info
+    const srcNode = this.getNode(srcParts);
+    if (!srcNode) {
+      throw new Error(`Source not found: ${sourcePath}`);
+    }
+
+    // Get destination node
+    const destNode = this.getNode(destParts);
+    if (!destNode) {
+      throw new Error(`Destination not found: ${destPath}`);
+    }
+
+    const destChildren = destNode.children || destNode;
+    if (typeof destChildren !== 'object') {
+      throw new Error(`Destination is not a directory: ${destPath}`);
+    }
+
+    // Generate unique name if needed
+    let newName = srcName;
+    let counter = 1;
+    while (destChildren[newName]) {
+      const parts = srcName.split('.');
+      if (parts.length > 1) {
+        const ext = parts.pop();
+        newName = `${parts.join('.')} (${counter}).${ext}`;
+      } else {
+        newName = `${srcName} (${counter})`;
+      }
+      counter++;
+    }
+
+    // Deep copy to destination
+    destChildren[newName] = JSON.parse(JSON.stringify(srcNode));
+    destChildren[newName].modified = new Date().toISOString();
+
+    this.saveFileSystem();
+    EventBus.emit('filesystem:file:changed', {
+      path: [...destParts, newName].join('/'),
+      action: 'copy'
+    });
+
+    return true;
+  }
+
+  /**
    * Reset file system to default
    */
   reset() {

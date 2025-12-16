@@ -273,6 +273,28 @@ body {
 }
 
 /* ============================================
+   Drag and Drop Indicators
+   ============================================ */
+.desktop.drop-target {
+    outline: 3px dashed #ffffff;
+    outline-offset: -10px;
+    background-color: rgba(0, 128, 128, 0.3);
+}
+
+.icon.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.icon[draggable="true"] {
+    cursor: grab;
+}
+
+.icon[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* ============================================
    Clippy Assistant
    ============================================ */
 .clippy {
