@@ -16,6 +16,7 @@ class DesktopRendererClass {
         this.dragStarted = false;
         this.selectionBox = null;
         this.selectionStart = null;
+        this.isExternalDrag = false; // Track if drag came from another component
 
         // Bound handlers
         this.boundDrag = this.handleDrag.bind(this);
@@ -153,6 +154,13 @@ class DesktopRendererClass {
         iconEl.style.top = `${icon.y}px`;
         iconEl.tabIndex = 0;
 
+        // Make file icons draggable via HTML5 drag and drop
+        if (icon.type === 'file' && icon.filePath) {
+            iconEl.draggable = true;
+            iconEl.dataset.filePath = JSON.stringify(icon.filePath);
+            iconEl.dataset.fileType = icon.fileType || 'file';
+        }
+
         iconEl.innerHTML = `
             <div class="icon-image">${icon.emoji}</div>
             <div class="icon-label">${icon.label}</div>
@@ -165,6 +173,26 @@ class DesktopRendererClass {
         iconEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') this.handleIconOpen(icon);
         });
+
+        // HTML5 drag events for file icons
+        if (icon.type === 'file' && icon.filePath) {
+            iconEl.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('application/retros-file', JSON.stringify({
+                    filePath: icon.filePath,
+                    fileName: icon.label,
+                    fileType: icon.fileType || 'file',
+                    extension: icon.extension || ''
+                }));
+                iconEl.classList.add('dragging');
+                this.isExternalDrag = true;
+            });
+
+            iconEl.addEventListener('dragend', () => {
+                iconEl.classList.remove('dragging');
+                this.isExternalDrag = false;
+            });
+        }
 
         this.desktop.appendChild(iconEl);
     }
@@ -238,6 +266,73 @@ class DesktopRendererClass {
                 this.deselectAll();
             }
         });
+
+        // HTML5 Drag and Drop - Drop zone for receiving files from other components
+        this.desktop.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Only show drop indicator for external drags (from MyComputer)
+            const dragData = e.dataTransfer.types.includes('application/retros-file');
+            if (dragData) {
+                e.dataTransfer.dropEffect = 'move';
+                this.desktop.classList.add('drop-target');
+            }
+        });
+
+        this.desktop.addEventListener('dragleave', (e) => {
+            // Only remove if actually leaving the desktop
+            if (e.target === this.desktop) {
+                this.desktop.classList.remove('drop-target');
+            }
+        });
+
+        this.desktop.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.desktop.classList.remove('drop-target');
+            this.handleFileDrop(e);
+        });
+    }
+
+    /**
+     * Handle file drop from other components
+     * @param {DragEvent} e - Drag event
+     */
+    handleFileDrop(e) {
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
+        try {
+            const fileData = JSON.parse(data);
+            const { filePath, fileName, fileType } = fileData;
+
+            if (!filePath || !Array.isArray(filePath)) {
+                console.error('Invalid file path in drop data');
+                return;
+            }
+
+            // Desktop folder path
+            const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+
+            // Check if already on desktop
+            const sourceDir = filePath.slice(0, -1);
+            if (JSON.stringify(sourceDir) === JSON.stringify(desktopPath)) {
+                console.log('File is already on desktop');
+                return;
+            }
+
+            // Move the file to desktop
+            try {
+                FileSystemManager.moveItem(filePath, desktopPath);
+                EventBus.emit(Events.SOUND_PLAY, { type: 'notify' });
+                console.log(`Moved ${fileName} to Desktop`);
+            } catch (err) {
+                console.error('Failed to move file:', err.message);
+                EventBus.emit(Events.SOUND_PLAY, { type: 'error' });
+            }
+        } catch (err) {
+            console.error('Failed to parse drop data:', err);
+        }
     }
 
     // ===== ICON DRAG & DROP =====
@@ -250,6 +345,13 @@ class DesktopRendererClass {
     startDrag(e, icon) {
         if (e.button !== 0) return; // Only left click
         e.stopPropagation();
+
+        // For file icons with filePath, let HTML5 drag handle the cross-component transfer
+        // Only use mouse-based drag for app icons (no filePath)
+        if (icon.type === 'file' && icon.filePath) {
+            // HTML5 drag will handle this via dragstart event
+            return;
+        }
 
         const iconEl = e.currentTarget;
         const startX = e.clientX;

@@ -223,6 +223,29 @@ class MyComputer extends AppBase {
                     color: black;
                     text-shadow: 0 0 3px white;
                 }
+                .mycomputer-content.drop-target {
+                    background: #e8f0ff !important;
+                    outline: 2px dashed #0000ff;
+                    outline-offset: -4px;
+                }
+                .mycomputer-item.dragging,
+                .mycomputer-list-item.dragging {
+                    opacity: 0.5;
+                }
+                .mycomputer-item[draggable="true"],
+                .mycomputer-list-item[draggable="true"] {
+                    cursor: grab;
+                }
+                .mycomputer-item[draggable="true"]:active,
+                .mycomputer-list-item[draggable="true"]:active {
+                    cursor: grabbing;
+                }
+                .mycomputer-item.drop-target,
+                .mycomputer-list-item.drop-target {
+                    background: #e8f0ff !important;
+                    outline: 2px dashed #0000ff;
+                    outline-offset: -2px;
+                }
             </style>
 
             <div class="mycomputer-app">
@@ -265,6 +288,9 @@ class MyComputer extends AppBase {
         // Setup toolbar buttons
         this.setupToolbarHandlers();
 
+        // Setup drag and drop handlers for content area
+        this.setupDragDropHandlers();
+
         // Subscribe to filesystem changes for real-time updates
         this.fsChangeHandler = () => this.refreshView();
         EventBus.on('filesystem:changed', this.fsChangeHandler);
@@ -278,6 +304,84 @@ class MyComputer extends AppBase {
 
         // Update status
         this.updateStatus();
+    }
+
+    /**
+     * Setup drag and drop handlers for the content area
+     */
+    setupDragDropHandlers() {
+        const content = this.getElement('#content');
+        if (!content) return;
+
+        // Dragover - allow drop
+        this.addHandler(content, 'dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const currentPath = this.getInstanceState('currentPath') || [];
+
+            // Only allow drops when inside a directory (not at My Computer root)
+            if (currentPath.length > 0 && e.dataTransfer.types.includes('application/retros-file')) {
+                e.dataTransfer.dropEffect = 'move';
+                content.classList.add('drop-target');
+            }
+        });
+
+        // Dragleave - remove highlight
+        this.addHandler(content, 'dragleave', (e) => {
+            if (e.target === content || !content.contains(e.relatedTarget)) {
+                content.classList.remove('drop-target');
+            }
+        });
+
+        // Drop - handle the file drop
+        this.addHandler(content, 'drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            content.classList.remove('drop-target');
+            this.handleFileDrop(e);
+        });
+    }
+
+    /**
+     * Handle file drop into MyComputer
+     * @param {DragEvent} e - Drag event
+     */
+    handleFileDrop(e) {
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
+        const currentPath = this.getInstanceState('currentPath') || [];
+        if (currentPath.length === 0) {
+            console.log('Cannot drop files at My Computer root');
+            return;
+        }
+
+        try {
+            const fileData = JSON.parse(data);
+            const { filePath, fileName } = fileData;
+
+            if (!filePath || !Array.isArray(filePath)) {
+                console.error('Invalid file path in drop data');
+                return;
+            }
+
+            // Check if dropping to same location
+            const sourceDir = filePath.slice(0, -1);
+            if (JSON.stringify(sourceDir) === JSON.stringify(currentPath)) {
+                console.log('File is already in this directory');
+                return;
+            }
+
+            // Move the file to current directory
+            try {
+                FileSystemManager.moveItem(filePath, currentPath);
+                console.log(`Moved ${fileName} to ${currentPath.join('/')}`);
+            } catch (err) {
+                console.error('Failed to move file:', err.message);
+            }
+        } catch (err) {
+            console.error('Failed to parse drop data:', err);
+        }
     }
 
     onClose() {
@@ -447,29 +551,45 @@ class MyComputer extends AppBase {
     }
 
     renderGridView(items) {
+        const currentPath = this.getInstanceState('currentPath') || [];
         return `
             <div class="mycomputer-view-grid">
-                ${items.map((item, idx) => `
-                    <div class="mycomputer-item ${item.type}-item" data-index="${idx}" data-name="${item.name}" data-type="${item.type}">
+                ${items.map((item, idx) => {
+                    const itemPath = [...currentPath, item.name];
+                    const isDraggable = item.type === 'file' || item.type === 'directory';
+                    return `
+                    <div class="mycomputer-item ${item.type}-item"
+                         data-index="${idx}"
+                         data-name="${item.name}"
+                         data-type="${item.type}"
+                         ${isDraggable ? `draggable="true" data-file-path='${JSON.stringify(itemPath)}'` : ''}>
                         <div class="mycomputer-item-icon">${item.icon}</div>
                         <div class="mycomputer-item-label">${item.name}</div>
                     </div>
-                `).join('')}
+                `;}).join('')}
             </div>
         `;
     }
 
     renderListView(items) {
+        const currentPath = this.getInstanceState('currentPath') || [];
         return `
             <div class="mycomputer-view-list">
-                ${items.map((item, idx) => `
-                    <div class="mycomputer-list-item ${item.type}-item" data-index="${idx}" data-name="${item.name}" data-type="${item.type}">
+                ${items.map((item, idx) => {
+                    const itemPath = [...currentPath, item.name];
+                    const isDraggable = item.type === 'file' || item.type === 'directory';
+                    return `
+                    <div class="mycomputer-list-item ${item.type}-item"
+                         data-index="${idx}"
+                         data-name="${item.name}"
+                         data-type="${item.type}"
+                         ${isDraggable ? `draggable="true" data-file-path='${JSON.stringify(itemPath)}'` : ''}>
                         <div class="mycomputer-list-icon">${item.icon}</div>
                         <div class="mycomputer-list-name">${item.name}</div>
                         <div class="mycomputer-list-size">${item.size || ''}</div>
                         <div class="mycomputer-list-date">${item.modified || ''}</div>
                     </div>
-                `).join('')}
+                `;}).join('')}
             </div>
         `;
     }
@@ -561,6 +681,98 @@ class MyComputer extends AppBase {
                 e.currentTarget.classList.add('selected');
             });
         });
+
+        // Drag events for draggable items (files and directories)
+        const draggableItems = this.getElements('[draggable="true"]');
+        draggableItems.forEach(item => {
+            this.addHandler(item, 'dragstart', (e) => {
+                const filePath = JSON.parse(item.dataset.filePath);
+                const fileName = item.dataset.name;
+                const fileType = item.dataset.type;
+
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('application/retros-file', JSON.stringify({
+                    filePath: filePath,
+                    fileName: fileName,
+                    fileType: fileType
+                }));
+                item.classList.add('dragging');
+            });
+
+            this.addHandler(item, 'dragend', () => {
+                item.classList.remove('dragging');
+            });
+        });
+
+        // Drop events for directory items (drop files into folders)
+        const directoryItems = this.getElements('.directory-item');
+        directoryItems.forEach(item => {
+            this.addHandler(item, 'dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.dataTransfer.types.includes('application/retros-file')) {
+                    e.dataTransfer.dropEffect = 'move';
+                    item.classList.add('drop-target');
+                }
+            });
+
+            this.addHandler(item, 'dragleave', () => {
+                item.classList.remove('drop-target');
+            });
+
+            this.addHandler(item, 'drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                item.classList.remove('drop-target');
+                this.handleFolderDrop(e, item.dataset.name);
+            });
+        });
+    }
+
+    /**
+     * Handle file drop onto a folder item
+     * @param {DragEvent} e - Drag event
+     * @param {string} folderName - Target folder name
+     */
+    handleFolderDrop(e, folderName) {
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
+        const currentPath = this.getInstanceState('currentPath') || [];
+        const targetPath = [...currentPath, folderName];
+
+        try {
+            const fileData = JSON.parse(data);
+            const { filePath, fileName } = fileData;
+
+            if (!filePath || !Array.isArray(filePath)) {
+                console.error('Invalid file path in drop data');
+                return;
+            }
+
+            // Check if dropping to same location
+            const sourceDir = filePath.slice(0, -1);
+            if (JSON.stringify(sourceDir) === JSON.stringify(targetPath)) {
+                console.log('File is already in this directory');
+                return;
+            }
+
+            // Can't drop a folder into itself
+            if (JSON.stringify(filePath) === JSON.stringify(targetPath)) {
+                console.log('Cannot drop a folder into itself');
+                return;
+            }
+
+            // Move the file to target directory
+            try {
+                FileSystemManager.moveItem(filePath, targetPath);
+                console.log(`Moved ${fileName} to ${targetPath.join('/')}`);
+            } catch (err) {
+                console.error('Failed to move file:', err.message);
+            }
+        } catch (err) {
+            console.error('Failed to parse drop data:', err);
+        }
     }
 
     openFile(fileName) {
