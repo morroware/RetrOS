@@ -206,11 +206,11 @@ class StartMenuRendererClass {
 
     renderAdminItem(isAdmin) {
         return isAdmin ? `
-            <div class="start-menu-item" data-app="controlpanel">
+            <div class="start-menu-item" data-app="adminpanel">
                 <span class="start-menu-icon">⚙️</span>
                 <span>Admin Panel</span>
             </div>` : `
-            <div class="start-menu-item" data-app="controlpanel">
+            <div class="start-menu-item" data-app="adminpanel">
                 <span class="start-menu-icon">🗝️</span>
                 <span>Admin Login</span>
             </div>`;

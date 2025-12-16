@@ -31,7 +31,14 @@ class MyComputer extends AppBase {
         ];
     }
 
-    onOpen() {
+    onOpen(params = {}) {
+        // Store initial path if opening a specific directory
+        if (params.initialPath && Array.isArray(params.initialPath)) {
+            this._initialPath = params.initialPath;
+        } else {
+            this._initialPath = null;
+        }
+
         return `
             <style>
                 .mycomputer-app {
@@ -232,12 +239,12 @@ class MyComputer extends AppBase {
                     </button>
                     <div class="mycomputer-address">
                         <span class="mycomputer-address-label">Address:</span>
-                        <div class="mycomputer-address-bar" id="address-bar">My Computer</div>
+                        <div class="mycomputer-address-bar" id="address-bar">${this._initialPath && this._initialPath.length > 0 ? 'My Computer\\' + this._initialPath.join('\\') : 'My Computer'}</div>
                     </div>
                 </div>
 
                 <div class="mycomputer-content" id="content">
-                    ${this.renderRootView()}
+                    ${this._initialPath && this._initialPath.length > 0 ? this.renderDirectoryView(this._initialPath) : this.renderRootView()}
                 </div>
 
                 <div class="mycomputer-status">
@@ -249,8 +256,9 @@ class MyComputer extends AppBase {
     }
 
     onMount() {
-        // Initialize view state - start at root (My Computer)
-        this.setInstanceState('currentPath', []);
+        // Initialize view state - check for initial path or start at root (My Computer)
+        const initialPath = this._initialPath || [];
+        this.setInstanceState('currentPath', initialPath);
         this.setInstanceState('viewMode', 'grid');
         this.setInstanceState('history', []);
 
@@ -262,6 +270,11 @@ class MyComputer extends AppBase {
         EventBus.on('filesystem:changed', this.fsChangeHandler);
         EventBus.on('filesystem:file:changed', this.fsChangeHandler);
         EventBus.on('filesystem:directory:changed', this.fsChangeHandler);
+
+        // If we have an initial path, navigate to it after mount
+        if (initialPath.length > 0) {
+            this.refreshView();
+        }
 
         // Update status
         this.updateStatus();

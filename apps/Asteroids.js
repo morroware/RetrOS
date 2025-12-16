@@ -31,6 +31,8 @@ class Asteroids extends AppBase {
         this.SHIP_SIZE = 30; // ship height in pixels
         this.SHIP_THRUST = 5; // acceleration of the ship in pixels per second per second
         this.TURN_SPEED = 360; // turn speed in degrees per second
+        this.SHIP_INV_DUR = 3; // ship invulnerability duration in seconds
+        this.SHIP_BLINK_DUR = 0.1; // ship blink duration when invulnerable in seconds
 
         // Game State
         this.canvas = null;

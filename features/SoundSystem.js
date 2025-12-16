@@ -36,7 +36,7 @@ class SoundSystemClass {
 
         try {
             const ctx = this.initContext();
-            
+
             switch (type) {
                 case 'click': this.playClick(ctx); break;
                 case 'open': this.playOpen(ctx); break;
@@ -44,6 +44,7 @@ class SoundSystemClass {
                 case 'error': this.playError(ctx); break;
                 case 'startup': this.playStartup(ctx); break;
                 case 'achievement': this.playStartup(ctx); break;
+                case 'restore': this.playRestore(ctx); break;
                 default: this.playClick(ctx);
             }
         } catch (e) {
@@ -113,6 +114,21 @@ class SoundSystemClass {
                 osc.stop(ctx.currentTime + 0.3);
             }, i * 150);
         });
+    }
+
+    playRestore(ctx) {
+        // Ascending "pop" sound for item restoration
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(500, ctx.currentTime + 0.08);
+        osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.12);
+        gain.gain.value = 0.12;
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
     }
 }
 
