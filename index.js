@@ -295,11 +295,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Create boot sequence
     const boot = new BootSequence();
 
-    // Initialize OS components while boot screen shows
-    await initializeOS();
+    try {
+        // Initialize OS components while boot screen shows
+        await initializeOS();
 
-    // Run boot animation (will complete after initialization)
-    await boot.run();
+        // Run boot animation (will complete after initialization)
+        await boot.run();
 
-    console.log('[RetrOS] System ready!');
+        console.log('[RetrOS] System ready!');
+    } catch (error) {
+        console.error('[RetrOS] Boot failed with error:', error);
+
+        // Show error to user and allow recovery
+        const bootScreen = document.getElementById('bootScreen');
+        if (bootScreen) {
+            bootScreen.innerHTML = `
+                <div style="color: white; text-align: center; padding: 20px;">
+                    <h2>RetrOS Boot Error</h2>
+                    <p style="color: #ff6b6b;">An error occurred during startup:</p>
+                    <pre style="background: #333; padding: 10px; margin: 10px; border-radius: 4px; text-align: left; max-width: 600px; overflow: auto;">${error.message}\n${error.stack || ''}</pre>
+                    <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer; margin-top: 10px;">
+                        Restart RetrOS
+                    </button>
+                </div>
+            `;
+        }
+    }
 });
