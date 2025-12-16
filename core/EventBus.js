@@ -149,6 +149,18 @@ export const Events = {
     
     // Sound events
     SOUND_PLAY: 'sound:play',
+    VOLUME_CHANGE: 'sound:volume',
+
+    // Audio playback events (for MP3/media files)
+    AUDIO_PLAY: 'audio:play',
+    AUDIO_STOP: 'audio:stop',
+    AUDIO_STOP_ALL: 'audio:stopall',
+    AUDIO_PAUSE: 'audio:pause',
+    AUDIO_RESUME: 'audio:resume',
+    AUDIO_ENDED: 'audio:ended',
+    AUDIO_ERROR: 'audio:error',
+    AUDIO_LOADED: 'audio:loaded',
+    AUDIO_TIME_UPDATE: 'audio:timeupdate',
     
     // State events
     STATE_CHANGE: 'state:change',
