@@ -186,7 +186,7 @@ class ContextMenuRendererClass {
             case 'open':
                 if (context?.icon) {
                     if (context.icon.type === 'link') {
-                        window.open(context.icon.url, '_blank');
+                        AppRegistry.launch('browser', { url: context.icon.url });
                     } else if (context.icon.type === 'file') {
                         // Open file in appropriate app
                         this.openFileIcon(context.icon);

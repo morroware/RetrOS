@@ -237,7 +237,7 @@ class StartMenuRendererClass {
         this.element.querySelectorAll('[data-link]').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
-                window.open(item.dataset.link, '_blank');
+                AppRegistry.launch('browser', { url: item.dataset.link });
                 this.close();
             });
         });

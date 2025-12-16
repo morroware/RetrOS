@@ -377,7 +377,7 @@ class SystemDialogsClass {
             if (!url.startsWith('http')) {
                 url = 'https://' + url;
             }
-            window.open(url, '_blank');
+            AppRegistry.launch('browser', { url: url });
             this.hideRunDialog();
             return;
         }
