@@ -71,7 +71,7 @@ class TaskbarRendererClass {
                 if (app) {
                     AppRegistry.launch(app);
                 } else if (action === 'web') {
-                    window.open('https://sethmorrow.com', '_blank');
+                    AppRegistry.launch('browser', { url: 'https://sethmorrow.com' });
                 }
             });
         });

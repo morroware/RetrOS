@@ -21,6 +21,13 @@ class Browser extends AppBase {
         this.history = [];
         this.historyIndex = -1;
         this.homepage = 'https://www.wikipedia.org';
+        this.initialUrl = null;
+    }
+
+    setParams(params) {
+        if (params && params.url) {
+            this.initialUrl = params.url;
+        }
     }
 
     onOpen() {
@@ -139,7 +146,7 @@ class Browser extends AppBase {
                     <button class="browser-btn" id="btnHome" title="Home">🏠</button>
                     <div class="browser-address-bar">
                         <span class="browser-address-label">Address:</span>
-                        <input type="text" class="browser-address-input" id="addressInput" value="${this.homepage}">
+                        <input type="text" class="browser-address-input" id="addressInput" value="${this.initialUrl || this.homepage}">
                     </div>
                     <button class="browser-btn" id="btnGo" title="Go">→</button>
                 </div>
@@ -197,8 +204,9 @@ class Browser extends AppBase {
             this.updateNavButtons();
         });
 
-        // Navigate to homepage
-        this.navigate(this.homepage);
+        // Navigate to initial URL or homepage
+        this.navigate(this.initialUrl || this.homepage);
+        this.initialUrl = null; // Reset after use
     }
 
     navigate(url) {

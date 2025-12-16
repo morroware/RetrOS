@@ -178,7 +178,7 @@ class DesktopRendererClass {
         EventBus.emit(Events.ICON_DBLCLICK, { icon });
 
         if (icon.type === 'link' && icon.url) {
-            window.open(icon.url, '_blank');
+            AppRegistry.launch('browser', { url: icon.url });
         } else if (icon.type === 'app') {
             AppRegistry.launch(icon.id);
         } else if (icon.type === 'file') {
