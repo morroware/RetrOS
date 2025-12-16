@@ -2345,6 +2345,553 @@ body.window-resizing-se * {
 }
 
 /* ============================================
+   System Dialogs (Run, Shutdown, About, Welcome)
+   ============================================ */
+.system-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99995;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.system-dialog-overlay.active {
+    display: flex;
+    animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.system-dialog {
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+    min-width: 400px;
+    max-width: 500px;
+    animation: dialogPop 0.2s ease-out;
+}
+
+@keyframes dialogPop {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.dialog-titlebar {
+    background: linear-gradient(90deg, var(--win95-blue) 0%, #1084d0 100%);
+    color: white;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.dialog-title-icon {
+    font-size: 14px;
+}
+
+.dialog-close-btn {
+    margin-left: auto;
+    width: 20px;
+    height: 18px;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.dialog-close-btn:active {
+    border: 2px inset var(--win95-gray);
+}
+
+.dialog-body {
+    padding: 20px;
+}
+
+.dialog-buttons {
+    padding: 10px 20px 15px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Run Dialog Specific */
+.run-dialog-content {
+    display: flex;
+    gap: 15px;
+}
+
+.run-icon {
+    font-size: 48px;
+    flex-shrink: 0;
+}
+
+.run-text p {
+    margin-bottom: 15px;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.run-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.run-input-group label {
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.run-input {
+    flex: 1;
+    padding: 6px 8px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    border: 2px inset var(--win95-gray);
+    background: white;
+}
+
+.run-input:focus {
+    outline: none;
+}
+
+/* Shutdown Dialog Specific */
+.shutdown-content {
+    display: flex;
+    gap: 20px;
+}
+
+.shutdown-icon {
+    font-size: 48px;
+    flex-shrink: 0;
+}
+
+.shutdown-text p {
+    margin-bottom: 15px;
+    font-size: 15px;
+}
+
+.shutdown-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shutdown-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-size: 15px;
+}
+
+.shutdown-option:hover {
+    background: rgba(0, 0, 128, 0.1);
+}
+
+.shutdown-option input[type="radio"] {
+    margin: 0;
+}
+
+.shutdown-option .option-icon {
+    font-size: 18px;
+}
+
+/* About Dialog Specific */
+.about-dialog {
+    min-width: 450px;
+}
+
+.about-content {
+    text-align: center;
+}
+
+.about-logo {
+    padding: 20px;
+    margin-bottom: 15px;
+    background: linear-gradient(180deg, #000080 0%, #1084d0 100%);
+    border: 2px inset var(--win95-gray);
+}
+
+.about-logo-text {
+    font-size: 36px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+    background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.about-logo-subtitle {
+    color: #c0c0c0;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.about-info {
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.about-info p {
+    margin-bottom: 5px;
+}
+
+.about-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--win95-dark), transparent);
+    margin: 12px 0;
+}
+
+.about-specs {
+    color: #666;
+    font-size: 13px;
+}
+
+.about-specs span {
+    display: block;
+}
+
+.about-credits {
+    color: var(--win95-blue);
+    font-style: italic;
+    text-align: center;
+}
+
+/* Welcome Dialog Specific */
+.welcome-dialog {
+    min-width: 480px;
+}
+
+.welcome-banner {
+    text-align: center;
+    padding: 25px;
+    background: linear-gradient(180deg, #008080 0%, #004040 100%);
+    border: 2px inset var(--win95-gray);
+    margin-bottom: 15px;
+}
+
+.welcome-logo {
+    font-size: 42px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+}
+
+.welcome-tips h3 {
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.tips-list li {
+    padding: 6px 0 6px 20px;
+    position: relative;
+    font-size: 14px;
+}
+
+.tips-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #008000;
+}
+
+.welcome-checkbox {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--win95-dark);
+}
+
+.welcome-checkbox label {
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Shutdown Screen */
+.shutdown-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ff8000;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+    cursor: pointer;
+}
+
+.shutdown-screen.active {
+    opacity: 1;
+}
+
+.shutdown-message {
+    text-align: center;
+}
+
+.shutdown-message p {
+    font-size: 32px;
+    color: #000;
+    text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   Tooltip System
+   ============================================ */
+.tooltip {
+    position: fixed;
+    background: #ffffe1;
+    border: 1px solid #000;
+    padding: 4px 8px;
+    font-size: 13px;
+    z-index: 99999;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    animation: tooltipFade 0.15s ease-out;
+}
+
+@keyframes tooltipFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ============================================
+   Enhanced Icon Hover Effects
+   ============================================ */
+.icon:active .icon-image {
+    transform: scale(0.95);
+}
+
+.icon.selected .icon-label {
+    background: var(--win95-blue);
+    color: white;
+}
+
+/* ============================================
+   Wait Cursor for Loading States
+   ============================================ */
+body.loading,
+body.loading * {
+    cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="12" fill="none" stroke="%23000" stroke-width="2"/><path d="M16 8 L16 16 L22 16" fill="none" stroke="%23000" stroke-width="2"/></svg>') 16 16, wait !important;
+}
+
+/* ============================================
+   Enhanced Taskbar Button Styles
+   ============================================ */
+.taskbar-button {
+    position: relative;
+}
+
+.taskbar-button.minimized {
+    opacity: 0.7;
+}
+
+.taskbar-button .button-icon {
+    margin-right: 4px;
+}
+
+/* System Tray Enhanced */
+.system-tray {
+    gap: 6px;
+}
+
+.tray-icon {
+    position: relative;
+}
+
+.tray-icon:after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: var(--win95-blue);
+    transition: width 0.15s;
+}
+
+.tray-icon:hover:after {
+    width: 80%;
+}
+
+/* ============================================
+   Enhanced Window Title Bar
+   ============================================ */
+.title-bar {
+    position: relative;
+}
+
+.title-text {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Window button hover effects */
+.window-button:hover {
+    background: #e0e0e0;
+}
+
+.window-button[data-action="close"]:hover {
+    background: #ff6b6b;
+    color: white;
+}
+
+/* ============================================
+   Better Start Menu Item Hover
+   ============================================ */
+.start-menu-item {
+    transition: background 0.1s;
+}
+
+.start-menu-item:hover .start-menu-icon {
+    transform: scale(1.1);
+}
+
+.start-menu-icon {
+    transition: transform 0.1s;
+}
+
+/* ============================================
+   Context Menu Enhancements
+   ============================================ */
+.context-item {
+    transition: background 0.1s;
+}
+
+.context-item:before {
+    content: '';
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* ============================================
+   Loading Spinner
+   ============================================ */
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--win95-gray);
+    border-top-color: var(--win95-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Dial-up Connection Animation
+   ============================================ */
+.dialup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 99996;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.dialup-overlay.active {
+    display: flex;
+}
+
+.dialup-dialog {
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    padding: 20px;
+    text-align: center;
+    min-width: 350px;
+}
+
+.dialup-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    animation: dialupPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes dialupPulse {
+    from { opacity: 1; }
+    to { opacity: 0.5; }
+}
+
+.dialup-status {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.dialup-animation {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: var(--win95-blue);
+    margin-bottom: 15px;
+    height: 20px;
+}
+
+.dialup-progress {
+    width: 100%;
+    height: 20px;
+    background: white;
+    border: 2px inset var(--win95-gray);
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.dialup-progress-bar {
+    height: 100%;
+    background: var(--win95-blue);
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* ============================================
    Mobile Responsive
    ============================================ */
 @media (max-width: 768px) {

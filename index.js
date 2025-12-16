@@ -30,6 +30,7 @@ import EasterEggs from './features/EasterEggs.js';
 import ClippyAssistant from './features/ClippyAssistant.js';
 import DesktopPet from './features/DesktopPet.js';
 import Screensaver from './features/Screensaver.js';
+import SystemDialogs from './features/SystemDialogs.js';
 
 // === BOOT TIPS ===
 const BOOT_TIPS = [
@@ -130,6 +131,7 @@ async function initializeOS() {
     ClippyAssistant.initialize();
     DesktopPet.initialize();
     Screensaver.initialize();
+    SystemDialogs.initialize();
 
     // === Phase 3: UI Renderers ===
     console.log('[RetrOS] Phase 3: UI Renderers');
