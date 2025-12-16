@@ -304,7 +304,7 @@ class SystemDialogsClass {
             dialog.classList.add('active');
             this.runDialogOpen = true;
             input?.focus();
-            input.value = '';
+            if (input) input.value = '';
             EventBus.emit(Events.SOUND_PLAY, { type: 'open' });
         }
     }
