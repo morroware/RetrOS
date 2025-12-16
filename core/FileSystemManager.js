@@ -120,6 +120,14 @@ class FileSystemManager {
                     type: 'directory',
                     children: {}
                   },
+                  'Downloads': {
+                    type: 'directory',
+                    children: {}
+                  },
+                  'Music': {
+                    type: 'directory',
+                    children: {}
+                  },
                   'Projects': {
                     type: 'directory',
                     children: {

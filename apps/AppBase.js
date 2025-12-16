@@ -44,9 +44,20 @@ class AppBase {
         // This allows getElement(), instanceState(), etc. to work without passing windowId
         this._currentWindowId = null;
 
+        // Pending launch parameters (set via setParams, consumed on next launch)
+        this._pendingParams = null;
+
         // Legacy support for single-window apps
         this.windowId = null;
         this.isOpen = false;
+    }
+
+    /**
+     * Set parameters to be passed to onOpen() on next launch
+     * @param {Object} params - Parameters for the app
+     */
+    setParams(params) {
+        this._pendingParams = params;
     }
 
     // ===== LIFECYCLE METHODS (Override in subclass) =====
@@ -108,6 +119,8 @@ class AppBase {
         if (this.singleton && this.openWindows.size > 0) {
             const firstWindowId = this.openWindows.keys().next().value;
             WindowManager.focus(firstWindowId);
+            // Clear pending params since we're not creating a new window
+            this._pendingParams = null;
             return;
         }
 
@@ -125,8 +138,10 @@ class AppBase {
             eventUnsubscribers: []        // EventBus subscriptions for cleanup
         });
 
-        // Get content from subclass
-        const content = this.onOpen();
+        // Get content from subclass, passing any pending parameters
+        const params = this._pendingParams || {};
+        this._pendingParams = null; // Clear params after use
+        const content = this.onOpen(params);
 
         // Create window with unique ID
         const windowEl = WindowManager.create({
