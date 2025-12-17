@@ -20,7 +20,6 @@ import StartMenuRenderer from './ui/StartMenuRenderer.js';
 import ContextMenuRenderer from './ui/ContextMenuRenderer.js';
 
 // === APPLICATIONS ===
-// AppRegistry auto-initializes on import
 import AppRegistry from './apps/AppRegistry.js';
 
 // === FEATURES ===
@@ -31,6 +30,9 @@ import ClippyAssistant from './features/ClippyAssistant.js';
 import DesktopPet from './features/DesktopPet.js';
 import Screensaver from './features/Screensaver.js';
 import SystemDialogs from './features/SystemDialogs.js';
+
+// Log successful module loading
+console.log('[RetrOS] All modules imported successfully');
 
 // === BOOT TIPS ===
 const BOOT_TIPS = [
@@ -318,6 +320,9 @@ function showBSOD() {
 // === MAIN EXECUTION ===
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('[RetrOS] DOM Ready - Starting boot sequence');
+
+    // Signal that the real boot sequence has started (stops fallback animation)
+    window.bootSequenceStarted = true;
 
     // Create boot sequence
     const boot = new BootSequence();
