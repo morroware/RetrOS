@@ -2695,6 +2695,174 @@ body.window-resizing-se * {
     text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Alert/Confirm/Prompt Dialog Styles */
+.alert-dialog,
+.confirm-dialog,
+.prompt-dialog {
+    min-width: 350px;
+    max-width: 450px;
+}
+
+.alert-content,
+.confirm-content {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.alert-icon,
+.confirm-icon {
+    font-size: 42px;
+    flex-shrink: 0;
+}
+
+.alert-message,
+.confirm-message {
+    font-size: 14px;
+    line-height: 1.5;
+    padding-top: 5px;
+    word-wrap: break-word;
+}
+
+.prompt-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.prompt-message {
+    font-size: 14px;
+}
+
+.prompt-input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 2px inset var(--win95-gray);
+    background: white;
+}
+
+.prompt-input:focus {
+    outline: none;
+}
+
+/* File Dialog Styles */
+.file-dialog {
+    min-width: 500px;
+    max-width: 600px;
+}
+
+.file-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.file-dialog-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-dialog-toolbar label {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.file-dialog-path {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 2px inset var(--win95-gray);
+    background: white;
+}
+
+.file-dialog-btn {
+    padding: 4px 8px;
+    font-size: 14px;
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+    cursor: pointer;
+}
+
+.file-dialog-btn:active {
+    border-style: inset;
+}
+
+.file-dialog-browser {
+    height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 2px inset var(--win95-gray);
+    padding: 4px;
+}
+
+.file-dialog-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.file-dialog-item:hover {
+    background: #e0e0e0;
+}
+
+.file-dialog-item.selected {
+    background: var(--win95-blue);
+    color: white;
+}
+
+.file-dialog-item-icon {
+    font-size: 16px;
+}
+
+.file-dialog-item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-dialog-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-dialog-filename-row,
+.file-dialog-filetype-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.file-dialog-filename-row label,
+.file-dialog-filetype-row label {
+    font-size: 13px;
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+.file-dialog-filename,
+.file-dialog-filetype {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 2px inset var(--win95-gray);
+    background: white;
+}
+
+.file-dialog-error {
+    padding: 20px;
+    text-align: center;
+    color: #800000;
+}
+
 /* ============================================
    Tooltip System
    ============================================ */

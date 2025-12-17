@@ -6,6 +6,7 @@
 import AppBase from './AppBase.js';
 import StorageManager from '../core/StorageManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import SystemDialogs from '../features/SystemDialogs.js';
 
 class Notepad extends AppBase {
     constructor() {
@@ -99,32 +100,36 @@ class Notepad extends AppBase {
         }
     }
 
-    openFile() {
-        // Show a simple file picker dialog
-        const path = prompt('Enter file path (e.g., C:/Users/Seth/Documents/filename.txt):');
-        if (!path) return;
+    async openFile() {
+        // Show file open dialog
+        const result = await SystemDialogs.showFileOpen({
+            title: 'Open',
+            filter: 'txt',
+            initialPath: ['C:', 'Users', 'Seth', 'Documents']
+        });
+
+        if (!result) return;
 
         try {
-            const parsedPath = FileSystemManager.parsePath(path);
-            const content = FileSystemManager.readFile(parsedPath);
-            const fileName = parsedPath[parsedPath.length - 1];
+            const content = FileSystemManager.readFile(result.fullPath);
+            const fileName = result.filename;
 
             const textarea = this.getElement('#notepadText');
             if (textarea) {
                 textarea.value = content;
             }
 
-            this.setInstanceState('currentFile', parsedPath);
+            this.setInstanceState('currentFile', result.fullPath);
             this.setInstanceState('fileName', fileName);
             this.updateTitle(fileName);
             this.updateFilePathDisplay();
             this.alert('📂 File opened!');
         } catch (e) {
-            alert(`Error opening file: ${e.message}`);
+            await SystemDialogs.alert(`Error opening file: ${e.message}`, 'Error', 'error');
         }
     }
 
-    save() {
+    async save() {
         const textarea = this.getElement('#notepadText');
         if (!textarea) return;
 
@@ -136,7 +141,7 @@ class Notepad extends AppBase {
                 FileSystemManager.writeFile(currentFile, textarea.value);
                 this.alert('💾 File saved!');
             } catch (e) {
-                alert(`Error saving file: ${e.message}`);
+                await SystemDialogs.alert(`Error saving file: ${e.message}`, 'Error', 'error');
             }
         } else {
             // No file selected, prompt for Save As
@@ -147,7 +152,7 @@ class Notepad extends AppBase {
         StorageManager.set(this.storageKey, textarea.value);
     }
 
-    saveAs() {
+    async saveAs() {
         const textarea = this.getElement('#notepadText');
         if (!textarea) return;
 
@@ -155,33 +160,34 @@ class Notepad extends AppBase {
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         const defaultName = `note_${timestamp}.txt`;
-        const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
 
-        const path = prompt(
-            'Save file to:\n\nTip: Save to Desktop for easy access!\nOr use Documents: C:/Users/Seth/Documents/',
-            defaultPath
-        );
-        if (!path) return;
+        const result = await SystemDialogs.showFileSave({
+            title: 'Save As',
+            filter: 'txt',
+            initialPath: ['C:', 'Users', 'Seth', 'Desktop'],
+            defaultFilename: defaultName
+        });
+
+        if (!result) return;
 
         try {
-            const parsedPath = FileSystemManager.parsePath(path);
-            let fileName = parsedPath[parsedPath.length - 1];
+            let fileName = result.filename;
 
             // Ensure .txt extension if no extension provided
             if (!fileName.includes('.')) {
                 fileName += '.txt';
-                parsedPath[parsedPath.length - 1] = fileName;
             }
 
-            FileSystemManager.writeFile(parsedPath, textarea.value);
+            const fullPath = [...result.path, fileName];
+            FileSystemManager.writeFile(fullPath, textarea.value);
 
-            this.setInstanceState('currentFile', parsedPath);
+            this.setInstanceState('currentFile', fullPath);
             this.setInstanceState('fileName', fileName);
             this.updateTitle(fileName);
             this.updateFilePathDisplay();
-            this.alert('💾 File saved to ' + parsedPath.join('/'));
+            this.alert('💾 File saved to ' + fullPath.join('/'));
         } catch (e) {
-            alert(`Error saving file: ${e.message}`);
+            await SystemDialogs.alert(`Error saving file: ${e.message}`, 'Error', 'error');
         }
     }
 
@@ -193,13 +199,15 @@ class Notepad extends AppBase {
         }
     }
 
-    newDocument() {
+    async newDocument() {
         // Check if there's unsaved content
         const textarea = this.getElement('#notepadText');
         if (textarea && textarea.value.trim()) {
-            if (!confirm('Create new document? Unsaved changes will be lost.')) {
-                return;
-            }
+            const confirmed = await SystemDialogs.confirm(
+                'Create new document? Unsaved changes will be lost.',
+                'New Document'
+            );
+            if (!confirmed) return;
         }
 
         // Reset file state - this is now a NEW untitled document

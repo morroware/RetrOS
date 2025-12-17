@@ -8,6 +8,7 @@ import StateManager from '../core/StateManager.js';
 import AppRegistry from '../apps/AppRegistry.js';
 import WindowManager from '../core/WindowManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import SystemDialogs from '../features/SystemDialogs.js';
 
 class ContextMenuRendererClass {
     constructor() {
@@ -236,8 +237,8 @@ class ContextMenuRendererClass {
         }
     }
 
-    createNewFolder(basePath) {
-        const name = prompt('Enter folder name:', 'New Folder');
+    async createNewFolder(basePath) {
+        const name = await SystemDialogs.prompt('Enter folder name:', 'New Folder', 'New Folder');
         if (!name) return;
 
         try {
@@ -245,12 +246,12 @@ class ContextMenuRendererClass {
             FileSystemManager.createDirectory(folderPath);
             EventBus.emit('desktop:refresh');
         } catch (e) {
-            alert(`Error creating folder: ${e.message}`);
+            await SystemDialogs.alert(`Error creating folder: ${e.message}`, 'Error', 'error');
         }
     }
 
-    createNewTextFile(basePath) {
-        const name = prompt('Enter file name:', 'New Text Document.txt');
+    async createNewTextFile(basePath) {
+        const name = await SystemDialogs.prompt('Enter file name:', 'New Text Document.txt', 'New File');
         if (!name) return;
 
         try {
@@ -264,7 +265,7 @@ class ContextMenuRendererClass {
             // Open in Notepad
             AppRegistry.launch('notepad', { filePath });
         } catch (e) {
-            alert(`Error creating file: ${e.message}`);
+            await SystemDialogs.alert(`Error creating file: ${e.message}`, 'Error', 'error');
         }
     }
 
@@ -280,10 +281,11 @@ class ContextMenuRendererClass {
         }
     }
 
-    deleteFileIcon(icon) {
+    async deleteFileIcon(icon) {
         const { filePath, fileType } = icon;
 
-        if (!confirm(`Delete "${icon.label}"?`)) return;
+        const confirmed = await SystemDialogs.confirm(`Delete "${icon.label}"?`, 'Confirm Delete');
+        if (!confirmed) return;
 
         try {
             if (fileType === 'directory') {
@@ -293,7 +295,11 @@ class ContextMenuRendererClass {
                 } catch (e) {
                     if (e.message.includes('not empty')) {
                         // Ask if user wants to delete recursively
-                        if (confirm(`"${icon.label}" is not empty. Delete all contents?`)) {
+                        const deleteAll = await SystemDialogs.confirm(
+                            `"${icon.label}" is not empty. Delete all contents?`,
+                            'Confirm Delete'
+                        );
+                        if (deleteAll) {
                             FileSystemManager.deleteDirectory(filePath, true);
                         }
                     } else {
@@ -304,15 +310,15 @@ class ContextMenuRendererClass {
                 FileSystemManager.deleteFile(filePath);
             }
         } catch (e) {
-            alert(`Error deleting: ${e.message}`);
+            await SystemDialogs.alert(`Error deleting: ${e.message}`, 'Error', 'error');
         }
     }
 
-    renameFileIcon(icon) {
+    async renameFileIcon(icon) {
         const { filePath, fileType } = icon;
         const oldName = icon.label;
 
-        const newName = prompt(`Rename "${oldName}" to:`, oldName);
+        const newName = await SystemDialogs.prompt(`Rename "${oldName}" to:`, oldName, 'Rename');
         if (!newName || newName === oldName) return;
 
         try {
@@ -332,7 +338,7 @@ class ContextMenuRendererClass {
 
             EventBus.emit('desktop:refresh');
         } catch (e) {
-            alert(`Error renaming: ${e.message}`);
+            await SystemDialogs.alert(`Error renaming: ${e.message}`, 'Error', 'error');
         }
     }
 }
