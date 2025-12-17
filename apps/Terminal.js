@@ -56,9 +56,6 @@ class Terminal extends AppBase {
                     padding: 0 !important;
                     margin: 0 !important;
                     overflow: hidden !important;
-                    height: 415px !important;
-                    min-height: 415px !important;
-                    max-height: 415px !important;
                 }
 
                 .terminal-app {
@@ -67,7 +64,7 @@ class Terminal extends AppBase {
                     font-family: 'Consolas', 'Courier New', monospace;
                     font-size: 14px;
                     width: 100%;
-                    height: 415px;
+                    height: 100%;
                     position: relative;
                     overflow: hidden;
                     box-sizing: border-box;

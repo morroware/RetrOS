@@ -14,7 +14,7 @@ class Paint extends AppBase {
             icon: '🖌️',
             width: 830,
             height: 625,
-            resizable: false,
+            resizable: true,
             singleton: false // Allow multiple Paint windows for working on multiple images
         });
 
@@ -25,6 +25,7 @@ class Paint extends AppBase {
         this.lastX = 0;
         this.lastY = 0;
         this.brushSize = 3;
+        this.resizeObserver = null;
     }
 
     onOpen(params = {}) {
@@ -45,6 +46,12 @@ class Paint extends AppBase {
         // We use flex-col to stack toolbar and canvas
         // The canvas container gets flex-grow to fill the rest of the 600px height
         return `
+            <style>
+                #window-paint .window-content {
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                }
+            </style>
             <div class="paint-container" style="height: 100%; display: flex; flex-direction: column; background: #c0c0c0;">
                 
                 <div class="paint-toolbar" style="padding: 6px; border-bottom: 2px solid #808080;">
@@ -177,6 +184,53 @@ class Paint extends AppBase {
         this.getElement('#btnOpen')?.addEventListener('click', () => this.openImage());
         this.getElement('#btnSave')?.addEventListener('click', () => this.saveImage());
         this.getElement('#btnSaveAs')?.addEventListener('click', () => this.saveImageAs());
+
+        // Set up ResizeObserver to resize canvas when window is resized
+        const canvasWrapper = this.getElement('.paint-canvas-wrapper');
+        if (canvasWrapper) {
+            this.resizeObserver = new ResizeObserver(() => {
+                this.resizeCanvas();
+            });
+            this.resizeObserver.observe(canvasWrapper);
+        }
+    }
+
+    resizeCanvas() {
+        const canvas = this.getElement('#paintCanvas');
+        const wrapper = this.getElement('.paint-canvas-wrapper');
+        if (!canvas || !wrapper) return;
+
+        // Save current canvas content
+        const imageData = this.ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        // Calculate new size (leaving some margin)
+        const newWidth = Math.max(100, wrapper.clientWidth - 10);
+        const newHeight = Math.max(100, wrapper.clientHeight - 10);
+
+        // Only resize if size actually changed
+        if (canvas.width !== newWidth || canvas.height !== newHeight) {
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            // Restore white background
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Restore previous content
+            this.ctx.putImageData(imageData, 0, 0);
+
+            // Re-apply context settings
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+        }
+    }
+
+    onClose() {
+        // Clean up ResizeObserver
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+            this.resizeObserver = null;
+        }
     }
 
     setColor(c) {
