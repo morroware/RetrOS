@@ -705,7 +705,7 @@ class MyComputer extends AppBase {
         });
 
         // Drop events for directory items (drop files into folders)
-        const directoryItems = this.getElements('.directory-item');
+        // Note: reusing directoryItems from above for drop handlers
         directoryItems.forEach(item => {
             this.addHandler(item, 'dragover', (e) => {
                 e.preventDefault();
