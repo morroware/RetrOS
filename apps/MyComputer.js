@@ -246,6 +246,17 @@ class MyComputer extends AppBase {
                     outline: 2px dashed #0000ff;
                     outline-offset: -2px;
                 }
+                .mycomputer-item.drop-target .mycomputer-item-icon,
+                .mycomputer-list-item.drop-target .mycomputer-list-icon {
+                    transform: scale(1.1);
+                    transition: transform 0.15s ease;
+                }
+                .drive-item.drop-target,
+                .folder-item.drop-target {
+                    background: #e8f0ff !important;
+                    outline: 2px dashed #0000ff;
+                    outline-offset: -2px;
+                }
             </style>
 
             <div class="mycomputer-app">
@@ -320,8 +331,10 @@ class MyComputer extends AppBase {
             const currentPath = this.getInstanceState('currentPath') || [];
 
             // Only allow drops when inside a directory (not at My Computer root)
-            if (currentPath.length > 0 && e.dataTransfer.types.includes('application/retros-file')) {
-                e.dataTransfer.dropEffect = 'move';
+            const hasFileData = e.dataTransfer.types.includes('application/retros-file');
+            const hasShortcutData = e.dataTransfer.types.includes('application/retros-shortcut');
+            if (currentPath.length > 0 && (hasFileData || hasShortcutData)) {
+                e.dataTransfer.dropEffect = hasShortcutData ? 'copy' : 'move';
                 content.classList.add('drop-target');
             }
         });
@@ -347,18 +360,32 @@ class MyComputer extends AppBase {
      * @param {DragEvent} e - Drag event
      */
     handleFileDrop(e) {
-        const data = e.dataTransfer.getData('application/retros-file');
-        if (!data) return;
-
         const currentPath = this.getInstanceState('currentPath') || [];
         if (currentPath.length === 0) {
             console.log('Cannot drop files at My Computer root');
             return;
         }
 
+        // Check for shortcut data (app icons dragged from desktop)
+        const shortcutData = e.dataTransfer.getData('application/retros-shortcut');
+        if (shortcutData) {
+            this.createShortcutFromDrop(shortcutData, currentPath);
+            return;
+        }
+
+        // Handle regular file drops
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
         try {
             const fileData = JSON.parse(data);
-            const { filePath, fileName } = fileData;
+            const { filePath, fileName, isShortcut, shortcutTarget, shortcutType, shortcutIcon } = fileData;
+
+            // If this is a shortcut being created from an app icon
+            if (isShortcut && shortcutTarget) {
+                this.createShortcutFile(currentPath, fileName, shortcutTarget, shortcutType, shortcutIcon);
+                return;
+            }
 
             if (!filePath || !Array.isArray(filePath)) {
                 console.error('Invalid file path in drop data');
@@ -381,6 +408,77 @@ class MyComputer extends AppBase {
             }
         } catch (err) {
             console.error('Failed to parse drop data:', err);
+        }
+    }
+
+    /**
+     * Create a shortcut from dropped app icon data
+     * @param {string} shortcutData - JSON string with shortcut info
+     * @param {string[]} targetPath - Target directory path
+     */
+    createShortcutFromDrop(shortcutData, targetPath) {
+        try {
+            const data = JSON.parse(shortcutData);
+            const { id, label, emoji, type, url } = data;
+            const target = type === 'link' ? url : id;
+            this.createShortcutFile(targetPath, label, target, type, emoji);
+        } catch (err) {
+            console.error('Failed to create shortcut:', err);
+        }
+    }
+
+    /**
+     * Create a shortcut file in the target directory
+     * @param {string[]} targetPath - Target directory path
+     * @param {string} name - Shortcut name
+     * @param {string} target - Target app ID or URL
+     * @param {string} type - 'app' or 'link'
+     * @param {string} icon - Emoji icon
+     */
+    createShortcutFile(targetPath, name, target, type, icon) {
+        const now = new Date().toISOString();
+        const fileName = `${name}.lnk`;
+        const filePath = [...targetPath, fileName];
+
+        try {
+            // Get the parent node
+            const parentNode = FileSystemManager.getNode(targetPath);
+            if (!parentNode) {
+                console.error('Target directory not found');
+                return;
+            }
+
+            const children = parentNode.children || parentNode;
+
+            // Check if shortcut already exists
+            if (children[fileName]) {
+                console.log(`Shortcut ${fileName} already exists`);
+                return;
+            }
+
+            // Create shortcut file
+            children[fileName] = {
+                type: 'file',
+                content: JSON.stringify({
+                    type: type || 'app',
+                    target: target,
+                    icon: icon,
+                    label: name
+                }, null, 2),
+                extension: 'lnk',
+                size: 128,
+                created: now,
+                modified: now,
+                isShortcut: true,
+                shortcutTarget: target,
+                shortcutType: type || 'app',
+                shortcutIcon: icon
+            };
+
+            FileSystemManager.saveFileSystem();
+            console.log(`Created shortcut ${fileName} in ${targetPath.join('/')}`);
+        } catch (err) {
+            console.error('Failed to create shortcut file:', err);
         }
     }
 
@@ -688,6 +786,32 @@ class MyComputer extends AppBase {
                     this.navigateToPath([driveLetter]);
                 }
             });
+
+            // Drop handlers for drives
+            this.addHandler(item, 'dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const hasFileData = e.dataTransfer.types.includes('application/retros-file');
+                const hasShortcutData = e.dataTransfer.types.includes('application/retros-shortcut');
+                if (hasFileData || hasShortcutData) {
+                    e.dataTransfer.dropEffect = hasShortcutData ? 'copy' : 'move';
+                    item.classList.add('drop-target');
+                }
+            });
+
+            this.addHandler(item, 'dragleave', () => {
+                item.classList.remove('drop-target');
+            });
+
+            this.addHandler(item, 'drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                item.classList.remove('drop-target');
+                const driveLetter = item.dataset.drive;
+                if (driveLetter) {
+                    this.handleDriveDrop(e, driveLetter);
+                }
+            });
         });
 
         // System folder items (only on root view)
@@ -699,6 +823,32 @@ class MyComputer extends AppBase {
                     AppRegistry.launch(appId);
                 }
             });
+
+            // Drop handlers for system folders (My Documents, My Pictures, etc.)
+            const folderName = item.querySelector('.mycomputer-item-label')?.textContent;
+            if (folderName) {
+                this.addHandler(item, 'dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const hasFileData = e.dataTransfer.types.includes('application/retros-file');
+                    const hasShortcutData = e.dataTransfer.types.includes('application/retros-shortcut');
+                    if (hasFileData || hasShortcutData) {
+                        e.dataTransfer.dropEffect = hasShortcutData ? 'copy' : 'move';
+                        item.classList.add('drop-target');
+                    }
+                });
+
+                this.addHandler(item, 'dragleave', () => {
+                    item.classList.remove('drop-target');
+                });
+
+                this.addHandler(item, 'drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    item.classList.remove('drop-target');
+                    this.handleSystemFolderDrop(e, folderName);
+                });
+            }
         });
 
         // Directory items (in file system)
@@ -802,8 +952,10 @@ class MyComputer extends AppBase {
             this.addHandler(item, 'dragover', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (e.dataTransfer.types.includes('application/retros-file')) {
-                    e.dataTransfer.dropEffect = 'move';
+                const hasFileData = e.dataTransfer.types.includes('application/retros-file');
+                const hasShortcutData = e.dataTransfer.types.includes('application/retros-shortcut');
+                if (hasFileData || hasShortcutData) {
+                    e.dataTransfer.dropEffect = hasShortcutData ? 'copy' : 'move';
                     item.classList.add('drop-target');
                 }
             });
@@ -827,15 +979,28 @@ class MyComputer extends AppBase {
      * @param {string} folderName - Target folder name
      */
     handleFolderDrop(e, folderName) {
-        const data = e.dataTransfer.getData('application/retros-file');
-        if (!data) return;
-
         const currentPath = this.getInstanceState('currentPath') || [];
         const targetPath = [...currentPath, folderName];
 
+        // Check for shortcut data (app icons dragged from desktop)
+        const shortcutData = e.dataTransfer.getData('application/retros-shortcut');
+        if (shortcutData) {
+            this.createShortcutFromDrop(shortcutData, targetPath);
+            return;
+        }
+
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
         try {
             const fileData = JSON.parse(data);
-            const { filePath, fileName } = fileData;
+            const { filePath, fileName, isShortcut, shortcutTarget, shortcutType, shortcutIcon } = fileData;
+
+            // If this is a shortcut being created from an app icon
+            if (isShortcut && shortcutTarget) {
+                this.createShortcutFile(targetPath, fileName, shortcutTarget, shortcutType, shortcutIcon);
+                return;
+            }
 
             if (!filePath || !Array.isArray(filePath)) {
                 console.error('Invalid file path in drop data');
@@ -859,6 +1024,123 @@ class MyComputer extends AppBase {
             try {
                 FileSystemManager.moveItem(filePath, targetPath);
                 console.log(`Moved ${fileName} to ${targetPath.join('/')}`);
+            } catch (err) {
+                console.error('Failed to move file:', err.message);
+            }
+        } catch (err) {
+            console.error('Failed to parse drop data:', err);
+        }
+    }
+
+    /**
+     * Handle file drop onto a drive
+     * @param {DragEvent} e - Drag event
+     * @param {string} driveLetter - Target drive letter (e.g., 'C:')
+     */
+    handleDriveDrop(e, driveLetter) {
+        const targetPath = [driveLetter];
+
+        // Check for shortcut data (app icons dragged from desktop)
+        const shortcutData = e.dataTransfer.getData('application/retros-shortcut');
+        if (shortcutData) {
+            this.createShortcutFromDrop(shortcutData, targetPath);
+            return;
+        }
+
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
+        try {
+            const fileData = JSON.parse(data);
+            const { filePath, fileName, isShortcut, shortcutTarget, shortcutType, shortcutIcon } = fileData;
+
+            // If this is a shortcut being created from an app icon
+            if (isShortcut && shortcutTarget) {
+                this.createShortcutFile(targetPath, fileName, shortcutTarget, shortcutType, shortcutIcon);
+                return;
+            }
+
+            if (!filePath || !Array.isArray(filePath)) {
+                console.error('Invalid file path in drop data');
+                return;
+            }
+
+            // Check if dropping to same location (drive root)
+            const sourceDir = filePath.slice(0, -1);
+            if (sourceDir.length === 1 && sourceDir[0] === driveLetter) {
+                console.log('File is already in this drive root');
+                return;
+            }
+
+            // Move the file to drive root
+            try {
+                FileSystemManager.moveItem(filePath, targetPath);
+                console.log(`Moved ${fileName} to ${driveLetter}`);
+            } catch (err) {
+                console.error('Failed to move file:', err.message);
+            }
+        } catch (err) {
+            console.error('Failed to parse drop data:', err);
+        }
+    }
+
+    /**
+     * Handle file drop onto a system folder (My Documents, My Pictures, etc.)
+     * @param {DragEvent} e - Drag event
+     * @param {string} folderName - System folder name
+     */
+    handleSystemFolderDrop(e, folderName) {
+        // Map system folder names to actual paths
+        const folderPaths = {
+            'My Documents': ['C:', 'Users', 'Seth', 'Documents'],
+            'My Pictures': ['C:', 'Users', 'Seth', 'Pictures'],
+            'My Music': ['C:', 'Users', 'Seth', 'Music'],
+            'Recycle Bin': null, // Can't drop directly to recycle bin
+            'Control Panel': null // Can't drop to control panel
+        };
+
+        const targetPath = folderPaths[folderName];
+        if (!targetPath) {
+            console.log(`Cannot drop files to ${folderName}`);
+            return;
+        }
+
+        // Check for shortcut data (app icons dragged from desktop)
+        const shortcutData = e.dataTransfer.getData('application/retros-shortcut');
+        if (shortcutData) {
+            this.createShortcutFromDrop(shortcutData, targetPath);
+            return;
+        }
+
+        const data = e.dataTransfer.getData('application/retros-file');
+        if (!data) return;
+
+        try {
+            const fileData = JSON.parse(data);
+            const { filePath, fileName, isShortcut, shortcutTarget, shortcutType, shortcutIcon } = fileData;
+
+            // If this is a shortcut being created from an app icon
+            if (isShortcut && shortcutTarget) {
+                this.createShortcutFile(targetPath, fileName, shortcutTarget, shortcutType, shortcutIcon);
+                return;
+            }
+
+            if (!filePath || !Array.isArray(filePath)) {
+                console.error('Invalid file path in drop data');
+                return;
+            }
+
+            // Check if dropping to same location
+            const sourceDir = filePath.slice(0, -1);
+            if (JSON.stringify(sourceDir) === JSON.stringify(targetPath)) {
+                console.log('File is already in this directory');
+                return;
+            }
+
+            // Move the file to system folder
+            try {
+                FileSystemManager.moveItem(filePath, targetPath);
+                console.log(`Moved ${fileName} to ${folderName}`);
             } catch (err) {
                 console.error('Failed to move file:', err.message);
             }
