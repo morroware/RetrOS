@@ -175,9 +175,10 @@ class DesktopRendererClass {
         iconEl.style.top = `${icon.y}px`;
         iconEl.tabIndex = 0;
 
-        // Make file icons draggable via HTML5 drag and drop
-        if (icon.type === 'file' && icon.filePath) {
-            iconEl.draggable = true;
+        // Make all icons draggable via HTML5 drag and drop
+        iconEl.draggable = true;
+        iconEl.dataset.iconType = icon.type || 'app';
+        if (icon.filePath) {
             iconEl.dataset.filePath = JSON.stringify(icon.filePath);
             iconEl.dataset.fileType = icon.fileType || 'file';
         }
@@ -195,25 +196,46 @@ class DesktopRendererClass {
             if (e.key === 'Enter') this.handleIconOpen(icon);
         });
 
-        // HTML5 drag events for file icons
-        if (icon.type === 'file' && icon.filePath) {
-            iconEl.addEventListener('dragstart', (e) => {
-                e.dataTransfer.effectAllowed = 'move';
+        // HTML5 drag events for all icons
+        iconEl.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'copyMove';
+
+            if (icon.type === 'file' && icon.filePath) {
+                // File icons - use move operation
                 e.dataTransfer.setData('application/retros-file', JSON.stringify({
                     filePath: icon.filePath,
                     fileName: icon.label,
                     fileType: icon.fileType || 'file',
                     extension: icon.extension || ''
                 }));
-                iconEl.classList.add('dragging');
-                this.isExternalDrag = true;
-            });
+            } else {
+                // App/link icons - create shortcut
+                e.dataTransfer.setData('application/retros-shortcut', JSON.stringify({
+                    id: icon.id,
+                    label: icon.label,
+                    emoji: icon.emoji,
+                    type: icon.type || 'app',
+                    url: icon.url || null
+                }));
+                // Also set file data for backward compatibility
+                e.dataTransfer.setData('application/retros-file', JSON.stringify({
+                    filePath: null,
+                    fileName: icon.label,
+                    fileType: 'shortcut',
+                    isShortcut: true,
+                    shortcutTarget: icon.type === 'link' ? icon.url : icon.id,
+                    shortcutType: icon.type || 'app',
+                    shortcutIcon: icon.emoji
+                }));
+            }
+            iconEl.classList.add('dragging');
+            this.isExternalDrag = true;
+        });
 
-            iconEl.addEventListener('dragend', () => {
-                iconEl.classList.remove('dragging');
-                this.isExternalDrag = false;
-            });
-        }
+        iconEl.addEventListener('dragend', () => {
+            iconEl.classList.remove('dragging');
+            this.isExternalDrag = false;
+        });
 
         this.desktop.appendChild(iconEl);
     }
