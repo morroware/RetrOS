@@ -18,7 +18,7 @@
 
 ## Overview
 
-RetrOS is a fully-functional Windows 95 desktop environment simulator built entirely with vanilla JavaScript, HTML5, and CSS3. Experience the nostalgic computing era of the mid-1990s right in your web browser, complete with draggable windows, classic applications, retro games, and plenty of hidden surprises.
+RetrOS is a fully-functional Windows 95 desktop environment simulator built entirely with vanilla JavaScript, HTML5, and CSS3. Experience the nostalgic computing era of the mid-1990s right in your web browser, complete with draggable windows, classic applications, retro games, a virtual file system, and plenty of hidden surprises.
 
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
@@ -34,12 +34,28 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 - **Taskbar** - Window buttons, quick launch area, and system tray with live clock
 - **Context Menus** - Right-click anywhere for contextual options
 - **CRT Effect** - Optional retro scanline overlay for that authentic monitor feel
+- **Custom Dialogs** - Windows 95-style alert, confirm, and prompt dialogs (replaces browser modals)
+
+### Virtual File System
+- **Multi-Drive Support** - C: (Local Disk), D: (CD-ROM), A: (Floppy)
+- **Full Directory Structure** - Windows, Program Files, Users folders
+- **File Operations** - Create, read, edit, delete, move, and copy files
+- **Persistent Storage** - Files saved to localStorage persist across sessions
+- **File Type Support** - Text files, images, shortcuts, executables
+- **Integration** - Notepad and Paint save/load from the virtual file system
 
 ### Productivity Applications
-- **Notepad** - Text editor with save/load functionality and file export
+- **Notepad** - Text editor with file system integration (New, Open, Save, Save As, Download)
 - **Calculator** - Full arithmetic operations with keyboard support
-- **Paint** - Drawing application with brush, eraser, and bucket fill tools
+- **Paint** - Drawing application with brush, eraser, bucket fill, and file system save/load
 - **Terminal** - MS-DOS style command line with extensive command set
+
+### System Applications
+- **My Computer** - Windows Explorer-style file browser with grid/list views and drag-and-drop
+- **Control Panel** - System settings for display, sound, desktop pet, and screensaver
+- **Admin Panel** - Advanced administration for icons, security, achievements, and diagnostics
+- **Recycle Bin** - View, restore, or permanently delete removed items
+- **Internet Explorer** - Web browser with bookmarks, history, and address bar
 
 ### Classic Games
 - **Snake** - The timeless arcade game with high score tracking
@@ -50,16 +66,18 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 
 ### Special Features
 - **Clippy Assistant** - The iconic paperclip helper with personality
-- **Desktop Pet** - Animated companion that walks across your screen
-- **Screensaver** - Activates after 5 minutes of inactivity
+- **Desktop Pet** - Animated companion that walks across your screen (8 pet options)
+- **Screensaver** - Activates after configurable inactivity period
 - **Achievement System** - Unlock achievements for various actions
 - **Easter Eggs** - Hidden features waiting to be discovered
+- **Run Dialog** - Launch apps with Ctrl+R (Windows Run dialog style)
+- **Shutdown Dialog** - Shutdown, restart, or log off options
 
 ### Technical Features
 - **Zero Dependencies** - 100% vanilla JavaScript
 - **LocalStorage Persistence** - Your settings, files, and high scores are saved
 - **Web Audio API** - Synthesized sound effects
-- **Responsive Design** - Works in modern browsers
+- **Responsive Windows** - Apps resize properly when windows are resized
 - **Modular Architecture** - Clean, maintainable codebase
 
 ---
@@ -114,6 +132,7 @@ RetrOS requires no build process, package installation, or compilation. Simply:
 - Web Audio API
 - LocalStorage
 - CSS Grid/Flexbox
+- ResizeObserver
 
 ---
 
@@ -126,6 +145,7 @@ When you first load RetrOS, you'll experience an authentic boot sequence:
 2. Loading bar animation
 3. "Starting Windows 95..." message
 4. Desktop loads with icons
+5. Welcome dialog with tips (first visit only)
 
 ### Desktop Navigation
 
@@ -153,6 +173,7 @@ When you first load RetrOS, you'll experience an authentic boot sequence:
 
 | Shortcut | Application | Action |
 |----------|-------------|--------|
+| `Ctrl+R` | Global | Open Run dialog |
 | `Ctrl+S` | Notepad | Save file |
 | `0-9`, `+-*/` | Calculator | Input |
 | `Enter` | Calculator | Calculate |
@@ -165,21 +186,101 @@ When you first load RetrOS, you'll experience an authentic boot sequence:
 
 ## Applications
 
+### My Computer
+
+A Windows Explorer-style file browser for navigating the virtual file system.
+
+**Features:**
+- Browse drives (C:, D:, A:) and directories
+- Grid and list view modes
+- Address bar showing current path
+- Back, Up, and View toolbar buttons
+- Drive information with usage bars
+- Open files with appropriate applications
+- Drag and drop to move files between folders
+- Support for shortcuts (.lnk files)
+
+**System Folders:**
+- My Documents, My Pictures, My Music
+- Control Panel, Recycle Bin
+
+---
+
+### Internet Explorer
+
+A retro-styled web browser for surfing the information superhighway.
+
+**Features:**
+- Full address bar with Go button
+- Back, Forward, Refresh, Home navigation
+- Bookmarks bar (Wikipedia, Internet Archive, Google, Hacker News)
+- History management
+- Status bar showing load status
+- Auto-maximizes on open for better viewing
+
+**Usage:**
+1. Launch from desktop or Start Menu
+2. Enter URL in address bar or click a bookmark
+3. Press Enter or click Go to navigate
+
+---
+
+### Control Panel
+
+System settings and configuration center.
+
+**Settings Available:**
+- **Display** - Desktop background color, CRT effect toggle
+- **Sound** - Enable/disable system sounds
+- **Desktop Pet** - Enable/disable, choose from 8 pet types
+- **Screensaver** - Set delay (1, 3, 5, 10 minutes, or never)
+- **System Info** - Storage usage, achievements count
+- **Advanced** - Reset RetrOS, Export/Import settings
+
+---
+
+### Admin Panel
+
+Advanced system administration for power users.
+
+**Tabs:**
+- **Desktop Icons** - Add, edit, or delete desktop icons
+- **Security** - Set or remove admin password
+- **Achievements** - Unlock all or clear achievements
+- **System** - Diagnostics, console output, factory reset
+
+**Security:**
+- Set a password to protect Admin Panel access
+- Password persists across sessions
+
+---
+
+### Recycle Bin
+
+Manage deleted desktop items.
+
+**Features:**
+- View all deleted items with icons
+- Grid or list view modes
+- Restore items to desktop (double-click or Restore button)
+- Permanently delete individual items
+- Empty entire Recycle Bin
+
+---
+
 ### Notepad
 
-A simple text editor for creating and editing text files.
+A simple text editor with full file system integration.
 
 **Features:**
 - Create and edit text documents
-- Save to browser storage (persists between sessions)
-- Download as `.txt` file
+- **New** - Start a fresh document
+- **Open** - Browse and open files from the virtual file system
+- **Save** - Save to current file location
+- **Save As** - Choose location and filename via file dialog
+- **Download** - Export as a real `.txt` file
+- File path display in toolbar
 - Keyboard shortcuts (Ctrl+S to save)
-
-**Usage:**
-1. Launch from desktop or Start Menu → Programs → Notepad
-2. Type your content
-3. Click "Save" or press Ctrl+S
-4. Use "Download" to export as a file
 
 ---
 
@@ -202,7 +303,7 @@ A fully-functional calculator with standard arithmetic operations.
 
 ### Paint
 
-A drawing application inspired by MS Paint.
+A drawing application inspired by MS Paint with file system support.
 
 **Features:**
 - **Brush Tool** - Free-hand drawing
@@ -210,19 +311,22 @@ A drawing application inspired by MS Paint.
 - **Bucket Fill** - Fill areas with color
 - **Color Palette** - 16 preset colors + custom color picker
 - **Brush Size** - Adjustable from 1-12 pixels
-- **Status Bar** - Real-time cursor coordinates
+- **Status Bar** - Real-time cursor coordinates and tool info
+- **Resizable Canvas** - Canvas expands when window is resized
+- **File Operations** - Open, Save, Save As for PNG images
 
 **Usage:**
 1. Select a tool from the toolbar
 2. Choose a color from the palette
 3. Adjust brush size if needed
 4. Draw on the canvas
+5. Save to file system or start new
 
 ---
 
 ### Terminal
 
-An MS-DOS style command-line interface with an extensive command set.
+An MS-DOS style command-line interface with extensive command set.
 
 **Core Commands:**
 
@@ -239,7 +343,7 @@ An MS-DOS style command-line interface with an extensive command set.
 | `ver` | Show system version |
 | `exit` | Close terminal |
 
-**Advanced Commands:**
+**File System Commands:**
 
 | Command | Description |
 |---------|-------------|
@@ -296,14 +400,6 @@ The beloved puzzle game of logic and luck.
 - Timer and mine counter
 - Chording support (click number with correct flags)
 
-**Face Guide:**
-| Face | Meaning |
-|------|---------|
-| 😀 | Playing |
-| 😲 | Clicking |
-| 😎 | Won! |
-| 😵 | Lost |
-
 ---
 
 ### Asteroids
@@ -349,10 +445,29 @@ The legendary 1993 first-person shooter running via WebAssembly.
 - Browser-based WebAssembly port
 - Original game experience
 
-**Usage:**
-1. Launch DOOM from desktop or Start Menu
-2. Click the window to start
-3. Use standard DOOM controls
+---
+
+## System Dialogs
+
+RetrOS features authentic Windows 95-style dialog boxes that replace browser modals.
+
+### Run Dialog
+- Open with **Ctrl+R** or from Start Menu
+- Type application names (notepad, calc, cmd, paint, etc.)
+- Enter URLs to open in browser
+- Click Browse to open My Computer
+
+### Shutdown Dialog
+- Access from Start Menu → Shut Down
+- **Shut down** - Shows "It's now safe to turn off your computer"
+- **Restart** - Reloads the page
+- **Log off** - Clears session and shows welcome
+
+### File Dialogs
+- Windows 95-style Open and Save As dialogs
+- Browse virtual file system
+- Navigate folders, create new folders
+- Filter by file type
 
 ---
 
@@ -383,6 +498,12 @@ Enter these commands in the Terminal:
 | `zork` | Play the classic text adventure |
 | `bsod` | Trigger a Blue Screen of Death |
 
+### Hidden Files
+
+Explore the file system to find secret files:
+- `C:/Users/Seth/Secret/aperture.log` - Portal reference
+- `C:/Users/Seth/Secret/hal9000.txt` - 2001: A Space Odyssey reference
+
 ### Clock Easter Egg
 
 Click the taskbar clock **10 times** to trigger Disco Fever mode and unlock an achievement.
@@ -399,12 +520,12 @@ Unlock achievements by performing various actions:
 
 | Achievement | How to Unlock |
 |-------------|---------------|
-| 🏆 **First Boot** | Launch RetrOS for the first time |
-| 🏆 **Konami Master** | Enter the Konami Code |
-| 🏆 **Disco Fever** | Click the clock 10 times |
-| 🏆 **Multitasker** | Open 10+ windows simultaneously |
-| 🏆 **Clippy Hater** | Dismiss Clippy 5 times |
-| 🏆 **Neo** | Enter Matrix mode in Terminal |
+| First Boot | Launch RetrOS for the first time |
+| Konami Master | Enter the Konami Code |
+| Disco Fever | Click the clock 10 times |
+| Multitasker | Open 10+ windows simultaneously |
+| Clippy Hater | Dismiss Clippy 5 times |
+| Neo | Enter Matrix mode in Terminal |
 
 Achievements persist between sessions and display as toast notifications when unlocked.
 
@@ -419,12 +540,6 @@ The iconic Microsoft Office Assistant makes an appearance! Clippy randomly spawn
 - Becomes progressively annoyed if dismissed repeatedly
 - Eventually gives up entirely if you keep dismissing him
 
-**Messages include:**
-- "It looks like you're trying to use a computer. Need help?"
-- "Did you know? The 'Any' key doesn't actually exist!"
-- "Have you tried turning it off and on again?"
-- And many more...
-
 ---
 
 ## Desktop Pet
@@ -433,24 +548,24 @@ An animated companion that walks across your desktop.
 
 **Activation:**
 - Enter the Konami Code, or
-- Enable via Settings (after unlocking)
+- Enable via Control Panel → Desktop Pet
 
 **Available Pets:**
 | Pet | Emoji |
 |-----|-------|
 | Dog | 🐕 |
-| Cat | 🐱 |
-| Duck | 🦆 |
-| Turtle | 🐢 |
-| Rabbit | 🐰 |
+| Cat | 🐈 |
+| Rabbit | 🐇 |
+| Hamster | 🐹 |
 | Fox | 🦊 |
-| Frog | 🐸 |
-| Penguin | 🐧 |
+| Raccoon | 🦝 |
+| Squirrel | 🐿️ |
+| Hedgehog | 🦔 |
 
 **Features:**
 - Walks continuously across the screen
 - Click for random fortune cookie messages
-- Customizable in settings
+- Customizable in Control Panel
 
 ---
 
@@ -461,6 +576,7 @@ An animated companion that walks across your desktop.
 ```
 RetrOS/
 ├── index.html              # Main entry point
+├── index.js                # Application bootstrap
 ├── styles.css              # Windows 95 styling (1000+ lines)
 ├── README.md               # This file
 │
@@ -468,22 +584,27 @@ RetrOS/
 │   ├── AppBase.js          # Base class for all apps
 │   ├── AppRegistry.js      # Central app registry & launcher
 │   ├── Calculator.js       # Calculator application
-│   ├── Notepad.js          # Text editor
-│   ├── Terminal.js         # MS-DOS terminal (60KB)
-│   ├── Paint.js            # Paint application
+│   ├── Notepad.js          # Text editor with file system
+│   ├── Terminal.js         # MS-DOS terminal
+│   ├── Paint.js            # Paint with file system
 │   ├── Snake.js            # Snake game
 │   ├── Minesweeper.js      # Minesweeper game
 │   ├── Asteroids.js        # Asteroids game
 │   ├── Solitaire.js        # Solitaire card game
 │   ├── Doom.js             # DOOM WebAssembly wrapper
-│   ├── MediaPlayer.js      # Media player placeholder
-│   └── SystemApps.js       # System utility stubs
+│   ├── MediaPlayer.js      # Media player
+│   ├── Browser.js          # Internet Explorer browser
+│   ├── MyComputer.js       # File explorer
+│   ├── RecycleBin.js       # Deleted items manager
+│   ├── ControlPanel.js     # System settings
+│   └── AdminPanel.js       # Admin tools
 │
 ├── core/                   # Core system modules
 │   ├── EventBus.js         # Pub/sub event system
 │   ├── StateManager.js     # Centralized state management
 │   ├── WindowManager.js    # Window lifecycle & operations
-│   └── StorageManager.js   # LocalStorage abstraction
+│   ├── StorageManager.js   # LocalStorage abstraction
+│   └── FileSystemManager.js # Virtual file system
 │
 ├── features/               # Feature modules
 │   ├── ClippyAssistant.js  # Clippy helper
@@ -491,7 +612,8 @@ RetrOS/
 │   ├── Screensaver.js      # Screensaver module
 │   ├── EasterEggs.js       # Hidden triggers
 │   ├── AchievementSystem.js # Achievement tracking
-│   └── SoundSystem.js      # Web Audio sound effects
+│   ├── SoundSystem.js      # Web Audio sound effects
+│   └── SystemDialogs.js    # Windows 95-style dialogs
 │
 └── ui/                     # UI rendering components
     ├── DesktopRenderer.js  # Desktop icons
@@ -572,7 +694,7 @@ UI Updates
 
 ### Settings
 
-Settings are stored in localStorage and can be modified:
+Settings are stored in localStorage and can be modified via Control Panel:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -596,6 +718,9 @@ RetrOS uses the prefix `smos_` for all stored data:
 | `smos_crtEnabled` | CRT effect preference |
 | `smos_petEnabled` | Pet visibility |
 | `smos_currentPet` | Selected pet type |
+| `smos_fileSystem` | Virtual file system data |
+| `smos_recycledItems` | Recycle bin contents |
+| `smos_adminPassword` | Admin panel password |
 
 ### Clearing Data
 
@@ -614,6 +739,8 @@ Or use the Terminal:
 reset --factory
 ```
 
+Or use Control Panel → Advanced → Reset
+
 ---
 
 ## Browser Compatibility
@@ -622,12 +749,12 @@ reset --factory
 
 | Browser | Status | Notes |
 |---------|--------|-------|
-| Chrome 90+ | ✅ Full Support | Recommended |
-| Firefox 88+ | ✅ Full Support | |
-| Safari 14+ | ✅ Full Support | |
-| Edge 90+ | ✅ Full Support | |
-| Opera 76+ | ✅ Full Support | |
-| IE 11 | ❌ Not Supported | Use Edge |
+| Chrome 90+ | Full Support | Recommended |
+| Firefox 88+ | Full Support | |
+| Safari 14+ | Full Support | |
+| Edge 90+ | Full Support | |
+| Opera 76+ | Full Support | |
+| IE 11 | Not Supported | Use Edge |
 
 ### Required Features
 
@@ -637,6 +764,7 @@ reset --factory
 - Canvas 2D Context
 - Web Audio API (for sounds)
 - Pointer Events
+- ResizeObserver API
 
 ---
 
@@ -679,14 +807,14 @@ class MyApp extends AppBase {
     }
 }
 
-export default new MyApp();
+export default MyApp;
 ```
 
 2. Register in `AppRegistry.js`:
 
 ```javascript
 import MyApp from './MyApp.js';
-AppRegistry.register(MyApp, {
+AppRegistry.register(new MyApp(), {
     category: 'accessories',
     description: 'My custom application'
 });
@@ -699,13 +827,15 @@ Modify the `defaultIcons` array in `StateManager.js`:
 ```javascript
 {
     id: 'myapp',
-    title: 'My App',
-    icon: '🎯',
+    label: 'My App',
+    emoji: '🎯',
     x: 20,
     y: 300,
-    action: () => AppRegistry.launch('myapp')
+    type: 'app'
 }
 ```
+
+Or use the Admin Panel to add icons through the GUI.
 
 ---
 
