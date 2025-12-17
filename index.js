@@ -112,47 +112,74 @@ class BootSequence {
 }
 
 /**
- * Initialize all OS components in the correct order
+ * Initialize a single component with error handling
+ * @param {string} name - Component name for logging
+ * @param {Function} initFn - Initialization function
  */
-async function initializeOS() {
+function initComponent(name, initFn) {
+    try {
+        console.log(`[RetrOS]   - Initializing ${name}...`);
+        initFn();
+    } catch (error) {
+        console.error(`[RetrOS] FAILED to initialize ${name}:`, error);
+        throw new Error(`Failed to initialize ${name}: ${error.message}`);
+    }
+}
+
+/**
+ * Initialize all OS components in the correct order
+ * @param {Function} onProgress - Callback for progress updates
+ */
+async function initializeOS(onProgress = () => {}) {
     console.log('[RetrOS] Starting initialization...');
+
+    // === Phase 0: App Registry (CRITICAL - was running outside error handling!) ===
+    console.log('[RetrOS] Phase 0: App Registry');
+    onProgress(5, 'Registering applications...');
+    initComponent('AppRegistry', () => AppRegistry.initialize());
 
     // === Phase 1: Core Systems ===
     console.log('[RetrOS] Phase 1: Core Systems');
-    StorageManager.initialize();
-    StateManager.initialize();
-    WindowManager.initialize();
+    onProgress(15, 'Loading core systems...');
+    initComponent('StorageManager', () => StorageManager.initialize());
+    initComponent('StateManager', () => StateManager.initialize());
+    initComponent('WindowManager', () => WindowManager.initialize());
 
     // === Phase 2: Features ===
     console.log('[RetrOS] Phase 2: Features');
-    SoundSystem.initialize();
-    AchievementSystem.initialize();
-    EasterEggs.initialize();
-    ClippyAssistant.initialize();
-    DesktopPet.initialize();
-    Screensaver.initialize();
-    SystemDialogs.initialize();
+    onProgress(35, 'Loading features...');
+    initComponent('SoundSystem', () => SoundSystem.initialize());
+    initComponent('AchievementSystem', () => AchievementSystem.initialize());
+    initComponent('EasterEggs', () => EasterEggs.initialize());
+    initComponent('ClippyAssistant', () => ClippyAssistant.initialize());
+    initComponent('DesktopPet', () => DesktopPet.initialize());
+    initComponent('Screensaver', () => Screensaver.initialize());
+    initComponent('SystemDialogs', () => SystemDialogs.initialize());
 
     // === Phase 3: UI Renderers ===
     console.log('[RetrOS] Phase 3: UI Renderers');
-    TaskbarRenderer.initialize();
-    DesktopRenderer.initialize();
-    StartMenuRenderer.initialize();
-    ContextMenuRenderer.initialize();
+    onProgress(60, 'Rendering desktop...');
+    initComponent('TaskbarRenderer', () => TaskbarRenderer.initialize());
+    initComponent('DesktopRenderer', () => DesktopRenderer.initialize());
+    initComponent('StartMenuRenderer', () => StartMenuRenderer.initialize());
+    initComponent('ContextMenuRenderer', () => ContextMenuRenderer.initialize());
 
     // === Phase 4: Apply saved settings ===
     console.log('[RetrOS] Phase 4: Applying settings');
-    applySettings();
+    onProgress(80, 'Applying settings...');
+    initComponent('Settings', () => applySettings());
 
     // === Phase 5: Setup global handlers ===
     console.log('[RetrOS] Phase 5: Global handlers');
-    setupGlobalHandlers();
+    onProgress(90, 'Setting up handlers...');
+    initComponent('GlobalHandlers', () => setupGlobalHandlers());
 
     // Mark as visited
     if (!StateManager.getState('user.hasVisited')) {
         StateManager.setState('user.hasVisited', true, true);
     }
 
+    onProgress(100, 'Ready!');
     console.log('[RetrOS] Initialization complete');
 }
 
@@ -295,27 +322,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Create boot sequence
     const boot = new BootSequence();
 
-    try {
-        // Initialize OS components while boot screen shows
-        await initializeOS();
+    // Track initialization progress
+    let initProgress = 0;
+    let initTip = 'Starting up...';
+    let initComplete = false;
+    let initError = null;
 
-        // Run boot animation (will complete after initialization)
-        await boot.run();
+    // Start boot animation IMMEDIATELY (don't wait for init)
+    // This ensures users see progress even if init has issues
+    const bootPromise = new Promise((resolve) => {
+        const progressInterval = setInterval(() => {
+            // Use actual init progress if available, otherwise animate slowly
+            if (initComplete) {
+                boot.progress = 100;
+            } else if (initError) {
+                clearInterval(progressInterval);
+                clearInterval(tipInterval);
+                resolve();
+                return;
+            } else {
+                // Smoothly animate towards init progress
+                const targetProgress = Math.min(initProgress, 95); // Cap at 95% until init completes
+                boot.progress = Math.min(boot.progress + 2, targetProgress);
+            }
+
+            if (boot.loadingFill) {
+                boot.loadingFill.style.width = `${boot.progress}%`;
+            }
+
+            if (boot.progress >= 100) {
+                clearInterval(progressInterval);
+                clearInterval(tipInterval);
+                setTimeout(() => {
+                    boot.complete();
+                    resolve();
+                }, 300);
+            }
+        }, 100);
+
+        // Update tips from init progress
+        const tipInterval = setInterval(() => {
+            if (boot.bootTip && initTip) {
+                boot.bootTip.textContent = initTip;
+            }
+        }, 200);
+    });
+
+    try {
+        // Initialize OS with progress callbacks and timeout safety
+        const INIT_TIMEOUT = 30000; // 30 seconds max for initialization
+
+        const initPromise = initializeOS((progress, tip) => {
+            initProgress = progress;
+            initTip = tip;
+        });
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                reject(new Error(`Initialization timed out after ${INIT_TIMEOUT/1000} seconds. Last progress: ${initProgress}% - "${initTip}"`));
+            }, INIT_TIMEOUT);
+        });
+
+        // Race between init completing and timeout
+        await Promise.race([initPromise, timeoutPromise]);
+
+        initComplete = true;
+
+        // Wait for boot animation to finish
+        await bootPromise;
 
         console.log('[RetrOS] System ready!');
     } catch (error) {
         console.error('[RetrOS] Boot failed with error:', error);
+        initError = error;
 
         // Show error to user and allow recovery
         const bootScreen = document.getElementById('bootScreen');
         if (bootScreen) {
             bootScreen.innerHTML = `
-                <div style="color: white; text-align: center; padding: 20px;">
-                    <h2>RetrOS Boot Error</h2>
-                    <p style="color: #ff6b6b;">An error occurred during startup:</p>
-                    <pre style="background: #333; padding: 10px; margin: 10px; border-radius: 4px; text-align: left; max-width: 600px; overflow: auto;">${error.message}\n${error.stack || ''}</pre>
-                    <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer; margin-top: 10px;">
-                        Restart RetrOS
+                <div style="color: white; text-align: center; padding: 20px; font-family: 'Courier New', monospace;">
+                    <h2 style="color: #ff6b6b;">⚠️ RetrOS Boot Error</h2>
+                    <p style="color: #aaa; margin: 15px 0;">An error occurred during startup:</p>
+                    <pre style="background: #1a1a1a; padding: 15px; margin: 15px auto; border-radius: 4px; text-align: left; max-width: 600px; overflow: auto; border: 1px solid #333; color: #ff6b6b; font-size: 12px;">${error.message}</pre>
+                    <p style="color: #888; font-size: 12px; margin: 10px 0;">Check browser console (F12) for full details</p>
+                    <button onclick="location.reload()" style="padding: 12px 24px; cursor: pointer; margin-top: 15px; background: #4a4a4a; color: white; border: 2px outset #666; font-size: 14px;">
+                        🔄 Restart RetrOS
+                    </button>
+                    <button onclick="localStorage.clear(); location.reload()" style="padding: 12px 24px; cursor: pointer; margin-top: 15px; margin-left: 10px; background: #8b0000; color: white; border: 2px outset #666; font-size: 14px;">
+                        🗑️ Reset & Restart
                     </button>
                 </div>
             `;
