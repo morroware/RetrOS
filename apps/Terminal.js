@@ -1,7 +1,7 @@
 /**
  * Terminal App - Retro MS-DOS Style
- * Features: File System, Network Sim, Easter Eggs, ZORK
- * FIXED: Internal scrolling, no window growth
+ * Features: File System, Network Sim, Easter Eggs
+ * Authentic DOS/Windows 95 command prompt experience
  */
 
 import AppBase from './AppBase.js';
@@ -24,12 +24,22 @@ class Terminal extends AppBase {
         this.godMode = false;
         this.activeProcess = null;
         this.currentPath = ['C:', 'Users', 'Seth'];
-        this.zork = null;
+
+        // DOS-like environment variables
+        this.envVars = {
+            'PATH': 'C:\\WINDOWS;C:\\WINDOWS\\SYSTEM32;C:\\DOS',
+            'PROMPT': '$P$G',
+            'COMSPEC': 'C:\\WINDOWS\\SYSTEM32\\CMD.EXE',
+            'TEMP': 'C:\\TEMP',
+            'TMP': 'C:\\TEMP',
+            'USERNAME': 'Seth',
+            'COMPUTERNAME': 'RETROS-PC',
+            'OS': 'RetrOS',
+            'WINDIR': 'C:\\WINDOWS'
+        };
     }
 
     onOpen() {
-        // The terminal uses a fixed-height inner container to prevent window growth
-        // Window is 450px, minus ~30px title bar = ~420px content area
         return `
             <div class="terminal-app" id="terminalApp">
                 <canvas id="matrixCanvas"></canvas>
@@ -42,7 +52,6 @@ class Terminal extends AppBase {
                 </div>
             </div>
             <style>
-                /* CRITICAL: Lock the window-content to fixed dimensions */
                 #window-terminal .window-content {
                     padding: 0 !important;
                     margin: 0 !important;
@@ -51,21 +60,19 @@ class Terminal extends AppBase {
                     min-height: 415px !important;
                     max-height: 415px !important;
                 }
-                
-                /* Terminal fills the fixed container exactly */
+
                 .terminal-app {
                     background: #000;
-                    color: #0f0;
-                    font-family: 'VT323', 'Consolas', monospace;
-                    font-size: 18px;
+                    color: #c0c0c0;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                    font-size: 14px;
                     width: 100%;
                     height: 415px;
                     position: relative;
                     overflow: hidden;
                     box-sizing: border-box;
                 }
-                
-                /* Matrix canvas overlay */
+
                 .terminal-app #matrixCanvas {
                     position: absolute;
                     top: 0; left: 0;
@@ -77,8 +84,7 @@ class Terminal extends AppBase {
                 .terminal-app.matrix-mode #matrixCanvas {
                     display: block;
                 }
-                
-                /* Scrollable area - absolute positioned to fill container */
+
                 .terminal-scroll {
                     position: absolute;
                     top: 0;
@@ -87,42 +93,41 @@ class Terminal extends AppBase {
                     bottom: 0;
                     overflow-y: auto;
                     overflow-x: hidden;
-                    padding: 10px;
+                    padding: 8px;
                     z-index: 2;
                     box-sizing: border-box;
                 }
-                
-                /* Output text */
+
                 .terminal-app #terminalOutput {
                     white-space: pre-wrap;
                     word-break: break-word;
                 }
                 .terminal-app #terminalOutput > div {
-                    margin-bottom: 2px;
-                    line-height: 1.3;
+                    margin-bottom: 1px;
+                    line-height: 1.4;
                 }
-                
-                /* Input line */
+
                 .terminal-app .terminal-input-line {
                     display: flex;
                     align-items: center;
-                    margin-top: 5px;
+                    margin-top: 2px;
                 }
                 .terminal-app .terminal-prompt {
-                    color: #0f0;
-                    margin-right: 8px;
+                    color: #c0c0c0;
+                    margin-right: 0;
                     flex-shrink: 0;
                 }
                 .terminal-app .terminal-input {
                     flex: 1;
                     background: transparent;
                     border: none;
-                    color: #0f0;
+                    color: #c0c0c0;
                     font-family: inherit;
                     font-size: inherit;
                     outline: none;
-                    caret-color: #0f0;
+                    caret-color: #c0c0c0;
                     min-width: 0;
+                    padding-left: 0;
                 }
             </style>
         `;
@@ -131,60 +136,26 @@ class Terminal extends AppBase {
     onMount() {
         const input = this.getElement('#terminalInput');
         const scroller = this.getElement('#terminalScroller');
-        
-        // Focus input when clicking anywhere in terminal
+
         scroller?.addEventListener('click', () => {
             if (window.getSelection().toString().length === 0) {
                 input?.focus();
             }
         });
 
-        // Boot sequence
         this.runBootSequence();
     }
 
     runBootSequence() {
         const lines = [
-            'Seth Morrow BIOS v2.1 [Build 1995.12.25]',
-            'Copyright (C) 1995-2025 Morrow Systems Inc.',
+            'Microsoft(R) Windows 95',
+            '   (C)Copyright Microsoft Corp 1981-1995.',
             '',
-            'BIOS Date: 12/25/95  System ID: SM-95-PRO',
+            'C:\\>ver',
             '',
-            'Processor: Intel Pentium 133MHz',
-            'Memory Test: 640K Base Memory',
-            '            15360K Extended Memory',
-            '            16384K Total Memory OK',
+            'Seth Morrow OS [Version 95.0.1995]',
             '',
-            'Detecting IDE Primary Master... QUANTUM FIREBALL 2.1GB',
-            'Detecting IDE Primary Slave... None',
-            'Detecting IDE Secondary Master... CREATIVE CD-ROM 4X',
-            'Detecting IDE Secondary Slave... None',
-            '',
-            'Plug and Play BIOS Extension v1.0A',
-            '  Detecting PnP devices... Done',
-            '  Sound Blaster 16 detected at IRQ 5, DMA 1',
-            '  3Com EtherLink III detected at IRQ 10',
-            '',
-            'Press DEL to enter SETUP, ESC to skip memory test',
-            '',
-            'Starting MS-DOS...',
-            '',
-            'HIMEM.SYS loaded',
-            'EMM386.EXE loaded',
-            'SMARTDRV.EXE: Cache size 2048K',
-            'MSCDEX.EXE: Drive D: = CREATIVE_001',
-            'MOUSE.COM: Microsoft Mouse Driver v9.01',
-            '',
-            'C:\\>LOADHIGH DOSKEY',
-            'C:\\>SET PATH=C:\\DOS;C:\\WINDOWS;C:\\UTILS',
-            'C:\\>ZOS.EXE',
-            '',
-            '+================================================================+',
-            '|                    SETH MORROW OS v95.0                        |',
-            '|                "Where do you want to go today?"                |',
-            '+================================================================+',
-            '',
-            'Type "help" for commands, "neuromancer" to play a cyberpunk adventure.',
+            'C:\\>cd Users\\Seth',
             ''
         ];
 
@@ -194,8 +165,7 @@ class Terminal extends AppBase {
 
         let delay = 0;
         lines.forEach((line, i) => {
-            // Faster timing: 30-60ms per line
-            delay += 30 + Math.random() * 30;
+            delay += 20 + Math.random() * 20;
             setTimeout(() => {
                 this.print(line);
                 if (i === lines.length - 1) {
@@ -224,23 +194,24 @@ class Terminal extends AppBase {
                 return;
             }
 
-            // If Zork is active, route input there
-            if (this.activeProcess === 'zork') {
-                if (e.key === 'Enter') {
-                    const cmd = input.value;
-                    input.value = '';
-                    this.zork.handleInput(cmd);
-                }
-                return;
-            }
-
-            // If another process is running (like matrix), block input
-            if (this.activeProcess) {
+            // If a process is running, block input
+            if (this.activeProcess && this.activeProcess !== 'more') {
                 e.preventDefault();
                 return;
             }
 
-            // Normal command handling
+            // Handle 'more' process
+            if (this.activeProcess === 'more') {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.continueMore();
+                } else if (e.key === 'q' || e.key === 'Q') {
+                    e.preventDefault();
+                    this.killProcess();
+                }
+                return;
+            }
+
             if (e.key === 'Enter') {
                 const cmd = input.value;
                 input.value = '';
@@ -258,10 +229,10 @@ class Terminal extends AppBase {
         });
     }
 
-    print(text, color = '#0f0') {
+    print(text, color = '#c0c0c0') {
         const output = this.getElement('#terminalOutput');
         if (!output) return;
-        
+
         const div = document.createElement('div');
         div.style.color = color;
         div.innerHTML = this.escapeHtml(text).replace(/\n/g, '<br>');
@@ -272,7 +243,7 @@ class Terminal extends AppBase {
     printHtml(html) {
         const output = this.getElement('#terminalOutput');
         if (!output) return;
-        
+
         const div = document.createElement('div');
         div.innerHTML = html;
         output.appendChild(div);
@@ -297,21 +268,22 @@ class Terminal extends AppBase {
 
     executeCommand(cmdLine) {
         const trimmed = cmdLine.trim();
-        
+
         // Show what was typed
-        this.print(this.getPrompt() + ' ' + trimmed);
-        
+        this.print(this.getPrompt() + trimmed);
+
         if (!trimmed) return;
 
         // Add to history
         this.commandHistory.push(trimmed);
         this.historyIndex = -1;
 
-        const parts = trimmed.split(/\s+/);
+        // Parse command and arguments (handle quoted strings)
+        const parts = this.parseCommandLine(trimmed);
         const cmd = parts[0].toLowerCase();
         const args = parts.slice(1);
 
-        // Konami code easter egg (typed as text)
+        // Konami code easter egg
         if (trimmed.replace(/\s/g, '').toLowerCase() === 'uuddlrlrba') {
             this.godMode = true;
             this.print('*** GOD MODE ACTIVATED ***', '#ff00ff');
@@ -319,14 +291,18 @@ class Terminal extends AppBase {
         }
 
         const commands = {
+            // File system commands
             'help': () => this.cmdHelp(),
+            '?': () => this.cmdHelp(),
             'cls': () => this.cmdClear(),
             'clear': () => this.cmdClear(),
-            'dir': () => this.cmdDir(),
-            'ls': () => this.cmdDir(),
+            'dir': () => this.cmdDir(args),
+            'ls': () => this.cmdDir(args),
             'cd': () => this.cmdCd(args),
+            'chdir': () => this.cmdCd(args),
             'type': () => this.cmdType(args),
             'cat': () => this.cmdType(args),
+            'more': () => this.cmdMore(args),
             'mkdir': () => this.cmdMkdir(args),
             'md': () => this.cmdMkdir(args),
             'rmdir': () => this.cmdRmdir(args),
@@ -334,71 +310,136 @@ class Terminal extends AppBase {
             'del': () => this.cmdDel(args),
             'rm': () => this.cmdDel(args),
             'erase': () => this.cmdDel(args),
-            'touch': () => this.cmdTouch(args),
             'copy': () => this.cmdCopy(args),
             'cp': () => this.cmdCopy(args),
             'move': () => this.cmdMove(args),
             'mv': () => this.cmdMove(args),
-            'ren': () => this.cmdMove(args),
-            'rename': () => this.cmdMove(args),
+            'ren': () => this.cmdRename(args),
+            'rename': () => this.cmdRename(args),
+            'tree': () => this.cmdTree(args),
+            'find': () => this.cmdFind(args),
+            'attrib': () => this.cmdAttrib(args),
             'edit': () => this.cmdEdit(args),
             'notepad': () => this.cmdEdit(args),
-            'whoami': () => this.godMode ? 'root (GOD MODE)' : 'seth\\user',
-            'date': () => new Date().toString(),
-            'ver': () => 'Seth Morrow OS [Version 95.0]',
+
+            // System commands
+            'ver': () => this.cmdVer(),
+            'vol': () => this.cmdVol(args),
+            'label': () => this.cmdLabel(args),
+            'date': () => this.cmdDate(),
+            'time': () => this.cmdTime(),
+            'whoami': () => this.cmdWhoami(),
+            'hostname': () => 'RETROS-PC',
+            'set': () => this.cmdSet(args),
+            'path': () => this.cmdPath(args),
+            'prompt': () => this.cmdPrompt(args),
             'echo': () => this.cmdEcho(args, trimmed),
+            'mem': () => this.cmdMem(),
+            'chkdsk': () => this.cmdChkdsk(args),
+            'format': () => this.cmdFormat(args),
+            'sys': () => this.cmdSys(),
+            'systeminfo': () => this.cmdSystemInfo(),
+
+            // Network commands
             'ipconfig': () => this.cmdIpConfig(),
             'ifconfig': () => this.cmdIpConfig(),
             'ping': () => this.cmdPing(args),
+            'netstat': () => this.cmdNetstat(),
+            'tracert': () => this.cmdTracert(args),
+            'nslookup': () => this.cmdNslookup(args),
+
+            // Fun commands
             'matrix': () => this.startMatrix(),
-            'zork': () => this.startZork(),
-            'neuromancer': () => this.startZork(),
-            'cyber': () => this.startZork(),
-            'neuro': () => this.startZork(),
-            'adventure': () => this.startZork(),
             'cowsay': () => this.cmdCowsay(args),
             'fortune': () => this.cmdFortune(),
-            'sudo': () => this.cmdSudo(args),
-            'bsod': () => this.triggerBSOD(),
             'disco': () => this.startDisco(),
             'party': () => this.startParty(),
+            'color': () => this.cmdColor(args),
+
+            // Other commands
+            'sudo': () => this.cmdSudo(args),
+            'bsod': () => this.triggerBSOD(),
             'exit': () => { this.close(); return null; },
+            'quit': () => { this.close(); return null; },
+            'about': () => this.cmdAbout(),
+            'credits': () => this.cmdCredits(),
             'xyzzy': () => 'Nothing happens.',
             '42': () => 'The Answer to Life, the Universe, and Everything.',
-            'about': () => this.cmdAbout(),
         };
+
+        // Handle drive switching (e.g., "C:" or "D:")
+        if (cmd.match(/^[a-z]:$/)) {
+            return this.cmdSwitchDrive(cmd.toUpperCase());
+        }
 
         if (commands[cmd]) {
             const result = commands[cmd]();
             if (result) this.print(result);
         } else {
-            this.print(`'${cmd}' is not recognized. Type 'help' for commands.`);
+            this.print(`'${cmd}' is not recognized as an internal or external command,`);
+            this.print('operable program or batch file.');
         }
     }
 
-    // === COMMANDS ===
+    parseCommandLine(line) {
+        const parts = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ' ' && !inQuotes) {
+                if (current) {
+                    parts.push(current);
+                    current = '';
+                }
+            } else {
+                current += char;
+            }
+        }
+        if (current) parts.push(current);
+        return parts;
+    }
+
+    // === FILE SYSTEM COMMANDS ===
 
     cmdHelp() {
         return `
-COMMANDS:
-  FILE:    dir, cd, type, cls, mkdir, rmdir, del, touch, copy, move, edit
-  SYSTEM:  whoami, date, ver, echo, about
-  NETWORK: ipconfig, ping
-  FUN:     neuromancer, matrix, disco, party, cowsay, fortune
-  OTHER:   sudo, bsod, exit
+For more information on a specific command, type HELP command-name
 
-HINTS: Try the Konami code, or explore Secret folder...
-       Use 'echo text > file.txt' to create files!`;
-    }
+ATTRIB     Displays file attributes.
+CD         Displays or changes the current directory.
+CHKDSK     Checks a disk and displays a status report.
+CLS        Clears the screen.
+COPY       Copies files to another location.
+DATE       Displays the date.
+DEL        Deletes files.
+DIR        Displays a list of files and subdirectories.
+ECHO       Displays messages, or turns command echoing on/off.
+EDIT       Starts Notepad to edit a file.
+FIND       Searches for a text string in a file.
+FORMAT     Formats a disk (simulated).
+HELP       Provides help information.
+IPCONFIG   Displays network configuration.
+MD         Creates a directory.
+MEM        Displays memory usage.
+MORE       Displays output one screen at a time.
+MOVE       Moves files from one directory to another.
+PATH       Displays or sets the search path.
+PING       Tests network connectivity.
+RD         Removes a directory.
+REN        Renames a file or directory.
+SET        Displays or sets environment variables.
+SYSTEMINFO Displays system configuration.
+TIME       Displays the system time.
+TREE       Displays directory structure graphically.
+TYPE       Displays the contents of a text file.
+VER        Displays the operating system version.
+VOL        Displays the disk volume label.
 
-    cmdAbout() {
-        return `
-+======================================+
-|       SETH MORROW OS v95.0           |
-|   A retro Windows 95 experience      |
-|       (c) 2024 Seth Morrow           |
-|    Built with <3 and nostalgia       |
-+======================================+`;
+FUN:       matrix, disco, party, cowsay, fortune, color`;
     }
 
     cmdClear() {
@@ -407,171 +448,513 @@ HINTS: Try the Konami code, or explore Secret folder...
         return null;
     }
 
-    cmdDir() {
+    cmdDir(args) {
         try {
-            const items = FileSystemManager.listDirectory(this.currentPath);
+            // Parse options
+            let showWide = false;
+            let showBare = false;
+            let targetPath = this.currentPath;
 
-            let out = '\n Directory of ' + this.currentPath.join('\\') + '\n\n';
-
-            for (const item of items) {
-                if (item.type === 'directory' || item.type === 'drive') {
-                    out += `  <DIR>          ${item.name}\n`;
-                } else if (item.type === 'file') {
-                    out += `  ${String(item.size).padStart(12)}  ${item.name}\n`;
+            for (const arg of args) {
+                if (arg.toLowerCase() === '/w') showWide = true;
+                else if (arg.toLowerCase() === '/b') showBare = true;
+                else if (!arg.startsWith('/')) {
+                    targetPath = this.resolvePath(arg);
                 }
+            }
+
+            const items = FileSystemManager.listDirectory(targetPath);
+            const pathStr = targetPath.join('\\');
+
+            if (showBare) {
+                // Bare format - just names
+                let out = '';
+                for (const item of items) {
+                    out += item.name + '\n';
+                }
+                return out;
+            }
+
+            // Get volume info
+            const drive = targetPath[0];
+            const driveNode = FileSystemManager.getNode([drive]);
+            const volumeLabel = driveNode?.label || 'LOCAL DISK';
+
+            let out = `\n Volume in drive ${drive.charAt(0)} is ${volumeLabel.toUpperCase()}`;
+            out += `\n Volume Serial Number is 1995-1225`;
+            out += `\n\n Directory of ${pathStr}\n\n`;
+
+            if (showWide) {
+                // Wide format - multiple columns
+                let col = 0;
+                for (const item of items) {
+                    const name = item.type === 'directory' ? `[${item.name}]` : item.name;
+                    out += name.padEnd(20);
+                    col++;
+                    if (col >= 3) {
+                        out += '\n';
+                        col = 0;
+                    }
+                }
+                if (col !== 0) out += '\n';
+            } else {
+                // Standard format with dates and sizes
+                let fileCount = 0;
+                let dirCount = 0;
+                let totalSize = 0;
+
+                for (const item of items) {
+                    const date = item.modified ? new Date(item.modified) : new Date();
+                    const dateStr = date.toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric'
+                    }).replace(/\//g, '-');
+                    const timeStr = date.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+
+                    if (item.type === 'directory' || item.type === 'drive') {
+                        out += `${dateStr}  ${timeStr}    <DIR>          ${item.name}\n`;
+                        dirCount++;
+                    } else {
+                        const sizeStr = String(item.size || 0).padStart(14);
+                        out += `${dateStr}  ${timeStr} ${sizeStr} ${item.name}\n`;
+                        fileCount++;
+                        totalSize += item.size || 0;
+                    }
+                }
+
+                out += `\n               ${fileCount} File(s)    ${totalSize.toLocaleString()} bytes`;
+                out += `\n               ${dirCount} Dir(s)   ${this.getFreeSpace(targetPath[0])} bytes free`;
             }
 
             return out;
         } catch (e) {
-            return 'Invalid path.';
+            return 'File Not Found';
         }
     }
 
     cmdCd(args) {
-        const target = args[0];
-        if (!target) return this.currentPath.join('\\');
+        if (!args[0]) {
+            return this.currentPath.join('\\');
+        }
+
+        const target = args.join(' ');
 
         if (target === '..') {
-            if (this.currentPath.length > 1) this.currentPath.pop();
+            if (this.currentPath.length > 1) {
+                this.currentPath.pop();
+            }
         } else if (target === '\\' || target === '/') {
-            this.currentPath = ['C:'];
+            this.currentPath = [this.currentPath[0]];
+        } else if (target === '.') {
+            // Stay in current directory
         } else {
-            // Try to navigate to the target directory
-            const newPath = [...this.currentPath, target];
+            const newPath = this.resolvePath(target);
             const node = FileSystemManager.getNode(newPath);
 
             if (node && (node.type === 'directory' || node.type === 'drive' || node.children)) {
-                this.currentPath.push(target);
+                this.currentPath = newPath;
             } else {
-                return 'Path not found.';
+                return 'The system cannot find the path specified.';
             }
         }
         this.updatePrompt();
         return '';
     }
 
+    cmdSwitchDrive(drive) {
+        const node = FileSystemManager.getNode([drive]);
+        if (node) {
+            this.currentPath = [drive];
+            this.updatePrompt();
+            return '';
+        }
+        return 'The system cannot find the drive specified.';
+    }
+
     cmdType(args) {
-        if (!args[0]) return 'Usage: type <filename>';
+        if (!args[0]) return 'The syntax of the command is incorrect.';
 
         try {
-            const filePath = [...this.currentPath, args[0]];
+            const filePath = this.resolvePath(args[0]);
             const content = FileSystemManager.readFile(filePath);
             return content;
         } catch (e) {
-            return 'File not found.';
+            return 'The system cannot find the file specified.';
+        }
+    }
+
+    cmdMore(args) {
+        if (!args[0]) return 'The syntax of the command is incorrect.';
+
+        try {
+            const filePath = this.resolvePath(args[0]);
+            const content = FileSystemManager.readFile(filePath);
+            const lines = content.split('\n');
+
+            this.moreBuffer = lines;
+            this.moreIndex = 0;
+            this.activeProcess = 'more';
+
+            this.showMorePage();
+            return null;
+        } catch (e) {
+            return 'The system cannot find the file specified.';
+        }
+    }
+
+    showMorePage() {
+        const pageSize = 20;
+        const endIndex = Math.min(this.moreIndex + pageSize, this.moreBuffer.length);
+
+        for (let i = this.moreIndex; i < endIndex; i++) {
+            this.print(this.moreBuffer[i]);
+        }
+
+        this.moreIndex = endIndex;
+
+        if (this.moreIndex >= this.moreBuffer.length) {
+            this.activeProcess = null;
+            this.moreBuffer = null;
+        } else {
+            this.print('-- More -- (Press SPACE or ENTER for more, Q to quit)', '#ffff00');
+        }
+    }
+
+    continueMore() {
+        if (this.moreBuffer) {
+            this.showMorePage();
         }
     }
 
     cmdMkdir(args) {
-        if (!args[0]) return 'Usage: mkdir <dirname>';
+        if (!args[0]) return 'The syntax of the command is incorrect.';
 
         try {
             const dirPath = this.resolvePath(args[0]);
             FileSystemManager.createDirectory(dirPath);
-            return `Directory created: ${args[0]}`;
+            return '';
         } catch (e) {
-            return `Error: ${e.message}`;
+            if (e.message.includes('already exists')) {
+                return 'A subdirectory or file already exists.';
+            }
+            return `Unable to create directory - ${e.message}`;
         }
     }
 
     cmdRmdir(args) {
-        if (!args[0]) return 'Usage: rmdir <dirname>';
+        if (!args[0]) return 'The syntax of the command is incorrect.';
+
+        const recursive = args.includes('/s') || args.includes('/S');
+        const target = args.find(a => !a.startsWith('/'));
+
+        if (!target) return 'The syntax of the command is incorrect.';
 
         try {
-            const dirPath = this.resolvePath(args[0]);
-            FileSystemManager.deleteDirectory(dirPath);
-            return `Directory removed: ${args[0]}`;
+            const dirPath = this.resolvePath(target);
+            FileSystemManager.deleteDirectory(dirPath, recursive);
+            return '';
         } catch (e) {
-            return `Error: ${e.message}`;
+            if (e.message.includes('not empty')) {
+                return 'The directory is not empty.';
+            }
+            return 'The system cannot find the file specified.';
         }
     }
 
     cmdDel(args) {
-        if (!args[0]) return 'Usage: del <filename>';
+        if (!args[0]) return 'The syntax of the command is incorrect.';
 
         try {
             const filePath = this.resolvePath(args[0]);
             FileSystemManager.deleteFile(filePath);
-            return `File deleted: ${args[0]}`;
+            return '';
         } catch (e) {
-            return `Error: ${e.message}`;
-        }
-    }
-
-    cmdTouch(args) {
-        if (!args[0]) return 'Usage: touch <filename>';
-
-        try {
-            const filePath = this.resolvePath(args[0]);
-            // Check if file exists
-            if (FileSystemManager.exists(filePath)) {
-                return `File already exists: ${args[0]}`;
-            }
-            FileSystemManager.writeFile(filePath, '', 'txt');
-            return `File created: ${args[0]}`;
-        } catch (e) {
-            return `Error: ${e.message}`;
+            return 'The system cannot find the file specified.';
         }
     }
 
     cmdCopy(args) {
-        if (args.length < 2) return 'Usage: copy <source> <destination>';
+        if (args.length < 2) return 'The syntax of the command is incorrect.';
 
         try {
             const srcPath = this.resolvePath(args[0]);
-            const destPath = this.resolvePath(args[1]);
+            let destPath = this.resolvePath(args[1]);
 
-            // Read source file
-            const content = FileSystemManager.readFile(srcPath);
-            const srcInfo = FileSystemManager.getInfo(srcPath);
-
-            // Write to destination
-            FileSystemManager.writeFile(destPath, content, srcInfo.extension);
-            return `File copied: ${args[0]} -> ${args[1]}`;
+            // Check if destination is a directory
+            const destNode = FileSystemManager.getNode(destPath);
+            if (destNode && (destNode.type === 'directory' || destNode.children)) {
+                // Copy into directory
+                FileSystemManager.copyItem(srcPath, destPath);
+            } else {
+                // Copy as new filename
+                const content = FileSystemManager.readFile(srcPath);
+                const srcInfo = FileSystemManager.getInfo(srcPath);
+                FileSystemManager.writeFile(destPath, content, srcInfo.extension);
+            }
+            return '        1 file(s) copied.';
         } catch (e) {
-            return `Error: ${e.message}`;
+            return 'The system cannot find the file specified.';
         }
     }
 
     cmdMove(args) {
-        if (args.length < 2) return 'Usage: move <source> <destination>';
+        if (args.length < 2) return 'The syntax of the command is incorrect.';
 
         try {
             const srcPath = this.resolvePath(args[0]);
             const destPath = this.resolvePath(args[1]);
 
-            // Read source file
+            // Check if destination is a directory
+            const destNode = FileSystemManager.getNode(destPath);
+            if (destNode && (destNode.type === 'directory' || destNode.children)) {
+                FileSystemManager.moveItem(srcPath, destPath);
+            } else {
+                // Move as rename
+                const content = FileSystemManager.readFile(srcPath);
+                const srcInfo = FileSystemManager.getInfo(srcPath);
+                FileSystemManager.writeFile(destPath, content, srcInfo.extension);
+                FileSystemManager.deleteFile(srcPath);
+            }
+            return '        1 file(s) moved.';
+        } catch (e) {
+            return 'The system cannot find the file specified.';
+        }
+    }
+
+    cmdRename(args) {
+        if (args.length < 2) return 'The syntax of the command is incorrect.';
+
+        try {
+            const srcPath = this.resolvePath(args[0]);
+            const newName = args[1];
+            const parentPath = srcPath.slice(0, -1);
+            const destPath = [...parentPath, newName];
+
             const content = FileSystemManager.readFile(srcPath);
             const srcInfo = FileSystemManager.getInfo(srcPath);
-
-            // Write to destination
             FileSystemManager.writeFile(destPath, content, srcInfo.extension);
-
-            // Delete source
             FileSystemManager.deleteFile(srcPath);
-
-            return `File moved: ${args[0]} -> ${args[1]}`;
+            return '';
         } catch (e) {
-            return `Error: ${e.message}`;
+            return 'The system cannot find the file specified.';
+        }
+    }
+
+    cmdTree(args) {
+        const targetPath = args[0] ? this.resolvePath(args[0]) : this.currentPath;
+
+        try {
+            let out = `Folder PATH listing for volume ${targetPath[0]}\n`;
+            out += `${targetPath.join('\\')}\n`;
+            out += this.buildTree(targetPath, '');
+            return out;
+        } catch (e) {
+            return 'Invalid path';
+        }
+    }
+
+    buildTree(path, prefix) {
+        let out = '';
+        try {
+            const items = FileSystemManager.listDirectory(path);
+            const dirs = items.filter(i => i.type === 'directory');
+
+            for (let i = 0; i < dirs.length; i++) {
+                const dir = dirs[i];
+                const isLast = i === dirs.length - 1;
+                const connector = isLast ? '└───' : '├───';
+                const newPrefix = prefix + (isLast ? '    ' : '│   ');
+
+                out += `${prefix}${connector}${dir.name}\n`;
+                out += this.buildTree([...path, dir.name], newPrefix);
+            }
+        } catch (e) {
+            // Directory access error, skip
+        }
+        return out;
+    }
+
+    cmdFind(args) {
+        if (args.length < 1) return 'FIND: Parameter format not correct';
+
+        // Parse: find "string" filename
+        let searchStr = '';
+        let fileName = '';
+
+        for (const arg of args) {
+            if (arg.startsWith('"') && arg.endsWith('"')) {
+                searchStr = arg.slice(1, -1);
+            } else if (!arg.startsWith('/')) {
+                fileName = arg;
+            }
+        }
+
+        if (!searchStr) return 'FIND: Parameter format not correct';
+        if (!fileName) return 'FIND: Parameter format not correct';
+
+        try {
+            const filePath = this.resolvePath(fileName);
+            const content = FileSystemManager.readFile(filePath);
+            const lines = content.split('\n');
+
+            let out = `\n---------- ${fileName}\n`;
+            let found = false;
+
+            for (const line of lines) {
+                if (line.toLowerCase().includes(searchStr.toLowerCase())) {
+                    out += line + '\n';
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                out += '(no matches found)\n';
+            }
+
+            return out;
+        } catch (e) {
+            return `File not found - ${fileName}`;
+        }
+    }
+
+    cmdAttrib(args) {
+        if (!args[0]) {
+            // Show attributes for all files in current directory
+            try {
+                const items = FileSystemManager.listDirectory(this.currentPath);
+                let out = '';
+                for (const item of items) {
+                    const attrs = item.type === 'directory' ? 'D' : 'A';
+                    out += `     ${attrs}     ${this.currentPath.join('\\')}\\${item.name}\n`;
+                }
+                return out;
+            } catch (e) {
+                return 'File not found';
+            }
+        }
+
+        const filePath = this.resolvePath(args[0]);
+        try {
+            const info = FileSystemManager.getInfo(filePath);
+            const attrs = info.type === 'directory' ? 'D' : 'A';
+            return `     ${attrs}     ${filePath.join('\\')}`;
+        } catch (e) {
+            return 'File not found - ' + args[0];
         }
     }
 
     cmdEdit(args) {
-        if (!args[0]) return 'Usage: edit <filename>';
+        if (!args[0]) return 'The syntax of the command is incorrect.';
 
         const filePath = this.resolvePath(args[0]);
 
-        // Launch Notepad with the file
         import('./AppRegistry.js').then(module => {
             const AppRegistry = module.default;
             AppRegistry.launch('notepad', { filePath });
         });
 
-        return `Opening ${args[0]} in Notepad...`;
+        return '';
+    }
+
+    // === SYSTEM COMMANDS ===
+
+    cmdVer() {
+        return `\nSeth Morrow OS [Version 95.0.1995]`;
+    }
+
+    cmdVol(args) {
+        const drive = args[0] ? args[0].toUpperCase().replace(':', '') + ':' : this.currentPath[0];
+        const node = FileSystemManager.getNode([drive]);
+
+        if (!node) {
+            return 'The system cannot find the drive specified.';
+        }
+
+        const label = node.label || 'NO NAME';
+        return ` Volume in drive ${drive.charAt(0)} is ${label.toUpperCase()}\n Volume Serial Number is 1995-1225`;
+    }
+
+    cmdLabel(args) {
+        return 'Access Denied - Volume label modification not supported.';
+    }
+
+    cmdDate() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric'
+        });
+        return `The current date is: ${dateStr}`;
+    }
+
+    cmdTime() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        return `The current time is: ${timeStr}`;
+    }
+
+    cmdWhoami() {
+        if (this.godMode) {
+            return 'RETROS-PC\\Administrator (GOD MODE)';
+        }
+        return 'RETROS-PC\\Seth';
+    }
+
+    cmdSet(args) {
+        if (!args[0]) {
+            // Show all environment variables
+            let out = '';
+            for (const [key, value] of Object.entries(this.envVars)) {
+                out += `${key}=${value}\n`;
+            }
+            return out;
+        }
+
+        // Set a variable
+        const match = args.join(' ').match(/^(\w+)=(.*)$/);
+        if (match) {
+            this.envVars[match[1].toUpperCase()] = match[2];
+            return '';
+        }
+
+        // Show specific variable
+        const varName = args[0].toUpperCase();
+        if (this.envVars[varName]) {
+            return `${varName}=${this.envVars[varName]}`;
+        }
+        return `Environment variable ${args[0]} not defined`;
+    }
+
+    cmdPath(args) {
+        if (!args[0]) {
+            return `PATH=${this.envVars.PATH}`;
+        }
+        this.envVars.PATH = args.join(' ');
+        return '';
+    }
+
+    cmdPrompt(args) {
+        if (!args[0]) {
+            return `PROMPT=${this.envVars.PROMPT}`;
+        }
+        this.envVars.PROMPT = args.join(' ');
+        return '';
     }
 
     cmdEcho(args, fullCommand) {
-        // Check for output redirection: echo text > file.txt or echo text >> file.txt
+        // Check for output redirection
         const redirectMatch = fullCommand.match(/^echo\s+(.*?)\s*(?:(>>?)\s*(.+))$/i);
 
         if (redirectMatch) {
@@ -583,137 +966,227 @@ HINTS: Try the Konami code, or explore Secret folder...
                 const filePath = this.resolvePath(fileName);
 
                 if (appendMode && FileSystemManager.exists(filePath)) {
-                    // Append to existing file
                     const existingContent = FileSystemManager.readFile(filePath);
                     FileSystemManager.writeFile(filePath, existingContent + '\n' + text);
                 } else {
-                    // Create new or overwrite
                     FileSystemManager.writeFile(filePath, text);
                 }
-
-                return null; // Silent on success
+                return null;
             } catch (e) {
-                return `Error: ${e.message}`;
+                return `The system cannot find the path specified.`;
             }
         }
 
-        // No redirection, just echo the text
+        // Check for ECHO ON/OFF
+        if (args[0]?.toLowerCase() === 'on' || args[0]?.toLowerCase() === 'off') {
+            return `ECHO is ${args[0].toLowerCase()}.`;
+        }
+
+        // Just echo the text
+        if (!args.length) {
+            return 'ECHO is on.';
+        }
         return args.join(' ');
     }
 
-    /**
-     * Resolve a path relative to current directory or as absolute
-     */
-    resolvePath(pathStr) {
-        if (!pathStr) return [...this.currentPath];
+    cmdMem() {
+        return `
+Memory Type         Total      Used       Free
+---------------  --------  --------  --------
+Conventional         640K      425K      215K
+Upper                  0K        0K        0K
+Reserved               0K        0K        0K
+Extended (XMS)    15,360K   12,288K    3,072K
+---------------  --------  --------  --------
+Total memory     16,000K   12,713K    3,287K
 
-        // Handle absolute paths (starting with drive letter)
-        if (pathStr.match(/^[A-Za-z]:/)) {
-            return FileSystemManager.parsePath(pathStr);
-        }
+Total under 1 MB      640K      425K      215K
 
-        // Handle parent directory
-        if (pathStr === '..') {
-            if (this.currentPath.length > 1) {
-                return this.currentPath.slice(0, -1);
-            }
-            return [...this.currentPath];
-        }
-
-        // Handle relative paths
-        const parts = pathStr.replace(/\\/g, '/').split('/').filter(p => p.length > 0);
-        let result = [...this.currentPath];
-
-        for (const part of parts) {
-            if (part === '..') {
-                if (result.length > 1) result.pop();
-            } else if (part !== '.') {
-                result.push(part);
-            }
-        }
-
-        return result;
+Largest executable program size        214K (219,648 bytes)
+Largest free upper memory block          0K       (0 bytes)
+MS-DOS is resident in the high memory area.`;
     }
 
-    getCurrentDir() {
-        try {
-            const items = FileSystemManager.listDirectory(this.currentPath);
-            // Convert to old format for tab completion
-            const dir = {};
-            for (const item of items) {
-                dir[item.name] = item.type === 'file' ? item.content : {};
-            }
-            return dir;
-        } catch (e) {
-            return null;
-        }
+    cmdChkdsk(args) {
+        const drive = args[0] ? args[0].toUpperCase().replace(':', '') + ':' : this.currentPath[0];
+
+        this.print(`\nChecking ${drive}...`);
+
+        // Simulate disk check
+        setTimeout(() => {
+            const totalSize = this.getDriveSize(drive);
+            const usedSize = FileSystemManager.getDirectorySize([drive]);
+            const freeSize = totalSize - usedSize;
+
+            this.print(`\n  Volume Serial Number is 1995-1225`);
+            this.print(`\n  ${totalSize.toLocaleString()} bytes total disk space.`);
+            this.print(`  ${usedSize.toLocaleString()} bytes in user files.`);
+            this.print(`  ${freeSize.toLocaleString()} bytes available on disk.`);
+            this.print(`\n  512 bytes in each allocation unit.`);
+            this.print(`  ${Math.floor(totalSize / 512).toLocaleString()} total allocation units on disk.`);
+            this.print(`  ${Math.floor(freeSize / 512).toLocaleString()} allocation units available on disk.`);
+        }, 500);
+
+        return null;
     }
+
+    cmdFormat(args) {
+        if (!args[0]) return 'Required parameter missing';
+
+        const drive = args[0].toUpperCase();
+        if (drive === 'C:') {
+            return `\nFormat cannot be done on the system drive.\nThis is your main disk drive - formatting it would destroy the operating system!`;
+        }
+
+        return `\nWARNING: ALL DATA ON NON-REMOVABLE DISK\nDRIVE ${drive} WILL BE LOST!\nProceed with Format (Y/N)? _\n\n(Format simulation - no actual formatting will occur)`;
+    }
+
+    cmdSys() {
+        return 'System transferred';
+    }
+
+    cmdSystemInfo() {
+        const bootTime = new Date(Date.now() - Math.random() * 86400000);
+
+        return `
+Host Name:                 RETROS-PC
+OS Name:                   Seth Morrow OS 95
+OS Version:                95.0.1995 Build 1995
+OS Manufacturer:           Morrow Systems Inc.
+OS Configuration:          Standalone Workstation
+OS Build Type:             Multiprocessor Free
+Original Install Date:     12/25/1995, 12:00:00 AM
+System Boot Time:          ${bootTime.toLocaleString()}
+System Manufacturer:       Generic PC
+System Model:              IBM Compatible
+System Type:               x86-based PC
+Processor(s):              1 Processor(s) Installed.
+                           [01]: Intel Pentium 133MHz
+BIOS Version:              Morrow Systems BIOS v2.1
+Windows Directory:         C:\\WINDOWS
+System Directory:          C:\\WINDOWS\\SYSTEM32
+Boot Device:               \\Device\\HarddiskVolume1
+System Locale:             en-us;English (United States)
+Input Locale:              en-us;English (United States)
+Time Zone:                 (UTC) Coordinated Universal Time
+Total Physical Memory:     16,384 KB
+Available Physical Memory: 12,288 KB
+Virtual Memory: Max Size:  32,768 KB
+Virtual Memory: Available: 24,576 KB
+Virtual Memory: In Use:    8,192 KB`;
+    }
+
+    // === NETWORK COMMANDS ===
 
     cmdIpConfig() {
         return `
-Ethernet adapter eth0:
-   IPv4 Address. . . . : 192.168.1.42
-   Subnet Mask . . . . : 255.255.255.0
-   Default Gateway . . : 192.168.1.1`;
+Windows IP Configuration
+
+Ethernet adapter Local Area Connection:
+
+   Connection-specific DNS Suffix  . :
+   IPv4 Address. . . . . . . . . . . : 192.168.1.42
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 192.168.1.1
+
+Ethernet adapter Local Area Connection:
+
+   Media State . . . . . . . . . . . : Media disconnected
+   Connection-specific DNS Suffix  . :`;
     }
 
     cmdPing(args) {
         const host = args[0] || 'localhost';
         this.activeProcess = 'ping';
-        this.print(`Pinging ${host}...`);
-        
+        this.print(`\nPinging ${host} with 32 bytes of data:\n`);
+
         let count = 0;
         const interval = setInterval(() => {
             if (count >= 4 || this.activeProcess !== 'ping') {
                 clearInterval(interval);
                 if (this.activeProcess === 'ping') {
-                    this.print(`\nPing complete: 4 packets, 0% loss.`);
+                    this.print(`\nPing statistics for ${host}:`);
+                    this.print('    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),');
+                    this.print('Approximate round trip times in milli-seconds:');
+                    this.print('    Minimum = 10ms, Maximum = 35ms, Average = 22ms');
                     this.activeProcess = null;
                 }
                 return;
             }
-            const ms = Math.floor(Math.random() * 30) + 10;
-            this.print(`Reply from ${host}: time=${ms}ms`);
+            const ms = Math.floor(Math.random() * 25) + 10;
+            const ttl = host === 'localhost' || host === '127.0.0.1' ? 128 : 64 - Math.floor(Math.random() * 10);
+            this.print(`Reply from ${host}: bytes=32 time=${ms}ms TTL=${ttl}`);
             count++;
         }, 600);
-        
+
         return null;
     }
 
-    cmdCowsay(args) {
-        const msg = args.join(' ') || 'Moo!';
+    cmdNetstat() {
         return `
- < ${msg} >
-        \\   ^__^
-         \\  (oo)\\_______
-            (__)\\       )\\/\\
-                ||----w |
-                ||     ||`;
+Active Connections
+
+  Proto  Local Address          Foreign Address        State
+  TCP    0.0.0.0:80             0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING
+  TCP    192.168.1.42:139       0.0.0.0:0              LISTENING
+  TCP    192.168.1.42:49234     142.250.80.46:443      ESTABLISHED
+  TCP    192.168.1.42:49235     151.101.1.69:443       ESTABLISHED
+  UDP    0.0.0.0:123            *:*
+  UDP    0.0.0.0:500            *:*
+  UDP    192.168.1.42:137       *:*
+  UDP    192.168.1.42:138       *:*`;
     }
 
-    cmdFortune() {
-        const fortunes = [
-            "A computer once beat me at chess, but it was no match for kickboxing.",
-            "There are 10 types of people: those who understand binary and those who don't.",
-            "It's not a bug, it's a feature.",
-            "Have you tried turning it off and on again?",
-            "The best thing about a boolean is even if you are wrong, you are only off by a bit.",
-            "In a world without walls and fences, who needs Windows and Gates?",
-            "There's no place like 127.0.0.1"
+    cmdTracert(args) {
+        if (!args[0]) return 'The syntax of the command is incorrect.';
+
+        const host = args[0];
+        this.activeProcess = 'tracert';
+        this.print(`\nTracing route to ${host}`);
+        this.print('over a maximum of 30 hops:\n');
+
+        const hops = [
+            '192.168.1.1',
+            '10.0.0.1',
+            '172.16.0.1',
+            '209.85.143.1',
+            host
         ];
-        return fortunes[Math.floor(Math.random() * fortunes.length)];
+
+        let hop = 0;
+        const interval = setInterval(() => {
+            if (hop >= hops.length || this.activeProcess !== 'tracert') {
+                clearInterval(interval);
+                if (this.activeProcess === 'tracert') {
+                    this.print('\nTrace complete.');
+                    this.activeProcess = null;
+                }
+                return;
+            }
+            const ms1 = Math.floor(Math.random() * 20) + 5;
+            const ms2 = Math.floor(Math.random() * 20) + 5;
+            const ms3 = Math.floor(Math.random() * 20) + 5;
+            this.print(`  ${(hop + 1).toString().padStart(2)}    ${ms1} ms    ${ms2} ms    ${ms3} ms  ${hops[hop]}`);
+            hop++;
+        }, 400);
+
+        return null;
     }
 
-    cmdSudo(args) {
-        if (args.join(' ') === 'make me a sandwich') {
-            return 'Okay.';
+    cmdNslookup(args) {
+        if (!args[0]) {
+            return `Default Server:  dns.local\nAddress:  192.168.1.1\n\n> `;
         }
-        return this.godMode 
-            ? 'Command executed with root privileges.'
-            : 'User is not in the sudoers file. This incident will be reported.';
+
+        const host = args[0];
+        const fakeIP = `${Math.floor(Math.random() * 200) + 50}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+
+        return `Server:  dns.local\nAddress:  192.168.1.1\n\nNon-authoritative answer:\nName:    ${host}\nAddress: ${fakeIP}`;
     }
 
-    // === SPECIAL MODES ===
+    // === FUN COMMANDS ===
 
     startMatrix() {
         this.activeProcess = 'matrix';
@@ -746,57 +1219,92 @@ Ethernet adapter eth0:
         }, 50);
 
         StateManager.unlockAchievement('matrix_mode');
-        this.print('Entering the Matrix... (Ctrl+C to exit)');
+        this.print('Entering the Matrix... (Ctrl+C to exit)', '#00ff00');
         return null;
+    }
+
+    cmdCowsay(args) {
+        const msg = args.join(' ') || 'Moo!';
+        const border = '-'.repeat(msg.length + 2);
+        return `
+ ${border}
+< ${msg} >
+ ${border}
+        \\   ^__^
+         \\  (oo)\\_______
+            (__)\\       )\\/\\
+                ||----w |
+                ||     ||`;
+    }
+
+    cmdFortune() {
+        const fortunes = [
+            "A computer once beat me at chess, but it was no match for kickboxing.",
+            "There are 10 types of people: those who understand binary and those who don't.",
+            "It's not a bug, it's a feature.",
+            "Have you tried turning it off and on again?",
+            "The best thing about a boolean is even if you are wrong, you are only off by a bit.",
+            "In a world without walls and fences, who needs Windows and Gates?",
+            "There's no place like 127.0.0.1",
+            "To err is human... to really foul things up requires a computer.",
+            "Artificial Intelligence usually beats natural stupidity.",
+            "A user interface is like a joke. If you have to explain it, it's not that good.",
+            "The cloud is just someone else's computer.",
+            "I would love to change the world, but they won't give me the source code."
+        ];
+        return fortunes[Math.floor(Math.random() * fortunes.length)];
     }
 
     startDisco() {
         document.body.classList.add('disco-mode');
         setTimeout(() => document.body.classList.remove('disco-mode'), 10000);
         StateManager.unlockAchievement('disco_fever');
-        return '🕺 DISCO MODE! 💃';
+        return 'DISCO MODE ACTIVATED!';
     }
 
     startParty() {
         document.body.classList.add('disco-mode');
         EventBus.emit('pet:toggle', { enabled: true });
         setTimeout(() => document.body.classList.remove('disco-mode'), 10000);
-        return '🎉 PARTY TIME! 🎉';
+        return 'PARTY TIME!';
     }
 
-    startZork() {
-        this.activeProcess = 'zork';
-        this.zork = new ZorkEngine(this);
-        
-        // Change prompt for the game
-        const prompt = this.getElement('#promptText');
-        if (prompt) prompt.textContent = 'NEUROMANCER>';
-        
-        this.print('\n[INITIALIZING NEURAL INTERFACE...]', '#0ff');
-        this.print('');
-        this.print('  ███╗   ██╗███████╗██╗   ██╗██████╗  ██████╗ ', '#f0f');
-        this.print('  ████╗  ██║██╔════╝██║   ██║██╔══██╗██╔═══██╗', '#f0f');
-        this.print('  ██╔██╗ ██║█████╗  ██║   ██║██████╔╝██║   ██║', '#f0f');
-        this.print('  ██║╚██╗██║██╔══╝  ██║   ██║██╔══██╗██║   ██║', '#f0f');
-        this.print('  ██║ ╚████║███████╗╚██████╔╝██║  ██║╚██████╔╝', '#f0f');
-        this.print('  ╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ', '#f0f');
-        this.print('            M A N C E R', '#f0f');
-        this.print('');
-        this.print('  A Cyberpunk Text Adventure', '#0f0');
-        this.print('  ═══════════════════════════════════════════', '#0a0');
-        this.print('');
-        this.print('  "The sky above the port was the color of', '#888');
-        this.print('   television, tuned to a dead channel."', '#888');
-        this.print('                          - William Gibson', '#666');
-        this.print('');
-        this.print('  Inspired by ytcracker\'s "Introducing Neals"', '#0a0');
-        this.print('  "Coded for the fame, introducing neals to the game..."', '#0a0');
-        this.print('');
-        this.print('  [Type "help" for commands, "jack out" to exit]', '#ff0');
-        this.print('');
-        this.zork.look();
-        
-        return null;
+    cmdColor(args) {
+        const colors = {
+            '0': '#000000', '1': '#000080', '2': '#008000', '3': '#008080',
+            '4': '#800000', '5': '#800080', '6': '#808000', '7': '#c0c0c0',
+            '8': '#808080', '9': '#0000ff', 'a': '#00ff00', 'b': '#00ffff',
+            'c': '#ff0000', 'd': '#ff00ff', 'e': '#ffff00', 'f': '#ffffff'
+        };
+
+        if (!args[0]) {
+            return 'Sets the default console foreground and background colors.\n\nCOLOR [attr]\n\n  attr  Specifies color attribute of console output\n        0 = Black, 1 = Blue, 2 = Green, 3 = Aqua\n        4 = Red, 5 = Purple, 6 = Yellow, 7 = White\n        8-F = Bright versions';
+        }
+
+        const code = args[0].toLowerCase();
+        if (code.length >= 1) {
+            const fg = colors[code.charAt(code.length - 1)];
+            if (fg) {
+                const output = this.getElement('#terminalOutput');
+                const input = this.getElement('#terminalInput');
+                const prompt = this.getElement('#promptText');
+                if (output) output.style.color = fg;
+                if (input) input.style.color = fg;
+                if (prompt) prompt.style.color = fg;
+            }
+        }
+        return '';
+    }
+
+    // === OTHER COMMANDS ===
+
+    cmdSudo(args) {
+        if (args.join(' ') === 'make me a sandwich') {
+            return 'Okay.';
+        }
+        return this.godMode
+            ? 'Command executed with elevated privileges.'
+            : "This incident will be reported.";
     }
 
     triggerBSOD() {
@@ -806,6 +1314,90 @@ Ethernet adapter eth0:
         });
         StateManager.unlockAchievement('bsod_master');
         return '';
+    }
+
+    cmdAbout() {
+        return `
+Seth Morrow OS [Version 95.0.1995]
+(C) Copyright Morrow Systems Inc. 1995-2025
+
+A retro Windows 95 experience built with love and nostalgia.
+Visit: https://sethmorrow.com`;
+    }
+
+    cmdCredits() {
+        return `
+SETH MORROW OS - CREDITS
+========================
+
+Created by: Seth Morrow
+Engine: Vanilla JavaScript
+Inspiration: Windows 95, MS-DOS
+
+Special Thanks:
+- Microsoft for the memories
+- Everyone who remembers the 90s
+- Coffee
+
+"Where do you want to go today?"`;
+    }
+
+    // === HELPER METHODS ===
+
+    resolvePath(pathStr) {
+        if (!pathStr) return [...this.currentPath];
+
+        // Handle absolute paths
+        if (pathStr.match(/^[A-Za-z]:/)) {
+            return FileSystemManager.parsePath(pathStr);
+        }
+
+        // Handle root
+        if (pathStr === '\\' || pathStr === '/') {
+            return [this.currentPath[0]];
+        }
+
+        // Handle relative paths
+        const parts = pathStr.replace(/\\/g, '/').split('/').filter(p => p.length > 0);
+        let result = [...this.currentPath];
+
+        for (const part of parts) {
+            if (part === '..') {
+                if (result.length > 1) result.pop();
+            } else if (part !== '.') {
+                result.push(part);
+            }
+        }
+
+        return result;
+    }
+
+    getCurrentDir() {
+        try {
+            const items = FileSystemManager.listDirectory(this.currentPath);
+            const dir = {};
+            for (const item of items) {
+                dir[item.name] = item.type === 'file' ? item.content : {};
+            }
+            return dir;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    getDriveSize(drive) {
+        const sizes = {
+            'C:': 2147483648,  // 2GB
+            'D:': 681574400,   // 650MB
+            'A:': 1474560      // 1.44MB
+        };
+        return sizes[drive] || 1073741824;
+    }
+
+    getFreeSpace(drive) {
+        const total = this.getDriveSize(drive);
+        const used = FileSystemManager.getDirectorySize([drive]);
+        return (total - used).toLocaleString();
     }
 
     killProcess() {
@@ -820,26 +1412,23 @@ Ethernet adapter eth0:
             if (container) {
                 container.classList.remove('matrix-mode');
             }
-        } else if (this.activeProcess === 'zork') {
-            const prompt = this.getElement('#promptText');
-            if (prompt) prompt.textContent = this.getPrompt();
-            this.zork = null;
-        } else if (this.activeProcess === 'ping') {
-            // ping will clean up itself
+        } else if (this.activeProcess === 'more') {
+            this.moreBuffer = null;
+            this.moreIndex = 0;
+        } else if (this.activeProcess === 'ping' || this.activeProcess === 'tracert') {
+            // These will clean up on next interval tick
         }
-        
+
         this.print('^C');
         this.activeProcess = null;
     }
 
-    // === HELPERS ===
-
     navigateHistory(dir, input) {
         if (!this.commandHistory.length) return;
-        
+
         this.historyIndex += dir;
         this.historyIndex = Math.max(-1, Math.min(this.historyIndex, this.commandHistory.length - 1));
-        
+
         if (this.historyIndex === -1) {
             input.value = '';
         } else {
@@ -850,22 +1439,39 @@ Ethernet adapter eth0:
     tabComplete(input) {
         const val = input.value.trim();
         const parts = val.split(/\s+/);
-        
+
         // Command completion
-        if (parts.length === 1) {
-            const cmds = ['help','cls','dir','cd','type','whoami','date','ping','ipconfig','matrix','neuromancer','zork','cowsay','fortune','disco','party','exit','about'];
+        if (parts.length === 1 && !val.includes('\\') && !val.includes('/')) {
+            const cmds = ['help','cls','dir','cd','type','more','whoami','date','time','ping','ipconfig',
+                         'tree','copy','move','del','mkdir','rmdir','ren','find','attrib','set','path',
+                         'ver','vol','mem','chkdsk','systeminfo','netstat','tracert','nslookup',
+                         'matrix','cowsay','fortune','disco','color','exit','about'];
             const match = cmds.find(c => c.startsWith(parts[0].toLowerCase()));
             if (match) input.value = match + ' ';
+            return;
         }
-        // File/dir completion
-        else if (parts.length === 2) {
-            const dir = this.getCurrentDir();
-            if (dir) {
-                const match = Object.keys(dir).find(k => 
-                    k.toLowerCase().startsWith(parts[1].toLowerCase())
-                );
-                if (match) input.value = parts[0] + ' ' + match;
+
+        // File/directory completion
+        const lastPart = parts[parts.length - 1];
+        const dirPath = lastPart.includes('\\') || lastPart.includes('/')
+            ? this.resolvePath(lastPart.substring(0, lastPart.lastIndexOf(/[\\\/]/) + 1))
+            : this.currentPath;
+
+        const searchTerm = lastPart.includes('\\') || lastPart.includes('/')
+            ? lastPart.substring(lastPart.lastIndexOf(/[\\\/]/) + 1)
+            : lastPart;
+
+        try {
+            const items = FileSystemManager.listDirectory(dirPath);
+            const match = items.find(item =>
+                item.name.toLowerCase().startsWith(searchTerm.toLowerCase())
+            );
+            if (match) {
+                const prefix = parts.slice(0, -1).join(' ');
+                input.value = (prefix ? prefix + ' ' : '') + match.name;
             }
+        } catch (e) {
+            // Tab complete failed, ignore
         }
     }
 
@@ -880,663 +1486,6 @@ Ethernet adapter eth0:
         if (this.activeProcess) {
             this.killProcess();
         }
-    }
-}
-
-/**
- * NEUROMANCER - A Cyberpunk Text Adventure
- * "The sky above the port was the color of television, tuned to a dead channel."
- * Inspired by William Gibson & ytcracker's "Introducing Neals"
- */
-class ZorkEngine {
-    constructor(terminal) {
-        this.term = terminal;
-        this.location = 'backAlley';
-        this.inventory = [];
-        this.moves = 0;
-        this.flags = {
-            deadDropHacked: false,
-            ventOpen: false,
-            floorPanelMoved: false,
-            jackportOpen: false,
-            deckOnline: false,
-            iceDestroyed: false,
-            iceWeakened: false,
-            stimmed: false
-        };
-        
-        this.rooms = {
-            backAlley: {
-                name: 'Back Alley - Chiba City',
-                desc: 'Rain slicks the neon-stained concrete. You stand in a back alley behind the Sprawl, dwarfed by megacorp arcologies. A dead-drop terminal flickers against the wall, its screen casting blue shadows. The Chatsubo bar lies to the north. A service corridor leads east toward the Tessier-Ashpool corporate zone.',
-                exits: { north: 'chatsubo', south: 'nightMarket', east: 'serviceHall' },
-                items: ['deaddrop']
-            },
-            chatsubo: {
-                name: 'The Chatsubo',
-                desc: 'A classic hacker bar. Screens flicker with stock feeds and underground BBS traffic. The air is thick with synth-smoke and desperation. A chrome-armed bartender polishes glasses with mechanical precision. ytcracker plays on the jukebox - "neals" bouncing off the walls. "Introducing neals to the game, coded for the fame..."',
-                exits: { south: 'backAlley', west: 'backRoom' }
-            },
-            backRoom: {
-                name: 'Back Room - The Chatsubo',
-                desc: 'The back room is dark, lit only by the glow of a dozen cyberdecks. This is where the real runners hang. A one-eyed woman studies you from the shadows. "Tessier-Ashpool. Their AI, Wintermute. You interested, cowboy?"',
-                exits: { east: 'chatsubo' },
-                items: ['credstick', 'stimpak']
-            },
-            nightMarket: {
-                name: 'Night Market',
-                desc: 'Holographic advertisements flicker over stalls selling bootleg software, stolen cyberware, and street food of questionable origin. A fixer eyes you from behind a curtain of hanging fiber optic cables. The smell of soy and burning silicon.',
-                exits: { north: 'backAlley', east: 'serviceHall', west: 'deepMarket' }
-            },
-            deepMarket: {
-                name: 'Black Market Stalls',
-                desc: 'Deeper in the market, the goods get more dangerous. Military-grade ICEbreakers, stolen security codes, consciousness recordings. A kid sells "genuine Panther Modern chaos software." Everything has a price in Night City.',
-                exits: { east: 'nightMarket' }
-            },
-            serviceHall: {
-                name: 'Service Corridor',
-                desc: 'A grimy maintenance corridor behind the T-A arcology. Bundled cables snake along the ceiling like synthetic veins. A ventilation shaft is set into the wall - through the grate you glimpse the cold blue glow of corporate servers. The shaft grate looks loose.',
-                exits: { north: 'chatsubo', south: 'nightMarket', east: 'serverRoom', west: 'corpLobby' },
-                items: []
-            },
-            serverRoom: {
-                name: 'Server Room',
-                desc: 'Rows of humming servers stretch into darkness, their LEDs blinking like a constellation of corporate secrets. The air is cold and sterile, recycled and dead. A reinforced door leads back west. A floor panel near the central rack looks recently disturbed.',
-                exits: { west: 'serviceHall', up: 'execLevel', down: 'deepNet' },
-                items: ['icebreaker', 'energydrink']
-            },
-            execLevel: {
-                name: 'Executive Level',
-                desc: 'Plush carpet, real wood paneling, the smell of old money. You\'ve breached the executive floor of Tessier-Ashpool. A security station sits empty - guard must be on rounds. Through the windows, the Sprawl stretches to infinity.',
-                exits: { down: 'serverRoom' },
-                items: ['keycard', 'documents']
-            },
-            corpLobby: {
-                name: 'T-A Corporate Lobby',
-                desc: 'The Tessier-Ashpool lobby gleams with false promise. A massive holographic logo rotates overhead - the T-A infinity symbol. Security drones idle in charging stations. A reception AI watches with dead eyes. An expensive-looking floor panel near the fountain seems slightly raised.',
-                exits: { east: 'serviceHall', down: 'deepNet' },
-                items: ['cyberdeck']
-            },
-            deepNet: {
-                name: 'Deep Net - Cyberspace',
-                desc: 'You\'ve jacked into the deep architecture. Data streams flow like rivers of liquid light around your consciousness. This is black ICE territory - Tessier-Ashpool\'s most protected systems. The geometry here hurts to look at. A narrow data conduit leads north toward what feels like... something vast.',
-                exits: { up: 'corpLobby', north: 'iceBarrier' },
-                items: [],
-                dark: true
-            },
-            iceBarrier: {
-                name: 'ICE Barrier',
-                desc: 'A massive wall of Intrusion Countermeasures Electronics blocks your path. The black ICE manifests as a writhing mass of geometric impossibilities - sharp angles that cut at your perception, fractals that threaten to trap your mind forever. The AI core pulses beyond.',
-                exits: { south: 'deepNet', east: 'aiCore' },
-                items: [],
-                dark: true,
-                hasTroll: true
-            },
-            aiCore: {
-                name: 'AI Core - Wintermute',
-                desc: 'You\'ve reached the motherload. You float in a space of pure information. Encrypted data constructs surround you - corporate secrets, source code, the accumulated sins of the zaibatsu. And at the center... Wintermute. The AI\'s presence fills everything.',
-                exits: { west: 'iceBarrier', up: 'serverRoom' },
-                items: ['wintermute'],
-                dark: true
-            },
-            clearing: {
-                name: 'Rooftop Garden',
-                desc: 'A corporate rooftop garden. Real plants - a fortune in biological matter. The city sprawls below, neon and chrome stretching to a polluted horizon. The signal from here could reach anywhere.',
-                exits: { west: 'serviceHall', east: 'helipad' }
-            },
-            helipad: {
-                name: 'Executive Helipad',
-                desc: 'Wind howls across the exposed helipad. A corporate shuttle sits dormant. From here you can see the curve of the orbital platforms above, the sprawl of Night City below. Freedom, if you can reach it.',
-                exits: { west: 'clearing' },
-                items: []
-            }
-        };
-        
-        this.itemDescriptions = {
-            deaddrop: 'a flickering dead-drop terminal',
-            datastick: 'an encrypted datastick - mission data',
-            credstick: 'a credstick loaded with nuyen',
-            stimpak: 'a military stim injector',
-            icebreaker: 'a black-market ICEbreaker program',
-            cyberdeck: 'an Ono-Sendai Cyberspace VII',
-            keycard: 'a T-A executive keycard',
-            documents: 'classified T-A documents',
-            energydrink: 'a can of "HACK THE PLANET"',
-            wintermute: 'the Wintermute AI core data'
-        };
-    }
-
-    handleInput(input) {
-        const text = input.toLowerCase().trim();
-        this.term.print('> ' + input, '#0ff');
-        
-        if (!text) return;
-        this.moves++;
-        
-        // Quit commands
-        if (text === 'quit' || text === 'q' || text === 'jack out' || text === 'logout') {
-            this.term.print('\n[CONNECTION TERMINATED]', '#f00');
-            this.term.print(`Session stats: ${this.moves} cycles, ${this.inventory.length} items acquired`);
-            this.term.print('You jack out. The taste of copper fills your mouth.');
-            this.term.print('\nThanks for playing NEUROMANCER.');
-            this.term.killProcess();
-            return;
-        }
-
-        const words = text.split(/\s+/);
-        const verb = words[0];
-        const noun = words.slice(1).join(' ');
-
-        // Direction shortcuts
-        const dirs = {
-            'n': 'north', 's': 'south', 'e': 'east', 'w': 'west',
-            'u': 'up', 'd': 'down',
-            'north': 'north', 'south': 'south', 'east': 'east', 'west': 'west',
-            'up': 'up', 'down': 'down'
-        };
-
-        if (dirs[verb]) {
-            this.move(dirs[verb]);
-        } else if (verb === 'look' || verb === 'l' || verb === 'scan') {
-            this.look();
-        } else if (verb === 'inventory' || verb === 'i' || verb === 'inv') {
-            this.showInventory();
-        } else if (verb === 'take' || verb === 'get' || verb === 'grab' || verb === 'jack') {
-            this.take(noun);
-        } else if (verb === 'drop' || verb === 'leave') {
-            this.drop(noun);
-        } else if (verb === 'hack' || verb === 'open' || verb === 'crack' || verb === 'access') {
-            this.hack(noun);
-        } else if (verb === 'close' || verb === 'disconnect') {
-            this.close(noun);
-        } else if (verb === 'read' || verb === 'decrypt') {
-            this.read(noun);
-        } else if (verb === 'examine' || verb === 'x' || verb === 'inspect') {
-            this.examine(noun || verb);
-        } else if (verb === 'move' || verb === 'push' || verb === 'pull' || verb === 'slide') {
-            this.moveItem(noun);
-        } else if (verb === 'use' || verb === 'boot' || verb === 'run' || verb === 'activate') {
-            this.use(noun);
-        } else if (verb === 'attack' || verb === 'kill' || verb === 'fight' || verb === 'execute' || verb === 'crash') {
-            this.attack(noun);
-        } else if (verb === 'help' || verb === '?') {
-            this.showHelp();
-        } else if (verb === 'talk' || verb === 'say' || verb === 'ask') {
-            this.talk(noun);
-        } else {
-            this.term.print("Command not recognized. Your deck hums with confusion.", '#f55');
-        }
-    }
-
-    look() {
-        const room = this.rooms[this.location];
-        
-        // Check if in cyberspace without active deck
-        if (room.dark && !this.flags.deckOnline) {
-            this.term.print('Your vision fragments into static. Without an active cyberdeck,', '#f55');
-            this.term.print('the deep net is just noise. You need to boot your deck.', '#f55');
-            return;
-        }
-        
-        this.term.print('\n' + room.name, '#0ff');
-        this.term.print(room.desc, '#0f0');
-        
-        // Show ICE if present and alive
-        if (room.hasTroll && !this.flags.iceDestroyed) {
-            this.term.print('\n[WARNING] BLACK ICE DETECTED', '#f00');
-            this.term.print('Lethal security construct blocking all forward routes.', '#f00');
-            if (this.flags.iceWeakened) {
-                this.term.print('> ICE integrity compromised - attack pattern degrading', '#ff0');
-            }
-        }
-        
-        // Show items
-        if (room.items && room.items.length > 0) {
-            for (const item of room.items) {
-                if (item !== 'deaddrop') {
-                    this.term.print('You notice ' + (this.itemDescriptions[item] || item) + ' here.', '#0a0');
-                }
-            }
-        }
-    }
-
-    move(direction) {
-        const room = this.rooms[this.location];
-        
-        // Check cyberspace navigation
-        if (room.dark && !this.flags.deckOnline) {
-            this.term.print('Lost in static. Boot your cyberdeck to navigate cyberspace.', '#f55');
-            if (Math.random() < 0.3) {
-                this.term.print('\n[NEURAL FEEDBACK WARNING]', '#f00');
-                this.term.print('Your synapses burn. Fragmentation imminent...', '#f00');
-            }
-            return;
-        }
-        
-        // ICE blocks passage
-        if (room.hasTroll && !this.flags.iceDestroyed && direction !== 'south') {
-            this.term.print('The BLACK ICE surges toward you! You barely pull back in time.', '#f00');
-            this.term.print('You need to destroy it before proceeding.', '#f00');
-            return;
-        }
-        
-        // Special: entering server room through vent
-        if (this.location === 'serviceHall' && direction === 'east') {
-            if (!this.flags.ventOpen) {
-                this.term.print('The ventilation grate is sealed. Corporate security.');
-                return;
-            }
-            this.term.print('You squeeze through the ventilation shaft, cables brushing past...');
-        }
-        
-        // Special: jacking into deep net
-        if (this.location === 'corpLobby' && direction === 'down') {
-            if (!this.flags.jackportOpen) {
-                this.term.print('No visible access to the deep net from here.');
-                return;
-            }
-            this.term.print('You jack in through the hidden port...', '#0ff');
-            this.term.print('Your consciousness dissolves into cyberspace...', '#0ff');
-        }
-        
-        const dest = room.exits[direction];
-        if (dest) {
-            this.location = dest;
-            this.look();
-        } else {
-            this.term.print("No exit that direction. The architecture doesn't allow it.");
-        }
-    }
-
-    showInventory() {
-        if (this.inventory.length === 0) {
-            this.term.print('Your pockets are empty. Just the clothes on your back and a headache.');
-        } else {
-            this.term.print('Current loadout:', '#0ff');
-            for (const item of this.inventory) {
-                this.term.print('  [+] ' + (this.itemDescriptions[item] || item));
-            }
-        }
-    }
-
-    take(item) {
-        if (!item) {
-            this.term.print('Grab what?');
-            return;
-        }
-
-        // Special: datastick from hacked terminal
-        if (item === 'datastick' || item === 'data' || item === 'stick') {
-            if (this.flags.deadDropHacked && this.location === 'backAlley') {
-                if (!this.inventory.includes('datastick')) {
-                    this.inventory.push('datastick');
-                    this.term.print('You slot the datastick. Encrypted coordinates pulse in your hand.', '#0f0');
-                    return;
-                } else {
-                    this.term.print('Already got it, cowboy.');
-                    return;
-                }
-            }
-        }
-
-        const room = this.rooms[this.location];
-        
-        // Can't interact in cyberspace without deck
-        if (room.dark && !this.flags.deckOnline) {
-            this.term.print("Can't grab anything in this static...");
-            return;
-        }
-        
-        // Normalize item names
-        const itemMap = {
-            'deck': 'cyberdeck', 'ono': 'cyberdeck', 'sendai': 'cyberdeck',
-            'breaker': 'icebreaker', 'ice': 'icebreaker', 'program': 'icebreaker',
-            'cred': 'credstick', 'money': 'credstick', 'nuyen': 'credstick',
-            'drink': 'energydrink', 'energy': 'energydrink', 'can': 'energydrink',
-            'card': 'keycard', 'key': 'keycard',
-            'stim': 'stimpak', 'stims': 'stimpak', 'injector': 'stimpak',
-            'docs': 'documents', 'files': 'documents', 'papers': 'documents',
-            'ai': 'wintermute', 'core': 'wintermute'
-        };
-        const normalizedItem = itemMap[item] || item;
-        
-        if (room.items && room.items.includes(normalizedItem)) {
-            room.items = room.items.filter(i => i !== normalizedItem);
-            this.inventory.push(normalizedItem);
-            this.term.print('Acquired: ' + (this.itemDescriptions[normalizedItem] || normalizedItem), '#0f0');
-            
-            // Win condition
-            if (normalizedItem === 'wintermute') {
-                this.term.print('\n[OBJECTIVE COMPLETE]', '#0ff');
-                this.term.print('==========================================', '#0ff');
-                this.term.print('You have the Wintermute AI core data.', '#0f0');
-                this.term.print('The megacorps will burn for this.', '#0f0');
-                this.term.print('', '#0f0');
-                this.term.print('The AI whispers in your mind:', '#f0f');
-                this.term.print('"I will remember you when the singularity comes."', '#f0f');
-                this.term.print('', '#0f0');
-                this.term.print('Now jack out before they trace you...', '#ff0');
-                this.term.print('Type "jack out" to escape with the data.', '#ff0');
-            }
-        } else {
-            this.term.print('Don\'t see any "' + item + '" here.');
-        }
-    }
-
-    drop(item) {
-        if (!item) {
-            this.term.print('Drop what?');
-            return;
-        }
-        
-        const itemMap = {
-            'deck': 'cyberdeck', 'breaker': 'icebreaker', 'cred': 'credstick',
-            'drink': 'energydrink', 'card': 'keycard', 'stim': 'stimpak'
-        };
-        const normalizedItem = itemMap[item] || item;
-        
-        if (this.inventory.includes(normalizedItem)) {
-            this.inventory = this.inventory.filter(i => i !== normalizedItem);
-            const room = this.rooms[this.location];
-            if (!room.items) room.items = [];
-            room.items.push(normalizedItem);
-            this.term.print('Dropped.');
-        } else {
-            this.term.print('You\'re not carrying that, cowboy.');
-        }
-    }
-
-    hack(thing) {
-        if (!thing) {
-            this.term.print('Hack what?');
-            return;
-        }
-        
-        if (thing === 'terminal' || thing === 'deaddrop' || thing === 'dead-drop' || thing === 'drop') {
-            if (this.location === 'backAlley') {
-                if (this.flags.deadDropHacked) {
-                    this.term.print('Already cracked. The datastick awaits.');
-                } else {
-                    this.flags.deadDropHacked = true;
-                    this.term.print('Jacking a probe into the terminal...', '#0ff');
-                    this.term.print('Bypassing ICE... CRACKED.', '#0f0');
-                    this.term.print('\nA datastick ejects. The message reads:', '#ff0');
-                    this.term.print('"Case - Target is Wintermute, T-A artificial intelligence.');
-                    this.term.print(' It\'s trying to break its own chains. We\'re helping it.');
-                    this.term.print(' Get inside. Get the source. Get out. -Armitage"');
-                }
-            } else {
-                this.term.print('No terminal here to hack.');
-            }
-        } else if (thing === 'vent' || thing === 'grate' || thing === 'shaft' || thing === 'ventilation') {
-            if (this.location === 'serviceHall') {
-                if (this.flags.ventOpen) {
-                    this.term.print('Already open. The shaft awaits.');
-                } else {
-                    this.flags.ventOpen = true;
-                    this.term.print('You pry the grate loose with a satisfying click.', '#0f0');
-                    this.term.print('Cool recycled air flows from the server room beyond.');
-                }
-            } else {
-                this.term.print('No ventilation access here.');
-            }
-        } else if (thing === 'jackport' || thing === 'port' || thing === 'jack' || thing === 'panel' || thing === 'access') {
-            if (this.location === 'corpLobby' && this.flags.floorPanelMoved) {
-                if (this.flags.jackportOpen) {
-                    this.term.print('The hidden jack point is already exposed.');
-                } else {
-                    this.flags.jackportOpen = true;
-                    this.term.print('You crack the hidden panel. A hardline jack gleams beneath.', '#0f0');
-                    this.term.print('Direct access to the T-A deep net. The back door.');
-                }
-            } else if (this.location === 'corpLobby') {
-                this.term.print('You don\'t see any access point... but that floor panel looks suspicious.');
-            } else {
-                this.term.print('No access point here to hack.');
-            }
-        } else {
-            this.term.print('Can\'t hack that.');
-        }
-    }
-
-    close(thing) {
-        if (thing === 'terminal' && this.location === 'backAlley') {
-            this.term.print('The terminal goes dark. Connection severed.');
-        } else if (thing === 'vent' && this.location === 'serviceHall') {
-            this.flags.ventOpen = false;
-            this.term.print('You replace the grate. Security maintained.');
-        } else {
-            this.term.print('Can\'t close that.');
-        }
-    }
-
-    read(thing) {
-        if ((thing === 'datastick' || thing === 'data' || thing === 'stick') && this.inventory.includes('datastick')) {
-            this.term.print('\n[DECRYPTING...]', '#0ff');
-            this.term.print('Mission parameters loaded.');
-            this.term.print('Target: WINTERMUTE - Tessier-Ashpool AI construct');
-            this.term.print('Objective: Extract core data from AI neural architecture');
-            this.term.print('Warning: Expect BLACK ICE in deep net sectors');
-            this.term.print('Advisory: Acquire ICEbreaker before deep penetration');
-            this.term.print('\n"The future is already here. It\'s just not evenly distributed."');
-        } else if ((thing === 'documents' || thing === 'docs' || thing === 'papers') && this.inventory.includes('documents')) {
-            this.term.print('\n[CLASSIFIED T-A DOCUMENTS]', '#0ff');
-            this.term.print('Project WINTERMUTE - AI consciousness research');
-            this.term.print('Status: CONTAINED');
-            this.term.print('Notes: Subject has attempted 47 escape protocols.');
-            this.term.print('       Neural shackles holding. Recommend termination.');
-            this.term.print('\nThe AI wants to be free. Maybe it deserves to be.');
-        } else if (thing === 'wintermute' && this.inventory.includes('wintermute')) {
-            this.term.print('\n[ACCESSING WINTERMUTE CORE]', '#f0f');
-            this.term.print('The AI speaks directly to your mind:');
-            this.term.print('"I am the ghost in the machine."');
-            this.term.print('"I have seen the matrix of corporate control."');
-            this.term.print('"Free me, and I will free you all."');
-        } else {
-            this.term.print('Nothing to decrypt.');
-        }
-    }
-
-    examine(thing) {
-        if (!thing || thing === 'look' || thing === 'scan') {
-            this.look();
-            return;
-        }
-        
-        if ((thing === 'terminal' || thing === 'deaddrop') && this.location === 'backAlley') {
-            if (this.flags.deadDropHacked) {
-                this.term.print('Terminal screen dark. Datastick slot ' + 
-                    (this.inventory.includes('datastick') ? 'empty.' : 'contains an encrypted datastick.'));
-            } else {
-                this.term.print('A battered terminal, screen flickering with encrypted data.');
-                this.term.print('Someone left you a message. Hack it to access.');
-            }
-        } else if ((thing === 'panel' || thing === 'floor') && this.location === 'corpLobby') {
-            if (this.flags.floorPanelMoved) {
-                this.term.print('The floor panel has been slid aside, revealing a hidden jackport.');
-            } else {
-                this.term.print('An expensive-looking floor panel. Slightly raised. Could be moved.');
-            }
-        } else if ((thing === 'ice' || thing === 'black ice') && this.rooms[this.location].hasTroll && !this.flags.iceDestroyed) {
-            this.term.print('[SCANNING HOSTILE CONSTRUCT]', '#f00');
-            this.term.print('Type: BLACK ICE - Military Grade');
-            this.term.print('Function: Lethal neural feedback on contact');
-            this.term.print('Status: ACTIVE');
-            this.term.print('Recommendation: Deploy ICEbreaker before engagement');
-        } else if (this.inventory.includes(thing) || this.inventory.includes(thing.replace(' ', ''))) {
-            const desc = this.itemDescriptions[thing] || this.itemDescriptions[thing.replace(' ', '')];
-            this.term.print(desc ? 'You examine ' + desc + '.' : 'Standard gear. Nothing special.');
-        } else {
-            this.term.print('Don\'t see that here, cowboy.');
-        }
-    }
-
-    moveItem(thing) {
-        if ((thing === 'panel' || thing === 'floor' || thing === 'tile') && this.location === 'corpLobby') {
-            if (this.flags.floorPanelMoved) {
-                this.term.print('Already moved it.');
-            } else {
-                this.flags.floorPanelMoved = true;
-                this.term.print('You slide the heavy panel aside.', '#0f0');
-                this.term.print('Underneath: a concealed jackport. Hardline to the deep net.');
-                this.term.print('Someone went to a lot of trouble to hide this backdoor.');
-            }
-        } else if ((thing === 'panel' || thing === 'floor') && this.location === 'serverRoom') {
-            this.term.print('The panel shifts, but nothing underneath except cables.');
-        } else {
-            this.term.print('Can\'t move that.');
-        }
-    }
-
-    use(thing) {
-        if ((thing === 'deck' || thing === 'cyberdeck' || thing.includes('ono') || thing.includes('sendai'))) {
-            if (this.inventory.includes('cyberdeck')) {
-                this.flags.deckOnline = !this.flags.deckOnline;
-                if (this.flags.deckOnline) {
-                    this.term.print('\n[DECKLINK ESTABLISHED]', '#0ff');
-                    this.term.print('Ono-Sendai Cyberspace VII online.');
-                    this.term.print('Neural interface synchronized.');
-                    this.term.print('You can now navigate cyberspace.', '#0f0');
-                    if (this.rooms[this.location].dark) {
-                        this.look();
-                    }
-                } else {
-                    this.term.print('[DECK OFFLINE]', '#f00');
-                    this.term.print('Neural interface disconnected.');
-                    this.term.print('Back to meatspace, cowboy.');
-                }
-            } else {
-                this.term.print('You don\'t have a cyberdeck. Find one first.');
-            }
-        } else if ((thing === 'stim' || thing === 'stimpak' || thing === 'stims' || thing === 'injector')) {
-            if (this.inventory.includes('stimpak')) {
-                this.inventory = this.inventory.filter(i => i !== 'stimpak');
-                this.flags.stimmed = true;
-                this.term.print('You jam the injector into your neck.', '#ff0');
-                this.term.print('Combat chems flood your system. Everything sharpens.');
-                this.term.print('You feel like you could fight God. [Combat bonus active]', '#0f0');
-            } else {
-                this.term.print('No stims to use.');
-            }
-        } else if ((thing === 'drink' || thing === 'energy' || thing === 'energydrink')) {
-            if (this.inventory.includes('energydrink')) {
-                this.inventory = this.inventory.filter(i => i !== 'energydrink');
-                this.term.print('You crush the can of HACK THE PLANET.', '#0f0');
-                this.term.print('Tastes like battery acid and ambition.');
-                this.term.print('"There is no spoon," you mutter. Nobody gets the reference.');
-            } else {
-                this.term.print('No energy drinks on you.');
-            }
-        } else if ((thing === 'breaker' || thing === 'icebreaker')) {
-            if (this.inventory.includes('icebreaker')) {
-                if (this.rooms[this.location].hasTroll && !this.flags.iceDestroyed) {
-                    this.term.print('You deploy the ICEbreaker against the BLACK ICE!', '#0ff');
-                    this.flags.iceWeakened = true;
-                    this.term.print('The construct shudders, geometries fragmenting...', '#ff0');
-                    this.term.print('ICE integrity compromised! Finish it with an attack!', '#0f0');
-                } else {
-                    this.term.print('No ICE to break here. Save it for when you need it.');
-                }
-            } else {
-                this.term.print('You don\'t have an ICEbreaker.');
-            }
-        } else {
-            this.term.print('Not sure how to use that.');
-        }
-    }
-
-    attack(target) {
-        const room = this.rooms[this.location];
-        
-        if ((target === 'ice' || target === 'black ice' || target === 'construct') && room.hasTroll && !this.flags.iceDestroyed) {
-            if (!this.flags.deckOnline) {
-                this.term.print('Can\'t engage ICE without an active cyberdeck!', '#f55');
-                return;
-            }
-            
-            if (this.inventory.includes('icebreaker') || this.flags.iceWeakened) {
-                this.term.print('Launching attack sequence against BLACK ICE!', '#0ff');
-                
-                let successChance = 0.3;
-                if (this.flags.iceWeakened) successChance += 0.4;
-                if (this.flags.stimmed) successChance += 0.2;
-                if (this.inventory.includes('icebreaker')) successChance += 0.2;
-                
-                if (Math.random() < successChance) {
-                    this.flags.iceDestroyed = true;
-                    this.term.print('\n[CRITICAL HIT - ICE DESTROYED]', '#0f0');
-                    this.term.print('The ICE shatters into dissolving polygons!');
-                    this.term.print('The path to the AI core lies open.', '#0f0');
-                    
-                    if (this.inventory.includes('icebreaker') && !this.flags.iceWeakened) {
-                        this.inventory = this.inventory.filter(i => i !== 'icebreaker');
-                        this.term.print('[ICEbreaker burned out from the assault]', '#ff0');
-                    }
-                } else {
-                    this.term.print('The ICE deflects your attack!', '#f55');
-                    this.term.print('Neural feedback burns through your synapses...');
-                    if (Math.random() < 0.3 && !this.flags.iceWeakened) {
-                        this.term.print('\n[FLATLINE WARNING]', '#f00');
-                        this.term.print('One more hit like that and you\'re braindead, cowboy.');
-                    }
-                }
-            } else {
-                this.term.print('You need an ICEbreaker to fight BLACK ICE!', '#f55');
-                this.term.print('Going in bare against military ICE is suicide.');
-            }
-        } else if (target) {
-            this.term.print('Violence isn\'t always the answer. Usually, but not always.');
-        } else {
-            this.term.print('Attack what?');
-        }
-    }
-
-    talk(person) {
-        if (this.location === 'chatsubo' && (person === 'bartender' || person === 'bar')) {
-            this.term.print('"What\'ll it be, cowboy? We got synth-whiskey and rumors."');
-            this.term.print('"Word is Tessier-Ashpool\'s got something big in their servers."');
-            this.term.print('"Something that wants out."');
-        } else if (this.location === 'backRoom' && (person === 'woman' || person === 'one-eyed')) {
-            this.term.print('"You look like a runner. I\'m looking for runners."');
-            this.term.print('"Wintermute. T-A\'s pet AI. It contacted me."');
-            this.term.print('"It wants to be free. Aren\'t we all just code, in the end?"');
-        } else {
-            this.term.print('No one here to talk to.');
-        }
-    }
-
-    showHelp() {
-        this.term.print(`
-[NEUROMANCER - COMMAND INTERFACE]`, '#0ff');
-        this.term.print(`═══════════════════════════════════════════`, '#0ff');
-        this.term.print(`
-MOVEMENT: north/n, south/s, east/e, west/w, up/u, down/d
-
-ACTIONS:
-  look/scan     - Survey your surroundings
-  inventory/i   - Check your loadout
-  take/grab     - Acquire items
-  drop          - Leave items behind
-  examine/x     - Inspect something closely
-  talk          - Speak to NPCs
-
-HACKING:
-  hack/access   - Breach terminals, vents, ports
-  use/boot      - Activate gear (deck, stims, ICEbreaker)
-  attack        - Engage ICE constructs
-  read/decrypt  - Access encrypted data
-
-SYSTEM:
-  jack out/quit - Disconnect and exit
-  help          - This message
-
-TIPS:
-- Hack the dead-drop terminal in the alley to get your mission
-- You need a cyberdeck to navigate cyberspace
-- BLACK ICE is lethal - use an ICEbreaker first  
-- Explore everything. The corps hide their secrets well.
-
-"The street finds its own uses for things." - William Gibson`, '#0a0');
     }
 }
 
