@@ -166,7 +166,8 @@ class AppRegistryClass {
 // Singleton instance
 const AppRegistry = new AppRegistryClass();
 
-// Auto-initialize when imported
-AppRegistry.initialize();
+// NOTE: Do NOT auto-initialize here! This runs outside error handling.
+// Initialization is now called explicitly from index.js inside the try-catch block.
+// AppRegistry.initialize();
 
 export default AppRegistry;
