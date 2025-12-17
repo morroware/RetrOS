@@ -21,6 +21,10 @@ import ControlPanel from './ControlPanel.js';
 import AdminPanel from './AdminPanel.js';
 import MyComputer from './MyComputer.js';
 import RecycleBin from './RecycleBin.js';
+import Winamp from './Winamp.js';
+import Defrag from './Defrag.js';
+import SkiFree from './SkiFree.js';
+import ChatRoom from './ChatRoom.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -87,6 +91,13 @@ class AppRegistryClass {
 
         // --- Multimedia ---
         this.register(new MediaPlayer(), { category: 'multimedia' });
+        this.register(new Winamp(), { category: 'multimedia' });
+
+        // --- Internet & Communication ---
+        this.register(new ChatRoom(), { category: 'internet' });
+
+        // --- More Games ---
+        this.register(new SkiFree(), { category: 'games' });
 
         // --- System Apps ---
         this.register(new MyComputer(), { category: 'system' });
@@ -94,7 +105,8 @@ class AppRegistryClass {
         this.register(new ControlPanel(), { category: 'settings' });
         this.register(new AdminPanel(), { category: 'system' });
 
-        // --- System Utilities (Placeholders) ---
+        // --- System Utilities ---
+        this.register(new Defrag(), { category: 'system' });
         this.register(new SimpleApp('taskmgr', 'Task Manager', '📊', 'Task Manager is under construction.'), { category: 'system' });
 
         this.register(new SimpleApp('display', 'Display Properties', '🖥️', 'Display settings coming soon.'), { category: 'settings' });

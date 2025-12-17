@@ -55,14 +55,23 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 - **Control Panel** - System settings for display, sound, desktop pet, and screensaver
 - **Admin Panel** - Advanced administration for icons, security, achievements, and diagnostics
 - **Recycle Bin** - View, restore, or permanently delete removed items
-- **Internet Explorer** - Web browser with bookmarks, history, and address bar
+- **Disk Defragmenter** - Classic satisfying block-moving defrag visualization
+
+### Multimedia
+- **Winamp** - Legendary music player with visualizer, playlist, and EQ
+- **Media Player** - Windows Media Player style audio/video
 
 ### Classic Games
 - **Snake** - The timeless arcade game with high score tracking
 - **Minesweeper** - Complete implementation with timer and mine counter
 - **Asteroids** - Space shooter with smooth physics and particle effects
 - **Solitaire** - Klondike card game with drag-and-drop
+- **SkiFree** - The classic skiing game - watch out for the Yeti!
 - **DOOM** - Classic 1993 FPS via WebAssembly (Chocolate Doom)
+
+### Internet & Communication
+- **Internet Explorer** - Web browser with bookmarks, history, and address bar
+- **Chat Room** - 90s AOL/IRC style chat room simulator with bots
 
 ### Special Features
 - **Clippy Assistant** - The iconic paperclip helper with personality
@@ -447,6 +456,93 @@ The legendary 1993 first-person shooter running via WebAssembly.
 
 ---
 
+### Winamp
+
+The legendary MP3 player clone - it really whips the llama's ass!
+
+**Features:**
+- Classic Winamp skin with LCD display
+- Real-time audio visualizer
+- 8-track playlist with synthesized music
+- Volume and balance sliders
+- 8-band EQ display
+- Shuffle and repeat modes
+- Play, pause, stop, next, previous controls
+
+**Controls:**
+- Double-click playlist items to play
+- Use sliders to adjust volume/balance
+- Click buttons for playback control
+
+---
+
+### SkiFree
+
+The classic Windows skiing game where you dodge obstacles and flee from the Yeti!
+
+**Controls:**
+- Arrow Keys - Steer left/right, speed up/down
+- F - Speed boost
+- Space - Start/Restart
+- P - Pause
+
+**Features:**
+- Dodge trees, rocks, and other obstacles
+- Hit jumps for bonus points
+- Pass through slalom flags for points
+- The Yeti appears after 2000m - can you escape?
+- Distance and score tracking
+
+**Tips:**
+- Go fast (press F) to outrun the Yeti
+- The Yeti is faster than your normal speed!
+
+---
+
+### Chat Room
+
+Experience the golden age of internet chat with this 90s AOL/IRC style chat room simulator!
+
+**Features:**
+- Authentic 90s chat interface with Comic Sans
+- Simulated chatters with classic usernames (xX_DarkAngel_Xx, CyberSurfer99, etc.)
+- Multiple chat rooms (Lobby, Teen Chat, Music Lovers, etc.)
+- Bot users that chat automatically with 90s-style messages
+- User join/leave notifications
+- Typing indicators
+- Action commands (/me)
+- Emoji panel
+
+**Commands:**
+- `/me [action]` - Perform an action (*username does something*)
+- `/nick [name]` - Change your screen name
+- `/clear` - Clear the chat window
+- `/users` - List users in the room
+- `/help` - Show available commands
+
+---
+
+### Disk Defragmenter
+
+The satisfying Windows 95/98 disk defragmentation visualization.
+
+**Features:**
+- Classic block-based drive visualization
+- Analyze and Defragment modes
+- Color-coded blocks (used, fragmented, optimized, system, free)
+- Real-time progress bar
+- Multiple drive support (C:, D:, A:)
+- Pause and stop controls
+- Status messages during operation
+
+**Usage:**
+1. Select a drive from the dropdown
+2. Click "Analyze" to check fragmentation level
+3. Click "Defragment" to start optimization
+4. Watch the satisfying block reorganization!
+
+---
+
 ## System Dialogs
 
 RetrOS features authentic Windows 95-style dialog boxes that replace browser modals.
@@ -597,7 +693,11 @@ RetrOS/
 │   ├── MyComputer.js       # File explorer
 │   ├── RecycleBin.js       # Deleted items manager
 │   ├── ControlPanel.js     # System settings
-│   └── AdminPanel.js       # Admin tools
+│   ├── AdminPanel.js       # Admin tools
+│   ├── Winamp.js           # Winamp music player
+│   ├── SkiFree.js          # SkiFree skiing game
+│   ├── ChatRoom.js         # 90s chat room simulator
+│   └── Defrag.js           # Disk Defragmenter
 │
 ├── core/                   # Core system modules
 │   ├── EventBus.js         # Pub/sub event system
