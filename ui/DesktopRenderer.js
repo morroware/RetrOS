@@ -13,14 +13,10 @@ class DesktopRendererClass {
         this.desktop = null;
         this.draggedIcon = null;
         this.dragOffset = { x: 0, y: 0 };
-        this.dragStarted = false;
         this.selectionBox = null;
         this.selectionStart = null;
-        this.isExternalDrag = false; // Track if drag came from another component
 
-        // Bound handlers
-        this.boundDrag = this.handleDrag.bind(this);
-        this.boundDragEnd = this.handleDragEnd.bind(this);
+        // Bound handlers for selection box
         this.boundUpdateSelection = this.updateSelection.bind(this);
         this.boundEndSelection = this.endSelection.bind(this);
     }
@@ -174,34 +170,55 @@ class DesktopRendererClass {
         iconEl.style.left = `${icon.x}px`;
         iconEl.style.top = `${icon.y}px`;
         iconEl.tabIndex = 0;
-
-        // Make all icons draggable via HTML5 drag and drop
         iconEl.draggable = true;
+
+        // Store icon data for drag operations
         iconEl.dataset.iconType = icon.type || 'app';
         if (icon.filePath) {
             iconEl.dataset.filePath = JSON.stringify(icon.filePath);
             iconEl.dataset.fileType = icon.fileType || 'file';
         }
 
+        // Store full icon data for reference
+        iconEl._iconData = icon;
+
         iconEl.innerHTML = `
             <div class="icon-image">${icon.emoji}</div>
             <div class="icon-label">${icon.label}</div>
         `;
 
-        // Events
-        iconEl.addEventListener('mousedown', (e) => this.startDrag(e, icon));
+        // Double-click to open
         iconEl.addEventListener('dblclick', () => this.handleIconOpen(icon));
         iconEl.addEventListener('contextmenu', (e) => this.showIconContextMenu(e, icon));
         iconEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') this.handleIconOpen(icon);
         });
 
-        // HTML5 drag events for all icons
+        // HTML5 drag start - set transfer data
         iconEl.addEventListener('dragstart', (e) => {
+            // Store the icon being dragged for repositioning
+            this.draggedIcon = { element: iconEl, data: icon };
+
+            // Calculate offset from mouse to icon top-left
+            const rect = iconEl.getBoundingClientRect();
+            this.dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+
             e.dataTransfer.effectAllowed = 'copyMove';
 
+            // Set custom drag image (the icon itself)
+            const dragImage = iconEl.cloneNode(true);
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            dragImage.style.opacity = '0.8';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, this.dragOffset.x, this.dragOffset.y);
+            setTimeout(() => dragImage.remove(), 0);
+
+            // Set transfer data for inter-component drag
             if (icon.type === 'file' && icon.filePath) {
-                // File icons - use move operation
                 e.dataTransfer.setData('application/retros-file', JSON.stringify({
                     filePath: icon.filePath,
                     fileName: icon.label,
@@ -209,7 +226,6 @@ class DesktopRendererClass {
                     extension: icon.extension || ''
                 }));
             } else {
-                // App/link icons - create shortcut
                 e.dataTransfer.setData('application/retros-shortcut', JSON.stringify({
                     id: icon.id,
                     label: icon.label,
@@ -217,7 +233,6 @@ class DesktopRendererClass {
                     type: icon.type || 'app',
                     url: icon.url || null
                 }));
-                // Also set file data for backward compatibility
                 e.dataTransfer.setData('application/retros-file', JSON.stringify({
                     filePath: null,
                     fileName: icon.label,
@@ -228,13 +243,21 @@ class DesktopRendererClass {
                     shortcutIcon: icon.emoji
                 }));
             }
+
+            // Set desktop icon ID for repositioning
+            e.dataTransfer.setData('application/retros-desktop-icon', JSON.stringify({
+                id: icon.id,
+                type: icon.type
+            }));
+
             iconEl.classList.add('dragging');
-            this.isExternalDrag = true;
+            EventBus.emit(Events.DRAG_START, { type: 'icon', id: icon.id });
         });
 
         iconEl.addEventListener('dragend', () => {
             iconEl.classList.remove('dragging');
-            this.isExternalDrag = false;
+            this.draggedIcon = null;
+            EventBus.emit(Events.DRAG_END, { type: 'icon', id: icon.id });
         });
 
         this.desktop.appendChild(iconEl);
@@ -310,15 +333,21 @@ class DesktopRendererClass {
             }
         });
 
-        // HTML5 Drag and Drop - Drop zone for receiving files from other components
+        // HTML5 Drag and Drop - Desktop is a drop zone
         this.desktop.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Only show drop indicator for external drags (from MyComputer)
-            const dragData = e.dataTransfer.types.includes('application/retros-file');
-            if (dragData) {
+
+            // Check if this is a desktop icon being repositioned
+            const isDesktopIcon = e.dataTransfer.types.includes('application/retros-desktop-icon');
+            const isFileData = e.dataTransfer.types.includes('application/retros-file');
+
+            if (isDesktopIcon || isFileData) {
                 e.dataTransfer.dropEffect = 'move';
-                this.desktop.classList.add('drop-target');
+                // Only show drop-target for external files (from MyComputer), not for repositioning
+                if (!isDesktopIcon && isFileData) {
+                    this.desktop.classList.add('drop-target');
+                }
             }
         });
 
@@ -333,8 +362,60 @@ class DesktopRendererClass {
             e.preventDefault();
             e.stopPropagation();
             this.desktop.classList.remove('drop-target');
+
+            // Check if this is a desktop icon being repositioned
+            const desktopIconData = e.dataTransfer.getData('application/retros-desktop-icon');
+            if (desktopIconData) {
+                this.handleDesktopIconDrop(e, desktopIconData);
+                return;
+            }
+
+            // Otherwise handle as file drop from MyComputer
             this.handleFileDrop(e);
         });
+    }
+
+    /**
+     * Handle desktop icon repositioning via drop
+     * @param {DragEvent} e - Drag event
+     * @param {string} desktopIconData - JSON string with icon data
+     */
+    handleDesktopIconDrop(e, desktopIconData) {
+        try {
+            const iconInfo = JSON.parse(desktopIconData);
+            const desktopRect = this.desktop.getBoundingClientRect();
+
+            // Calculate new position
+            let x = e.clientX - desktopRect.left - this.dragOffset.x;
+            let y = e.clientY - desktopRect.top - this.dragOffset.y;
+
+            // Keep on screen
+            x = Math.max(0, Math.min(x, desktopRect.width - 100));
+            y = Math.max(0, Math.min(y, desktopRect.height - 100));
+
+            // Snap to grid
+            const gridSize = 20;
+            x = Math.round(x / gridSize) * gridSize;
+            y = Math.round(y / gridSize) * gridSize;
+
+            // Find and update the icon element
+            const iconEl = this.desktop.querySelector(`[data-icon-id="${iconInfo.id}"]`);
+            if (iconEl) {
+                iconEl.style.left = `${x}px`;
+                iconEl.style.top = `${y}px`;
+            }
+
+            // Save position based on icon type
+            if (iconInfo.type === 'file') {
+                this.saveFilePosition(iconInfo.id, x, y);
+            } else {
+                StateManager.updateIconPosition(iconInfo.id, x, y);
+            }
+
+            EventBus.emit(Events.ICON_MOVE, { id: iconInfo.id, x, y });
+        } catch (err) {
+            console.error('Failed to reposition desktop icon:', err);
+        }
     }
 
     /**
@@ -360,7 +441,7 @@ class DesktopRendererClass {
             // Check if already on desktop
             const sourceDir = filePath.slice(0, -1);
             if (JSON.stringify(sourceDir) === JSON.stringify(desktopPath)) {
-                console.log('File is already on desktop');
+                this.showDropFeedback('File is already on desktop', 'info');
                 return;
             }
 
@@ -368,122 +449,42 @@ class DesktopRendererClass {
             try {
                 FileSystemManager.moveItem(filePath, desktopPath);
                 EventBus.emit(Events.SOUND_PLAY, { type: 'notify' });
-                console.log(`Moved ${fileName} to Desktop`);
+                this.showDropFeedback(`Moved "${fileName}" to Desktop`, 'success');
             } catch (err) {
                 console.error('Failed to move file:', err.message);
                 EventBus.emit(Events.SOUND_PLAY, { type: 'error' });
+                this.showDropFeedback(`Failed to move file: ${err.message}`, 'error');
             }
         } catch (err) {
             console.error('Failed to parse drop data:', err);
         }
     }
 
-    // ===== ICON DRAG & DROP =====
-
     /**
-     * Start dragging an icon
-     * @param {MouseEvent} e - Mouse event
-     * @param {Object} icon - Icon data
+     * Show feedback toast for drag and drop operations
+     * @param {string} message - Message to display
+     * @param {string} type - 'success', 'error', or 'info'
      */
-    startDrag(e, icon) {
-        if (e.button !== 0) return; // Only left click
-        e.stopPropagation();
+    showDropFeedback(message, type = 'info') {
+        // Remove any existing feedback
+        const existing = document.querySelector('.drop-feedback');
+        if (existing) existing.remove();
 
-        // Prevent HTML5 drag from interfering with mouse-based drag
-        e.preventDefault();
+        const feedback = document.createElement('div');
+        feedback.className = `drop-feedback drop-feedback-${type}`;
+        feedback.textContent = message;
+        document.body.appendChild(feedback);
 
-        const iconEl = e.currentTarget;
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const dragThreshold = 5;
+        // Animate in
+        requestAnimationFrame(() => {
+            feedback.classList.add('active');
+        });
 
-        this.dragStarted = false;
-
-        const checkDrag = (moveEvent) => {
-            const deltaX = Math.abs(moveEvent.clientX - startX);
-            const deltaY = Math.abs(moveEvent.clientY - startY);
-
-            if (!this.dragStarted && (deltaX > dragThreshold || deltaY > dragThreshold)) {
-                this.dragStarted = true;
-
-                this.draggedIcon = { element: iconEl, data: icon };
-                const rect = iconEl.getBoundingClientRect();
-                this.dragOffset = {
-                    x: startX - rect.left,
-                    y: startY - rect.top
-                };
-
-                iconEl.classList.add('dragging');
-
-                document.removeEventListener('mousemove', checkDrag);
-                document.removeEventListener('mouseup', cleanup);
-                document.addEventListener('mousemove', this.boundDrag);
-                document.addEventListener('mouseup', this.boundDragEnd);
-
-                EventBus.emit(Events.DRAG_START, { type: 'icon', id: icon.id });
-            }
-        };
-
-        const cleanup = () => {
-            document.removeEventListener('mousemove', checkDrag);
-            document.removeEventListener('mouseup', cleanup);
-        };
-
-        document.addEventListener('mousemove', checkDrag);
-        document.addEventListener('mouseup', cleanup);
-    }
-
-    /**
-     * Handle icon drag movement
-     * @param {MouseEvent} e - Mouse event
-     */
-    handleDrag(e) {
-        if (!this.draggedIcon) return;
-
-        const desktopRect = this.desktop.getBoundingClientRect();
-        let x = e.clientX - desktopRect.left - this.dragOffset.x;
-        let y = e.clientY - desktopRect.top - this.dragOffset.y;
-
-        // Keep on screen
-        x = Math.max(0, Math.min(x, desktopRect.width - 100));
-        y = Math.max(0, Math.min(y, desktopRect.height - 100));
-
-        // Snap to grid
-        const gridSize = 20;
-        x = Math.round(x / gridSize) * gridSize;
-        y = Math.round(y / gridSize) * gridSize;
-
-        this.draggedIcon.element.style.left = `${x}px`;
-        this.draggedIcon.element.style.top = `${y}px`;
-    }
-
-    /**
-     * End icon drag
-     */
-    handleDragEnd() {
-        if (!this.draggedIcon) return;
-
-        const { element, data } = this.draggedIcon;
-        element.classList.remove('dragging');
-
-        // Save new position
-        const x = parseInt(element.style.left);
-        const y = parseInt(element.style.top);
-
-        if (data.type === 'file') {
-            // Save file icon position to filePositions state
-            this.saveFilePosition(data.id, x, y);
-        } else {
-            // Save app icon position to icons state
-            StateManager.updateIconPosition(data.id, x, y);
-        }
-
-        EventBus.emit(Events.DRAG_END, { type: 'icon', id: data.id });
-        EventBus.emit(Events.ICON_MOVE, { id: data.id, x, y });
-
-        this.draggedIcon = null;
-        document.removeEventListener('mousemove', this.boundDrag);
-        document.removeEventListener('mouseup', this.boundDragEnd);
+        // Remove after delay
+        setTimeout(() => {
+            feedback.classList.remove('active');
+            setTimeout(() => feedback.remove(), 300);
+        }, 2000);
     }
 
     /**

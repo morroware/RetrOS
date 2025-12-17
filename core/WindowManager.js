@@ -458,16 +458,24 @@ class WindowManagerClass {
         let x = e.clientX - this.dragOffset.x;
         let y = e.clientY - this.dragOffset.y;
 
-        // Keep on screen (allow title bar to go to top for snap)
-        x = Math.max(-50, Math.min(x, window.innerWidth - 100));
+        // Keep window accessible - at least 100px visible on each side
+        // and title bar must stay within viewport
+        const windowEl = this.draggedWindow.element;
+        const windowWidth = windowEl.offsetWidth || 300;
+
+        x = Math.max(100 - windowWidth, Math.min(x, window.innerWidth - 100));
         y = Math.max(0, Math.min(y, window.innerHeight - 50));
 
-        this.draggedWindow.element.style.left = `${x}px`;
-        this.draggedWindow.element.style.top = `${y}px`;
+        windowEl.style.left = `${x}px`;
+        windowEl.style.top = `${y}px`;
 
-        // Check for snap-to-maximize (drag to top)
+        // Check for snap zones
         if (e.clientY <= 5) {
             this.showSnapPreview('maximize');
+        } else if (e.clientX <= 5) {
+            this.showSnapPreview('left');
+        } else if (e.clientX >= window.innerWidth - 5) {
+            this.showSnapPreview('right');
         } else {
             this.hideSnapPreview();
         }
@@ -480,10 +488,22 @@ class WindowManagerClass {
     showSnapPreview(type) {
         if (!this.snapPreview) return;
 
+        this.currentSnapType = type;
+
         if (type === 'maximize') {
             this.snapPreview.style.top = '0';
             this.snapPreview.style.left = '0';
             this.snapPreview.style.width = '100%';
+            this.snapPreview.style.height = 'calc(100vh - 50px)';
+        } else if (type === 'left') {
+            this.snapPreview.style.top = '0';
+            this.snapPreview.style.left = '0';
+            this.snapPreview.style.width = '50%';
+            this.snapPreview.style.height = 'calc(100vh - 50px)';
+        } else if (type === 'right') {
+            this.snapPreview.style.top = '0';
+            this.snapPreview.style.left = '50%';
+            this.snapPreview.style.width = '50%';
             this.snapPreview.style.height = 'calc(100vh - 50px)';
         }
 
@@ -497,6 +517,7 @@ class WindowManagerClass {
         if (this.snapPreview) {
             this.snapPreview.classList.remove('active');
         }
+        this.currentSnapType = null;
     }
 
     /**
@@ -507,18 +528,34 @@ class WindowManagerClass {
         if (this.draggedWindow) {
             const { element, id } = this.draggedWindow;
 
-            // Check for snap-to-maximize
-            if (e.clientY <= 5) {
-                this.hideSnapPreview();
-                // Store current position before maximizing
+            // Apply snap if in a snap zone
+            if (this.currentSnapType) {
+                // Store current position before snapping
                 this.preMaximizeState.set(id, {
                     left: element.style.left,
                     top: element.style.top,
                     width: element.style.width,
                     height: element.style.height
                 });
-                element.classList.add('maximized');
-                StateManager.updateWindow(id, { maximized: true });
+
+                if (this.currentSnapType === 'maximize') {
+                    element.classList.add('maximized');
+                    StateManager.updateWindow(id, { maximized: true });
+                } else if (this.currentSnapType === 'left') {
+                    element.classList.remove('maximized');
+                    element.style.top = '0px';
+                    element.style.left = '0px';
+                    element.style.width = '50%';
+                    element.style.height = 'calc(100vh - 50px)';
+                    StateManager.updateWindow(id, { snapped: 'left' });
+                } else if (this.currentSnapType === 'right') {
+                    element.classList.remove('maximized');
+                    element.style.top = '0px';
+                    element.style.left = '50%';
+                    element.style.width = '50%';
+                    element.style.height = 'calc(100vh - 50px)';
+                    StateManager.updateWindow(id, { snapped: 'right' });
+                }
             }
 
             // Remove dragging class
