@@ -147,6 +147,22 @@ async function initializeOS(onProgress = () => {}) {
     initComponent('StateManager', () => StateManager.initialize());
     initComponent('WindowManager', () => WindowManager.initialize());
 
+    // === Phase 1.5: Sync Filesystem with Apps and Desktop ===
+    console.log('[RetrOS] Phase 1.5: Filesystem Sync');
+    onProgress(25, 'Syncing filesystem...');
+    initComponent('FilesystemSync', () => {
+        // Sync desktop icons from StateManager into filesystem
+        const icons = StateManager.getState('icons');
+        FileSystemManager.syncDesktopIcons(icons);
+
+        // Sync installed apps into Program Files
+        const apps = AppRegistry.getAll();
+        FileSystemManager.syncInstalledApps(apps);
+
+        // Save the updated filesystem
+        FileSystemManager.saveFileSystem();
+    });
+
     // === Phase 2: Features ===
     console.log('[RetrOS] Phase 2: Features');
     onProgress(35, 'Loading features...');

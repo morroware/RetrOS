@@ -515,6 +515,10 @@ class MyComputer extends AppBase {
             // Convert items to display format
             const displayItems = items.map(item => {
                 let icon = '📄';
+                let displayName = item.name;
+                let itemType = item.type;
+                let shortcutData = null;
+
                 if (item.type === 'directory') {
                     icon = '📁';
                     // Special icons for known folders
@@ -524,18 +528,60 @@ class MyComputer extends AppBase {
                     else if (item.name === 'Documents') icon = '📄';
                     else if (item.name === 'Pictures') icon = '🖼️';
                     else if (item.name === 'Projects') icon = '💼';
+                    else if (item.name === 'Desktop') icon = '🖥️';
+                    else if (item.name === 'Downloads') icon = '📥';
+                    else if (item.name === 'Music') icon = '🎵';
+                    else if (item.name === 'Program Files') icon = '📦';
                 } else if (item.type === 'file') {
-                    if (item.extension === 'txt' || item.extension === 'md') icon = '📝';
-                    else if (item.extension === 'exe') icon = '⚙️';
-                    else if (item.extension === 'log') icon = '📋';
+                    if (item.extension === 'lnk') {
+                        // Shortcut file - get the icon and target from the file
+                        try {
+                            const filePath = [...path, item.name];
+                            const node = FileSystemManager.getNode(filePath);
+                            if (node && node.shortcutIcon) {
+                                icon = node.shortcutIcon;
+                                itemType = 'shortcut';
+                                shortcutData = {
+                                    target: node.shortcutTarget,
+                                    type: node.shortcutType
+                                };
+                                // Remove .lnk extension for display
+                                displayName = item.name.replace('.lnk', '');
+                            }
+                        } catch (e) {
+                            icon = '🔗';
+                        }
+                    } else if (item.extension === 'exe') {
+                        icon = '⚙️';
+                        itemType = 'executable';
+                        // Try to get appId from the file
+                        try {
+                            const filePath = [...path, item.name];
+                            const node = FileSystemManager.getNode(filePath);
+                            if (node && node.appId) {
+                                shortcutData = { appId: node.appId };
+                            }
+                        } catch (e) {}
+                    } else if (item.extension === 'txt' || item.extension === 'md') {
+                        icon = '📝';
+                    } else if (item.extension === 'log') {
+                        icon = '📋';
+                    } else if (item.extension === 'mp3' || item.extension === 'wav') {
+                        icon = '🎵';
+                    } else if (item.extension === 'png' || item.extension === 'jpg' || item.extension === 'bmp') {
+                        icon = '🖼️';
+                    }
                 }
 
                 return {
                     name: item.name,
+                    displayName: displayName,
                     icon: icon,
-                    type: item.type,
+                    type: itemType,
                     size: item.type === 'file' ? FileSystemManager.formatSize(item.size) : '',
-                    modified: item.modified ? new Date(item.modified).toLocaleDateString() : ''
+                    modified: item.modified ? new Date(item.modified).toLocaleDateString() : '',
+                    extension: item.extension,
+                    shortcutData: shortcutData
                 };
             });
 
@@ -557,14 +603,17 @@ class MyComputer extends AppBase {
                 ${items.map((item, idx) => {
                     const itemPath = [...currentPath, item.name];
                     const isDraggable = item.type === 'file' || item.type === 'directory';
+                    const shortcutDataAttr = item.shortcutData ? `data-shortcut='${JSON.stringify(item.shortcutData)}'` : '';
                     return `
                     <div class="mycomputer-item ${item.type}-item"
                          data-index="${idx}"
                          data-name="${item.name}"
                          data-type="${item.type}"
+                         data-extension="${item.extension || ''}"
+                         ${shortcutDataAttr}
                          ${isDraggable ? `draggable="true" data-file-path='${JSON.stringify(itemPath)}'` : ''}>
                         <div class="mycomputer-item-icon">${item.icon}</div>
-                        <div class="mycomputer-item-label">${item.name}</div>
+                        <div class="mycomputer-item-label">${item.displayName || item.name}</div>
                     </div>
                 `;}).join('')}
             </div>
@@ -578,14 +627,17 @@ class MyComputer extends AppBase {
                 ${items.map((item, idx) => {
                     const itemPath = [...currentPath, item.name];
                     const isDraggable = item.type === 'file' || item.type === 'directory';
+                    const shortcutDataAttr = item.shortcutData ? `data-shortcut='${JSON.stringify(item.shortcutData)}'` : '';
                     return `
                     <div class="mycomputer-list-item ${item.type}-item"
                          data-index="${idx}"
                          data-name="${item.name}"
                          data-type="${item.type}"
+                         data-extension="${item.extension || ''}"
+                         ${shortcutDataAttr}
                          ${isDraggable ? `draggable="true" data-file-path='${JSON.stringify(itemPath)}'` : ''}>
                         <div class="mycomputer-list-icon">${item.icon}</div>
-                        <div class="mycomputer-list-name">${item.name}</div>
+                        <div class="mycomputer-list-name">${item.displayName || item.name}</div>
                         <div class="mycomputer-list-size">${item.size || ''}</div>
                         <div class="mycomputer-list-date">${item.modified || ''}</div>
                     </div>
@@ -673,8 +725,48 @@ class MyComputer extends AppBase {
             });
         });
 
+        // Shortcut items - open the target app or link
+        const shortcutItems = this.getElements('.shortcut-item');
+        shortcutItems.forEach(item => {
+            this.addHandler(item, 'dblclick', (e) => {
+                const shortcutData = e.currentTarget.dataset.shortcut;
+                if (shortcutData) {
+                    try {
+                        const data = JSON.parse(shortcutData);
+                        if (data.type === 'link' && data.target) {
+                            // Open URL in browser or new tab
+                            window.open(data.target, '_blank');
+                        } else if (data.target) {
+                            // Launch the app
+                            AppRegistry.launch(data.target);
+                        }
+                    } catch (err) {
+                        console.error('Failed to open shortcut:', err);
+                    }
+                }
+            });
+        });
+
+        // Executable items - launch the associated app
+        const executableItems = this.getElements('.executable-item');
+        executableItems.forEach(item => {
+            this.addHandler(item, 'dblclick', (e) => {
+                const shortcutData = e.currentTarget.dataset.shortcut;
+                if (shortcutData) {
+                    try {
+                        const data = JSON.parse(shortcutData);
+                        if (data.appId) {
+                            AppRegistry.launch(data.appId);
+                        }
+                    } catch (err) {
+                        console.error('Failed to launch executable:', err);
+                    }
+                }
+            });
+        });
+
         // Selection for all items
-        const allItems = this.getElements('.drive-item, .folder-item, .directory-item, .file-item');
+        const allItems = this.getElements('.drive-item, .folder-item, .directory-item, .file-item, .shortcut-item, .executable-item');
         allItems.forEach(item => {
             this.addHandler(item, 'click', (e) => {
                 allItems.forEach(i => i.classList.remove('selected'));

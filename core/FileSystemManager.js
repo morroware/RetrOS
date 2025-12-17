@@ -312,15 +312,13 @@ class FileSystemManager {
     let current = this.fileSystem;
 
     for (const part of parts) {
-      if (!current[part]) {
+      // Get the container to look in - either children of a dir/drive, or the object itself
+      const container = (current.children !== undefined) ? current.children : current;
+
+      if (!container[part]) {
         return null;
       }
-      current = current[part];
-
-      // Navigate into children if it's a directory or drive
-      if (current.type === 'directory' || current.type === 'drive') {
-        current = current.children || current;
-      }
+      current = container[part];
     }
 
     return current;
@@ -759,6 +757,148 @@ class FileSystemManager {
   reset() {
     this.fileSystem = this.getDefaultFileSystem();
     this.saveFileSystem();
+  }
+
+  /**
+   * Sync desktop icons from StateManager into the filesystem Desktop folder
+   * Creates shortcut files (.lnk) for each desktop icon
+   * @param {Array} icons - Array of desktop icons from StateManager
+   */
+  syncDesktopIcons(icons) {
+    if (!icons || !Array.isArray(icons)) return;
+
+    const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+    const desktopNode = this.getNode(desktopPath);
+
+    if (!desktopNode || !desktopNode.children) return;
+
+    const now = new Date().toISOString();
+
+    // Add shortcut files for each icon that doesn't already exist as a real file
+    for (const icon of icons) {
+      const fileName = `${icon.label}.lnk`;
+
+      // Skip if a real file with this name exists (not a shortcut we created)
+      if (desktopNode.children[fileName.replace('.lnk', '.txt')] ||
+          desktopNode.children[fileName.replace('.lnk', '.md')]) {
+        continue;
+      }
+
+      // Create or update the shortcut file
+      desktopNode.children[fileName] = {
+        type: 'file',
+        content: JSON.stringify({
+          type: icon.type || 'app',
+          target: icon.url || icon.id,
+          icon: icon.emoji,
+          label: icon.label
+        }, null, 2),
+        extension: 'lnk',
+        size: 128,
+        created: now,
+        modified: now,
+        isShortcut: true,
+        shortcutTarget: icon.type === 'link' ? icon.url : icon.id,
+        shortcutType: icon.type || 'app',
+        shortcutIcon: icon.emoji
+      };
+    }
+
+    // Note: We don't save here to avoid circular updates
+    // The caller should save if needed
+  }
+
+  /**
+   * Sync installed apps into the filesystem Program Files folder
+   * Creates directories and .exe files for each app
+   * @param {Array} apps - Array of app metadata from AppRegistry
+   */
+  syncInstalledApps(apps) {
+    if (!apps || !Array.isArray(apps)) return;
+
+    const programFilesPath = ['C:', 'Program Files'];
+    const programFilesNode = this.getNode(programFilesPath);
+
+    if (!programFilesNode || !programFilesNode.children) return;
+
+    const now = new Date().toISOString();
+
+    for (const app of apps) {
+      // Skip system apps that shouldn't appear in Program Files
+      if (app.category === 'system' || !app.showInMenu) continue;
+
+      const folderName = app.name;
+
+      // Create app folder if it doesn't exist
+      if (!programFilesNode.children[folderName]) {
+        programFilesNode.children[folderName] = {
+          type: 'directory',
+          children: {}
+        };
+      }
+
+      // Create the executable file
+      const exeName = `${app.id}.exe`;
+      programFilesNode.children[folderName].children[exeName] = {
+        type: 'file',
+        content: `[Executable]\nApp: ${app.name}\nID: ${app.id}\nIcon: ${app.icon}`,
+        extension: 'exe',
+        size: 65536,
+        created: now,
+        modified: now,
+        isExecutable: true,
+        appId: app.id
+      };
+    }
+  }
+
+  /**
+   * Get all desktop shortcuts (files that are shortcuts)
+   * @returns {Array} Array of shortcut file info
+   */
+  getDesktopShortcuts() {
+    try {
+      const items = this.listDirectory(['C:', 'Users', 'Seth', 'Desktop']);
+      return items.filter(item => item.extension === 'lnk');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
+   * Get all installed apps from Program Files
+   * @returns {Array} Array of app info with executables
+   */
+  getInstalledApps() {
+    try {
+      const items = this.listDirectory(['C:', 'Program Files']);
+      const apps = [];
+
+      for (const item of items) {
+        if (item.type === 'directory') {
+          const appPath = ['C:', 'Program Files', item.name];
+          const appNode = this.getNode(appPath);
+
+          if (appNode && appNode.children) {
+            // Find .exe files
+            for (const [fileName, fileNode] of Object.entries(appNode.children)) {
+              if (fileNode.extension === 'exe' && fileNode.appId) {
+                apps.push({
+                  name: item.name,
+                  appId: fileNode.appId,
+                  path: [...appPath, fileName],
+                  icon: fileNode.icon || '⚙️'
+                });
+              }
+            }
+          }
+        }
+      }
+
+      return apps;
+    } catch (e) {
+      return [];
+    }
   }
 }
 
