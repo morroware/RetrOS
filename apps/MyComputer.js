@@ -402,13 +402,41 @@ class MyComputer extends AppBase {
             // Move the file to current directory
             try {
                 FileSystemManager.moveItem(filePath, currentPath);
-                console.log(`Moved ${fileName} to ${currentPath.join('/')}`);
+                this.showDropFeedback(`Moved "${fileName}" to ${currentPath[currentPath.length - 1] || 'current folder'}`, 'success');
             } catch (err) {
                 console.error('Failed to move file:', err.message);
+                this.showDropFeedback(`Failed to move file: ${err.message}`, 'error');
             }
         } catch (err) {
             console.error('Failed to parse drop data:', err);
         }
+    }
+
+    /**
+     * Show feedback toast for drag and drop operations
+     * @param {string} message - Message to display
+     * @param {string} type - 'success', 'error', or 'info'
+     */
+    showDropFeedback(message, type = 'info') {
+        // Remove any existing feedback
+        const existing = document.querySelector('.drop-feedback');
+        if (existing) existing.remove();
+
+        const feedback = document.createElement('div');
+        feedback.className = `drop-feedback drop-feedback-${type}`;
+        feedback.textContent = message;
+        document.body.appendChild(feedback);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            feedback.classList.add('active');
+        });
+
+        // Remove after delay
+        setTimeout(() => {
+            feedback.classList.remove('active');
+            setTimeout(() => feedback.remove(), 300);
+        }, 2000);
     }
 
     /**
@@ -799,8 +827,11 @@ class MyComputer extends AppBase {
                 }
             });
 
-            this.addHandler(item, 'dragleave', () => {
-                item.classList.remove('drop-target');
+            this.addHandler(item, 'dragleave', (e) => {
+                // Only remove highlight if actually leaving the item (not entering a child)
+                if (!item.contains(e.relatedTarget)) {
+                    item.classList.remove('drop-target');
+                }
             });
 
             this.addHandler(item, 'drop', (e) => {
@@ -838,8 +869,11 @@ class MyComputer extends AppBase {
                     }
                 });
 
-                this.addHandler(item, 'dragleave', () => {
-                    item.classList.remove('drop-target');
+                this.addHandler(item, 'dragleave', (e) => {
+                    // Only remove highlight if actually leaving the item (not entering a child)
+                    if (!item.contains(e.relatedTarget)) {
+                        item.classList.remove('drop-target');
+                    }
                 });
 
                 this.addHandler(item, 'drop', (e) => {
@@ -960,8 +994,11 @@ class MyComputer extends AppBase {
                 }
             });
 
-            this.addHandler(item, 'dragleave', () => {
-                item.classList.remove('drop-target');
+            this.addHandler(item, 'dragleave', (e) => {
+                // Only remove highlight if actually leaving the item (not entering a child)
+                if (!item.contains(e.relatedTarget)) {
+                    item.classList.remove('drop-target');
+                }
             });
 
             this.addHandler(item, 'drop', (e) => {
