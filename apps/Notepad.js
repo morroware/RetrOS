@@ -48,18 +48,57 @@ class Notepad extends AppBase {
         this.updateTitle(fileName);
 
         return `
-            <div class="notepad-toolbar">
-                <button class="btn" id="btnNew">📄 New</button>
-                <button class="btn" id="btnOpen">📂 Open</button>
-                <button class="btn" id="btnSave">💾 Save</button>
-                <button class="btn" id="btnSaveAs">💾 Save As</button>
-                <button class="btn" id="btnDownload">📥 Download</button>
+            <style>
+                #window-notepad .window-content {
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .notepad-app {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    background: #c0c0c0;
+                }
+                .notepad-toolbar {
+                    padding: 4px;
+                    border-bottom: 1px solid #808080;
+                    flex-shrink: 0;
+                }
+                .notepad-filepath {
+                    padding: 4px 8px;
+                    background: #f0f0f0;
+                    font-size: 11px;
+                    border-bottom: 1px solid #808080;
+                    flex-shrink: 0;
+                }
+                .notepad-content {
+                    flex: 1;
+                    width: 100%;
+                    border: none;
+                    padding: 8px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    resize: none;
+                    box-sizing: border-box;
+                    outline: none;
+                }
+            </style>
+            <div class="notepad-app">
+                <div class="notepad-toolbar">
+                    <button class="btn" id="btnNew">📄 New</button>
+                    <button class="btn" id="btnOpen">📂 Open</button>
+                    <button class="btn" id="btnSave">💾 Save</button>
+                    <button class="btn" id="btnSaveAs">💾 Save As</button>
+                    <button class="btn" id="btnDownload">📥 Download</button>
+                </div>
+                <div class="notepad-filepath">
+                    File: <span id="filePathDisplay">${this.getInstanceState('currentFile') ? this.getInstanceState('currentFile').join('/') : 'Unsaved'}</span>
+                </div>
+                <textarea class="notepad-content" id="notepadText"
+                    placeholder="Start typing... (Ctrl+S to save)">${this.escapeHtml(content)}</textarea>
             </div>
-            <div id="currentFilePath" style="padding: 4px 8px; background: #f0f0f0; font-size: 11px; border-bottom: 1px solid #808080;">
-                File: <span id="filePathDisplay">${this.getInstanceState('currentFile') ? this.getInstanceState('currentFile').join('/') : 'Unsaved'}</span>
-            </div>
-            <textarea class="notepad-content" id="notepadText"
-                placeholder="Start typing... (Ctrl+S to save)">${this.escapeHtml(content)}</textarea>
         `;
     }
 
