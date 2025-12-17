@@ -321,6 +321,8 @@ class Terminal extends AppBase {
             'attrib': () => this.cmdAttrib(args),
             'edit': () => this.cmdEdit(args),
             'notepad': () => this.cmdEdit(args),
+            'start': () => this.cmdStart(args),
+            'open': () => this.cmdStart(args),
 
             // System commands
             'ver': () => this.cmdVer(),
@@ -376,9 +378,164 @@ class Terminal extends AppBase {
             const result = commands[cmd]();
             if (result) this.print(result);
         } else {
-            this.print(`'${cmd}' is not recognized as an internal or external command,`);
-            this.print('operable program or batch file.');
+            // Try to open the command as a file in the current directory
+            const fileResult = this.tryOpenFile(trimmed);
+            if (!fileResult) {
+                this.print(`'${cmd}' is not recognized as an internal or external command,`);
+                this.print('operable program or batch file.');
+            }
         }
+    }
+
+    /**
+     * Try to open a file by name in the current directory
+     * Supports .lnk (shortcuts), .exe (executables), .txt/.md/.log (text), images
+     * @param {string} fileName - The filename to try to open
+     * @returns {boolean} True if file was found and opened
+     */
+    tryOpenFile(fileName) {
+        // Try to resolve the file path
+        const filePath = this.resolvePath(fileName);
+
+        // Check if file exists
+        const node = FileSystemManager.getNode(filePath);
+        if (!node) return false;
+
+        // If it's a directory, cd into it
+        if (node.type === 'directory') {
+            this.currentPath = filePath;
+            this.updatePrompt();
+            return true;
+        }
+
+        // Must be a file
+        if (node.type !== 'file') return false;
+
+        const extension = node.extension || fileName.split('.').pop().toLowerCase();
+
+        // Handle different file types
+        if (extension === 'lnk') {
+            // Shortcut file - open the target
+            return this.openShortcut(node);
+        } else if (extension === 'exe') {
+            // Executable - launch the app
+            return this.openExecutable(node);
+        } else if (['txt', 'md', 'log'].includes(extension)) {
+            // Text file - open in Notepad
+            this.openInNotepad(filePath);
+            return true;
+        } else if (['png', 'jpg', 'bmp', 'gif'].includes(extension)) {
+            // Image file - open in Paint
+            this.openInPaint(filePath);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Open a shortcut (.lnk) file
+     * @param {Object} node - The file node
+     * @returns {boolean} True if opened successfully
+     */
+    openShortcut(node) {
+        if (node.shortcutType === 'link' && node.shortcutTarget) {
+            // External link - open in browser
+            this.print(`Opening ${node.shortcutTarget}...`);
+            import('./AppRegistry.js').then(module => {
+                const AppRegistry = module.default;
+                AppRegistry.launch('browser', { url: node.shortcutTarget });
+            });
+            return true;
+        } else if (node.shortcutTarget) {
+            // App shortcut - launch the app
+            this.print(`Launching ${node.shortcutTarget}...`);
+            import('./AppRegistry.js').then(module => {
+                const AppRegistry = module.default;
+                AppRegistry.launch(node.shortcutTarget);
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Open an executable (.exe) file
+     * @param {Object} node - The file node
+     * @returns {boolean} True if opened successfully
+     */
+    openExecutable(node) {
+        if (node.appId) {
+            this.print(`Launching ${node.appId}...`);
+            import('./AppRegistry.js').then(module => {
+                const AppRegistry = module.default;
+                AppRegistry.launch(node.appId);
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Open a text file in Notepad
+     * @param {string[]} filePath - The file path array
+     */
+    openInNotepad(filePath) {
+        this.print(`Opening in Notepad...`);
+        import('./AppRegistry.js').then(module => {
+            const AppRegistry = module.default;
+            AppRegistry.launch('notepad', { filePath });
+        });
+    }
+
+    /**
+     * Open an image file in Paint
+     * @param {string[]} filePath - The file path array
+     */
+    openInPaint(filePath) {
+        this.print(`Opening in Paint...`);
+        import('./AppRegistry.js').then(module => {
+            const AppRegistry = module.default;
+            AppRegistry.launch('paint', { filePath });
+        });
+    }
+
+    /**
+     * START command - opens a file or launches an application
+     * @param {string[]} args - Command arguments
+     * @returns {string} Result message
+     */
+    cmdStart(args) {
+        if (args.length === 0) {
+            return 'Usage: START <filename or app name>';
+        }
+
+        const target = args.join(' ');
+
+        // Try to open as a file first
+        if (this.tryOpenFile(target)) {
+            return null;
+        }
+
+        // Try to launch as an app by name (case-insensitive)
+        const appId = target.toLowerCase().replace(/\s+/g, '').replace('.exe', '');
+        import('./AppRegistry.js').then(module => {
+            const AppRegistry = module.default;
+            const apps = AppRegistry.getAll();
+            const app = apps.find(a =>
+                a.id.toLowerCase() === appId ||
+                a.name.toLowerCase() === target.toLowerCase()
+            );
+
+            if (app) {
+                this.print(`Launching ${app.name}...`);
+                AppRegistry.launch(app.id);
+            } else {
+                this.print(`Cannot find '${target}'`);
+            }
+        });
+
+        return null;
     }
 
     parseCommandLine(line) {
@@ -432,12 +589,15 @@ PING       Tests network connectivity.
 RD         Removes a directory.
 REN        Renames a file or directory.
 SET        Displays or sets environment variables.
+START      Starts an application or opens a file.
 SYSTEMINFO Displays system configuration.
 TIME       Displays the system time.
 TREE       Displays directory structure graphically.
 TYPE       Displays the contents of a text file.
 VER        Displays the operating system version.
 VOL        Displays the disk volume label.
+
+TIP: Type a filename to open it (e.g. "snake.lnk" or "welcome.txt")
 
 FUN:       matrix, disco, party, cowsay, fortune, color`;
     }
