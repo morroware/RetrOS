@@ -79,11 +79,16 @@ class DesktopRendererClass {
 
     /**
      * Render file icons from the Desktop folder
+     * Skips .lnk files since those are already rendered from StateManager icons
      */
     renderFileIcons() {
         try {
             const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
             const files = FileSystemManager.listDirectory(desktopPath);
+
+            // Filter out .lnk files - those are shortcuts synced from StateManager
+            // and are already displayed as icons on the desktop
+            const realFiles = files.filter(file => file.extension !== 'lnk');
 
             // Get saved file positions
             const filePositions = StateManager.getState('filePositions') || {};
@@ -99,7 +104,7 @@ class DesktopRendererClass {
                 nextX = maxX + 100; // Start file icons in next column
             }
 
-            files.forEach((file, index) => {
+            realFiles.forEach((file, index) => {
                 const fileId = `file_${file.name}`;
 
                 // Use saved position or calculate new one
