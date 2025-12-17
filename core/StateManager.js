@@ -46,6 +46,8 @@ class StateManagerClass {
         this.state = {
             // Desktop icons
             icons: [],
+            // File icon positions (for files on desktop)
+            filePositions: {},
             // Open windows
             windows: [],
             // Custom menu items
@@ -91,6 +93,7 @@ class StateManagerClass {
     initialize() {
         // Load persisted state
         const savedIcons = StorageManager.get('desktopIcons');
+        const savedFilePositions = StorageManager.get('filePositions');
         const savedMenu = StorageManager.get('menuItems');
         const savedRecycled = StorageManager.get('recycledItems');
         const savedAchievements = StorageManager.get('achievements');
@@ -102,6 +105,7 @@ class StateManagerClass {
 
         // Apply saved state OR use defaults
         this.state.icons = savedIcons || [...DEFAULT_ICONS];
+        if (savedFilePositions) this.state.filePositions = savedFilePositions;
         if (savedMenu) this.state.menuItems = savedMenu;
         if (savedRecycled) this.state.recycledItems = savedRecycled;
         if (savedAchievements) this.state.achievements = savedAchievements;
@@ -210,6 +214,7 @@ class StateManagerClass {
     persistState(path, value) {
         const storageMap = {
             'icons': 'desktopIcons',
+            'filePositions': 'filePositions',
             'menuItems': 'menuItems',
             'recycledItems': 'recycledItems',
             'achievements': 'achievements',
