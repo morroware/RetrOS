@@ -86,12 +86,12 @@ class StartMenuRendererClass {
 
     renderProgramsSection() {
         // Dynamically fetch apps by category
-        const accessories = AppRegistry.getByCategory('accessories');
-        const games = AppRegistry.getByCategory('games');
-        const multimedia = AppRegistry.getByCategory('multimedia');
-        const internet = AppRegistry.getByCategory('internet');
+        const accessories = AppRegistry.getByCategory('accessories').filter(a => a.showInMenu !== false);
+        const games = AppRegistry.getByCategory('games').filter(a => a.showInMenu !== false);
+        const multimedia = AppRegistry.getByCategory('multimedia').filter(a => a.showInMenu !== false);
+        const internet = AppRegistry.getByCategory('internet').filter(a => a.showInMenu !== false);
+        const systemtools = AppRegistry.getByCategory('systemtools').filter(a => a.showInMenu !== false);
 
-        const customItems = StateManager.getState('menuItems') || [];
         const links = (StateManager.getState('icons') || []).filter(i => i.type === 'link');
 
         const renderAppList = (list) => list.map(app => `
@@ -118,15 +118,36 @@ class StartMenuRendererClass {
                     </div>
                     ` : ''}
 
+                    ${multimedia.length > 0 ? `
                     <div class="start-menu-item submenu-trigger">
-                        <span class="start-menu-icon">📂</span>
+                        <span class="start-menu-icon">🎵</span>
+                        <span>Multimedia</span>
+                        <span class="submenu-arrow">▶</span>
+                        <div class="start-submenu">
+                            ${renderAppList(multimedia)}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="start-menu-item submenu-trigger">
+                        <span class="start-menu-icon">📝</span>
                         <span>Accessories</span>
                         <span class="submenu-arrow">▶</span>
                         <div class="start-submenu">
                             ${renderAppList(accessories)}
-                            ${renderAppList(multimedia)}
                         </div>
                     </div>
+
+                    ${systemtools.length > 0 ? `
+                    <div class="start-menu-item submenu-trigger">
+                        <span class="start-menu-icon">🔧</span>
+                        <span>System Tools</span>
+                        <span class="submenu-arrow">▶</span>
+                        <div class="start-submenu">
+                            ${renderAppList(systemtools)}
+                        </div>
+                    </div>
+                    ` : ''}
 
                     <div class="start-menu-item submenu-trigger">
                         <span class="start-menu-icon">🎮</span>

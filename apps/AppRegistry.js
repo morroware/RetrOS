@@ -73,45 +73,43 @@ class AppRegistryClass {
      * Initialize and register all core apps
      */
     initialize() {
-        // --- Core Apps ---
-        this.register(new Calculator());
-        this.register(new Notepad());
-        this.register(new Terminal());
-        this.register(new Paint());
-        
+        // --- Accessories (Productivity Tools) ---
+        this.register(new Calculator(), { category: 'accessories' });
+        this.register(new Notepad(), { category: 'accessories' });
+        this.register(new Paint(), { category: 'accessories' });
+
+        // --- System Tools (Utilities) ---
+        this.register(new Terminal(), { category: 'systemtools' });
+        this.register(new Defrag(), { category: 'systemtools' });
+        this.register(new SimpleApp('taskmgr', 'Task Manager', '📊', 'Task Manager is under construction.'), { category: 'systemtools' });
+
         // --- Games ---
         this.register(new Minesweeper(), { category: 'games' });
         this.register(new Snake(), { category: 'games' });
         this.register(new Asteroids(), { category: 'games' });
         this.register(new Doom(), { category: 'games' });
         this.register(new Solitaire(), { category: 'games', showInMenu: true });
-
-        // --- Internet ---
-        this.register(new Browser(), { category: 'internet' });
+        this.register(new SkiFree(), { category: 'games' });
 
         // --- Multimedia ---
         this.register(new MediaPlayer(), { category: 'multimedia' });
         this.register(new Winamp(), { category: 'multimedia' });
 
         // --- Internet & Communication ---
+        this.register(new Browser(), { category: 'internet' });
         this.register(new ChatRoom(), { category: 'internet' });
 
-        // --- More Games ---
-        this.register(new SkiFree(), { category: 'games' });
+        // --- System Apps (hidden from Programs menu) ---
+        this.register(new MyComputer(), { category: 'system', showInMenu: false });
+        this.register(new RecycleBin(), { category: 'system', showInMenu: false });
+        this.register(new AdminPanel(), { category: 'system', showInMenu: false });
 
-        // --- System Apps ---
-        this.register(new MyComputer(), { category: 'system' });
-        this.register(new RecycleBin(), { category: 'system' });
+        // --- Settings ---
         this.register(new ControlPanel(), { category: 'settings' });
-        this.register(new AdminPanel(), { category: 'system' });
-
-        // --- System Utilities ---
-        this.register(new Defrag(), { category: 'system' });
-        this.register(new SimpleApp('taskmgr', 'Task Manager', '📊', 'Task Manager is under construction.'), { category: 'system' });
-
         this.register(new SimpleApp('display', 'Display Properties', '🖥️', 'Display settings coming soon.'), { category: 'settings' });
         this.register(new SimpleApp('sounds', 'Sound Settings', '🔊', 'Sound settings coming soon.'), { category: 'settings' });
-        
+
+        // --- Hidden System Apps ---
         this.register(new SimpleApp('find', 'Find Files', '🔍', 'Search functionality is disabled.'), { showInMenu: false });
         this.register(new SimpleApp('help', 'Help', '❓', 'No help is coming. You are on your own.'), { showInMenu: false });
         this.register(new SimpleApp('run', 'Run', '▶️', 'Run command dialog.'), { showInMenu: false });
