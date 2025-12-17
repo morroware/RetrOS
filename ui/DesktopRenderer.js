@@ -85,26 +85,42 @@ class DesktopRendererClass {
             const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
             const files = FileSystemManager.listDirectory(desktopPath);
 
-            let nextY = 10; // Start position for file icons
+            // Get saved file positions
+            const filePositions = StateManager.getState('filePositions') || {};
+
+            // Calculate next available position for new files
+            let nextX = 10;
+            let nextY = 10;
             const existingIcons = StateManager.getState('icons') || [];
 
-            // Calculate next available Y position based on existing icons
+            // Find the rightmost column of app icons
             if (existingIcons.length > 0) {
-                const maxY = Math.max(...existingIcons.map(i => i.y || 0));
-                nextY = maxY + 100; // Add spacing
+                const maxX = Math.max(...existingIcons.map(i => i.x || 0));
+                nextX = maxX + 100; // Start file icons in next column
             }
 
             files.forEach((file, index) => {
+                const fileId = `file_${file.name}`;
+
+                // Use saved position or calculate new one
+                let x = nextX;
+                let y = nextY + (index * 90);
+
+                if (filePositions[fileId]) {
+                    x = filePositions[fileId].x;
+                    y = filePositions[fileId].y;
+                }
+
                 const fileIcon = {
-                    id: `file_${file.name}`,
+                    id: fileId,
                     emoji: this.getFileEmoji(file),
                     label: file.name,
                     type: 'file',
                     filePath: [...desktopPath, file.name],
                     fileType: file.type,
                     extension: file.extension,
-                    x: 10,
-                    y: nextY + (index * 90)
+                    x: x,
+                    y: y
                 };
 
                 this.renderIcon(fileIcon);
@@ -346,12 +362,8 @@ class DesktopRendererClass {
         if (e.button !== 0) return; // Only left click
         e.stopPropagation();
 
-        // For file icons with filePath, let HTML5 drag handle the cross-component transfer
-        // Only use mouse-based drag for app icons (no filePath)
-        if (icon.type === 'file' && icon.filePath) {
-            // HTML5 drag will handle this via dragstart event
-            return;
-        }
+        // Prevent HTML5 drag from interfering with mouse-based drag
+        e.preventDefault();
 
         const iconEl = e.currentTarget;
         const startX = e.clientX;
@@ -430,7 +442,14 @@ class DesktopRendererClass {
         // Save new position
         const x = parseInt(element.style.left);
         const y = parseInt(element.style.top);
-        StateManager.updateIconPosition(data.id, x, y);
+
+        if (data.type === 'file') {
+            // Save file icon position to filePositions state
+            this.saveFilePosition(data.id, x, y);
+        } else {
+            // Save app icon position to icons state
+            StateManager.updateIconPosition(data.id, x, y);
+        }
 
         EventBus.emit(Events.DRAG_END, { type: 'icon', id: data.id });
         EventBus.emit(Events.ICON_MOVE, { id: data.id, x, y });
@@ -438,6 +457,18 @@ class DesktopRendererClass {
         this.draggedIcon = null;
         document.removeEventListener('mousemove', this.boundDrag);
         document.removeEventListener('mouseup', this.boundDragEnd);
+    }
+
+    /**
+     * Save file icon position
+     * @param {string} fileId - File icon ID
+     * @param {number} x - X position
+     * @param {number} y - Y position
+     */
+    saveFilePosition(fileId, x, y) {
+        const filePositions = StateManager.getState('filePositions') || {};
+        filePositions[fileId] = { x, y };
+        StateManager.setState('filePositions', filePositions, true);
     }
 
     // ===== SELECTION BOX =====
