@@ -132,6 +132,71 @@
         <div class="achievement-desc" id="achievementDesc"></div>
     </div>
 
+    <!-- CRITICAL: Global error handler BEFORE module loads -->
+    <!-- This catches module import errors that happen before DOMContentLoaded -->
+    <script>
+        // Catch any uncaught errors (including module load failures)
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('[RetrOS FATAL]', msg, 'at', url, line, col);
+            showBootError('JavaScript Error: ' + msg + '\n\nFile: ' + url + ':' + line);
+            return true;
+        };
+
+        // Catch unhandled promise rejections
+        window.onunhandledrejection = function(event) {
+            console.error('[RetrOS FATAL] Unhandled rejection:', event.reason);
+            showBootError('Unhandled Error: ' + (event.reason?.message || event.reason));
+        };
+
+        // Show boot error on screen
+        function showBootError(message) {
+            var bootScreen = document.getElementById('bootScreen');
+            if (bootScreen && !bootScreen.dataset.errorShown) {
+                bootScreen.dataset.errorShown = 'true';
+                bootScreen.innerHTML =
+                    '<div style="color: white; text-align: center; padding: 20px; font-family: Courier New, monospace;">' +
+                    '<h2 style="color: #ff6b6b;">⚠️ RetrOS Boot Error</h2>' +
+                    '<p style="color: #aaa; margin: 15px 0;">A fatal error occurred during startup:</p>' +
+                    '<pre style="background: #1a1a1a; padding: 15px; margin: 15px auto; border-radius: 4px; text-align: left; max-width: 600px; overflow: auto; border: 1px solid #333; color: #ff6b6b; font-size: 12px; white-space: pre-wrap;">' + message + '</pre>' +
+                    '<p style="color: #888; font-size: 12px; margin: 10px 0;">Check browser console (F12) for full details</p>' +
+                    '<button onclick="location.reload()" style="padding: 12px 24px; cursor: pointer; margin-top: 15px; background: #4a4a4a; color: white; border: 2px outset #666; font-size: 14px;">🔄 Restart</button>' +
+                    '<button onclick="localStorage.clear(); location.reload()" style="padding: 12px 24px; cursor: pointer; margin-top: 15px; margin-left: 10px; background: #8b0000; color: white; border: 2px outset #666; font-size: 14px;">🗑️ Reset All Data</button>' +
+                    '</div>';
+            }
+        }
+
+        // Start a fallback animation in case main script fails
+        // This will be overridden by the real boot sequence if it loads successfully
+        document.addEventListener('DOMContentLoaded', function() {
+            var fill = document.querySelector('.loading-fill');
+            var tip = document.getElementById('bootTip');
+            if (fill && !window.bootSequenceStarted) {
+                var progress = 0;
+                var fallbackInterval = setInterval(function() {
+                    if (window.bootSequenceStarted) {
+                        clearInterval(fallbackInterval);
+                        return;
+                    }
+                    progress += 0.5; // Very slow progress
+                    fill.style.width = Math.min(progress, 15) + '%'; // Cap at 15%
+                    if (tip && progress < 15) {
+                        tip.textContent = 'Loading modules...';
+                    } else if (tip) {
+                        tip.textContent = 'Waiting for initialization...';
+                    }
+                }, 100);
+
+                // If still not loaded after 10 seconds, show warning
+                setTimeout(function() {
+                    if (!window.bootSequenceStarted && tip) {
+                        tip.textContent = 'Loading is taking longer than expected...';
+                        tip.style.color = '#ffaa00';
+                    }
+                }, 10000);
+            }
+        });
+    </script>
+
     <!-- Main Script (ES Modules) -->
     <script type="module" src="index.js"></script>
 </body>
