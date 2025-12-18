@@ -262,6 +262,77 @@ class StartMenuRendererClass {
                 this.close();
             });
         });
+
+        // Attach submenu positioning handlers
+        this.attachSubmenuPositioning();
+    }
+
+    /**
+     * Attach hover handlers to reposition submenus that would go off-screen
+     */
+    attachSubmenuPositioning() {
+        const submenuTriggers = this.element.querySelectorAll('.submenu-trigger');
+
+        submenuTriggers.forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => {
+                const submenu = trigger.querySelector(':scope > .start-submenu');
+                if (submenu) {
+                    this.positionSubmenu(trigger, submenu);
+                }
+            });
+        });
+    }
+
+    /**
+     * Position a submenu so it stays on screen
+     * @param {HTMLElement} trigger - The parent menu item
+     * @param {HTMLElement} submenu - The submenu element
+     */
+    positionSubmenu(trigger, submenu) {
+        // Reset any previous positioning
+        submenu.style.top = '';
+        submenu.style.bottom = '';
+        submenu.classList.remove('flipped-vertical');
+
+        // Need to briefly show to measure
+        const wasHidden = submenu.style.display === 'none' || !submenu.offsetParent;
+        if (wasHidden) {
+            submenu.style.visibility = 'hidden';
+            submenu.style.display = 'block';
+        }
+
+        const triggerRect = trigger.getBoundingClientRect();
+        const submenuRect = submenu.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const taskbarHeight = 50; // Height of taskbar at bottom
+
+        // Calculate where the submenu bottom would be
+        const submenuBottom = triggerRect.top + submenuRect.height;
+        const availableSpace = viewportHeight - taskbarHeight;
+
+        // If submenu would go below the available space, flip it upward
+        if (submenuBottom > availableSpace) {
+            // Position from bottom of trigger instead of top
+            const overflow = submenuBottom - availableSpace;
+
+            // If the submenu is taller than available space, position at top of viewport
+            if (submenuRect.height > availableSpace - triggerRect.top) {
+                submenu.style.top = 'auto';
+                submenu.style.bottom = `${triggerRect.bottom - availableSpace}px`;
+                submenu.style.maxHeight = `${availableSpace - 10}px`;
+                submenu.style.overflowY = 'auto';
+            } else {
+                // Shift up by the overflow amount
+                submenu.style.top = `-${overflow + 10}px`;
+            }
+            submenu.classList.add('flipped-vertical');
+        }
+
+        // Restore visibility
+        if (wasHidden) {
+            submenu.style.visibility = '';
+            submenu.style.display = '';
+        }
     }
 }
 
