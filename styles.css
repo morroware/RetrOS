@@ -851,6 +851,29 @@ body {
     display: block;
 }
 
+/* Scrollable submenus when content exceeds available space */
+.start-submenu.flipped-vertical {
+    /* Scrollbar styling for when submenu is scrollable */
+}
+
+.start-submenu::-webkit-scrollbar {
+    width: 16px;
+}
+
+.start-submenu::-webkit-scrollbar-track {
+    background: var(--win95-gray);
+    border: 1px inset var(--win95-gray);
+}
+
+.start-submenu::-webkit-scrollbar-thumb {
+    background: var(--win95-gray);
+    border: 2px outset var(--win95-gray);
+}
+
+.start-submenu::-webkit-scrollbar-thumb:hover {
+    background: var(--win95-light);
+}
+
 .start-menu-divider {
     height: 2px;
     background: var(--win95-dark);

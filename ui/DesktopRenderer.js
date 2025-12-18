@@ -89,27 +89,32 @@ class DesktopRendererClass {
             // Get saved file positions
             const filePositions = StateManager.getState('filePositions') || {};
 
-            // Calculate next available position for new files
-            let nextX = 10;
-            let nextY = 10;
-            const existingIcons = StateManager.getState('icons') || [];
+            // Use a FIXED starting position for file icons to prevent them from
+            // shifting when app icons are moved. This ensures file icons have
+            // stable positions independent of app icon positions.
+            const FILE_ICONS_START_X = 120;
+            const FILE_ICONS_START_Y = 10;
+            const FILE_ICON_SPACING = 90;
 
-            // Find the rightmost column of app icons
-            if (existingIcons.length > 0) {
-                const maxX = Math.max(...existingIcons.map(i => i.x || 0));
-                nextX = maxX + 100; // Start file icons in next column
-            }
+            let positionsUpdated = false;
 
             realFiles.forEach((file, index) => {
                 const fileId = `file_${file.name}`;
 
-                // Use saved position or calculate new one
-                let x = nextX;
-                let y = nextY + (index * 90);
+                let x, y;
 
+                // Use saved position if it exists
                 if (filePositions[fileId]) {
                     x = filePositions[fileId].x;
                     y = filePositions[fileId].y;
+                } else {
+                    // Calculate initial position using fixed starting point
+                    x = FILE_ICONS_START_X;
+                    y = FILE_ICONS_START_Y + (index * FILE_ICON_SPACING);
+
+                    // Save this position immediately so it persists across re-renders
+                    filePositions[fileId] = { x, y };
+                    positionsUpdated = true;
                 }
 
                 const fileIcon = {
@@ -126,6 +131,11 @@ class DesktopRendererClass {
 
                 this.renderIcon(fileIcon);
             });
+
+            // Persist new file positions if any were added
+            if (positionsUpdated) {
+                StateManager.setState('filePositions', filePositions, true);
+            }
         } catch (e) {
             console.log('Desktop folder empty or not found:', e.message);
         }
