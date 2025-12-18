@@ -1,25 +1,28 @@
 # RetrOS Developer Guide
 
-A practical guide for creating new applications and features for RetrOS.
+A comprehensive guide for creating new applications and extending RetrOS.
 
 ---
 
 ## Table of Contents
 
-1. [Creating a New App](#creating-a-new-app)
-2. [App Lifecycle](#app-lifecycle)
-3. [Working with State](#working-with-state)
-4. [Event Handling](#event-handling)
-5. [File System Integration](#file-system-integration)
-6. [Using System Dialogs](#using-system-dialogs)
-7. [Sound Integration](#sound-integration)
-8. [Best Practices](#best-practices)
-9. [Common Patterns](#common-patterns)
-10. [Troubleshooting](#troubleshooting)
+1. [Quick Start](#quick-start)
+2. [App Architecture](#app-architecture)
+3. [App Lifecycle](#app-lifecycle)
+4. [Working with State](#working-with-state)
+5. [Event Handling](#event-handling)
+6. [File System Integration](#file-system-integration)
+7. [Using System Dialogs](#using-system-dialogs)
+8. [Icon System](#icon-system)
+9. [Sound Integration](#sound-integration)
+10. [Configuration Constants](#configuration-constants)
+11. [Best Practices](#best-practices)
+12. [Common Patterns](#common-patterns)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
-## Creating a New App
+## Quick Start
 
 ### Step 1: Create the App File
 
@@ -40,7 +43,7 @@ class YourApp extends AppBase {
             name: 'Your App',        // Display name
 
             // Optional (with defaults)
-            icon: '📱',              // Emoji or text icon
+            icon: 'fa-solid fa-star', // FontAwesome class or emoji
             width: 500,              // Default window width
             height: 400,             // Default window height (or 'auto')
             resizable: true,         // Can user resize?
@@ -121,6 +124,35 @@ Your app will now appear in:
 - Start Menu > Programs > [Category]
 - Can be launched via Terminal: `start yourapp`
 - Can be launched programmatically: `AppRegistry.launch('yourapp')`
+
+---
+
+## App Architecture
+
+### Core Modules
+
+RetrOS is built on these core modules in `/core/`:
+
+| Module | Purpose |
+|--------|---------|
+| `EventBus.js` | Central pub/sub messaging system |
+| `StateManager.js` | Centralized state management with persistence |
+| `WindowManager.js` | Window creation, focus, resize, and lifecycle |
+| `StorageManager.js` | LocalStorage abstraction layer |
+| `FileSystemManager.js` | Virtual file system with multi-drive support |
+| `IconSystem.js` | FontAwesome icons with emoji fallback |
+| `Constants.js` | Centralized configuration values |
+
+### App Base Class
+
+All apps extend `AppBase`, which provides:
+
+- Multi-instance window support
+- Automatic event handler cleanup
+- Scoped DOM queries
+- Instance-level state management
+- Lifecycle hooks
+- Integration with core systems
 
 ---
 
@@ -290,6 +322,29 @@ FileSystemManager.moveItem(
     ['C:', 'source', 'file.txt'],
     ['C:', 'destination']
 );
+
+// Copy item
+FileSystemManager.copyItem(
+    ['C:', 'source', 'file.txt'],
+    ['C:', 'destination']
+);
+
+// Rename item
+FileSystemManager.renameItem(
+    ['C:', 'folder', 'oldname.txt'],
+    'newname.txt'
+);
+```
+
+### Using Constants for Paths
+
+```javascript
+import { PATHS } from '../core/Constants.js';
+
+// Use predefined paths
+const desktopPath = PATHS.DESKTOP;      // ['C:', 'Users', 'Seth', 'Desktop']
+const documentsPath = PATHS.DOCUMENTS;  // ['C:', 'Users', 'Seth', 'Documents']
+const userHome = PATHS.USER_HOME;       // ['C:', 'Users', 'Seth']
 ```
 
 ---
@@ -336,6 +391,53 @@ const saveResult = await SystemDialogs.showFileSave({
 
 ---
 
+## Icon System
+
+RetrOS uses FontAwesome 6.5.1 for icons with automatic emoji fallback.
+
+### Using Icons in Apps
+
+```javascript
+import IconSystem from '../core/IconSystem.js';
+
+// Get icon HTML - works with FontAwesome classes or emojis
+const icon1 = IconSystem.getIcon('fa-solid fa-folder');  // FontAwesome
+const icon2 = IconSystem.getIcon('folder');              // Shorthand
+const icon3 = IconSystem.getIcon('🎮');                   // Emoji
+
+// In your HTML template
+onOpen() {
+    return `
+        <div class="toolbar">
+            <button>${IconSystem.getIcon('fa-solid fa-save')} Save</button>
+            <button>${IconSystem.getIcon('fa-solid fa-folder-open')} Open</button>
+        </div>
+    `;
+}
+```
+
+### Icon Shorthand Mappings
+
+| Shorthand | FontAwesome Class |
+|-----------|-------------------|
+| `folder` | `fa-solid fa-folder` |
+| `folder-open` | `fa-solid fa-folder-open` |
+| `file` | `fa-solid fa-file` |
+| `file-text` | `fa-solid fa-file-lines` |
+| `save` | `fa-solid fa-floppy-disk` |
+| `computer` | `fa-solid fa-computer` |
+| `settings` | `fa-solid fa-gear` |
+| `trash` | `fa-solid fa-trash` |
+
+### Fallback Behavior
+
+If FontAwesome fails to load, the IconSystem automatically falls back to emojis:
+- `fa-solid fa-folder` → `📁`
+- `fa-solid fa-file` → `📄`
+- `fa-solid fa-computer` → `💻`
+
+---
+
 ## Sound Integration
 
 ```javascript
@@ -357,6 +459,44 @@ this.stopAudio('path/to/audio.mp3');
 
 // Stop all audio
 this.stopAllAudio();
+```
+
+---
+
+## Configuration Constants
+
+RetrOS centralizes configuration in `/core/Constants.js`:
+
+```javascript
+import { PATHS, WINDOW, TIMING, STORAGE_KEYS, APP_CATEGORIES } from '../core/Constants.js';
+
+// User paths
+PATHS.USER_HOME      // ['C:', 'Users', 'Seth']
+PATHS.DESKTOP        // ['C:', 'Users', 'Seth', 'Desktop']
+PATHS.DOCUMENTS      // ['C:', 'Users', 'Seth', 'Documents']
+PATHS.PICTURES       // ['C:', 'Users', 'Seth', 'Pictures']
+
+// Window configuration
+WINDOW.MIN_WIDTH     // 300
+WINDOW.MIN_HEIGHT    // 200
+WINDOW.BASE_Z_INDEX  // 1000
+
+// Timing values
+TIMING.ANIMATION_DURATION  // Animation timing in ms
+TIMING.SCREENSAVER_DELAY   // Default screensaver delay
+
+// Storage keys (all prefixed with 'smos_')
+STORAGE_KEYS.DESKTOP_ICONS
+STORAGE_KEYS.FILE_SYSTEM
+STORAGE_KEYS.ACHIEVEMENTS
+
+// App categories for Start Menu
+APP_CATEGORIES.ACCESSORIES  // 'accessories'
+APP_CATEGORIES.GAMES        // 'games'
+APP_CATEGORIES.MULTIMEDIA   // 'multimedia'
+APP_CATEGORIES.INTERNET     // 'internet'
+APP_CATEGORIES.SYSTEM_TOOLS // 'systemtools'
+APP_CATEGORIES.SETTINGS     // 'settings'
 ```
 
 ---
@@ -420,6 +560,18 @@ onResize({ width, height }) {
 }
 ```
 
+### 6. Use Constants Instead of Magic Values
+
+```javascript
+import { PATHS, WINDOW } from '../core/Constants.js';
+
+// CORRECT - Use centralized constants
+const desktopPath = PATHS.DESKTOP;
+
+// WRONG - Hardcoded paths
+const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+```
+
 ---
 
 ## Common Patterns
@@ -429,7 +581,7 @@ onResize({ width, height }) {
 ```javascript
 class MyGame extends AppBase {
     constructor() {
-        super({ id: 'mygame', name: 'My Game', icon: '🎮', width: 600, height: 400 });
+        super({ id: 'mygame', name: 'My Game', icon: 'fa-solid fa-gamepad', width: 600, height: 400 });
     }
 
     onOpen() {
@@ -473,7 +625,7 @@ class MyGame extends AppBase {
 ```javascript
 class MyEditor extends AppBase {
     constructor() {
-        super({ id: 'myeditor', name: 'My Editor', icon: '📝', width: 600, height: 500 });
+        super({ id: 'myeditor', name: 'My Editor', icon: 'fa-solid fa-file-pen', width: 600, height: 500 });
     }
 
     onOpen(params = {}) {
@@ -528,13 +680,37 @@ class Settings extends AppBase {
         super({
             id: 'settings',
             name: 'Settings',
-            icon: '⚙️',
+            icon: 'fa-solid fa-gear',
             singleton: true,  // Only one instance allowed
             width: 400,
             height: 300
         });
     }
     // ...
+}
+```
+
+### App with Toolbar
+
+```javascript
+onOpen() {
+    return `
+        <div class="app-toolbar">
+            <button id="newBtn" class="toolbar-btn" title="New">
+                ${IconSystem.getIcon('fa-solid fa-file')}
+            </button>
+            <button id="openBtn" class="toolbar-btn" title="Open">
+                ${IconSystem.getIcon('fa-solid fa-folder-open')}
+            </button>
+            <div class="toolbar-separator"></div>
+            <button id="saveBtn" class="toolbar-btn" title="Save">
+                ${IconSystem.getIcon('fa-solid fa-floppy-disk')}
+            </button>
+        </div>
+        <div class="app-content">
+            <!-- Main content here -->
+        </div>
+    `;
 }
 ```
 
@@ -545,7 +721,7 @@ class Settings extends AppBase {
 ### App Doesn't Appear in Start Menu
 
 1. Check `showInMenu: true` in constructor
-2. Verify category matches existing category
+2. Verify category matches existing category (see `APP_CATEGORIES`)
 3. Check for JavaScript errors in console
 4. Verify app is registered in AppRegistry
 
@@ -575,6 +751,13 @@ class Settings extends AppBase {
 2. Verify async operations have error handling
 3. Check console for unhandled promise rejections
 
+### Icons Not Displaying
+
+1. Check if FontAwesome is loaded (network tab)
+2. Use correct FontAwesome class format: `fa-solid fa-icon-name`
+3. Fallback to emoji if needed: `icon: '📁'`
+4. Check IconSystem mapping for shorthand names
+
 ---
 
 ## Quick Reference
@@ -603,20 +786,55 @@ class Settings extends AppBase {
 
 | Category | Description |
 |----------|-------------|
-| `accessories` | Productivity tools (Calculator, Notepad) |
-| `games` | Games (Minesweeper, Snake) |
+| `accessories` | Productivity tools (Calculator, Notepad, Paint, Calendar, Clock) |
+| `games` | Games (Minesweeper, Snake, Solitaire, FreeCell, SkiFree, Asteroids, DOOM) |
 | `multimedia` | Media apps (Media Player, Winamp) |
-| `internet` | Network apps (Browser, Chat) |
-| `systemtools` | Utilities (Terminal, Defrag) |
-| `settings` | Settings apps (Control Panel) |
-| `system` | System apps (hidden from menu) |
+| `internet` | Network apps (Browser, Chat Room) |
+| `systemtools` | Utilities (Terminal, Defrag, Find Files, Task Manager) |
+| `settings` | Settings apps (Control Panel, Display Properties, Sound Settings) |
+| `system` | System apps (hidden from menu: My Computer, Recycle Bin, Admin Panel) |
+
+---
+
+## Project Structure Reference
+
+```
+RetrOS/
+├── apps/                   # Application implementations
+│   ├── AppBase.js          # Base class - extend this
+│   ├── AppRegistry.js      # Register apps here
+│   └── [YourApp.js]        # Your new app
+│
+├── core/                   # Core systems
+│   ├── Constants.js        # Configuration constants
+│   ├── EventBus.js         # Event system
+│   ├── StateManager.js     # State management
+│   ├── WindowManager.js    # Window management
+│   ├── FileSystemManager.js # Virtual file system
+│   ├── StorageManager.js   # LocalStorage
+│   └── IconSystem.js       # Icon rendering
+│
+├── features/               # Optional features
+│   ├── SystemDialogs.js    # Dialogs (alert, confirm, file open/save)
+│   ├── SoundSystem.js      # Audio system
+│   ├── AchievementSystem.js # Achievements
+│   └── ...
+│
+└── ui/                     # UI components
+    ├── DesktopRenderer.js  # Desktop icons
+    ├── TaskbarRenderer.js  # Taskbar
+    ├── StartMenuRenderer.js # Start menu
+    └── ContextMenuRenderer.js # Context menus
+```
 
 ---
 
 ## Need Help?
 
-- Check existing apps in `/apps/` for examples
-- Calculator.js - Simple calculator with keyboard support
-- Notepad.js - File operations and dialogs
-- Snake.js - Canvas-based game
-- MediaPlayer.js - Audio playback
+- Check existing apps in `/apps/` for examples:
+  - **Calculator.js** - Simple calculator with keyboard support
+  - **Notepad.js** - File operations and dialogs
+  - **Snake.js** - Canvas-based game with game loop
+  - **Paint.js** - Drawing tools with file system integration
+  - **Calendar.js** - Date navigation and selection
+  - **FreeCell.js** - Complex card game with drag-and-drop
