@@ -280,53 +280,66 @@ class StartMenuRendererClass {
                     this.positionSubmenu(trigger, submenu);
                 }
             });
+
+            trigger.addEventListener('mouseleave', () => {
+                const submenu = trigger.querySelector(':scope > .start-submenu');
+                if (submenu) {
+                    // Reset positioning when leaving
+                    submenu.style.left = '';
+                    submenu.style.top = '';
+                    submenu.style.maxHeight = '';
+                }
+            });
         });
     }
 
     /**
      * Position a submenu so it stays on screen
+     * Uses fixed positioning to avoid clipping by overflow:auto parents
      * @param {HTMLElement} trigger - The parent menu item
      * @param {HTMLElement} submenu - The submenu element
      */
     positionSubmenu(trigger, submenu) {
-        // Reset any previous positioning
-        submenu.style.top = '';
-        submenu.style.bottom = '';
-        submenu.classList.remove('flipped-vertical');
+        const triggerRect = trigger.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const taskbarHeight = 50;
+        const availableHeight = viewportHeight - taskbarHeight;
 
-        // Need to briefly show to measure
-        const wasHidden = submenu.style.display === 'none' || !submenu.offsetParent;
+        // Position submenu to the right of the trigger
+        let left = triggerRect.right;
+        let top = triggerRect.top;
+
+        // Temporarily show to measure
+        const wasHidden = getComputedStyle(submenu).display === 'none';
         if (wasHidden) {
             submenu.style.visibility = 'hidden';
             submenu.style.display = 'block';
         }
 
-        const triggerRect = trigger.getBoundingClientRect();
         const submenuRect = submenu.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const taskbarHeight = 50; // Height of taskbar at bottom
 
-        // Calculate where the submenu bottom would be
-        const submenuBottom = triggerRect.top + submenuRect.height;
-        const availableSpace = viewportHeight - taskbarHeight;
-
-        // If submenu would go below the available space, flip it upward
-        if (submenuBottom > availableSpace) {
-            // Position from bottom of trigger instead of top
-            const overflow = submenuBottom - availableSpace;
-
-            // If the submenu is taller than available space, position at top of viewport
-            if (submenuRect.height > availableSpace - triggerRect.top) {
-                submenu.style.top = 'auto';
-                submenu.style.bottom = `${triggerRect.bottom - availableSpace}px`;
-                submenu.style.maxHeight = `${availableSpace - 10}px`;
-                submenu.style.overflowY = 'auto';
-            } else {
-                // Shift up by the overflow amount
-                submenu.style.top = `-${overflow + 10}px`;
-            }
-            submenu.classList.add('flipped-vertical');
+        // Check if submenu would overflow to the right
+        if (left + submenuRect.width > viewportWidth) {
+            // Position to the left of trigger instead
+            left = triggerRect.left - submenuRect.width;
+            if (left < 0) left = 0;
         }
+
+        // Check if submenu would overflow below taskbar
+        if (top + submenuRect.height > availableHeight) {
+            // Shift up to fit
+            top = availableHeight - submenuRect.height;
+            if (top < 0) {
+                // Submenu is taller than available space, pin to top and limit height
+                top = 0;
+                submenu.style.maxHeight = `${availableHeight - 10}px`;
+            }
+        }
+
+        // Apply positioning
+        submenu.style.left = `${left}px`;
+        submenu.style.top = `${top}px`;
 
         // Restore visibility
         if (wasHidden) {
