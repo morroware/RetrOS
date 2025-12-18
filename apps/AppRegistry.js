@@ -25,6 +25,11 @@ import Winamp from './Winamp.js';
 import Defrag from './Defrag.js';
 import SkiFree from './SkiFree.js';
 import ChatRoom from './ChatRoom.js';
+import TaskManager from './TaskManager.js';
+import DisplayProperties from './DisplayProperties.js';
+import SoundSettings from './SoundSettings.js';
+import FindFiles from './FindFiles.js';
+import HelpSystem from './HelpSystem.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -81,7 +86,7 @@ class AppRegistryClass {
         // --- System Tools (Utilities) ---
         this.register(new Terminal(), { category: 'systemtools' });
         this.register(new Defrag(), { category: 'systemtools' });
-        this.register(new SimpleApp('taskmgr', 'Task Manager', '📊', 'Task Manager is under construction.'), { category: 'systemtools' });
+        this.register(new TaskManager(), { category: 'systemtools' });
 
         // --- Games ---
         this.register(new Minesweeper(), { category: 'games' });
@@ -106,12 +111,12 @@ class AppRegistryClass {
 
         // --- Settings ---
         this.register(new ControlPanel(), { category: 'settings' });
-        this.register(new SimpleApp('display', 'Display Properties', '🖥️', 'Display settings coming soon.'), { category: 'settings' });
-        this.register(new SimpleApp('sounds', 'Sound Settings', '🔊', 'Sound settings coming soon.'), { category: 'settings' });
+        this.register(new DisplayProperties(), { category: 'settings' });
+        this.register(new SoundSettings(), { category: 'settings' });
 
         // --- Hidden System Apps ---
-        this.register(new SimpleApp('find', 'Find Files', '🔍', 'Search functionality is disabled.'), { showInMenu: false });
-        this.register(new SimpleApp('help', 'Help', '❓', 'No help is coming. You are on your own.'), { showInMenu: false });
+        this.register(new FindFiles(), { showInMenu: false });
+        this.register(new HelpSystem(), { showInMenu: false });
         this.register(new SimpleApp('run', 'Run', '▶️', 'Run command dialog.'), { showInMenu: false });
         this.register(new SimpleApp('shutdown', 'Shut Down', '⏻', 'It is now safe to turn off your computer.'), { showInMenu: false });
     }
