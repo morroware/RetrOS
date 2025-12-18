@@ -33,7 +33,7 @@ class FindFiles extends AppBase {
                     flex-direction: column;
                     height: 100%;
                     background: #c0c0c0;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .find-tabs {
                     display: flex;
@@ -76,7 +76,7 @@ class FindFiles extends AppBase {
                     padding: 3px;
                     border: 2px inset #fff;
                     font-family: inherit;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .find-buttons {
                     display: flex;
@@ -90,7 +90,7 @@ class FindFiles extends AppBase {
                     border: 2px outset #fff;
                     cursor: pointer;
                     min-width: 80px;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .find-btn:active:not(:disabled) {
                     border-style: inset;
@@ -167,7 +167,7 @@ class FindFiles extends AppBase {
                     padding: 5px;
                     background: #c0c0c0;
                     border-top: 2px groove #fff;
-                    font-size: 10px;
+                    font-size: 12px;
                     color: #444;
                 }
                 .no-results {

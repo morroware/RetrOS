@@ -32,9 +32,17 @@ class DisplayProperties extends AppBase {
         const wallpaper = StorageManager.get('desktopWallpaper') || '';
         const crtEffect = StateManager.getState('settings.crtEffect');
         const screensaverDelay = StateManager.getState('settings.screensaverDelay') || 300000;
+        const windowAnimations = StorageManager.get('windowAnimations') !== false;
+        const menuShadows = StorageManager.get('menuShadows') !== false;
+        const smoothScrolling = StorageManager.get('smoothScrolling') !== false;
+        const iconSize = StorageManager.get('iconSize') || 'medium';
 
         this.selectedColor = currentBg;
         this.selectedWallpaper = wallpaper;
+        this.windowAnimations = windowAnimations;
+        this.menuShadows = menuShadows;
+        this.smoothScrolling = smoothScrolling;
+        this.iconSize = iconSize;
 
         return `
             <style>
@@ -43,7 +51,7 @@ class DisplayProperties extends AppBase {
                     height: 100%;
                     display: flex;
                     flex-direction: column;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .display-tabs {
                     display: flex;
@@ -230,7 +238,7 @@ class DisplayProperties extends AppBase {
                 }
                 .screensaver-preview-text {
                     color: #333;
-                    font-size: 10px;
+                    font-size: 12px;
                 }
                 .flying-preview {
                     position: absolute;
@@ -392,15 +400,15 @@ class DisplayProperties extends AppBase {
                                 <label for="effect-crt">CRT scanline effect</label>
                             </div>
                             <div class="display-check">
-                                <input type="checkbox" id="effect-animations" checked>
+                                <input type="checkbox" id="effect-animations" ${windowAnimations ? 'checked' : ''}>
                                 <label for="effect-animations">Animate windows when minimizing</label>
                             </div>
                             <div class="display-check">
-                                <input type="checkbox" id="effect-shadows" checked>
+                                <input type="checkbox" id="effect-shadows" ${menuShadows ? 'checked' : ''}>
                                 <label for="effect-shadows">Show shadows under menus</label>
                             </div>
                             <div class="display-check">
-                                <input type="checkbox" id="effect-smooth" checked>
+                                <input type="checkbox" id="effect-smooth" ${smoothScrolling ? 'checked' : ''}>
                                 <label for="effect-smooth">Use smooth scrolling</label>
                             </div>
                         </div>
@@ -410,9 +418,9 @@ class DisplayProperties extends AppBase {
                             <div class="display-row">
                                 <label>Icon size:</label>
                                 <select id="icon-size">
-                                    <option value="small">Small</option>
-                                    <option value="medium" selected>Medium</option>
-                                    <option value="large">Large</option>
+                                    <option value="small" ${iconSize === 'small' ? 'selected' : ''}>Small</option>
+                                    <option value="medium" ${iconSize === 'medium' ? 'selected' : ''}>Medium</option>
+                                    <option value="large" ${iconSize === 'large' ? 'selected' : ''}>Large</option>
                                 </select>
                             </div>
                         </div>
@@ -515,6 +523,38 @@ class DisplayProperties extends AppBase {
             });
         }
 
+        // Window animations toggle
+        const animationsToggle = this.getElement('#effect-animations');
+        if (animationsToggle) {
+            this.addHandler(animationsToggle, 'change', (e) => {
+                this.windowAnimations = e.target.checked;
+            });
+        }
+
+        // Menu shadows toggle
+        const shadowsToggle = this.getElement('#effect-shadows');
+        if (shadowsToggle) {
+            this.addHandler(shadowsToggle, 'change', (e) => {
+                this.menuShadows = e.target.checked;
+            });
+        }
+
+        // Smooth scrolling toggle
+        const smoothToggle = this.getElement('#effect-smooth');
+        if (smoothToggle) {
+            this.addHandler(smoothToggle, 'change', (e) => {
+                this.smoothScrolling = e.target.checked;
+            });
+        }
+
+        // Icon size dropdown
+        const iconSizeSelect = this.getElement('#icon-size');
+        if (iconSizeSelect) {
+            this.addHandler(iconSizeSelect, 'change', (e) => {
+                this.iconSize = e.target.value;
+            });
+        }
+
         // Preview button
         const previewBtn = this.getElement('#btn-preview-ss');
         if (previewBtn) {
@@ -559,7 +599,30 @@ class DisplayProperties extends AppBase {
         // Apply wallpaper if any
         StorageManager.set('desktopWallpaper', this.selectedWallpaper);
 
+        // Apply window animations
+        StorageManager.set('windowAnimations', this.windowAnimations);
+        document.body.classList.toggle('no-animations', !this.windowAnimations);
+
+        // Apply menu shadows
+        StorageManager.set('menuShadows', this.menuShadows);
+        document.body.classList.toggle('no-shadows', !this.menuShadows);
+
+        // Apply smooth scrolling
+        StorageManager.set('smoothScrolling', this.smoothScrolling);
+        document.body.classList.toggle('no-smooth-scroll', !this.smoothScrolling);
+
+        // Apply icon size
+        StorageManager.set('iconSize', this.iconSize);
+        document.body.classList.remove('icon-size-small', 'icon-size-medium', 'icon-size-large');
+        document.body.classList.add(`icon-size-${this.iconSize}`);
+
         EventBus.emit('desktop:bg-change', { color: this.selectedColor, wallpaper: this.selectedWallpaper });
+        EventBus.emit('desktop:settings-change', {
+            iconSize: this.iconSize,
+            windowAnimations: this.windowAnimations,
+            menuShadows: this.menuShadows,
+            smoothScrolling: this.smoothScrolling
+        });
         EventBus.emit('sound:play', { type: 'click' });
     }
 }
