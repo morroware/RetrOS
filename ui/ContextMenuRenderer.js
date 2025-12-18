@@ -1,6 +1,6 @@
 /**
  * ContextMenuRenderer - Manages all context menus
- * Singleton pattern
+ * Singleton pattern with proper event cleanup
  */
 
 import EventBus, { Events } from '../core/EventBus.js';
@@ -14,26 +14,34 @@ class ContextMenuRendererClass {
     constructor() {
         this.element = null;
         this.currentContext = null;
+        this.initialized = false;
+
+        // Bound handlers for cleanup capability
+        this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
+        this.boundHandleEscape = this.handleEscape.bind(this);
+        this.boundHandleMenuClick = this.handleMenuClick.bind(this);
     }
 
     initialize() {
+        if (this.initialized) {
+            console.warn('[ContextMenuRenderer] Already initialized');
+            return;
+        }
+
         this.element = document.getElementById('contextMenu');
         if (!this.element) {
             console.error('[ContextMenuRenderer] Menu element not found');
             return;
         }
 
-        // Close on click outside
-        document.addEventListener('click', (e) => {
-            if (this.element && !this.element.contains(e.target)) {
-                this.hide();
-            }
-        });
+        // Close on click outside - using bound handler
+        document.addEventListener('click', this.boundHandleOutsideClick);
 
-        // Close on escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') this.hide();
-        });
+        // Close on escape - using bound handler
+        document.addEventListener('keydown', this.boundHandleEscape);
+
+        // Use event delegation for menu items - single handler for all clicks
+        this.element.addEventListener('click', this.boundHandleMenuClick);
 
         // Listen for show events
         EventBus.on(Events.CONTEXT_MENU_SHOW, ({ x, y, type, icon, windowId }) => {
@@ -48,7 +56,52 @@ class ContextMenuRendererClass {
             import('./DesktopRenderer.js').then(m => m.default.refresh());
         });
 
+        this.initialized = true;
         console.log('[ContextMenuRenderer] Initialized');
+    }
+
+    /**
+     * Handle click outside menu
+     */
+    handleOutsideClick(e) {
+        if (this.element && !this.element.contains(e.target)) {
+            this.hide();
+        }
+    }
+
+    /**
+     * Handle escape key
+     */
+    handleEscape(e) {
+        if (e.key === 'Escape') this.hide();
+    }
+
+    /**
+     * Handle menu item clicks via event delegation
+     */
+    handleMenuClick(e) {
+        const item = e.target.closest('[data-action]');
+        if (item) {
+            e.stopPropagation();
+            this.handleAction(item.dataset.action);
+        }
+    }
+
+    /**
+     * Cleanup all event listeners
+     */
+    destroy() {
+        if (!this.initialized) return;
+
+        document.removeEventListener('click', this.boundHandleOutsideClick);
+        document.removeEventListener('keydown', this.boundHandleEscape);
+
+        if (this.element) {
+            this.element.removeEventListener('click', this.boundHandleMenuClick);
+        }
+
+        this.initialized = false;
+        console.log('[ContextMenuRenderer] Destroyed');
     }
 
     show(x, y, type, context = {}) {
@@ -66,8 +119,7 @@ class ContextMenuRendererClass {
         this.element.style.left = `${x}px`;
         this.element.style.top = `${y}px`;
         this.element.classList.add('active');
-        
-        this.attachHandlers();
+        // Event delegation handles clicks - no need for attachHandlers
     }
 
     hide() {
@@ -145,15 +197,6 @@ class ContextMenuRendererClass {
             <div class="context-divider"></div>
             <div class="context-item" data-action="close">Close</div>
         `;
-    }
-
-    attachHandlers() {
-        this.element.querySelectorAll('[data-action]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.handleAction(item.dataset.action);
-            });
-        });
     }
 
     handleAction(action) {

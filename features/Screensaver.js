@@ -1,6 +1,6 @@
 /**
  * Screensaver - Flying toasters screensaver
- * Singleton pattern
+ * Singleton pattern with proper event cleanup
  */
 
 import EventBus, { Events } from '../core/EventBus.js';
@@ -11,25 +11,62 @@ class ScreensaverClass {
         this.timeout = null;
         this.delay = 300000; // 5 minutes
         this.isActive = false;
+        this.initialized = false;
+
+        // Bound handlers for proper cleanup
+        this.boundReset = this.reset.bind(this);
+        this.boundHide = this.hide.bind(this);
     }
 
     initialize() {
+        // Prevent double initialization
+        if (this.initialized) {
+            console.warn('[Screensaver] Already initialized');
+            return;
+        }
+
         const screensaver = document.getElementById('screensaver');
         if (!screensaver) return;
 
-        // Activity listeners
-        document.addEventListener('mousemove', () => this.reset());
-        document.addEventListener('keydown', () => this.reset());
-        document.addEventListener('click', () => this.reset());
+        // Activity listeners - using bound handlers for cleanup capability
+        document.addEventListener('mousemove', this.boundReset);
+        document.addEventListener('keydown', this.boundReset);
+        document.addEventListener('click', this.boundReset);
 
         // Click/move to dismiss
-        screensaver.addEventListener('click', () => this.hide());
-        screensaver.addEventListener('mousemove', () => this.hide());
+        screensaver.addEventListener('click', this.boundHide);
+        screensaver.addEventListener('mousemove', this.boundHide);
 
         // Start timer
         this.reset();
+        this.initialized = true;
 
         console.log('[Screensaver] Initialized');
+    }
+
+    /**
+     * Cleanup all event listeners (call when destroying)
+     */
+    destroy() {
+        if (!this.initialized) return;
+
+        // Clear timeout
+        clearTimeout(this.timeout);
+
+        // Remove document listeners
+        document.removeEventListener('mousemove', this.boundReset);
+        document.removeEventListener('keydown', this.boundReset);
+        document.removeEventListener('click', this.boundReset);
+
+        // Remove screensaver listeners
+        const screensaver = document.getElementById('screensaver');
+        if (screensaver) {
+            screensaver.removeEventListener('click', this.boundHide);
+            screensaver.removeEventListener('mousemove', this.boundHide);
+        }
+
+        this.initialized = false;
+        console.log('[Screensaver] Destroyed');
     }
 
     reset() {
