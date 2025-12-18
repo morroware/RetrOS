@@ -61,7 +61,7 @@ class MyComputer extends AppBase {
                     border: 2px outset #fff;
                     background: #c0c0c0;
                     cursor: pointer;
-                    font-size: 11px;
+                    font-size: 13px;
                     display: flex;
                     align-items: center;
                     gap: 4px;
@@ -81,7 +81,7 @@ class MyComputer extends AppBase {
                     margin-left: 8px;
                 }
                 .mycomputer-address-label {
-                    font-size: 11px;
+                    font-size: 13px;
                     font-weight: bold;
                 }
                 .mycomputer-address-bar {
@@ -89,7 +89,7 @@ class MyComputer extends AppBase {
                     padding: 4px 8px;
                     border: 2px inset #fff;
                     background: white;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .mycomputer-content {
                     flex: 1;
@@ -127,12 +127,12 @@ class MyComputer extends AppBase {
                     font-size: 32px;
                 }
                 .mycomputer-item-label {
-                    font-size: 11px;
+                    font-size: 13px;
                     text-align: center;
                     word-break: break-word;
                 }
                 .mycomputer-item-desc {
-                    font-size: 10px;
+                    font-size: 12px;
                     text-align: center;
                     color: #666;
                 }
@@ -160,21 +160,21 @@ class MyComputer extends AppBase {
                 }
                 .mycomputer-list-name {
                     flex: 1;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .mycomputer-list-size {
-                    font-size: 11px;
+                    font-size: 13px;
                     min-width: 80px;
                 }
                 .mycomputer-list-date {
-                    font-size: 11px;
+                    font-size: 13px;
                     min-width: 100px;
                 }
                 .mycomputer-status {
                     padding: 4px 8px;
                     background: #c0c0c0;
                     border-top: 2px groove #fff;
-                    font-size: 11px;
+                    font-size: 13px;
                     display: flex;
                     justify-content: space-between;
                 }
@@ -200,7 +200,7 @@ class MyComputer extends AppBase {
                 }
                 .mycomputer-drive-details p {
                     margin: 0;
-                    font-size: 11px;
+                    font-size: 13px;
                     color: #666;
                 }
                 .mycomputer-progress {
@@ -219,7 +219,7 @@ class MyComputer extends AppBase {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    font-size: 10px;
+                    font-size: 12px;
                     font-weight: bold;
                     color: black;
                     text-shadow: 0 0 3px white;
@@ -622,7 +622,7 @@ class MyComputer extends AppBase {
                                 </div>
                             </div>
                             <div style="margin-top: 15px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
                                     <span>Used: ${drive.used.toFixed(2)} GB</span>
                                     <span>Free: ${(drive.total - drive.used).toFixed(2)} GB</span>
                                 </div>
@@ -630,7 +630,7 @@ class MyComputer extends AppBase {
                                     <div class="mycomputer-progress-bar" style="width: ${usedPercent}%"></div>
                                     <div class="mycomputer-progress-text">${usedPercent}% used</div>
                                 </div>
-                                <div style="margin-top: 5px; font-size: 11px; text-align: right;">
+                                <div style="margin-top: 5px; font-size: 13px; text-align: right;">
                                     Capacity: ${drive.total} GB
                                 </div>
                             </div>

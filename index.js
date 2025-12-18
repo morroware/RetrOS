@@ -222,6 +222,30 @@ function applySettings() {
         }
     }
 
+    // Apply display effects settings
+    const windowAnimations = StorageManager.get('windowAnimations');
+    const menuShadows = StorageManager.get('menuShadows');
+    const smoothScrolling = StorageManager.get('smoothScrolling');
+    const iconSize = StorageManager.get('iconSize') || 'medium';
+
+    // Apply animation setting (default is enabled)
+    if (windowAnimations === false) {
+        document.body.classList.add('no-animations');
+    }
+
+    // Apply shadows setting (default is enabled)
+    if (menuShadows === false) {
+        document.body.classList.add('no-shadows');
+    }
+
+    // Apply smooth scrolling setting (default is enabled)
+    if (smoothScrolling === false) {
+        document.body.classList.add('no-smooth-scroll');
+    }
+
+    // Apply icon size
+    document.body.classList.add(`icon-size-${iconSize}`);
+
     // Subscribe to CRT setting changes
     StateManager.subscribe('settings.crtEffect', (enabled) => {
         const overlay = document.getElementById('crtOverlay');

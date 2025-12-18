@@ -32,7 +32,7 @@ class HelpSystem extends AppBase {
                     flex-direction: column;
                     height: 100%;
                     background: #c0c0c0;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 .help-toolbar {
                     display: flex;
@@ -46,7 +46,7 @@ class HelpSystem extends AppBase {
                     background: #c0c0c0;
                     border: 2px outset #fff;
                     cursor: pointer;
-                    font-size: 11px;
+                    font-size: 13px;
                     display: flex;
                     align-items: center;
                     gap: 4px;
@@ -78,7 +78,7 @@ class HelpSystem extends AppBase {
                 .help-nav-tab {
                     padding: 4px 10px;
                     cursor: pointer;
-                    font-size: 10px;
+                    font-size: 12px;
                     border: 1px solid transparent;
                 }
                 .help-nav-tab.active {
@@ -179,7 +179,7 @@ class HelpSystem extends AppBase {
                     padding: 3px 8px;
                     background: #c0c0c0;
                     border-top: 2px groove #fff;
-                    font-size: 10px;
+                    font-size: 12px;
                 }
                 .help-search {
                     padding: 5px;
@@ -189,7 +189,7 @@ class HelpSystem extends AppBase {
                     width: 100%;
                     padding: 3px;
                     border: 2px inset #fff;
-                    font-size: 11px;
+                    font-size: 13px;
                 }
             </style>
 
