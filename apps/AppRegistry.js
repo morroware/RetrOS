@@ -44,6 +44,9 @@ import DisplayProperties from './DisplayProperties.js';
 import SoundSettings from './SoundSettings.js';
 import FindFiles from './FindFiles.js';
 import HelpSystem from './HelpSystem.js';
+import Calendar from './Calendar.js';
+import Clock from './Clock.js';
+import FreeCell from './FreeCell.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -117,6 +120,8 @@ class AppRegistryClass {
             new Calculator(),
             new Notepad(),
             new Paint(),
+            new Calendar(),
+            new Clock(),
         ]);
 
         // --- System Tools (Utilities) ---
@@ -133,6 +138,7 @@ class AppRegistryClass {
             new Asteroids(),
             new Doom(),
             new Solitaire(),
+            new FreeCell(),
             new SkiFree(),
         ]);
 
