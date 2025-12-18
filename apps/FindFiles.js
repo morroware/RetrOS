@@ -17,7 +17,8 @@ class FindFiles extends AppBase {
             width: 500,
             height: 400,
             resizable: true,
-            singleton: true
+            singleton: true,
+            category: 'systemtools'
         });
 
         this.searchResults = [];

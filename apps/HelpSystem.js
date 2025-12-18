@@ -15,7 +15,8 @@ class HelpSystem extends AppBase {
             width: 550,
             height: 450,
             resizable: true,
-            singleton: true
+            singleton: true,
+            category: 'systemtools'
         });
 
         this.currentTopic = 'welcome';

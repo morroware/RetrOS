@@ -15,7 +15,8 @@ class Browser extends AppBase {
             width: 800,
             height: 600,
             resizable: true,
-            singleton: true
+            singleton: true,
+            category: 'internet'
         });
 
         this.history = [];

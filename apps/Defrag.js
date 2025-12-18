@@ -14,7 +14,8 @@ class Defrag extends AppBase {
             width: 520,
             height: 450,
             resizable: false,
-            singleton: true
+            singleton: true,
+            category: 'systemtools'
         });
 
         this.isRunning = false;

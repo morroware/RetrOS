@@ -26,7 +26,8 @@ class MediaPlayer extends AppBase {
             width: 400,
             height: 500,
             resizable: true,
-            singleton: true
+            singleton: true,
+            category: 'multimedia'
         });
 
         // Default playlist with sample tracks (URLs to free audio)

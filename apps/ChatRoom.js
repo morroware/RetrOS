@@ -14,7 +14,8 @@ class ChatRoom extends AppBase {
             width: 550,
             height: 450,
             resizable: true,
-            singleton: true
+            singleton: true,
+            category: 'internet'
         });
 
         this.username = '';

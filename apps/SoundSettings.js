@@ -16,7 +16,8 @@ class SoundSettings extends AppBase {
             width: 420,
             height: 450,
             resizable: false,
-            singleton: true
+            singleton: true,
+            category: 'settings'
         });
 
         this.currentTab = 'sounds';
