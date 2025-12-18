@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-RetrOS is a well-architected Windows 95 simulator built with vanilla JavaScript, demonstrating clean separation of concerns and modular design. This review identifies both strengths and areas for improvement, with a focus on extensibility and code quality.
+RetrOS is a well-architected Windows 95 simulator built with vanilla JavaScript, demonstrating clean separation of concerns and modular design. The codebase features robust patterns including event-driven architecture, centralized state management, and a comprehensive app framework supporting multi-instance windows.
 
 ---
 
@@ -11,17 +11,19 @@ RetrOS is a well-architected Windows 95 simulator built with vanilla JavaScript,
 ### Project Structure
 ```
 RetrOS/
-├── core/                    # Core OS systems
+├── core/                    # Core OS systems (7 modules)
 │   ├── EventBus.js         # Central pub/sub messaging
 │   ├── StateManager.js     # Centralized state + persistence
 │   ├── WindowManager.js    # Window lifecycle management
 │   ├── StorageManager.js   # localStorage abstraction
-│   └── FileSystemManager.js # Virtual file system
+│   ├── FileSystemManager.js # Virtual file system
+│   ├── IconSystem.js       # FontAwesome + emoji icons
+│   └── Constants.js        # Centralized configuration
 ├── apps/                    # Application implementations
 │   ├── AppBase.js          # Base class for all apps
 │   ├── AppRegistry.js      # App registration & launching
-│   └── [22 app files]      # Individual applications
-├── features/               # Optional system features
+│   └── [27 app files]      # Individual applications
+├── features/               # Optional system features (7 modules)
 │   ├── AchievementSystem.js
 │   ├── ClippyAssistant.js
 │   ├── DesktopPet.js
@@ -29,14 +31,14 @@ RetrOS/
 │   ├── Screensaver.js
 │   ├── SoundSystem.js
 │   └── SystemDialogs.js
-├── ui/                     # UI renderers
+├── ui/                     # UI renderers (4 modules)
 │   ├── DesktopRenderer.js
 │   ├── StartMenuRenderer.js
 │   ├── TaskbarRenderer.js
 │   └── ContextMenuRenderer.js
 ├── index.js                # Boot sequence & initialization
 ├── index.html              # HTML shell
-└── styles.css              # Global styles
+└── styles.css              # Global styles (~2700 lines)
 ```
 
 ### Key Architectural Patterns
@@ -50,228 +52,176 @@ RetrOS/
 | Observer | StateManager.subscribe() | Reactive state updates |
 
 ### Statistics
-- **Total Files**: 43 JavaScript files
-- **Lines of Code**: ~15,500
+- **Total Files**: 43+ JavaScript files
+- **Lines of Code**: ~30,900
 - **Dependencies**: Zero (pure vanilla JS)
-- **Apps**: 22 registered applications
+- **Apps**: 29 registered applications
 - **Features**: 7 system features
 
 ---
 
-## Current Strengths
+## Core Strengths
 
 ### 1. Clean Separation of Concerns
 - Core systems are isolated from apps and UI
 - Features are self-contained modules
-- EventBus enables loose coupling
+- EventBus enables loose coupling between components
+- UI renderers handle presentation independently
 
 ### 2. Robust App Framework (AppBase)
-- Multi-instance support with isolated state
-- Automatic event handler cleanup
-- Lifecycle hooks (onOpen, onMount, onClose, etc.)
+- Multi-instance support with isolated state per window
+- Automatic event handler cleanup prevents memory leaks
+- Lifecycle hooks (onOpen, onMount, onClose, onFocus, onBlur, onResize)
 - DOM helpers scoped to window context
+- Instance state management separate from global state
 
 ### 3. Well-Documented Code
 - JSDoc comments on all major methods
-- Clear naming conventions
-- Consistent code style
+- Clear naming conventions throughout
+- Consistent code style across all modules
+- Comprehensive developer documentation
 
 ### 4. Solid State Management
-- Centralized state with persistence
-- Path-based subscriptions (`settings.sound`)
-- Import/export for backup
+- Centralized state with localStorage persistence
+- Path-based subscriptions (e.g., `settings.sound`)
+- Import/export for backup and restore
+- Reactive updates via observer pattern
 
 ### 5. Complete Window Management
 - 8-direction resize handles
-- Window snapping
-- Touch support
+- Window snapping to screen edges
+- Touch support for mobile/tablet
 - Proper z-index management
+- Minimize, maximize, restore functionality
+
+### 6. Centralized Configuration
+- `Constants.js` module for all configuration values
+- User paths centralized (PATHS.DESKTOP, PATHS.DOCUMENTS, etc.)
+- Window dimensions and timing values defined once
+- Storage key prefixes managed centrally
+
+### 7. Icon System with Fallbacks
+- FontAwesome 6.5.1 integration
+- Automatic emoji fallback if FontAwesome fails to load
+- Shorthand mappings for common icons
+- Consistent icon rendering across all apps
 
 ---
 
-## Issues Identified
+## Technical Details
 
-### Critical: Memory Leaks
+### Event-Driven Architecture
 
-#### 1. Screensaver Event Listeners (features/Screensaver.js:21-27)
 ```javascript
-// These listeners are NEVER removed
-document.addEventListener('mousemove', () => this.reset());
-document.addEventListener('keydown', () => this.reset());
-document.addEventListener('click', () => this.reset());
-```
-**Impact**: Listeners persist for entire session, accumulate if re-initialized.
+// Central pub/sub messaging
+EventBus.on('window:open', (data) => { ... });
+EventBus.emit('app:launch', { appId: 'calculator' });
 
-#### 2. Context Menu Handlers (ui/ContextMenuRenderer.js:150-156)
-Handlers are added every time menu renders but never cleaned up.
-
-#### 3. Start Menu Handlers (ui/StartMenuRenderer.js:277-292)
-Submenu positioning handlers re-attached on every render.
-
-#### 4. TaskbarRenderer Clock Interval (ui/TaskbarRenderer.js:106)
-```javascript
-setInterval(() => this.updateClock(), 1000); // Never cleared
+// 25+ defined events covering:
+// - Window operations (open, close, focus, resize)
+// - App lifecycle (launch, mount, close)
+// - State changes (settings, achievements)
+// - User interactions (sound, UI events)
 ```
 
-### High: Silent Error Handling
+### State Management Flow
 
-#### 1. SoundSystem.js (Lines 311, 707)
-```javascript
-audio.play().catch(() => {}); // Swallows all errors
-return this.loadAudioBuffer(config.mp3).catch(() => null);
+```
+User Action → UI Event → EventBus (broadcast) → Handlers → StateManager (update)
+→ StorageManager (persist) → Subscribers (react) → UI Re-render
 ```
 
-#### 2. MyComputer.js (Line 690)
+### App Framework
+
 ```javascript
-catch (e) {} // Empty catch block
+class MyApp extends AppBase {
+    constructor() {
+        super({
+            id: 'myapp',
+            name: 'My App',
+            icon: 'fa-solid fa-star',
+            width: 400,
+            height: 300,
+            resizable: true,
+            singleton: false,
+            category: 'accessories'
+        });
+    }
+
+    onOpen(params) { /* return HTML */ }
+    onMount() { /* setup event handlers using this.addHandler() */ }
+    onClose() { /* cleanup */ }
+    onFocus() { /* window focused */ }
+    onBlur() { /* window lost focus */ }
+    onResize(dimensions) { /* window resized */ }
+}
 ```
 
-### Medium: Hardcoded Configuration
-
-#### User Paths (7+ occurrences)
-```javascript
-// Hardcoded throughout codebase:
-['C:', 'Users', 'Seth', 'Desktop']
-['C:', 'Users', 'Seth', 'Documents']
-```
-**Files Affected**: DesktopRenderer.js, SystemDialogs.js, FileSystemManager.js, ContextMenuRenderer.js
-
-#### Magic Numbers
-- Window z-index base: `1000`
-- Minimum window size: `300x200`
-- Screensaver delay: `300000`
-- Various timeouts: `100`, `300`, `500`, `1000`, `2000`
-
-### Low: Inconsistent Patterns
-
-#### Event Handler Registration in Apps
-Some apps use `this.addHandler()` (auto-cleanup), others use `addEventListener` directly.
-- Calculator.js: Uses `addHandler` correctly
-- Notepad.js: Mixed - uses both patterns
+### Helper Methods (auto-scoped to window context)
+- `this.getElement(selector)` - DOM queries scoped to window
+- `this.addHandler(element, event, callback)` - Auto-cleanup on close
+- `this.setInstanceState(key, value)` - Per-window state
+- `this.getInstanceState(key)` - Retrieve window state
+- `this.onEvent(eventName, callback)` - EventBus subscription with auto-cleanup
 
 ---
 
-## Extensibility Analysis
+## Application Inventory
 
-### Current App Creation Process
+### By Category (29 Total)
 
-1. Create app file extending AppBase
-2. Implement lifecycle methods (onOpen, onMount, etc.)
-3. **Manual step**: Import in AppRegistry.js
-4. **Manual step**: Register with metadata
-5. App appears in Start Menu
+**System & File Management (6 apps)**
+- My Computer, Recycle Bin, Control Panel, Display Properties, Sound Settings, Admin Panel
 
-### Barriers to Extensibility
+**Productivity (7 apps)**
+- Notepad, Calculator, Paint, Calendar, Clock, Terminal, Find Files
 
-1. **Manual Registration Required**
-   - Must modify AppRegistry.js to add apps
-   - No dynamic loading capability
+**Games (7 apps)**
+- Snake, Minesweeper, Asteroids, Solitaire, FreeCell, SkiFree, DOOM
 
-2. **No App Manifest Format**
-   - Metadata scattered between constructor and registration
-   - No standardized way to declare app capabilities
+**Multimedia (2 apps)**
+- Winamp, Media Player
 
-3. **Hardcoded Categories**
-   - Start menu categories are predefined
-   - Adding new categories requires code changes
+**Internet & Chat (2 apps)**
+- Internet Explorer, Chat Room
 
-4. **No Plugin System**
-   - Features can't be added dynamically
-   - All features must be imported at build time
-
-5. **Missing Developer Documentation**
-   - No guide for creating new apps
-   - Patterns must be learned from existing code
+**Utilities (5 apps)**
+- Disk Defragmenter, Task Manager, Help System
 
 ---
 
-## Recommendations
+## Browser API Requirements
 
-### Immediate Fixes (Critical)
+- ES6 Modules (`<script type="module">`)
+- Canvas 2D Context
+- Web Audio API
+- LocalStorage (5MB+ recommended)
+- CSS Grid/Flexbox
+- ResizeObserver
+- Pointer Events
 
-1. **Fix Memory Leaks**
-   - Store references to event listeners
-   - Add cleanup methods to all UI components
-   - Use AbortController for grouped listener cleanup
+---
 
-2. **Add Error Logging**
-   - Replace empty catches with proper error handling
-   - Add debug mode for detailed logging
+## Future Improvement Opportunities
 
-### Short-term Improvements
-
-1. **Create Constants File**
-   ```javascript
-   // core/Constants.js
-   export const PATHS = {
-     USER_HOME: ['C:', 'Users', 'Seth'],
-     DESKTOP: ['C:', 'Users', 'Seth', 'Desktop'],
-     DOCUMENTS: ['C:', 'Users', 'Seth', 'Documents']
-   };
-
-   export const WINDOW = {
-     MIN_WIDTH: 300,
-     MIN_HEIGHT: 200,
-     BASE_Z_INDEX: 1000
-   };
-   ```
-
-2. **Standardize App Metadata**
-   ```javascript
-   // In each app's constructor:
-   super({
-     id: 'myapp',
-     name: 'My App',
-     icon: '📱',
-     category: 'accessories',
-     showInMenu: true,
-     singleton: false,
-     width: 600,
-     height: 400,
-     resizable: true,
-     // New fields:
-     description: 'A sample application',
-     version: '1.0.0',
-     author: 'Developer Name',
-     fileAssociations: ['txt', 'md']
-   });
-   ```
-
-### Long-term Architecture Improvements
+### Potential Enhancements
 
 1. **Auto-Discovery App Loading**
-   ```javascript
-   // Scan apps directory for app files
-   // Each app exports default class extending AppBase
-   // Registration happens automatically
-   ```
+   - Scan apps directory for app files
+   - Each app exports default class extending AppBase
+   - Registration happens automatically
 
 2. **Dynamic Feature Loading**
-   ```javascript
-   // features/FeatureRegistry.js
-   FeatureRegistry.register('achievement', AchievementSystem);
-   FeatureRegistry.enable('achievement'); // Enable at runtime
-   ```
+   - Enable/disable features at runtime
+   - Lazy loading for large features
 
-3. **Event Cleanup Utility**
-   ```javascript
-   // Create reusable cleanup pattern
-   class EventManager {
-     #listeners = [];
+3. **Plugin System**
+   - Third-party app installation
+   - Feature extensions
 
-     on(target, event, handler, options) {
-       target.addEventListener(event, handler, options);
-       this.#listeners.push({ target, event, handler, options });
-     }
-
-     cleanup() {
-       this.#listeners.forEach(({ target, event, handler, options }) => {
-         target.removeEventListener(event, handler, options);
-       });
-       this.#listeners = [];
-     }
-   }
-   ```
+4. **Service Worker**
+   - Offline support
+   - Asset caching
 
 ---
 
@@ -287,31 +237,19 @@ When creating a new app, ensure:
 - [ ] Implements `onClose()` for cleanup if needed
 - [ ] Handles window resize if resizable
 - [ ] Works with multiple instances (if not singleton)
-
----
-
-## Priority Matrix
-
-| Priority | Task | Effort | Impact |
-|----------|------|--------|--------|
-| P0 | Fix memory leaks in Screensaver | Low | High |
-| P0 | Fix memory leaks in ContextMenuRenderer | Low | High |
-| P1 | Add error logging to SoundSystem | Low | Medium |
-| P1 | Create Constants.js for paths | Low | Medium |
-| P2 | Standardize app metadata format | Medium | High |
-| P2 | Create developer documentation | Medium | High |
-| P3 | Implement auto-discovery loading | High | High |
-| P3 | Add plugin/feature system | High | Medium |
+- [ ] Uses Constants.js for paths and configuration
+- [ ] Uses IconSystem for icons
 
 ---
 
 ## Conclusion
 
-RetrOS demonstrates excellent architectural principles with clean separation, event-driven design, and a solid app framework. The main areas for improvement are:
+RetrOS demonstrates excellent architectural principles with clean separation, event-driven design, and a solid app framework. The codebase is well-organized with:
 
-1. **Memory management**: Fix listener leaks in UI components
-2. **Configuration**: Extract hardcoded values to constants
-3. **Extensibility**: Add auto-registration and better documentation
-4. **Error handling**: Replace silent catches with proper logging
+- **Centralized configuration** via Constants.js
+- **Consistent icon system** with FontAwesome + emoji fallback
+- **Robust state management** with persistence
+- **Multi-instance app support** with isolated state
+- **Comprehensive documentation** for developers
 
-With these improvements, the codebase will be more maintainable, extensible, and robust for future development.
+The architecture provides a strong foundation for continued development and extension of the Windows 95 simulation experience.
