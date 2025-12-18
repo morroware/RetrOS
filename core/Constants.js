@@ -5,6 +5,20 @@
  * more maintainable and easier to customize.
  */
 
+// Import IconSystem for enhanced icon support
+import IconSystem, {
+    icon,
+    emoji,
+    renderIcon,
+    getIconClass,
+    getEmoji,
+    Icons as FAIcons,
+    Emojis
+} from './IconSystem.js';
+
+// Re-export IconSystem for easy access
+export { IconSystem, icon, emoji, renderIcon, getIconClass, getEmoji, FAIcons, Emojis };
+
 // ============================================
 // User Configuration
 // ============================================
@@ -114,15 +128,19 @@ export const CATEGORIES = {
 
 /**
  * Category display names and icons for Start Menu
+ * Each category has:
+ *   - name: Display name
+ *   - icon: Emoji icon (for backwards compatibility)
+ *   - faIcon: FontAwesome icon class
  */
 export const CATEGORY_INFO = {
-    accessories: { name: 'Accessories', icon: '📝' },
-    games: { name: 'Games', icon: '🎮' },
-    multimedia: { name: 'Multimedia', icon: '🎵' },
-    internet: { name: 'Internet', icon: '🌐' },
-    systemtools: { name: 'System Tools', icon: '🔧' },
-    settings: { name: 'Settings', icon: '⚙️' },
-    system: { name: 'System', icon: '💻' }
+    accessories: { name: 'Accessories', icon: '📝', faIcon: 'CATEGORY_ACCESSORIES' },
+    games: { name: 'Games', icon: '🎮', faIcon: 'CATEGORY_GAMES' },
+    multimedia: { name: 'Multimedia', icon: '🎵', faIcon: 'CATEGORY_MULTIMEDIA' },
+    internet: { name: 'Internet', icon: '🌐', faIcon: 'CATEGORY_INTERNET' },
+    systemtools: { name: 'System Tools', icon: '🔧', faIcon: 'CATEGORY_SYSTEM_TOOLS' },
+    settings: { name: 'Settings', icon: '⚙️', faIcon: 'CATEGORY_SETTINGS' },
+    system: { name: 'System', icon: '💻', faIcon: 'CATEGORY_SYSTEM' }
 };
 
 // ============================================
@@ -192,9 +210,13 @@ export function getAppForExtension(extension) {
 }
 
 // ============================================
-// Emoji Icons
+// Emoji Icons (Legacy - use IconSystem for new code)
 // ============================================
 
+/**
+ * @deprecated Use IconSystem.icon() or IconSystem.emoji() instead
+ * This is kept for backwards compatibility with existing code
+ */
 export const ICONS = {
     // Apps
     COMPUTER: '💻',
@@ -235,6 +257,29 @@ export const ICONS = {
 };
 
 // ============================================
+// Icon Helper Functions
+// ============================================
+
+/**
+ * Get an icon (FontAwesome or emoji based on config)
+ * @param {string} name - Icon name (e.g., 'FOLDER', 'TERMINAL')
+ * @param {Object} options - Options passed to IconSystem.icon()
+ * @returns {string} HTML string for the icon
+ */
+export function getIcon(name, options = {}) {
+    return icon(name, options);
+}
+
+/**
+ * Get an emoji icon
+ * @param {string} name - Icon name
+ * @returns {string} Emoji character
+ */
+export function getEmojiIcon(name) {
+    return getEmoji(name);
+}
+
+// ============================================
 // Default Export
 // ============================================
 
@@ -252,5 +297,14 @@ export default {
     CUSTOM_EVENTS,
     FILE_TYPES,
     getAppForExtension,
-    ICONS
+    ICONS,
+    // Icon System exports
+    IconSystem,
+    icon,
+    emoji,
+    renderIcon,
+    getIconClass,
+    getEmoji,
+    getIcon,
+    getEmojiIcon
 };
