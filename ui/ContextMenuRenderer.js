@@ -9,6 +9,7 @@ import AppRegistry from '../apps/AppRegistry.js';
 import WindowManager from '../core/WindowManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import SystemDialogs from '../features/SystemDialogs.js';
+import { PATHS } from '../core/Constants.js';
 
 class ContextMenuRendererClass {
     constructor() {
@@ -203,7 +204,7 @@ class ContextMenuRendererClass {
         const context = this.currentContext;
         this.hide();
 
-        const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+        const desktopPath = [...PATHS.DESKTOP];
 
         switch (action) {
             case 'arrange':

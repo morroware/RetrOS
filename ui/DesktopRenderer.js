@@ -7,6 +7,7 @@ import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from '../apps/AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import { PATHS, DESKTOP } from '../core/Constants.js';
 
 class DesktopRendererClass {
     constructor() {
@@ -79,7 +80,7 @@ class DesktopRendererClass {
      */
     renderFileIcons() {
         try {
-            const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+            const desktopPath = [...PATHS.DESKTOP];
             const files = FileSystemManager.listDirectory(desktopPath);
 
             // Filter out .lnk files - those are shortcuts synced from StateManager
@@ -92,9 +93,9 @@ class DesktopRendererClass {
             // Use a FIXED starting position for file icons to prevent them from
             // shifting when app icons are moved. This ensures file icons have
             // stable positions independent of app icon positions.
-            const FILE_ICONS_START_X = 120;
-            const FILE_ICONS_START_Y = 10;
-            const FILE_ICON_SPACING = 90;
+            const FILE_ICONS_START_X = DESKTOP.FILE_ICONS_START_X;
+            const FILE_ICONS_START_Y = DESKTOP.FILE_ICONS_START_Y;
+            const FILE_ICON_SPACING = DESKTOP.FILE_ICON_SPACING;
 
             let positionsUpdated = false;
 
@@ -446,7 +447,7 @@ class DesktopRendererClass {
             }
 
             // Desktop folder path
-            const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+            const desktopPath = [...PATHS.DESKTOP];
 
             // Check if already on desktop
             const sourceDir = filePath.slice(0, -1);

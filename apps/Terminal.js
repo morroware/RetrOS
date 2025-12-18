@@ -8,6 +8,7 @@ import AppBase from './AppBase.js';
 import EventBus from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import { PATHS } from '../core/Constants.js';
 
 class Terminal extends AppBase {
     constructor() {
@@ -16,14 +17,15 @@ class Terminal extends AppBase {
             name: 'MS-DOS Prompt',
             icon: '💻',
             width: 700,
-            height: 450
+            height: 450,
+            category: 'systemtools'
         });
 
         this.commandHistory = [];
         this.historyIndex = -1;
         this.godMode = false;
         this.activeProcess = null;
-        this.currentPath = ['C:', 'Users', 'Seth'];
+        this.currentPath = [...PATHS.USER_HOME];
 
         // DOS-like environment variables
         this.envVars = {
