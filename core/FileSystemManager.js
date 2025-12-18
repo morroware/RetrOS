@@ -5,6 +5,7 @@
 
 import StorageManager from './StorageManager.js';
 import EventBus from './EventBus.js';
+import { PATHS } from './Constants.js';
 
 class FileSystemManager {
   constructor() {
@@ -767,7 +768,7 @@ class FileSystemManager {
   syncDesktopIcons(icons) {
     if (!icons || !Array.isArray(icons)) return;
 
-    const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+    const desktopPath = [...PATHS.DESKTOP];
     const desktopNode = this.getNode(desktopPath);
 
     if (!desktopNode || !desktopNode.children) return;
@@ -858,7 +859,7 @@ class FileSystemManager {
    */
   getDesktopShortcuts() {
     try {
-      const items = this.listDirectory(['C:', 'Users', 'Seth', 'Desktop']);
+      const items = this.listDirectory([...PATHS.DESKTOP]);
       return items.filter(item => item.extension === 'lnk');
     } catch (e) {
       return [];

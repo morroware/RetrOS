@@ -1,6 +1,6 @@
 /**
  * StartMenuRenderer - Renders and manages the Windows 95 style Start Menu
- * Updated to dynamically load apps by category
+ * Updated to dynamically load apps by category with proper event cleanup
  */
 
 import EventBus, { Events } from '../core/EventBus.js';
@@ -12,19 +12,30 @@ class StartMenuRendererClass {
         this.element = null;
         this.startButton = null;
         this.isOpen = false;
+        this.initialized = false;
+
+        // Bound handlers for cleanup
+        this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
+        this.boundHandleStartClick = this.handleStartClick.bind(this);
+        this.boundHandleMenuClick = this.handleMenuClick.bind(this);
     }
 
     initialize() {
+        if (this.initialized) {
+            console.warn('[StartMenuRenderer] Already initialized');
+            return;
+        }
+
         this.element = document.getElementById('startMenu');
         this.startButton = document.getElementById('startButton');
 
         if (!this.element || !this.startButton) return;
 
-        this.startButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggle();
-            EventBus.emit(Events.START_MENU_TOGGLE, { open: this.isOpen });
-        });
+        // Start button click - using bound handler
+        this.startButton.addEventListener('click', this.boundHandleStartClick);
+
+        // Event delegation for menu items
+        this.element.addEventListener('click', this.boundHandleMenuClick);
 
         EventBus.on(Events.START_MENU_TOGGLE, (data) => {
             if (data && data.open !== undefined && data.open !== this.isOpen) {
@@ -32,17 +43,71 @@ class StartMenuRendererClass {
             }
         });
 
-        document.addEventListener('click', (e) => {
-            if (this.isOpen && !this.element.contains(e.target) && !this.startButton.contains(e.target)) {
-                this.close();
-            }
-        });
+        // Outside click to close - using bound handler
+        document.addEventListener('click', this.boundHandleOutsideClick);
 
         EventBus.on(Events.WINDOW_OPEN, () => this.close());
         StateManager.subscribe('menuItems', () => this.render());
         StateManager.subscribe('user.isAdmin', () => this.render());
 
         this.render();
+        this.initialized = true;
+    }
+
+    /**
+     * Handle start button click
+     */
+    handleStartClick(e) {
+        e.stopPropagation();
+        this.toggle();
+        EventBus.emit(Events.START_MENU_TOGGLE, { open: this.isOpen });
+    }
+
+    /**
+     * Handle outside click to close menu
+     */
+    handleOutsideClick(e) {
+        if (this.isOpen && !this.element.contains(e.target) && !this.startButton.contains(e.target)) {
+            this.close();
+        }
+    }
+
+    /**
+     * Handle menu item clicks via event delegation
+     */
+    handleMenuClick(e) {
+        const appItem = e.target.closest('[data-app]');
+        const linkItem = e.target.closest('[data-link]');
+
+        if (appItem) {
+            e.stopPropagation();
+            AppRegistry.launch(appItem.dataset.app);
+            this.close();
+        } else if (linkItem) {
+            e.stopPropagation();
+            AppRegistry.launch('browser', { url: linkItem.dataset.link });
+            this.close();
+        }
+    }
+
+    /**
+     * Cleanup resources
+     */
+    destroy() {
+        if (!this.initialized) return;
+
+        document.removeEventListener('click', this.boundHandleOutsideClick);
+
+        if (this.startButton) {
+            this.startButton.removeEventListener('click', this.boundHandleStartClick);
+        }
+
+        if (this.element) {
+            this.element.removeEventListener('click', this.boundHandleMenuClick);
+        }
+
+        this.initialized = false;
+        console.log('[StartMenuRenderer] Destroyed');
     }
 
     toggle() { this.isOpen ? this.close() : this.open(); }
@@ -81,7 +146,8 @@ class StartMenuRendererClass {
                 </div>
             </div>
         `;
-        this.attachEventHandlers();
+        // Attach only submenu positioning (click handlers use event delegation)
+        this.attachSubmenuPositioning();
     }
 
     renderProgramsSection() {
@@ -246,29 +312,9 @@ class StartMenuRendererClass {
         `;
     }
 
-    attachEventHandlers() {
-        this.element.querySelectorAll('[data-app]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                AppRegistry.launch(item.dataset.app);
-                this.close();
-            });
-        });
-
-        this.element.querySelectorAll('[data-link]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                AppRegistry.launch('browser', { url: item.dataset.link });
-                this.close();
-            });
-        });
-
-        // Attach submenu positioning handlers
-        this.attachSubmenuPositioning();
-    }
-
     /**
      * Attach hover handlers to reposition submenus that would go off-screen
+     * Note: Click handlers are handled via event delegation in handleMenuClick()
      */
     attachSubmenuPositioning() {
         const submenuTriggers = this.element.querySelectorAll('.submenu-trigger');

@@ -12,14 +12,22 @@ class TaskbarRendererClass {
     constructor() {
         this.taskbarButtons = null;
         this.clockClickCount = 0;
+        this.clockIntervalId = null;
+        this.initialized = false;
     }
 
     /**
      * Initialize taskbar
      */
     initialize() {
+        // Prevent double initialization
+        if (this.initialized) {
+            console.warn('[TaskbarRenderer] Already initialized');
+            return;
+        }
+
         this.taskbarButtons = document.getElementById('taskbarButtons');
-        
+
         // Subscribe to state changes
         StateManager.subscribe('windows', () => this.renderButtons());
         StateManager.subscribe('ui.activeWindow', () => this.renderButtons());
@@ -35,7 +43,24 @@ class TaskbarRendererClass {
         // Initial render
         this.renderButtons();
 
+        this.initialized = true;
         console.log('[TaskbarRenderer] Initialized');
+    }
+
+    /**
+     * Cleanup resources
+     */
+    destroy() {
+        if (!this.initialized) return;
+
+        // Clear clock interval
+        if (this.clockIntervalId) {
+            clearInterval(this.clockIntervalId);
+            this.clockIntervalId = null;
+        }
+
+        this.initialized = false;
+        console.log('[TaskbarRenderer] Destroyed');
     }
 
     /**
@@ -101,9 +126,9 @@ class TaskbarRendererClass {
         const clock = document.getElementById('clock');
         if (clock) {
             clock.addEventListener('click', () => this.handleClockClick());
-            // Start clock updates
+            // Start clock updates - store interval ID for cleanup
             this.updateClock();
-            setInterval(() => this.updateClock(), 1000);
+            this.clockIntervalId = setInterval(() => this.updateClock(), 1000);
         }
     }
 

@@ -16,7 +16,8 @@ class Minesweeper extends AppBase {
             width: 234,
             height: 'auto',
             resizable: false,
-            singleton: true // One game at a time
+            singleton: true, // One game at a time
+            category: 'games'
         });
 
         this.rows = 9;

@@ -1,9 +1,23 @@
 /**
  * AppRegistry - Central registry for all applications
  * Manages app registration, launching, and querying
+ *
+ * TO ADD A NEW APP:
+ * 1. Create your app file extending AppBase (see DEVELOPER_GUIDE.md)
+ * 2. Include 'category' in your app's constructor config
+ * 3. Import your app below
+ * 4. Add to the appropriate section in initialize()
+ *
+ * Example:
+ *   // In your app file:
+ *   super({ id: 'myapp', name: 'My App', icon: '📱', category: 'accessories' });
+ *
+ *   // In initialize():
+ *   this.register(new MyApp());  // Category is auto-detected from app config!
  */
 
 import EventBus, { Events } from '../core/EventBus.js';
+import { CATEGORIES } from '../core/Constants.js';
 
 // --- App Imports ---
 import Calculator from './Calculator.js';
@@ -34,8 +48,8 @@ import HelpSystem from './HelpSystem.js';
 import AppBase from './AppBase.js';
 
 class SimpleApp extends AppBase {
-    constructor(id, name, icon, content) {
-        super({ id, name, icon, width: 400, height: 300 });
+    constructor(id, name, icon, content, category = 'system', showInMenu = false) {
+        super({ id, name, icon, width: 400, height: 300, category, showInMenu });
         this.content = content;
     }
     onOpen() {
@@ -51,8 +65,11 @@ class AppRegistryClass {
 
     /**
      * Register an application
+     * Apps can specify category and showInMenu in their constructor config,
+     * eliminating the need to pass these as metadata.
+     *
      * @param {AppBase} app - App instance
-     * @param {Object} meta - Additional metadata
+     * @param {Object} meta - Optional additional metadata (overrides app config)
      */
     register(app, meta = {}) {
         if (this.apps.has(app.id)) {
@@ -61,64 +78,99 @@ class AppRegistryClass {
         }
 
         this.apps.set(app.id, app);
-        
+
+        // Build metadata - app config takes precedence, meta can override
+        const appConfig = app.config || {};
         this.metadata.set(app.id, {
             id: app.id,
             name: app.name,
             icon: app.icon,
-            category: app.category || meta.category || 'accessories',
-            showInMenu: app.showInMenu !== undefined ? app.showInMenu : (meta.showInMenu !== false),
+            // Category: check app.category, then app.config.category, then meta, then default
+            category: app.category || appConfig.category || meta.category || CATEGORIES.ACCESSORIES,
+            // showInMenu: check app.showInMenu, then app.config.showInMenu, then meta, then default true
+            showInMenu: app.showInMenu !== undefined ? app.showInMenu :
+                       (appConfig.showInMenu !== undefined ? appConfig.showInMenu :
+                       (meta.showInMenu !== undefined ? meta.showInMenu : true)),
+            // Include any extra metadata
             ...meta
         });
 
-        console.log(`[AppRegistry] Registered: ${app.name} (${app.id})`);
+        console.log(`[AppRegistry] Registered: ${app.name} (${app.id}) [${this.metadata.get(app.id).category}]`);
+    }
+
+    /**
+     * Batch register multiple apps at once
+     * @param {AppBase[]} apps - Array of app instances
+     */
+    registerAll(apps) {
+        apps.forEach(app => this.register(app));
     }
 
     /**
      * Initialize and register all core apps
+     * Apps are grouped by category for organization, but category is
+     * determined from the app's own config, not the section it's in.
      */
     initialize() {
         // --- Accessories (Productivity Tools) ---
-        this.register(new Calculator(), { category: 'accessories' });
-        this.register(new Notepad(), { category: 'accessories' });
-        this.register(new Paint(), { category: 'accessories' });
+        this.registerAll([
+            new Calculator(),
+            new Notepad(),
+            new Paint(),
+        ]);
 
         // --- System Tools (Utilities) ---
-        this.register(new Terminal(), { category: 'systemtools' });
-        this.register(new Defrag(), { category: 'systemtools' });
-        this.register(new TaskManager(), { category: 'systemtools' });
+        this.registerAll([
+            new Terminal(),
+            new Defrag(),
+            new TaskManager(),
+        ]);
 
         // --- Games ---
-        this.register(new Minesweeper(), { category: 'games' });
-        this.register(new Snake(), { category: 'games' });
-        this.register(new Asteroids(), { category: 'games' });
-        this.register(new Doom(), { category: 'games' });
-        this.register(new Solitaire(), { category: 'games', showInMenu: true });
-        this.register(new SkiFree(), { category: 'games' });
+        this.registerAll([
+            new Minesweeper(),
+            new Snake(),
+            new Asteroids(),
+            new Doom(),
+            new Solitaire(),
+            new SkiFree(),
+        ]);
 
         // --- Multimedia ---
-        this.register(new MediaPlayer(), { category: 'multimedia' });
-        this.register(new Winamp(), { category: 'multimedia' });
+        this.registerAll([
+            new MediaPlayer(),
+            new Winamp(),
+        ]);
 
         // --- Internet & Communication ---
-        this.register(new Browser(), { category: 'internet' });
-        this.register(new ChatRoom(), { category: 'internet' });
+        this.registerAll([
+            new Browser(),
+            new ChatRoom(),
+        ]);
 
-        // --- System Apps (hidden from Programs menu) ---
-        this.register(new MyComputer(), { category: 'system', showInMenu: false });
-        this.register(new RecycleBin(), { category: 'system', showInMenu: false });
-        this.register(new AdminPanel(), { category: 'system', showInMenu: false });
+        // --- System Apps (category and showInMenu set in app config) ---
+        this.registerAll([
+            new MyComputer(),
+            new RecycleBin(),
+            new AdminPanel(),
+        ]);
 
         // --- Settings ---
-        this.register(new ControlPanel(), { category: 'settings' });
-        this.register(new DisplayProperties(), { category: 'settings' });
-        this.register(new SoundSettings(), { category: 'settings' });
+        this.registerAll([
+            new ControlPanel(),
+            new DisplayProperties(),
+            new SoundSettings(),
+        ]);
 
         // --- Hidden System Apps ---
-        this.register(new FindFiles(), { showInMenu: false });
-        this.register(new HelpSystem(), { showInMenu: false });
-        this.register(new SimpleApp('run', 'Run', '▶️', 'Run command dialog.'), { showInMenu: false });
-        this.register(new SimpleApp('shutdown', 'Shut Down', '⏻', 'It is now safe to turn off your computer.'), { showInMenu: false });
+        this.registerAll([
+            new FindFiles(),
+            new HelpSystem(),
+            new SimpleApp('run', 'Run', '▶️', 'Run command dialog.'),
+            new SimpleApp('shutdown', 'Shut Down', '⏻', 'It is now safe to turn off your computer.'),
+        ]);
+
+        console.log(`[AppRegistry] Initialized with ${this.apps.size} apps`);
     }
 
     /**

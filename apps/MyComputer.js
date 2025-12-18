@@ -8,6 +8,7 @@ import StateManager from '../core/StateManager.js';
 import AppRegistry from './AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import EventBus from '../core/EventBus.js';
+import { PATHS } from '../core/Constants.js';
 
 class MyComputer extends AppBase {
     constructor() {
@@ -1127,11 +1128,11 @@ class MyComputer extends AppBase {
      * @param {string} folderName - System folder name
      */
     handleSystemFolderDrop(e, folderName) {
-        // Map system folder names to actual paths
+        // Map system folder names to actual paths (using Constants)
         const folderPaths = {
-            'My Documents': ['C:', 'Users', 'Seth', 'Documents'],
-            'My Pictures': ['C:', 'Users', 'Seth', 'Pictures'],
-            'My Music': ['C:', 'Users', 'Seth', 'Music'],
+            'My Documents': [...PATHS.DOCUMENTS],
+            'My Pictures': [...PATHS.PICTURES],
+            'My Music': [...PATHS.MUSIC],
             'Recycle Bin': null, // Can't drop directly to recycle bin
             'Control Panel': null // Can't drop to control panel
         };

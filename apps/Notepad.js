@@ -7,6 +7,7 @@ import AppBase from './AppBase.js';
 import StorageManager from '../core/StorageManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import SystemDialogs from '../features/SystemDialogs.js';
+import { PATHS } from '../core/Constants.js';
 
 class Notepad extends AppBase {
     constructor() {
@@ -15,7 +16,8 @@ class Notepad extends AppBase {
             name: 'Notepad',
             icon: '📝',
             width: 600,
-            height: 500
+            height: 500,
+            category: 'accessories'
         });
 
         this.storageKey = 'notepadContent';
@@ -144,7 +146,7 @@ class Notepad extends AppBase {
         const result = await SystemDialogs.showFileOpen({
             title: 'Open',
             filter: 'txt',
-            initialPath: ['C:', 'Users', 'Seth', 'Documents']
+            initialPath: [...PATHS.DOCUMENTS]
         });
 
         if (!result) return;
@@ -203,7 +205,7 @@ class Notepad extends AppBase {
         const result = await SystemDialogs.showFileSave({
             title: 'Save As',
             filter: 'txt',
-            initialPath: ['C:', 'Users', 'Seth', 'Desktop'],
+            initialPath: [...PATHS.DESKTOP],
             defaultFilename: defaultName
         });
 

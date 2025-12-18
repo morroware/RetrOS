@@ -9,6 +9,7 @@ import StateManager from '../core/StateManager.js';
 import WindowManager from '../core/WindowManager.js';
 import AppRegistry from '../apps/AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import { PATHS } from '../core/Constants.js';
 
 class SystemDialogsClass {
     constructor() {
@@ -20,7 +21,7 @@ class SystemDialogsClass {
         this.confirmResolver = null;
         this.promptResolver = null;
         this.fileDialogResolver = null;
-        this.currentFilePath = ['C:', 'Users', 'Seth', 'Documents'];
+        this.currentFilePath = [...PATHS.DOCUMENTS];
     }
 
     /**
@@ -964,7 +965,7 @@ class SystemDialogsClass {
             if (options.initialPath && Array.isArray(options.initialPath)) {
                 this.currentFilePath = [...options.initialPath];
             } else {
-                this.currentFilePath = ['C:', 'Users', 'Seth', 'Documents'];
+                this.currentFilePath = [...PATHS.DOCUMENTS];
             }
 
             // Set default filename

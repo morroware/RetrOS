@@ -13,7 +13,8 @@ class Calculator extends AppBase {
             icon: '🔢',
             width: 250,
             height: 285,
-            resizable: false
+            resizable: false,
+            category: 'accessories'  // Used by AppRegistry for Start Menu
         });
     }
 
