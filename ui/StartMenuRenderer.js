@@ -272,7 +272,10 @@ class StartMenuRendererClass {
     }
 
     positionSubmenu(trigger) {
-        const submenu = trigger.querySelector('.start-submenu');
+        // Get only the direct child submenu, not nested ones
+        const submenu = Array.from(trigger.children).find(child =>
+            child.classList.contains('start-submenu')
+        );
         if (!submenu) return;
 
         // Reset positioning
@@ -288,7 +291,6 @@ class StartMenuRendererClass {
 
             // If submenu would go below taskbar, position it upward
             if (rect.bottom > viewportHeight - taskbarHeight) {
-                const triggerRect = trigger.getBoundingClientRect();
                 const overflow = rect.bottom - (viewportHeight - taskbarHeight);
 
                 // Try adjusting top position first
@@ -299,17 +301,6 @@ class StartMenuRendererClass {
                     submenu.classList.add('position-up');
                 }
             }
-
-            // Handle nested submenus
-            const nestedSubmenus = submenu.querySelectorAll('.start-submenu');
-            nestedSubmenus.forEach(nested => {
-                const nestedTrigger = nested.parentElement;
-                if (nestedTrigger) {
-                    nestedTrigger.addEventListener('mouseenter', () => {
-                        this.positionSubmenu(nestedTrigger);
-                    }, { once: true });
-                }
-            });
         });
     }
 }
