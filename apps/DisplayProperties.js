@@ -8,6 +8,124 @@ import StateManager from '../core/StateManager.js';
 import StorageManager from '../core/StorageManager.js';
 import EventBus from '../core/EventBus.js';
 
+// Color scheme definitions
+const COLOR_SCHEMES = {
+    win95: {
+        name: 'Windows Standard',
+        desktop: '#008080',
+        window: '#c0c0c0',
+        titlebar: '#000080',
+        titlebarText: '#ffffff',
+        menu: '#c0c0c0',
+        menuText: '#000000'
+    },
+    highcontrast: {
+        name: 'High Contrast Black',
+        desktop: '#000000',
+        window: '#000000',
+        titlebar: '#800080',
+        titlebarText: '#ffffff',
+        menu: '#000000',
+        menuText: '#ffffff'
+    },
+    desert: {
+        name: 'Desert',
+        desktop: '#c2a366',
+        window: '#d4c4a8',
+        titlebar: '#8b7355',
+        titlebarText: '#ffffff',
+        menu: '#d4c4a8',
+        menuText: '#000000'
+    },
+    ocean: {
+        name: 'Ocean',
+        desktop: '#006994',
+        window: '#b0c4de',
+        titlebar: '#003366',
+        titlebarText: '#ffffff',
+        menu: '#b0c4de',
+        menuText: '#000000'
+    },
+    rose: {
+        name: 'Rose',
+        desktop: '#c08080',
+        window: '#e8d0d0',
+        titlebar: '#8b4560',
+        titlebarText: '#ffffff',
+        menu: '#e8d0d0',
+        menuText: '#000000'
+    },
+    slate: {
+        name: 'Slate',
+        desktop: '#606070',
+        window: '#a0a0b0',
+        titlebar: '#404050',
+        titlebarText: '#ffffff',
+        menu: '#a0a0b0',
+        menuText: '#000000'
+    }
+};
+
+// Wallpaper pattern definitions (CSS patterns)
+const WALLPAPER_PATTERNS = {
+    '': null, // None
+    'clouds': `
+        radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.8) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 40%, rgba(255,255,255,0.6) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 70%, rgba(255,255,255,0.7) 0%, transparent 45%),
+        radial-gradient(ellipse at 10% 80%, rgba(255,255,255,0.5) 0%, transparent 35%),
+        linear-gradient(180deg, #87CEEB 0%, #4A90D9 100%)
+    `,
+    'tiles': `
+        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px),
+        repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)
+    `,
+    'waves': `
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 20px,
+            rgba(255,255,255,0.15) 20px,
+            rgba(255,255,255,0.15) 40px
+        ),
+        repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 20px,
+            rgba(0,0,0,0.1) 20px,
+            rgba(0,0,0,0.1) 40px
+        ),
+        linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%)
+    `,
+    'forest': `
+        linear-gradient(180deg,
+            #228B22 0%,
+            #006400 30%,
+            #004d00 60%,
+            #003300 100%
+        )
+    `,
+    'space': `
+        radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.8) 0%, transparent 1%),
+        radial-gradient(ellipse at 80% 30%, rgba(255,255,255,0.6) 0%, transparent 1%),
+        radial-gradient(ellipse at 40% 60%, rgba(255,255,255,0.9) 0%, transparent 1%),
+        radial-gradient(ellipse at 60% 80%, rgba(255,255,255,0.5) 0%, transparent 1%),
+        radial-gradient(ellipse at 10% 70%, rgba(255,255,255,0.7) 0%, transparent 1%),
+        radial-gradient(ellipse at 90% 60%, rgba(255,255,255,0.4) 0%, transparent 1%),
+        radial-gradient(ellipse at 30% 90%, rgba(255,255,255,0.6) 0%, transparent 1%),
+        radial-gradient(ellipse at 70% 10%, rgba(255,255,255,0.8) 0%, transparent 1%),
+        linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%)
+    `
+};
+
+// Screensaver type definitions
+const SCREENSAVER_TYPES = {
+    toasters: { name: 'Flying Toasters', items: ['🍞', '🥪', '☕', '🎸', '📎'] },
+    starfield: { name: 'Starfield', items: ['✦', '✧', '★', '☆', '⋆'] },
+    marquee: { name: 'Marquee', items: null },
+    none: { name: '(None)', items: null }
+};
+
 class DisplayProperties extends AppBase {
     constructor() {
         super({
@@ -28,17 +146,25 @@ class DisplayProperties extends AppBase {
     }
 
     onOpen() {
+        // Load all saved settings
         const currentBg = StorageManager.get('desktopBg') || '#008080';
         const wallpaper = StorageManager.get('desktopWallpaper') || '';
         const crtEffect = StateManager.getState('settings.crtEffect');
         const screensaverDelay = StateManager.getState('settings.screensaverDelay') || 300000;
+        const screensaverType = StorageManager.get('screensaverType') || 'toasters';
+        const energySaving = StorageManager.get('energySaving') || false;
+        const colorScheme = StorageManager.get('colorScheme') || 'win95';
         const windowAnimations = StorageManager.get('windowAnimations') !== false;
         const menuShadows = StorageManager.get('menuShadows') !== false;
         const smoothScrolling = StorageManager.get('smoothScrolling') !== false;
         const iconSize = StorageManager.get('iconSize') || 'medium';
 
+        // Store current settings
         this.selectedColor = currentBg;
         this.selectedWallpaper = wallpaper;
+        this.screensaverType = screensaverType;
+        this.energySaving = energySaving;
+        this.colorScheme = colorScheme;
         this.windowAnimations = windowAnimations;
         this.menuShadows = menuShadows;
         this.smoothScrolling = smoothScrolling;
@@ -119,7 +245,7 @@ class DisplayProperties extends AppBase {
                     left: 0;
                     right: 0;
                     height: 14px;
-                    background: #c0c0c0;
+                    background: var(--preview-taskbar, #c0c0c0);
                     border-top: 1px solid #fff;
                     display: flex;
                     align-items: center;
@@ -137,11 +263,11 @@ class DisplayProperties extends AppBase {
                     left: 20px;
                     width: 80px;
                     height: 60px;
-                    background: #c0c0c0;
+                    background: var(--preview-window, #c0c0c0);
                     border: 1px solid #000;
                 }
                 .preview-window-title {
-                    background: linear-gradient(90deg, #000080, #1084d0);
+                    background: var(--preview-titlebar, linear-gradient(90deg, #000080, #1084d0));
                     height: 10px;
                 }
                 .display-group {
@@ -217,6 +343,7 @@ class DisplayProperties extends AppBase {
                     flex: 1;
                     padding: 3px;
                     border: 2px inset #fff;
+                    font-size: 13px;
                 }
                 .display-check {
                     display: flex;
@@ -245,12 +372,33 @@ class DisplayProperties extends AppBase {
                     font-size: 20px;
                     animation: fly-preview 4s linear infinite;
                 }
+                .starfield-preview {
+                    position: absolute;
+                    color: white;
+                    animation: star-preview 2s linear infinite;
+                }
+                .marquee-preview {
+                    color: #00ff00;
+                    font-size: 16px;
+                    font-family: monospace;
+                    animation: marquee-preview 4s linear infinite;
+                    white-space: nowrap;
+                }
                 @keyframes fly-preview {
                     from { transform: translateX(100px) translateY(-20px); }
                     to { transform: translateX(-100px) translateY(80px); }
                 }
+                @keyframes star-preview {
+                    0% { opacity: 0; transform: scale(0.5); }
+                    50% { opacity: 1; transform: scale(1); }
+                    100% { opacity: 0; transform: scale(1.5); }
+                }
+                @keyframes marquee-preview {
+                    from { transform: translateX(100%); }
+                    to { transform: translateX(-100%); }
+                }
                 .appearance-scheme {
-                    height: 80px;
+                    height: 100px;
                     overflow-y: auto;
                     background: white;
                     border: 2px inset #fff;
@@ -266,6 +414,16 @@ class DisplayProperties extends AppBase {
                 .scheme-item.selected {
                     background: #000080;
                     color: white;
+                }
+                .scheme-preview {
+                    display: flex;
+                    gap: 5px;
+                    margin-top: 10px;
+                }
+                .scheme-color-box {
+                    width: 30px;
+                    height: 20px;
+                    border: 1px solid #000;
                 }
             </style>
 
@@ -295,13 +453,12 @@ class DisplayProperties extends AppBase {
                             <div class="display-group-title">Wallpaper</div>
                             <div class="wallpaper-list" id="wallpaper-list">
                                 <div class="wallpaper-item ${!wallpaper ? 'selected' : ''}" data-wallpaper="">(None)</div>
-                                <div class="wallpaper-item" data-wallpaper="clouds">Clouds</div>
-                                <div class="wallpaper-item" data-wallpaper="tiles">Tiles</div>
-                                <div class="wallpaper-item" data-wallpaper="waves">Waves</div>
-                                <div class="wallpaper-item" data-wallpaper="forest">Forest</div>
-                                <div class="wallpaper-item" data-wallpaper="space">Space</div>
+                                <div class="wallpaper-item ${wallpaper === 'clouds' ? 'selected' : ''}" data-wallpaper="clouds">Clouds</div>
+                                <div class="wallpaper-item ${wallpaper === 'tiles' ? 'selected' : ''}" data-wallpaper="tiles">Tiles</div>
+                                <div class="wallpaper-item ${wallpaper === 'waves' ? 'selected' : ''}" data-wallpaper="waves">Waves</div>
+                                <div class="wallpaper-item ${wallpaper === 'forest' ? 'selected' : ''}" data-wallpaper="forest">Forest</div>
+                                <div class="wallpaper-item ${wallpaper === 'space' ? 'selected' : ''}" data-wallpaper="space">Space</div>
                             </div>
-                            <button class="display-btn" id="btn-browse">Browse...</button>
                         </div>
 
                         <div class="display-group">
@@ -315,9 +472,7 @@ class DisplayProperties extends AppBase {
                     <!-- Screen Saver Tab -->
                     <div class="display-panel" id="panel-screensaver">
                         <div class="screensaver-preview" id="screensaver-preview">
-                            <span class="flying-preview">🍞</span>
-                            <span class="flying-preview" style="animation-delay: 1s; top: 30px;">🍞</span>
-                            <span class="flying-preview" style="animation-delay: 2s; top: 60px;">🍞</span>
+                            ${this.renderScreensaverPreview(screensaverType)}
                         </div>
 
                         <div class="display-group">
@@ -325,10 +480,10 @@ class DisplayProperties extends AppBase {
                             <div class="display-row">
                                 <label>Screen saver:</label>
                                 <select id="screensaver-type">
-                                    <option value="toasters">Flying Toasters</option>
-                                    <option value="starfield">Starfield</option>
-                                    <option value="marquee">Marquee</option>
-                                    <option value="none">(None)</option>
+                                    <option value="toasters" ${screensaverType === 'toasters' ? 'selected' : ''}>Flying Toasters</option>
+                                    <option value="starfield" ${screensaverType === 'starfield' ? 'selected' : ''}>Starfield</option>
+                                    <option value="marquee" ${screensaverType === 'marquee' ? 'selected' : ''}>Marquee</option>
+                                    <option value="none" ${screensaverType === 'none' ? 'selected' : ''}>(None)</option>
                                 </select>
                             </div>
                             <div class="display-row">
@@ -347,8 +502,8 @@ class DisplayProperties extends AppBase {
                         <div class="display-group">
                             <div class="display-group-title">Energy saving features</div>
                             <div class="display-check">
-                                <input type="checkbox" id="energy-monitor">
-                                <label for="energy-monitor">Turn off monitor after 15 minutes</label>
+                                <input type="checkbox" id="energy-monitor" ${energySaving ? 'checked' : ''}>
+                                <label for="energy-monitor">Low power mode (dim screen after idle)</label>
                             </div>
                         </div>
                     </div>
@@ -356,37 +511,28 @@ class DisplayProperties extends AppBase {
                     <!-- Appearance Tab -->
                     <div class="display-panel" id="panel-appearance">
                         <div class="display-preview">
-                            <div class="preview-monitor" id="appearance-preview" style="--preview-bg: ${currentBg}">
-                                <div class="preview-window">
-                                    <div class="preview-window-title"></div>
+                            <div class="preview-monitor" id="appearance-preview" style="--preview-bg: ${COLOR_SCHEMES[colorScheme].desktop}">
+                                <div class="preview-window" style="background: ${COLOR_SCHEMES[colorScheme].window}">
+                                    <div class="preview-window-title" style="background: ${COLOR_SCHEMES[colorScheme].titlebar}"></div>
                                 </div>
-                                <div class="preview-taskbar">
+                                <div class="preview-taskbar" style="background: ${COLOR_SCHEMES[colorScheme].menu}">
                                     <div class="preview-start">Start</div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="display-group">
-                            <div class="display-group-title">Scheme</div>
+                            <div class="display-group-title">Color Scheme</div>
                             <div class="appearance-scheme" id="scheme-list">
-                                <div class="scheme-item selected" data-scheme="win95">Windows Standard</div>
-                                <div class="scheme-item" data-scheme="highcontrast">High Contrast Black</div>
-                                <div class="scheme-item" data-scheme="desert">Desert</div>
-                                <div class="scheme-item" data-scheme="ocean">Ocean</div>
-                                <div class="scheme-item" data-scheme="rose">Rose</div>
-                                <div class="scheme-item" data-scheme="slate">Slate</div>
+                                ${Object.entries(COLOR_SCHEMES).map(([id, scheme]) => `
+                                    <div class="scheme-item ${colorScheme === id ? 'selected' : ''}" data-scheme="${id}">${scheme.name}</div>
+                                `).join('')}
                             </div>
-                        </div>
-
-                        <div class="display-group">
-                            <div class="display-row">
-                                <label>Item:</label>
-                                <select id="appearance-item">
-                                    <option value="desktop">Desktop</option>
-                                    <option value="window">Window</option>
-                                    <option value="titlebar">Active Title Bar</option>
-                                    <option value="menu">Menu</option>
-                                </select>
+                            <div class="scheme-preview" id="scheme-preview">
+                                <div class="scheme-color-box" style="background: ${COLOR_SCHEMES[colorScheme].desktop}" title="Desktop"></div>
+                                <div class="scheme-color-box" style="background: ${COLOR_SCHEMES[colorScheme].titlebar}" title="Title Bar"></div>
+                                <div class="scheme-color-box" style="background: ${COLOR_SCHEMES[colorScheme].window}" title="Window"></div>
+                                <div class="scheme-color-box" style="background: ${COLOR_SCHEMES[colorScheme].menu}" title="Menu"></div>
                             </div>
                         </div>
                     </div>
@@ -453,6 +599,31 @@ class DisplayProperties extends AppBase {
         `).join('');
     }
 
+    renderScreensaverPreview(type) {
+        const config = SCREENSAVER_TYPES[type];
+        if (!config || type === 'none') {
+            return '<span class="screensaver-preview-text">(No screensaver)</span>';
+        }
+
+        if (type === 'toasters') {
+            return `
+                <span class="flying-preview">🍞</span>
+                <span class="flying-preview" style="animation-delay: 1s; top: 30px;">🥪</span>
+                <span class="flying-preview" style="animation-delay: 2s; top: 60px;">☕</span>
+            `;
+        } else if (type === 'starfield') {
+            return `
+                <span class="starfield-preview" style="left: 20%; top: 30%;">✦</span>
+                <span class="starfield-preview" style="left: 60%; top: 20%; animation-delay: 0.5s;">★</span>
+                <span class="starfield-preview" style="left: 40%; top: 60%; animation-delay: 1s;">✧</span>
+                <span class="starfield-preview" style="left: 80%; top: 50%; animation-delay: 1.5s;">⋆</span>
+            `;
+        } else if (type === 'marquee') {
+            return '<span class="marquee-preview">RetrOS 95 - The Nostalgia Machine</span>';
+        }
+        return '';
+    }
+
     onMount() {
         // Tab switching
         const tabs = this.getElements('.display-tab');
@@ -476,7 +647,7 @@ class DisplayProperties extends AppBase {
                 wallpaperItems.forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
                 this.selectedWallpaper = item.dataset.wallpaper;
-                this.updatePreview();
+                this.updateBackgroundPreview();
             });
         });
 
@@ -487,7 +658,7 @@ class DisplayProperties extends AppBase {
                 colorSwatches.forEach(s => s.classList.remove('selected'));
                 swatch.classList.add('selected');
                 this.selectedColor = swatch.dataset.color;
-                this.updatePreview();
+                this.updateBackgroundPreview();
             });
         });
 
@@ -497,8 +668,19 @@ class DisplayProperties extends AppBase {
             this.addHandler(item, 'click', () => {
                 schemeItems.forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
+                this.colorScheme = item.dataset.scheme;
+                this.updateAppearancePreview();
             });
         });
+
+        // Screensaver type selection
+        const screensaverType = this.getElement('#screensaver-type');
+        if (screensaverType) {
+            this.addHandler(screensaverType, 'change', (e) => {
+                this.screensaverType = e.target.value;
+                this.updateScreensaverPreview();
+            });
+        }
 
         // Screensaver wait
         const screensaverWait = this.getElement('#screensaver-wait');
@@ -507,6 +689,14 @@ class DisplayProperties extends AppBase {
                 const delay = parseInt(e.target.value);
                 StateManager.setState('settings.screensaverDelay', delay, true);
                 EventBus.emit('screensaver:update-delay', { delay });
+            });
+        }
+
+        // Energy saving toggle
+        const energyToggle = this.getElement('#energy-monitor');
+        if (energyToggle) {
+            this.addHandler(energyToggle, 'change', (e) => {
+                this.energySaving = e.target.checked;
             });
         }
 
@@ -578,15 +768,55 @@ class DisplayProperties extends AppBase {
         });
     }
 
-    updatePreview() {
+    updateBackgroundPreview() {
         const preview = this.getElement('#preview-monitor');
-        const appearancePreview = this.getElement('#appearance-preview');
-
         if (preview) {
+            // Show color
             preview.style.setProperty('--preview-bg', this.selectedColor);
+
+            // Show wallpaper pattern if selected
+            const pattern = WALLPAPER_PATTERNS[this.selectedWallpaper];
+            if (pattern) {
+                preview.style.backgroundImage = pattern;
+            } else {
+                preview.style.backgroundImage = 'none';
+                preview.style.background = this.selectedColor;
+            }
         }
-        if (appearancePreview) {
-            appearancePreview.style.setProperty('--preview-bg', this.selectedColor);
+    }
+
+    updateAppearancePreview() {
+        const preview = this.getElement('#appearance-preview');
+        const schemePreview = this.getElement('#scheme-preview');
+        const scheme = COLOR_SCHEMES[this.colorScheme];
+
+        if (preview && scheme) {
+            preview.style.setProperty('--preview-bg', scheme.desktop);
+            preview.style.background = scheme.desktop;
+
+            const window = preview.querySelector('.preview-window');
+            const titlebar = preview.querySelector('.preview-window-title');
+            const taskbar = preview.querySelector('.preview-taskbar');
+
+            if (window) window.style.background = scheme.window;
+            if (titlebar) titlebar.style.background = scheme.titlebar;
+            if (taskbar) taskbar.style.background = scheme.menu;
+        }
+
+        if (schemePreview && scheme) {
+            schemePreview.innerHTML = `
+                <div class="scheme-color-box" style="background: ${scheme.desktop}" title="Desktop"></div>
+                <div class="scheme-color-box" style="background: ${scheme.titlebar}" title="Title Bar"></div>
+                <div class="scheme-color-box" style="background: ${scheme.window}" title="Window"></div>
+                <div class="scheme-color-box" style="background: ${scheme.menu}" title="Menu"></div>
+            `;
+        }
+    }
+
+    updateScreensaverPreview() {
+        const preview = this.getElement('#screensaver-preview');
+        if (preview) {
+            preview.innerHTML = this.renderScreensaverPreview(this.screensaverType);
         }
     }
 
@@ -594,10 +824,40 @@ class DisplayProperties extends AppBase {
         // Apply background color
         StorageManager.set('desktopBg', this.selectedColor);
         document.body.style.setProperty('--desktop-bg', this.selectedColor);
-        document.querySelector('.desktop').style.backgroundColor = this.selectedColor;
+        const desktop = document.querySelector('.desktop');
+        if (desktop) {
+            desktop.style.backgroundColor = this.selectedColor;
+        }
 
-        // Apply wallpaper if any
+        // Apply wallpaper pattern
         StorageManager.set('desktopWallpaper', this.selectedWallpaper);
+        const pattern = WALLPAPER_PATTERNS[this.selectedWallpaper];
+        if (desktop) {
+            if (pattern) {
+                desktop.style.backgroundImage = pattern;
+            } else {
+                desktop.style.backgroundImage = 'none';
+            }
+        }
+
+        // Apply color scheme
+        StorageManager.set('colorScheme', this.colorScheme);
+        const scheme = COLOR_SCHEMES[this.colorScheme];
+        if (scheme) {
+            document.documentElement.style.setProperty('--win95-gray', scheme.window);
+            document.documentElement.style.setProperty('--win95-blue', scheme.titlebar);
+            document.documentElement.style.setProperty('--accent-color', scheme.titlebar);
+            document.body.classList.remove(...Object.keys(COLOR_SCHEMES).map(s => `scheme-${s}`));
+            document.body.classList.add(`scheme-${this.colorScheme}`);
+        }
+
+        // Apply screensaver settings
+        StorageManager.set('screensaverType', this.screensaverType);
+        StorageManager.set('energySaving', this.energySaving);
+        EventBus.emit('screensaver:update-type', { type: this.screensaverType });
+
+        // Apply energy saving
+        document.body.classList.toggle('energy-saving', this.energySaving);
 
         // Apply window animations
         StorageManager.set('windowAnimations', this.windowAnimations);
@@ -618,6 +878,8 @@ class DisplayProperties extends AppBase {
 
         EventBus.emit('desktop:bg-change', { color: this.selectedColor, wallpaper: this.selectedWallpaper });
         EventBus.emit('desktop:settings-change', {
+            colorScheme: this.colorScheme,
+            screensaverType: this.screensaverType,
             iconSize: this.iconSize,
             windowAnimations: this.windowAnimations,
             menuShadows: this.menuShadows,

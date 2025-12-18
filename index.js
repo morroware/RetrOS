@@ -215,10 +215,66 @@ function applySettings() {
 
     // Apply desktop background color if saved
     const savedBg = StorageManager.get('desktopBg');
-    if (savedBg) {
-        const desktop = document.getElementById('desktop');
-        if (desktop) {
-            desktop.style.backgroundColor = savedBg;
+    const desktop = document.getElementById('desktop');
+    if (savedBg && desktop) {
+        desktop.style.backgroundColor = savedBg;
+    }
+
+    // Apply wallpaper pattern if saved
+    const savedWallpaper = StorageManager.get('desktopWallpaper');
+    if (savedWallpaper && desktop) {
+        const WALLPAPER_PATTERNS = {
+            'clouds': `
+                radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.8) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 40%, rgba(255,255,255,0.6) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 70%, rgba(255,255,255,0.7) 0%, transparent 45%),
+                radial-gradient(ellipse at 10% 80%, rgba(255,255,255,0.5) 0%, transparent 35%),
+                linear-gradient(180deg, #87CEEB 0%, #4A90D9 100%)
+            `,
+            'tiles': `
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px),
+                repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0,0,0,0.1) 10px, rgba(0,0,0,0.1) 20px)
+            `,
+            'waves': `
+                repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.15) 20px, rgba(255,255,255,0.15) 40px),
+                repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(0,0,0,0.1) 20px, rgba(0,0,0,0.1) 40px),
+                linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #1a5276 100%)
+            `,
+            'forest': `linear-gradient(180deg, #228B22 0%, #006400 30%, #004d00 60%, #003300 100%)`,
+            'space': `
+                radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.8) 0%, transparent 1%),
+                radial-gradient(ellipse at 80% 30%, rgba(255,255,255,0.6) 0%, transparent 1%),
+                radial-gradient(ellipse at 40% 60%, rgba(255,255,255,0.9) 0%, transparent 1%),
+                radial-gradient(ellipse at 60% 80%, rgba(255,255,255,0.5) 0%, transparent 1%),
+                radial-gradient(ellipse at 10% 70%, rgba(255,255,255,0.7) 0%, transparent 1%),
+                radial-gradient(ellipse at 90% 60%, rgba(255,255,255,0.4) 0%, transparent 1%),
+                radial-gradient(ellipse at 30% 90%, rgba(255,255,255,0.6) 0%, transparent 1%),
+                radial-gradient(ellipse at 70% 10%, rgba(255,255,255,0.8) 0%, transparent 1%),
+                linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 50%, #0a0a2e 100%)
+            `
+        };
+        const pattern = WALLPAPER_PATTERNS[savedWallpaper];
+        if (pattern) {
+            desktop.style.backgroundImage = pattern;
+        }
+    }
+
+    // Apply color scheme if saved
+    const colorScheme = StorageManager.get('colorScheme');
+    if (colorScheme && colorScheme !== 'win95') {
+        const COLOR_SCHEMES = {
+            highcontrast: { window: '#000000', titlebar: '#800080' },
+            desert: { window: '#d4c4a8', titlebar: '#8b7355' },
+            ocean: { window: '#b0c4de', titlebar: '#003366' },
+            rose: { window: '#e8d0d0', titlebar: '#8b4560' },
+            slate: { window: '#a0a0b0', titlebar: '#404050' }
+        };
+        const scheme = COLOR_SCHEMES[colorScheme];
+        if (scheme) {
+            document.documentElement.style.setProperty('--win95-gray', scheme.window);
+            document.documentElement.style.setProperty('--win95-blue', scheme.titlebar);
+            document.documentElement.style.setProperty('--accent-color', scheme.titlebar);
+            document.body.classList.add(`scheme-${colorScheme}`);
         }
     }
 
@@ -227,6 +283,7 @@ function applySettings() {
     const menuShadows = StorageManager.get('menuShadows');
     const smoothScrolling = StorageManager.get('smoothScrolling');
     const iconSize = StorageManager.get('iconSize') || 'medium';
+    const energySaving = StorageManager.get('energySaving');
 
     // Apply animation setting (default is enabled)
     if (windowAnimations === false) {
@@ -245,6 +302,11 @@ function applySettings() {
 
     // Apply icon size
     document.body.classList.add(`icon-size-${iconSize}`);
+
+    // Apply energy saving mode
+    if (energySaving) {
+        document.body.classList.add('energy-saving');
+    }
 
     // Subscribe to CRT setting changes
     StateManager.subscribe('settings.crtEffect', (enabled) => {
