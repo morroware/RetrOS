@@ -262,46 +262,6 @@ class StartMenuRendererClass {
                 this.close();
             });
         });
-
-        // Handle submenu positioning to prevent overflow
-        this.element.querySelectorAll('.submenu-trigger').forEach(trigger => {
-            trigger.addEventListener('mouseenter', () => {
-                this.positionSubmenu(trigger);
-            });
-        });
-    }
-
-    positionSubmenu(trigger) {
-        // Get only the direct child submenu, not nested ones
-        const submenu = Array.from(trigger.children).find(child =>
-            child.classList.contains('start-submenu')
-        );
-        if (!submenu) return;
-
-        // Reset positioning
-        submenu.classList.remove('position-up');
-        submenu.style.top = '';
-        submenu.style.bottom = '';
-
-        // Wait for display to calculate dimensions
-        requestAnimationFrame(() => {
-            const rect = submenu.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const taskbarHeight = 50;
-
-            // If submenu would go below taskbar, position it upward
-            if (rect.bottom > viewportHeight - taskbarHeight) {
-                const overflow = rect.bottom - (viewportHeight - taskbarHeight);
-
-                // Try adjusting top position first
-                if (overflow < rect.height / 2) {
-                    submenu.style.top = `-${overflow}px`;
-                } else {
-                    // If too much overflow, align to bottom of viewport
-                    submenu.classList.add('position-up');
-                }
-            }
-        });
     }
 }
 
