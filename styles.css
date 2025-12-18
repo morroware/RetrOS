@@ -845,10 +845,23 @@ body {
     display: none;
     padding: 2px;
     z-index: 10001;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
 }
 
 .submenu-trigger:hover > .start-submenu {
     display: block;
+}
+
+/* Ensure submenus don't go off bottom of screen */
+.start-submenu.position-up {
+    top: auto;
+    bottom: 0;
+}
+
+/* Nested submenus */
+.start-submenu .start-submenu {
+    max-height: calc(100vh - 100px);
 }
 
 .start-menu-divider {
