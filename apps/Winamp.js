@@ -14,7 +14,8 @@ class Winamp extends AppBase {
             width: 275,
             height: 350,
             resizable: false,
-            singleton: true
+            singleton: true,
+            category: 'multimedia'
         });
 
         this.audioContext = null;

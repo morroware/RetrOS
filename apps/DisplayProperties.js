@@ -17,7 +17,8 @@ class DisplayProperties extends AppBase {
             width: 420,
             height: 480,
             resizable: false,
-            singleton: true
+            singleton: true,
+            category: 'settings'
         });
 
         this.currentTab = 'background';

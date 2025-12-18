@@ -16,7 +16,8 @@ class Snake extends AppBase {
             width: 360,
             height: 460,
             resizable: false,
-            singleton: true // One game at a time
+            singleton: true, // One game at a time
+            category: 'games'
         });
 
         // Config

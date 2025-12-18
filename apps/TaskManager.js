@@ -17,7 +17,8 @@ class TaskManager extends AppBase {
             width: 450,
             height: 400,
             resizable: true,
-            singleton: true
+            singleton: true,
+            category: 'systemtools'
         });
 
         this.updateInterval = null;
