@@ -1772,7 +1772,7 @@ body.window-resizing-se * {
    ============================================ */
 .achievement-toast {
     position: fixed;
-    bottom: 60px;
+    top: 20px;
     right: 20px;
     background: linear-gradient(180deg, #ffd700 0%, #ff8c00 100%);
     border: 3px outset #ffd700;
