@@ -46,6 +46,15 @@ class DesktopRendererClass {
         EventBus.on('filesystem:file:changed', () => this.render());
         EventBus.on('filesystem:directory:changed', () => this.render());
 
+        // Listen for recycle bin requests to recycle file icons
+        EventBus.on('recyclebin:recycle-file', ({ iconId }) => {
+            const iconEl = this.desktop.querySelector(`[data-icon-id="${iconId}"]`);
+            if (iconEl && iconEl._iconData) {
+                this.recycleFileToTrash(iconEl._iconData);
+                this.render();
+            }
+        });
+
         // Setup desktop events
         this.setupDesktopEvents();
 
@@ -355,15 +364,17 @@ class DesktopRendererClass {
             // Check if this is a desktop icon being repositioned
             const isDesktopIcon = e.dataTransfer.types.includes('application/retros-desktop-icon');
             const isFileData = e.dataTransfer.types.includes('application/retros-file');
+            const isRestoreFile = e.dataTransfer.types.includes('application/retros-restore-file');
+            const isRestoreIcon = e.dataTransfer.types.includes('application/retros-restore-icon');
 
-            if (isDesktopIcon || isFileData) {
+            if (isDesktopIcon || isFileData || isRestoreFile || isRestoreIcon) {
                 e.dataTransfer.dropEffect = 'move';
 
                 // Check if hovering over recycle bin
                 const recycleBin = this.getRecycleBinAtPoint(e.clientX, e.clientY);
                 if (recycleBin) {
-                    // Don't allow dropping recycle bin on itself
-                    if (this.draggedIcon && this.draggedIcon.data.id === 'recyclebin') {
+                    // Don't allow dropping recycle bin on itself or restoring TO recycle bin
+                    if ((this.draggedIcon && this.draggedIcon.data.id === 'recyclebin') || isRestoreFile || isRestoreIcon) {
                         e.dataTransfer.dropEffect = 'none';
                         return;
                     }
@@ -397,6 +408,19 @@ class DesktopRendererClass {
             // Clear recycle bin highlight
             const recycleBin = this.desktop.querySelector('[data-icon-id="recyclebin"]');
             if (recycleBin) recycleBin.classList.remove('drop-target');
+
+            // Check if this is a restoration from recycle bin
+            const restoreFileData = e.dataTransfer.getData('application/retros-restore-file');
+            if (restoreFileData) {
+                this.handleRestoreFileDrop(e, restoreFileData);
+                return;
+            }
+
+            const restoreIconData = e.dataTransfer.getData('application/retros-restore-icon');
+            if (restoreIconData) {
+                this.handleRestoreIconDrop(e, restoreIconData);
+                return;
+            }
 
             // Check if dropped on recycle bin
             const recycleBinTarget = this.getRecycleBinAtPoint(e.clientX, e.clientY);
@@ -478,6 +502,67 @@ class DesktopRendererClass {
             EventBus.emit(Events.ICON_MOVE, { id: iconInfo.id, x, y });
         } catch (err) {
             console.error('Failed to reposition desktop icon:', err);
+        }
+    }
+
+    /**
+     * Handle restoration of a file from recycle bin
+     * @param {DragEvent} e - Drag event
+     * @param {string} dataString - JSON string with restore data
+     */
+    handleRestoreFileDrop(e, dataString) {
+        try {
+            const data = JSON.parse(dataString);
+            const { index, originalPath, content, fileType, extension, label } = data;
+
+            // Restore the file to its original location
+            if (fileType === 'directory') {
+                FileSystemManager.createDirectory(originalPath);
+            } else {
+                FileSystemManager.writeFile(originalPath, content || '', extension || 'txt');
+            }
+
+            // Remove from recycle bin
+            const recycledItems = StateManager.getState('recycledItems') || [];
+            const newRecycledItems = recycledItems.filter((_, i) => i !== index);
+            StateManager.setState('recycledItems', newRecycledItems, true);
+
+            // Emit events
+            EventBus.emit('filesystem:changed');
+            EventBus.emit(Events.SOUND_PLAY, { type: 'restore' });
+            this.showDropFeedback(`"${label}" restored`, 'success');
+
+            console.log(`[DesktopRenderer] Restored file to: ${originalPath.join('\\')}`);
+        } catch (err) {
+            console.error('Failed to restore file from recycle bin:', err);
+            EventBus.emit(Events.SOUND_PLAY, { type: 'error' });
+            this.showDropFeedback('Failed to restore file', 'error');
+        }
+    }
+
+    /**
+     * Handle restoration of an icon from recycle bin
+     * @param {DragEvent} e - Drag event
+     * @param {string} dataString - JSON string with restore data
+     */
+    handleRestoreIconDrop(e, dataString) {
+        try {
+            const data = JSON.parse(dataString);
+            const { index, item } = data;
+
+            // Restore the icon to desktop
+            StateManager.restoreIcon(index);
+
+            // Emit events
+            EventBus.emit('desktop:refresh');
+            EventBus.emit(Events.SOUND_PLAY, { type: 'restore' });
+            this.showDropFeedback(`"${item.label}" restored`, 'success');
+
+            console.log(`[DesktopRenderer] Restored icon: ${item.label}`);
+        } catch (err) {
+            console.error('Failed to restore icon from recycle bin:', err);
+            EventBus.emit(Events.SOUND_PLAY, { type: 'error' });
+            this.showDropFeedback('Failed to restore item', 'error');
         }
     }
 
