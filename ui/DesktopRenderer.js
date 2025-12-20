@@ -529,6 +529,7 @@ class DesktopRendererClass {
 
             // Emit events
             EventBus.emit('filesystem:changed');
+            EventBus.emit('recyclebin:update');
             EventBus.emit(Events.SOUND_PLAY, { type: 'restore' });
             this.showDropFeedback(`"${label}" restored`, 'success');
 
@@ -555,6 +556,7 @@ class DesktopRendererClass {
 
             // Emit events
             EventBus.emit('desktop:refresh');
+            EventBus.emit('recyclebin:update');
             EventBus.emit(Events.SOUND_PLAY, { type: 'restore' });
             this.showDropFeedback(`"${item.label}" restored`, 'success');
 
