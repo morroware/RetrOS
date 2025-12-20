@@ -234,7 +234,10 @@ class AppRegistryClass {
      * Get apps by category
      */
     getByCategory(category) {
-        return this.getAll().filter(m => m.category === category);
+        const all = this.getAll();
+        const filtered = all.filter(m => m.category === category);
+        console.log(`[AppRegistry] getByCategory('${category}'):`, filtered);
+        return filtered;
     }
 }
 

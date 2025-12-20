@@ -153,7 +153,11 @@ class StartMenuRendererClass {
     renderProgramsSection() {
         // Dynamically fetch apps by category
         const accessories = AppRegistry.getByCategory('accessories').filter(a => a.showInMenu !== false);
-        const games = AppRegistry.getByCategory('games').filter(a => a.showInMenu !== false);
+        const gamesRaw = AppRegistry.getByCategory('games');
+        const games = gamesRaw.filter(a => a.showInMenu !== false);
+        console.log('[StartMenu] Games raw:', gamesRaw);
+        console.log('[StartMenu] Games filtered:', games);
+        console.log('[StartMenu] Zork in games?', games.find(g => g.id === 'zork'));
         const multimedia = AppRegistry.getByCategory('multimedia').filter(a => a.showInMenu !== false);
         const internet = AppRegistry.getByCategory('internet').filter(a => a.showInMenu !== false);
         const systemtools = AppRegistry.getByCategory('systemtools').filter(a => a.showInMenu !== false);
