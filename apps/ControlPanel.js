@@ -131,23 +131,6 @@ class ControlPanel extends AppBase {
                     text-align: center;
                     font-weight: bold;
                 }
-                .pet-selector {
-                    display: flex;
-                    gap: 10px;
-                    flex-wrap: wrap;
-                    margin-top: 10px;
-                }
-                .pet-option {
-                    font-size: 32px;
-                    padding: 10px;
-                    border: 2px outset #fff;
-                    cursor: pointer;
-                    background: #c0c0c0;
-                }
-                .pet-option.selected {
-                    border-style: inset;
-                    background: #a0a0a0;
-                }
             </style>
 
             <div class="control-panel">
@@ -201,27 +184,12 @@ class ControlPanel extends AppBase {
                         <div class="control-item-icon">🦮</div>
                         <div class="control-item-info">
                             <div class="control-item-label">Enable Desktop Pet</div>
-                            <div class="control-item-desc">Show animated companion on desktop</div>
+                            <div class="control-item-desc">Show animated pixel art dog companion on desktop</div>
                         </div>
                         <div class="control-toggle">
                             <input type="checkbox" id="pet-toggle" ${settings.pet.enabled ? 'checked' : ''}>
                             <label for="pet-toggle">${settings.pet.enabled ? 'On' : 'Off'}</label>
                         </div>
-                    </div>
-
-                    <div class="control-item">
-                        <div class="control-item-icon">🎭</div>
-                        <div class="control-item-info">
-                            <div class="control-item-label">Choose Pet</div>
-                            <div class="control-item-desc">Select your desktop companion</div>
-                        </div>
-                    </div>
-                    <div class="pet-selector">
-                        ${['🐕', '🐈', '🐇', '🐹', '🦊', '🦝', '🐿️', '🦔'].map(pet => `
-                            <div class="pet-option ${settings.pet.type === pet ? 'selected' : ''}" data-pet="${pet}">
-                                ${pet}
-                            </div>
-                        `).join('')}
                     </div>
                 </div>
 
@@ -352,20 +320,6 @@ class ControlPanel extends AppBase {
                 e.target.nextElementSibling.textContent = enabled ? 'On' : 'Off';
             });
         }
-
-        // Pet selector
-        const petOptions = this.getElements('.pet-option');
-        petOptions.forEach(option => {
-            this.addHandler(option, 'click', (e) => {
-                const pet = e.currentTarget.dataset.pet;
-                StateManager.setState('settings.pet.type', pet, true);
-                EventBus.emit('pet:change', { type: pet });
-
-                // Update selection
-                petOptions.forEach(opt => opt.classList.remove('selected'));
-                e.currentTarget.classList.add('selected');
-            });
-        });
 
         // Screensaver delay
         const screensaverDelay = this.getElement('#screensaver-delay');
