@@ -205,28 +205,6 @@ class DesktopRendererClass {
             if (e.key === 'Enter') this.handleIconOpen(icon);
         });
 
-        // Make Recycle Bin a drop target for deleting items
-        if (icon.id === 'recyclebin') {
-            iconEl.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // Don't allow dropping the recycle bin on itself
-                if (this.draggedIcon && this.draggedIcon.data.id === 'recyclebin') return;
-                e.dataTransfer.dropEffect = 'move';
-                iconEl.classList.add('drop-target');
-            });
-
-            iconEl.addEventListener('dragleave', (e) => {
-                iconEl.classList.remove('drop-target');
-            });
-
-            iconEl.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                iconEl.classList.remove('drop-target');
-                this.handleRecycleBinDrop(e);
-            });
-        }
 
         // HTML5 drag start - set transfer data
         iconEl.addEventListener('dragstart', (e) => {
@@ -291,6 +269,9 @@ class DesktopRendererClass {
         iconEl.addEventListener('dragend', () => {
             iconEl.classList.remove('dragging');
             this.draggedIcon = null;
+            // Clear any recycle bin highlight
+            const recycleBin = this.desktop.querySelector('[data-icon-id="recyclebin"]');
+            if (recycleBin) recycleBin.classList.remove('drop-target');
             EventBus.emit(Events.DRAG_END, { type: 'icon', id: icon.id });
         });
 
@@ -370,7 +351,6 @@ class DesktopRendererClass {
         // HTML5 Drag and Drop - Desktop is a drop zone
         this.desktop.addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.stopPropagation();
 
             // Check if this is a desktop icon being repositioned
             const isDesktopIcon = e.dataTransfer.types.includes('application/retros-desktop-icon');
@@ -378,9 +358,26 @@ class DesktopRendererClass {
 
             if (isDesktopIcon || isFileData) {
                 e.dataTransfer.dropEffect = 'move';
-                // Only show drop-target for external files (from MyComputer), not for repositioning
-                if (!isDesktopIcon && isFileData) {
-                    this.desktop.classList.add('drop-target');
+
+                // Check if hovering over recycle bin
+                const recycleBin = this.getRecycleBinAtPoint(e.clientX, e.clientY);
+                if (recycleBin) {
+                    // Don't allow dropping recycle bin on itself
+                    if (this.draggedIcon && this.draggedIcon.data.id === 'recyclebin') {
+                        e.dataTransfer.dropEffect = 'none';
+                        return;
+                    }
+                    recycleBin.classList.add('drop-target');
+                    this.desktop.classList.remove('drop-target');
+                } else {
+                    // Clear recycle bin highlight
+                    const rb = this.desktop.querySelector('[data-icon-id="recyclebin"]');
+                    if (rb) rb.classList.remove('drop-target');
+
+                    // Only show drop-target for external files (from MyComputer), not for repositioning
+                    if (!isDesktopIcon && isFileData) {
+                        this.desktop.classList.add('drop-target');
+                    }
                 }
             }
         });
@@ -397,6 +394,21 @@ class DesktopRendererClass {
             e.stopPropagation();
             this.desktop.classList.remove('drop-target');
 
+            // Clear recycle bin highlight
+            const recycleBin = this.desktop.querySelector('[data-icon-id="recyclebin"]');
+            if (recycleBin) recycleBin.classList.remove('drop-target');
+
+            // Check if dropped on recycle bin
+            const recycleBinTarget = this.getRecycleBinAtPoint(e.clientX, e.clientY);
+            if (recycleBinTarget) {
+                // Don't allow dropping recycle bin on itself
+                if (this.draggedIcon && this.draggedIcon.data.id === 'recyclebin') {
+                    return;
+                }
+                this.handleRecycleBinDrop(e);
+                return;
+            }
+
             // Check if this is a desktop icon being repositioned
             const desktopIconData = e.dataTransfer.getData('application/retros-desktop-icon');
             if (desktopIconData) {
@@ -407,6 +419,23 @@ class DesktopRendererClass {
             // Otherwise handle as file drop from MyComputer
             this.handleFileDrop(e);
         });
+    }
+
+    /**
+     * Check if a point is over the recycle bin icon
+     * @param {number} x - Client X coordinate
+     * @param {number} y - Client Y coordinate
+     * @returns {HTMLElement|null} The recycle bin element if point is over it, null otherwise
+     */
+    getRecycleBinAtPoint(x, y) {
+        const recycleBin = this.desktop.querySelector('[data-icon-id="recyclebin"]');
+        if (!recycleBin) return null;
+
+        const rect = recycleBin.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            return recycleBin;
+        }
+        return null;
     }
 
     /**
