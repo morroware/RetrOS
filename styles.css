@@ -733,12 +733,14 @@ body {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    background: transparent;
 }
 
 .desktop-pet canvas {
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
+    background: transparent;
 }
 
 /* ============================================
