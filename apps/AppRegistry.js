@@ -47,6 +47,7 @@ import HelpSystem from './HelpSystem.js';
 import Calendar from './Calendar.js';
 import Clock from './Clock.js';
 import FreeCell from './FreeCell.js';
+import Zork from './Zork.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -140,6 +141,7 @@ class AppRegistryClass {
             new Solitaire(),
             new FreeCell(),
             new SkiFree(),
+            new Zork(),
         ]);
 
         // --- Multimedia ---
