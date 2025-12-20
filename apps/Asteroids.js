@@ -1,6 +1,6 @@
 /**
- * Asteroids Game
- * Classic arcade space shooter
+ * Asteroids Game - Enhanced Edition
+ * Classic arcade space shooter with power-ups, UFOs, and more!
  */
 
 import AppBase from './AppBase.js';
@@ -12,8 +12,8 @@ class Asteroids extends AppBase {
             id: 'asteroids',
             name: 'Asteroids',
             icon: '🚀',
-            width: 600,
-            height: 480,
+            width: 700,
+            height: 550,
             resizable: false,
             singleton: true, // One game at a time
             category: 'games'
@@ -21,19 +21,33 @@ class Asteroids extends AppBase {
 
         // Game Constants
         this.FPS = 60;
-        this.FRICTION = 0.7; // friction coefficient of space (0 = no friction, 1 = lots)
-        this.LASER_DIST = 0.6; // max distance laser can travel as fraction of screen width
-        this.LASER_SPD = 500; // pixels per second
-        this.LASER_MAX = 10; // max number of lasers on screen at once
-        this.ROIDS_NUM = 3; // starting number of asteroids
-        this.ROIDS_SIZE = 100; // starting size of asteroids in pixels
-        this.ROIDS_SPD = 50; // max starting speed of asteroids in pixels per second
-        this.ROIDS_VERT = 10; // average number of vertices on each asteroid
-        this.SHIP_SIZE = 30; // ship height in pixels
-        this.SHIP_THRUST = 5; // acceleration of the ship in pixels per second per second
-        this.TURN_SPEED = 360; // turn speed in degrees per second
-        this.SHIP_INV_DUR = 3; // ship invulnerability duration in seconds
-        this.SHIP_BLINK_DUR = 0.1; // ship blink duration when invulnerable in seconds
+        this.FRICTION = 0.7;
+        this.LASER_DIST = 0.6;
+        this.LASER_SPD = 500;
+        this.LASER_MAX = 10;
+        this.ROIDS_NUM = 3;
+        this.ROIDS_SIZE = 100;
+        this.ROIDS_SPD = 50;
+        this.ROIDS_VERT = 10;
+        this.SHIP_SIZE = 30;
+        this.SHIP_THRUST = 5;
+        this.TURN_SPEED = 360;
+        this.SHIP_INV_DUR = 3;
+        this.SHIP_BLINK_DUR = 0.1;
+
+        // Power-up Constants
+        this.POWERUP_CHANCE = 0.15; // 15% chance on asteroid destruction
+        this.POWERUP_DURATION = 10; // seconds
+        this.POWERUP_TYPES = ['shield', 'triple', 'rapid', 'extralife'];
+
+        // UFO Constants
+        this.UFO_SPAWN_INTERVAL = 15; // seconds
+        this.UFO_SHOOT_INTERVAL = 2; // seconds
+        this.UFO_SPEED = 100;
+        this.UFO_SIZE = 25;
+
+        // Combo Constants
+        this.COMBO_TIMEOUT = 2; // seconds without kill resets combo
 
         // Game State
         this.canvas = null;
@@ -47,18 +61,38 @@ class Asteroids extends AppBase {
         this.roids = [];
         this.text = "";
         this.textAlpha = 0;
+        this.particles = [];
+        this.powerups = [];
+        this.ufos = [];
+        this.ufoLasers = [];
+        this.activePowerup = null;
+        this.powerupTimeLeft = 0;
+        this.ufoSpawnTimer = 0;
+        this.combo = 0;
+        this.comboTimer = 0;
+        this.multiplier = 1;
     }
 
     onOpen() {
         return `
             <div class="asteroids-container" style="background: #000; height: 100%; display: flex; flex-direction: column;">
-                <div class="asteroids-hud" style="color: #0f0; font-family: 'Courier New', monospace; padding: 5px; display: flex; justify-content: space-between; border-bottom: 2px solid #333;">
-                    <span>SCORE: <span id="score">0</span></span>
-                    <span>LIVES: <span id="lives">3</span></span>
+                <div class="asteroids-hud" style="color: #0f0; font-family: 'Courier New', monospace; padding: 5px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-bottom: 2px solid #333; font-size: 12px;">
+                    <div>
+                        <div>SCORE: <span id="score" style="color: #0ff;">0</span></div>
+                        <div>HIGH: <span id="highscore" style="color: #ff0;">0</span></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div>LEVEL: <span id="level" style="color: #f0f;">1</span></div>
+                        <div id="comboDisplay" style="color: #f80; display: none;">COMBO x<span id="combo">1</span></div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>LIVES: <span id="lives" style="color: #f00;">3</span></div>
+                        <div id="powerupDisplay" style="color: #0f0; display: none;">PWR: <span id="powerup">-</span> <span id="powerupTime">0</span>s</div>
+                    </div>
                 </div>
-                <canvas id="gameCanvas" width="580" height="420" style="display: block; width: 100%; height: 100%;"></canvas>
+                <canvas id="gameCanvas" width="680" height="480" style="display: block; width: 100%; height: 100%;"></canvas>
                 <div class="asteroids-controls" style="color: #666; font-size: 10px; text-align: center; padding: 2px;">
-                    Arrows: Move/Turn | Space: Shoot
+                    Arrows: Move/Turn | Space: Shoot | Collect Power-ups!
                 </div>
             </div>
         `;
@@ -67,10 +101,16 @@ class Asteroids extends AppBase {
     onMount() {
         this.canvas = this.getElement('#gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        
+
         // Handle resizing properly (though window is fixed, internal canvas needs exact pixels)
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
+
+        // Load high score from state
+        const savedHighScore = StateManager.getState('asteroids_highscore');
+        if (savedHighScore) {
+            this.scoreHigh = savedHighScore;
+        }
 
         // Setup input
         this.addHandler(document, 'keydown', (e) => this.keyDown(e));
@@ -90,21 +130,35 @@ class Asteroids extends AppBase {
         this.level = 0;
         this.lives = 3;
         this.score = 0;
+        this.combo = 0;
+        this.comboTimer = 0;
+        this.multiplier = 1;
+        this.particles = [];
+        this.powerups = [];
+        this.ufos = [];
+        this.ufoLasers = [];
+        this.activePowerup = null;
+        this.powerupTimeLeft = 0;
+        this.ufoSpawnTimer = 0;
         this.ship = this.newShip();
         this.newLevel();
+        this.updateHUD();
     }
 
     newLevel() {
-        this.text = "LEVEL " + (this.level + 1);
+        this.level++;
+        this.text = "LEVEL " + this.level;
         this.textAlpha = 1.0;
         this.createAsteroidBelt();
+        this.ufoSpawnTimer = this.UFO_SPAWN_INTERVAL * this.FPS;
+        this.updateHUD();
     }
 
     newShip() {
         return {
             x: this.canvas.width / 2,
             y: this.canvas.height / 2,
-            a: 90 / 180 * Math.PI, // convert to radians
+            a: 90 / 180 * Math.PI,
             r: this.SHIP_SIZE / 2,
             blinkNum: Math.ceil(this.SHIP_INV_DUR / this.SHIP_BLINK_DUR),
             blinkTime: Math.ceil(this.SHIP_BLINK_DUR * this.FPS),
@@ -113,7 +167,8 @@ class Asteroids extends AppBase {
             lasers: [],
             rot: 0,
             thrusting: false,
-            thrust: { x: 0, y: 0 }
+            thrust: { x: 0, y: 0 },
+            hasShield: false
         };
     }
 
@@ -139,6 +194,7 @@ class Asteroids extends AppBase {
             yv: Math.random() * this.ROIDS_SPD * lvlMult / this.FPS * (Math.random() < 0.5 ? 1 : -1),
             r: r,
             a: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.02, // rotation speed
             vert: Math.floor(Math.random() * (this.ROIDS_VERT + 1) + this.ROIDS_VERT / 2),
             offs: []
         };
@@ -182,26 +238,200 @@ class Asteroids extends AppBase {
 
     shootLaser() {
         // Create laser object
-        if (this.ship.canShoot && this.ship.lasers.length < this.LASER_MAX) {
-            this.ship.lasers.push({ // from the nose of the ship
-                x: this.ship.x + 4 / 3 * this.ship.r * Math.cos(this.ship.a),
-                y: this.ship.y - 4 / 3 * this.ship.r * Math.sin(this.ship.a),
-                xv: this.LASER_SPD * Math.cos(this.ship.a) / this.FPS,
-                yv: -this.LASER_SPD * Math.sin(this.ship.a) / this.FPS,
-                dist: 0,
-                explodeTime: 0
-            });
-            this.playSound('click'); // Reuse click sound for pew pew
+        const maxLasers = this.activePowerup === 'rapid' ? this.LASER_MAX * 2 : this.LASER_MAX;
+
+        if (this.ship.canShoot && this.ship.lasers.length < maxLasers) {
+            if (this.activePowerup === 'triple') {
+                // Triple shot - center, left, right
+                const angles = [0, -0.2, 0.2];
+                angles.forEach(offset => {
+                    const angle = this.ship.a + offset;
+                    this.ship.lasers.push({
+                        x: this.ship.x + 4 / 3 * this.ship.r * Math.cos(angle),
+                        y: this.ship.y - 4 / 3 * this.ship.r * Math.sin(angle),
+                        xv: this.LASER_SPD * Math.cos(angle) / this.FPS,
+                        yv: -this.LASER_SPD * Math.sin(angle) / this.FPS,
+                        dist: 0
+                    });
+                });
+            } else {
+                // Single shot
+                this.ship.lasers.push({
+                    x: this.ship.x + 4 / 3 * this.ship.r * Math.cos(this.ship.a),
+                    y: this.ship.y - 4 / 3 * this.ship.r * Math.sin(this.ship.a),
+                    xv: this.LASER_SPD * Math.cos(this.ship.a) / this.FPS,
+                    yv: -this.LASER_SPD * Math.sin(this.ship.a) / this.FPS,
+                    dist: 0
+                });
+            }
+            this.playSound('click');
         }
-        this.ship.canShoot = false; // Prevent rapid fire holding space
+
+        // Rapid fire allows immediate shooting
+        if (this.activePowerup !== 'rapid') {
+            this.ship.canShoot = false;
+        }
     }
 
     update() {
         const { width, height } = this.canvas;
-        
+
         // Draw Space
         this.ctx.fillStyle = "black";
         this.ctx.fillRect(0, 0, width, height);
+
+        // --- COMBO TIMER ---
+        if (this.comboTimer > 0) {
+            this.comboTimer--;
+            if (this.comboTimer === 0) {
+                this.combo = 0;
+                this.multiplier = 1;
+                this.updateHUD();
+            }
+        }
+
+        // --- POWERUP TIMER ---
+        if (this.activePowerup && this.powerupTimeLeft > 0) {
+            this.powerupTimeLeft--;
+            if (this.powerupTimeLeft === 0) {
+                this.activePowerup = null;
+                this.ship.hasShield = false;
+            }
+            this.updateHUD();
+        }
+
+        // --- UFO SPAWN TIMER ---
+        if (!this.ship.dead && this.level > 0) {
+            this.ufoSpawnTimer--;
+            if (this.ufoSpawnTimer <= 0 && this.ufos.length === 0) {
+                this.spawnUFO();
+                this.ufoSpawnTimer = this.UFO_SPAWN_INTERVAL * this.FPS;
+            }
+        }
+
+        // --- PARTICLES ---
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+
+            if (p.life <= 0) {
+                this.particles.splice(i, 1);
+            } else {
+                this.ctx.fillStyle = `rgba(${p.color}, ${p.life / p.maxLife})`;
+                this.ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+        }
+
+        // --- POWER-UPS ---
+        for (let i = this.powerups.length - 1; i >= 0; i--) {
+            const pu = this.powerups[i];
+            pu.y += pu.vy;
+            pu.life--;
+
+            // Remove if expired
+            if (pu.life <= 0) {
+                this.powerups.splice(i, 1);
+                continue;
+            }
+
+            // Draw power-up
+            const pulse = 0.8 + 0.2 * Math.sin(pu.life / 10);
+            this.ctx.save();
+            this.ctx.globalAlpha = pulse;
+            this.ctx.fillStyle = pu.color;
+            this.ctx.strokeStyle = "white";
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(pu.x, pu.y, 10, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+            this.ctx.fillStyle = "white";
+            this.ctx.font = "bold 16px monospace";
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.fillText(pu.symbol, pu.x, pu.y);
+            this.ctx.restore();
+
+            // Collision with ship
+            if (!this.ship.dead && this.distBetweenPoints(this.ship.x, this.ship.y, pu.x, pu.y) < this.ship.r + 10) {
+                this.collectPowerup(pu.type);
+                this.powerups.splice(i, 1);
+                this.playSound('click');
+            }
+        }
+
+        // --- UFOs ---
+        for (let i = this.ufos.length - 1; i >= 0; i--) {
+            const ufo = this.ufos[i];
+            ufo.x += ufo.vx;
+            ufo.y += ufo.vy;
+            ufo.shootTimer--;
+
+            // Shoot at player
+            if (ufo.shootTimer <= 0) {
+                const angle = Math.atan2(this.ship.y - ufo.y, this.ship.x - ufo.x);
+                const inaccuracy = (Math.random() - 0.5) * 0.5; // Make UFO shots imperfect
+                this.ufoLasers.push({
+                    x: ufo.x,
+                    y: ufo.y,
+                    vx: Math.cos(angle + inaccuracy) * 3,
+                    vy: Math.sin(angle + inaccuracy) * 3,
+                    life: 120
+                });
+                ufo.shootTimer = this.UFO_SHOOT_INTERVAL * this.FPS;
+            }
+
+            // Bounce off edges
+            if (ufo.x < ufo.r || ufo.x > width - ufo.r) ufo.vx *= -1;
+            if (ufo.y < ufo.r || ufo.y > height - ufo.r) ufo.vy *= -1;
+
+            // Draw UFO
+            this.ctx.strokeStyle = "#0f0";
+            this.ctx.fillStyle = "#0a0";
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.arc(ufo.x, ufo.y, ufo.r, 0, Math.PI, true);
+            this.ctx.lineTo(ufo.x + ufo.r * 1.5, ufo.y);
+            this.ctx.lineTo(ufo.x - ufo.r * 1.5, ufo.y);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.arc(ufo.x, ufo.y - ufo.r / 2, ufo.r / 2, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+        }
+
+        // --- UFO LASERS ---
+        for (let i = this.ufoLasers.length - 1; i >= 0; i--) {
+            const laser = this.ufoLasers[i];
+            laser.x += laser.vx;
+            laser.y += laser.vy;
+            laser.life--;
+
+            if (laser.life <= 0) {
+                this.ufoLasers.splice(i, 1);
+                continue;
+            }
+
+            // Draw UFO laser
+            this.ctx.fillStyle = "#0f0";
+            this.ctx.beginPath();
+            this.ctx.arc(laser.x, laser.y, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Hit ship
+            if (!this.ship.dead && this.distBetweenPoints(laser.x, laser.y, this.ship.x, this.ship.y) < this.ship.r) {
+                this.ufoLasers.splice(i, 1);
+                if (this.ship.hasShield) {
+                    this.createExplosion(laser.x, laser.y, 5, "0,255,255");
+                } else {
+                    this.explodeShip();
+                }
+            }
+        }
 
         // --- SHIP LOGIC ---
         if (!this.ship.dead) {
@@ -213,21 +443,35 @@ class Asteroids extends AppBase {
             if (this.ship.thrusting) {
                 this.ship.thrust.x += this.SHIP_THRUST * Math.cos(this.ship.a) / this.FPS;
                 this.ship.thrust.y -= this.SHIP_THRUST * Math.sin(this.ship.a) / this.FPS;
-                
+
+                // Draw thrust flame with particles
+                if (Math.random() < 0.5) {
+                    this.particles.push({
+                        x: this.ship.x - this.ship.r * Math.cos(this.ship.a),
+                        y: this.ship.y + this.ship.r * Math.sin(this.ship.a),
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        life: 20,
+                        maxLife: 20,
+                        size: 2,
+                        color: Math.random() < 0.5 ? "255,100,0" : "255,200,0"
+                    });
+                }
+
                 // Draw thrust flame
                 this.ctx.fillStyle = "red";
                 this.ctx.strokeStyle = "yellow";
                 this.ctx.lineWidth = this.SHIP_SIZE / 10;
                 this.ctx.beginPath();
-                this.ctx.moveTo( // rear left
+                this.ctx.moveTo(
                     this.ship.x - this.ship.r * (2 / 3 * Math.cos(this.ship.a) + 0.5 * Math.sin(this.ship.a)),
                     this.ship.y + this.ship.r * (2 / 3 * Math.sin(this.ship.a) - 0.5 * Math.cos(this.ship.a))
                 );
-                this.ctx.lineTo( // rear centre (behind the ship)
+                this.ctx.lineTo(
                     this.ship.x - this.ship.r * 5 / 3 * Math.cos(this.ship.a),
                     this.ship.y + this.ship.r * 5 / 3 * Math.sin(this.ship.a)
                 );
-                this.ctx.lineTo( // rear right
+                this.ctx.lineTo(
                     this.ship.x - this.ship.r * (2 / 3 * Math.cos(this.ship.a) - 0.5 * Math.sin(this.ship.a)),
                     this.ship.y + this.ship.r * (2 / 3 * Math.sin(this.ship.a) + 0.5 * Math.cos(this.ship.a))
                 );
@@ -240,24 +484,45 @@ class Asteroids extends AppBase {
                 this.ship.thrust.y -= this.FRICTION * this.ship.thrust.y / this.FPS;
             }
 
+            // Draw shield if active
+            if (this.ship.hasShield) {
+                const pulse = 0.3 + 0.2 * Math.sin(Date.now() / 100);
+                this.ctx.strokeStyle = `rgba(0, 255, 255, ${pulse})`;
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(this.ship.x, this.ship.y, this.ship.r * 2, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
+
+            // Handle invulnerability blink
+            if (this.ship.blinkNum > 0) {
+                this.ship.blinkTime--;
+                if (this.ship.blinkTime === 0) {
+                    this.ship.blinkTime = Math.ceil(this.SHIP_BLINK_DUR * this.FPS);
+                    this.ship.blinkNum--;
+                }
+            }
+
             // Draw triangular ship
-            this.ctx.strokeStyle = "white";
-            this.ctx.lineWidth = this.SHIP_SIZE / 20;
-            this.ctx.beginPath();
-            this.ctx.moveTo( // nose
-                this.ship.x + 4 / 3 * this.ship.r * Math.cos(this.ship.a),
-                this.ship.y - 4 / 3 * this.ship.r * Math.sin(this.ship.a)
-            );
-            this.ctx.lineTo( // rear left
-                this.ship.x - this.ship.r * (2 / 3 * Math.cos(this.ship.a) + Math.sin(this.ship.a)),
-                this.ship.y + this.ship.r * (2 / 3 * Math.sin(this.ship.a) - Math.cos(this.ship.a))
-            );
-            this.ctx.lineTo( // rear right
-                this.ship.x - this.ship.r * (2 / 3 * Math.cos(this.ship.a) - Math.sin(this.ship.a)),
-                this.ship.y + this.ship.r * (2 / 3 * Math.sin(this.ship.a) + Math.cos(this.ship.a))
-            );
-            this.ctx.closePath();
-            this.ctx.stroke();
+            if (this.ship.blinkNum === 0 || this.ship.blinkNum % 2 === 0) {
+                this.ctx.strokeStyle = this.activePowerup ? this.getPowerupColor() : "white";
+                this.ctx.lineWidth = this.SHIP_SIZE / 20;
+                this.ctx.beginPath();
+                this.ctx.moveTo(
+                    this.ship.x + 4 / 3 * this.ship.r * Math.cos(this.ship.a),
+                    this.ship.y - 4 / 3 * this.ship.r * Math.sin(this.ship.a)
+                );
+                this.ctx.lineTo(
+                    this.ship.x - this.ship.r * (2 / 3 * Math.cos(this.ship.a) + Math.sin(this.ship.a)),
+                    this.ship.y + this.ship.r * (2 / 3 * Math.sin(this.ship.a) - Math.cos(this.ship.a))
+                );
+                this.ctx.lineTo(
+                    this.ship.x - this.ship.r * (2 / 3 * Math.cos(this.ship.a) - Math.sin(this.ship.a)),
+                    this.ship.y + this.ship.r * (2 / 3 * Math.sin(this.ship.a) + Math.cos(this.ship.a))
+                );
+                this.ctx.closePath();
+                this.ctx.stroke();
+            }
 
             // Rotate ship
             this.ship.a += this.ship.rot;
@@ -273,52 +538,58 @@ class Asteroids extends AppBase {
         this.ctx.lineWidth = this.SHIP_SIZE / 20;
         this.ctx.strokeStyle = "slategrey";
         for (let i = 0; i < this.roids.length; i++) {
+            const roid = this.roids[i];
+
             // Draw asteroid
-            const { x, y, r, a, vert, offs } = this.roids[i];
             this.ctx.beginPath();
-            for (let j = 0; j < vert; j++) {
+            for (let j = 0; j < roid.vert; j++) {
                 this.ctx.lineTo(
-                    x + r * offs[j] * Math.cos(a + j * Math.PI * 2 / vert),
-                    y + r * offs[j] * Math.sin(a + j * Math.PI * 2 / vert)
+                    roid.x + roid.r * roid.offs[j] * Math.cos(roid.a + j * Math.PI * 2 / roid.vert),
+                    roid.y + roid.r * roid.offs[j] * Math.sin(roid.a + j * Math.PI * 2 / roid.vert)
                 );
             }
             this.ctx.closePath();
             this.ctx.stroke();
 
+            // Rotate asteroid
+            roid.a += roid.rotSpeed;
+
             // Move asteroid
-            this.roids[i].x += this.roids[i].xv;
-            this.roids[i].y += this.roids[i].yv;
+            roid.x += roid.xv;
+            roid.y += roid.yv;
 
             // Handle edge of screen
-            if (this.roids[i].x < 0 - this.roids[i].r) this.roids[i].x = width + this.roids[i].r;
-            else if (this.roids[i].x > width + this.roids[i].r) this.roids[i].x = 0 - this.roids[i].r;
-            if (this.roids[i].y < 0 - this.roids[i].r) this.roids[i].y = height + this.roids[i].r;
-            else if (this.roids[i].y > height + this.roids[i].r) this.roids[i].y = 0 - this.roids[i].r;
+            if (roid.x < 0 - roid.r) roid.x = width + roid.r;
+            else if (roid.x > width + roid.r) roid.x = 0 - roid.r;
+            if (roid.y < 0 - roid.r) roid.y = height + roid.r;
+            else if (roid.y > height + roid.r) roid.y = 0 - roid.r;
         }
 
         // --- LASER LOGIC ---
         for (let i = this.ship.lasers.length - 1; i >= 0; i--) {
+            const laser = this.ship.lasers[i];
+
             // Draw laser
-            this.ctx.fillStyle = "salmon";
+            this.ctx.fillStyle = this.activePowerup === 'triple' ? "#ff0" : "salmon";
             this.ctx.beginPath();
-            this.ctx.arc(this.ship.lasers[i].x, this.ship.lasers[i].y, this.SHIP_SIZE / 15, 0, Math.PI * 2, false);
+            this.ctx.arc(laser.x, laser.y, this.SHIP_SIZE / 15, 0, Math.PI * 2, false);
             this.ctx.fill();
 
             // Move laser
-            this.ship.lasers[i].x += this.ship.lasers[i].xv;
-            this.ship.lasers[i].y += this.ship.lasers[i].yv;
+            laser.x += laser.xv;
+            laser.y += laser.yv;
 
             // Handle edge of screen
-            if (this.ship.lasers[i].x < 0) this.ship.lasers[i].x = width;
-            else if (this.ship.lasers[i].x > width) this.ship.lasers[i].x = 0;
-            if (this.ship.lasers[i].y < 0) this.ship.lasers[i].y = height;
-            else if (this.ship.lasers[i].y > height) this.ship.lasers[i].y = 0;
+            if (laser.x < 0) laser.x = width;
+            else if (laser.x > width) laser.x = 0;
+            if (laser.y < 0) laser.y = height;
+            else if (laser.y > height) laser.y = 0;
 
             // Calculate distance travelled
-            this.ship.lasers[i].dist += Math.sqrt(Math.pow(this.ship.lasers[i].xv, 2) + Math.pow(this.ship.lasers[i].yv, 2));
+            laser.dist += Math.sqrt(Math.pow(laser.xv, 2) + Math.pow(laser.yv, 2));
 
             // Kill laser after distance
-            if (this.ship.lasers[i].dist > width * this.LASER_DIST) {
+            if (laser.dist > width * this.LASER_DIST) {
                 this.ship.lasers.splice(i, 1);
                 continue;
             }
@@ -326,33 +597,56 @@ class Asteroids extends AppBase {
             // Detect laser hits on asteroids
             let hit = false;
             for (let j = this.roids.length - 1; j >= 0; j--) {
-                if (this.distBetweenPoints(this.ship.lasers[i].x, this.ship.lasers[i].y, this.roids[j].x, this.roids[j].y) < this.roids[j].r) {
-                    // Remove laser
+                if (this.distBetweenPoints(laser.x, laser.y, this.roids[j].x, this.roids[j].y) < this.roids[j].r) {
                     this.ship.lasers.splice(i, 1);
                     hit = true;
-
-                    // Destroy asteroid
                     this.destroyAsteroid(j);
                     break;
                 }
             }
             if (hit) continue;
+
+            // Detect laser hits on UFOs
+            for (let j = this.ufos.length - 1; j >= 0; j--) {
+                if (this.distBetweenPoints(laser.x, laser.y, this.ufos[j].x, this.ufos[j].y) < this.ufos[j].r) {
+                    this.ship.lasers.splice(i, 1);
+                    this.destroyUFO(j);
+                    break;
+                }
+            }
         }
 
         // --- COLLISION LOGIC (Ship vs Asteroid) ---
-        if (!this.ship.dead) {
+        if (!this.ship.dead && this.ship.blinkNum === 0) {
             for (let i = 0; i < this.roids.length; i++) {
                 if (this.distBetweenPoints(this.ship.x, this.ship.y, this.roids[i].x, this.roids[i].y) < this.ship.r + this.roids[i].r) {
-                    this.explodeShip();
-                    this.destroyAsteroid(i);
+                    if (this.ship.hasShield) {
+                        this.destroyAsteroid(i);
+                        this.createExplosion(this.roids[i].x, this.roids[i].y, 20, "0,255,255");
+                    } else {
+                        this.explodeShip();
+                        this.destroyAsteroid(i);
+                    }
+                    break;
+                }
+            }
+
+            // Ship vs UFO
+            for (let i = 0; i < this.ufos.length; i++) {
+                if (this.distBetweenPoints(this.ship.x, this.ship.y, this.ufos[i].x, this.ufos[i].y) < this.ship.r + this.ufos[i].r) {
+                    if (this.ship.hasShield) {
+                        this.destroyUFO(i);
+                    } else {
+                        this.explodeShip();
+                        this.destroyUFO(i);
+                    }
                     break;
                 }
             }
         }
 
         // --- LEVEL LOGIC ---
-        if (this.roids.length === 0) {
-            this.level++;
+        if (this.roids.length === 0 && this.ufos.length === 0) {
             this.newLevel();
         }
 
@@ -369,6 +663,9 @@ class Asteroids extends AppBase {
     destroyAsteroid(index) {
         const { x, y, r } = this.roids[index];
 
+        // Create explosion
+        this.createExplosion(x, y, 15, "150,150,150");
+
         // Split asteroid in two if necessary
         if (r > Math.ceil(this.ROIDS_SIZE / 8)) {
             this.roids.push(this.newAsteroid(x, y, Math.ceil(r / 2)));
@@ -377,35 +674,185 @@ class Asteroids extends AppBase {
 
         // Remove the original
         this.roids.splice(index, 1);
-        
-        // Add score
-        this.score += 20;
-        this.updateScore();
+
+        // Update combo
+        this.combo++;
+        this.comboTimer = this.COMBO_TIMEOUT * this.FPS;
+        if (this.combo >= 3) {
+            this.multiplier = Math.floor(this.combo / 3) + 1;
+        }
+
+        // Add score (smaller asteroids = more points)
+        const baseScore = r < 20 ? 100 : r < 40 ? 50 : 20;
+        this.score += baseScore * this.multiplier;
+
+        // Chance to spawn power-up
+        if (Math.random() < this.POWERUP_CHANCE && this.powerups.length < 2) {
+            this.spawnPowerup(x, y);
+        }
+
+        this.updateHUD();
+        this.playSound('click');
+    }
+
+    destroyUFO(index) {
+        const { x, y } = this.ufos[index];
+        this.createExplosion(x, y, 20, "0,255,0");
+        this.ufos.splice(index, 1);
+
+        // UFO worth lots of points!
+        this.score += 200 * this.multiplier;
+        this.combo++;
+        this.comboTimer = this.COMBO_TIMEOUT * this.FPS;
+
+        this.updateHUD();
+        this.playSound('error');
     }
 
     explodeShip() {
+        this.createExplosion(this.ship.x, this.ship.y, 30, "255,255,255");
         this.lives--;
-        this.updateLives();
-        
+        this.combo = 0;
+        this.multiplier = 1;
+        this.activePowerup = null;
+        this.powerupTimeLeft = 0;
+
+        this.updateHUD();
+
         if (this.lives === 0) {
+            this.ship.dead = true;
             this.text = "GAME OVER";
             this.textAlpha = 1.0;
             this.playSound('error');
+
+            // Save high score
+            if (this.score > this.scoreHigh) {
+                this.scoreHigh = this.score;
+                StateManager.setState('asteroids_highscore', this.scoreHigh);
+                this.text = "NEW HIGH SCORE!";
+            }
+
             setTimeout(() => this.newGame(), 3000);
         } else {
             this.playSound('error');
-            this.ship = this.newShip(); // Reset position
+            this.ship = this.newShip();
         }
     }
 
-    updateScore() {
-        const scoreEl = this.getElement('#score');
-        if (scoreEl) scoreEl.textContent = this.score;
+    createExplosion(x, y, count, color) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 3 + 1;
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 30 + Math.random() * 20,
+                maxLife: 50,
+                size: Math.random() * 3 + 1,
+                color: color
+            });
+        }
     }
 
-    updateLives() {
+    spawnPowerup(x, y) {
+        const type = this.POWERUP_TYPES[Math.floor(Math.random() * this.POWERUP_TYPES.length)];
+        const powerupInfo = {
+            shield: { symbol: 'S', color: '#0ff' },
+            triple: { symbol: '3', color: '#ff0' },
+            rapid: { symbol: 'R', color: '#f0f' },
+            extralife: { symbol: '+', color: '#0f0' }
+        };
+
+        this.powerups.push({
+            x: x,
+            y: y,
+            vy: 0.5,
+            type: type,
+            symbol: powerupInfo[type].symbol,
+            color: powerupInfo[type].color,
+            life: 300 // 5 seconds
+        });
+    }
+
+    collectPowerup(type) {
+        if (type === 'extralife') {
+            this.lives++;
+            this.updateHUD();
+        } else {
+            this.activePowerup = type;
+            this.powerupTimeLeft = this.POWERUP_DURATION * this.FPS;
+            if (type === 'shield') {
+                this.ship.hasShield = true;
+            }
+        }
+    }
+
+    spawnUFO() {
+        const side = Math.random() < 0.5 ? 0 : this.canvas.width;
+        const y = Math.random() * this.canvas.height;
+        const vx = (side === 0 ? 1 : -1) * (this.UFO_SPEED / this.FPS);
+        const vy = (Math.random() - 0.5) * (this.UFO_SPEED / this.FPS);
+
+        this.ufos.push({
+            x: side,
+            y: y,
+            vx: vx,
+            vy: vy,
+            r: this.UFO_SIZE,
+            shootTimer: this.UFO_SHOOT_INTERVAL * this.FPS
+        });
+    }
+
+    getPowerupColor() {
+        const colors = {
+            shield: '#0ff',
+            triple: '#ff0',
+            rapid: '#f0f'
+        };
+        return colors[this.activePowerup] || 'white';
+    }
+
+    updateHUD() {
+        const scoreEl = this.getElement('#score');
+        const highscoreEl = this.getElement('#highscore');
         const livesEl = this.getElement('#lives');
+        const levelEl = this.getElement('#level');
+        const comboEl = this.getElement('#combo');
+        const comboDisplayEl = this.getElement('#comboDisplay');
+        const powerupEl = this.getElement('#powerup');
+        const powerupTimeEl = this.getElement('#powerupTime');
+        const powerupDisplayEl = this.getElement('#powerupDisplay');
+
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (highscoreEl) highscoreEl.textContent = this.scoreHigh;
         if (livesEl) livesEl.textContent = this.lives;
+        if (levelEl) levelEl.textContent = this.level;
+
+        if (comboEl && comboDisplayEl) {
+            if (this.multiplier > 1) {
+                comboEl.textContent = this.multiplier;
+                comboDisplayEl.style.display = 'block';
+            } else {
+                comboDisplayEl.style.display = 'none';
+            }
+        }
+
+        if (powerupEl && powerupTimeEl && powerupDisplayEl) {
+            if (this.activePowerup) {
+                const powerupNames = {
+                    shield: 'SHIELD',
+                    triple: 'TRIPLE',
+                    rapid: 'RAPID'
+                };
+                powerupEl.textContent = powerupNames[this.activePowerup] || this.activePowerup.toUpperCase();
+                powerupTimeEl.textContent = Math.ceil(this.powerupTimeLeft / this.FPS);
+                powerupDisplayEl.style.display = 'block';
+            } else {
+                powerupDisplayEl.style.display = 'none';
+            }
+        }
     }
 }
 
