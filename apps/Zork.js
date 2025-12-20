@@ -15,7 +15,8 @@ class Zork extends AppBase {
             height: 500,
             resizable: true,
             singleton: true,
-            category: 'games'
+            category: 'games',
+            showInMenu: true
         });
     }
 
