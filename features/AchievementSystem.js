@@ -12,6 +12,7 @@ const ALL_ACHIEVEMENTS = [
     { id: 'disco_fever', name: 'Disco Fever', desc: 'Clicked clock 10x', icon: '🕺' },
     { id: 'multitasker', name: 'Multitasker', desc: '10+ windows', icon: '🪟' },
     { id: 'clippy_hater', name: 'Clippy Hater', desc: 'Dismissed 5x', icon: '😠' },
+    { id: 'clippy_terminator', name: 'Clippy Terminator', desc: 'Dismissed 10x', icon: '🔫' },
     { id: 'matrix_mode', name: 'Neo', desc: 'Entered Matrix', icon: '🌧️' },
 ];
 
