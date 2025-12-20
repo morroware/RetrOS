@@ -417,7 +417,8 @@ class SkiFree extends AppBase {
     }
 
     update(timestamp) {
-        if (this.state !== this.STATE.PLAYING) return;
+        // Allow update loop to run during CRASHED state for recovery
+        if (this.state !== this.STATE.PLAYING && this.state !== this.STATE.CRASHED) return;
 
         this.deltaTime = Math.min((timestamp - this.lastTime) / 16.67, 3); // Cap delta
         this.lastTime = timestamp;
@@ -432,7 +433,8 @@ class SkiFree extends AppBase {
 
         this.draw();
 
-        if (this.state === this.STATE.PLAYING) {
+        // Continue game loop during PLAYING or CRASHED states
+        if (this.state === this.STATE.PLAYING || this.state === this.STATE.CRASHED) {
             this.gameLoop = requestAnimationFrame((t) => this.update(t));
         }
     }
