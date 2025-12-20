@@ -92,6 +92,7 @@ class SkiFree extends AppBase {
         // Effects
         this.screenShake = 0;
         this.flashTimer = 0;
+        this.crashTimer = 0;
     }
 
     onOpen() {
@@ -442,14 +443,15 @@ class SkiFree extends AppBase {
     updatePlayer() {
         const p = this.player;
 
-        // Handle crashed state
+        // Handle crashed state - use a timer for recovery
         if (this.state === this.STATE.CRASHED) {
-            p.speed *= 0.95;
-            if (p.speed < 0.5) {
+            this.crashTimer -= this.deltaTime;
+            if (this.crashTimer <= 0) {
                 this.state = this.STATE.PLAYING;
                 p.speed = p.baseSpeed;
                 p.invincible = true;
                 p.invincibleTimer = 90;
+                this.updateStateText('Skiing!');
             }
             return;
         }
@@ -624,8 +626,9 @@ class SkiFree extends AppBase {
                     this.createBonusText(obs.x, obs.y, '+50');
                     this.playSound('flag');
                 } else {
-                    // Crash!
+                    // Crash! Stop checking after first crash
                     this.crashPlayer(obs);
+                    return;
                 }
             }
         }
@@ -691,6 +694,7 @@ class SkiFree extends AppBase {
         } else {
             this.state = this.STATE.CRASHED;
             this.player.speed = 0;
+            this.crashTimer = 60; // ~1 second recovery time
             this.updateStateText(`CRASH! ${this.lives} ${this.lives === 1 ? 'life' : 'lives'} left`);
         }
     }
