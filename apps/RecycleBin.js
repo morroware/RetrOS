@@ -6,6 +6,7 @@
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
 import EventBus from '../core/EventBus.js';
+import FileSystemManager from '../core/FileSystemManager.js';
 
 class RecycleBin extends AppBase {
     constructor() {
@@ -264,11 +265,22 @@ class RecycleBin extends AppBase {
                     <div class="recyclebin-item" data-index="${index}">
                         <div class="recyclebin-item-icon">${item.emoji || '📄'}</div>
                         <div class="recyclebin-item-label">${item.label || item.id}</div>
-                        <div class="recyclebin-item-info">${item.type || 'item'}</div>
+                        <div class="recyclebin-item-info">${this.getItemTypeLabel(item)}</div>
                     </div>
                 `).join('')}
             </div>
         `;
+    }
+
+    getItemTypeLabel(item) {
+        if (item.type === 'recycled_file') {
+            return item.fileType === 'directory' ? 'Folder' : 'File';
+        } else if (item.type === 'link') {
+            return 'Shortcut';
+        } else if (item.type === 'app') {
+            return 'Application';
+        }
+        return item.type || 'Item';
     }
 
     renderListView(items) {
@@ -280,14 +292,25 @@ class RecycleBin extends AppBase {
                         <div class="recyclebin-list-details">
                             <div class="recyclebin-list-label">${item.label || item.id}</div>
                             <div class="recyclebin-list-info">
-                                Type: ${item.type || 'item'} •
-                                ${item.url ? `URL: ${item.url}` : `ID: ${item.id}`}
+                                ${this.getItemInfo(item)}
                             </div>
                         </div>
                     </div>
                 `).join('')}
             </div>
         `;
+    }
+
+    getItemInfo(item) {
+        if (item.type === 'recycled_file' && item.originalPath) {
+            const path = item.originalPath.join('\\');
+            const date = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : 'Unknown';
+            return `Original: ${path} • Deleted: ${date}`;
+        } else if (item.url) {
+            return `Type: ${item.type || 'link'} • URL: ${item.url}`;
+        } else {
+            return `Type: ${item.type || 'app'} • ID: ${item.id}`;
+        }
     }
 
     setupToolbarHandlers() {
@@ -394,8 +417,13 @@ class RecycleBin extends AppBase {
 
         const item = recycledItems[index];
 
-        // Restore to desktop
-        StateManager.restoreIcon(index);
+        // Check if this is a recycled file (from filesystem)
+        if (item.type === 'recycled_file' && item.originalPath) {
+            this.restoreFileItem(item, index);
+        } else {
+            // Restore app/link icon to desktop
+            StateManager.restoreIcon(index);
+        }
 
         // Refresh desktop
         EventBus.emit('desktop:refresh');
@@ -407,6 +435,33 @@ class RecycleBin extends AppBase {
         this.playSound('restore');
 
         console.log(`[RecycleBin] Restored: ${item.label}`);
+    }
+
+    restoreFileItem(item, index) {
+        const { originalPath, content, fileType, extension } = item;
+
+        try {
+            if (fileType === 'directory') {
+                // Restore directory
+                FileSystemManager.createDirectory(originalPath);
+            } else {
+                // Restore file with its original content
+                FileSystemManager.writeFile(originalPath, content || '', extension || 'txt');
+            }
+
+            // Remove from recycle bin
+            const recycledItems = StateManager.getState('recycledItems');
+            const newRecycledItems = recycledItems.filter((_, i) => i !== index);
+            StateManager.setState('recycledItems', newRecycledItems, true);
+
+            // Emit filesystem change event
+            EventBus.emit('filesystem:changed');
+
+            console.log(`[RecycleBin] Restored file to: ${originalPath.join('\\')}`);
+        } catch (err) {
+            console.error('[RecycleBin] Failed to restore file:', err);
+            alert(`Failed to restore "${item.label}": ${err.message}`);
+        }
     }
 
     deleteSelected() {

@@ -205,6 +205,29 @@ class DesktopRendererClass {
             if (e.key === 'Enter') this.handleIconOpen(icon);
         });
 
+        // Make Recycle Bin a drop target for deleting items
+        if (icon.id === 'recyclebin') {
+            iconEl.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Don't allow dropping the recycle bin on itself
+                if (this.draggedIcon && this.draggedIcon.data.id === 'recyclebin') return;
+                e.dataTransfer.dropEffect = 'move';
+                iconEl.classList.add('drop-target');
+            });
+
+            iconEl.addEventListener('dragleave', (e) => {
+                iconEl.classList.remove('drop-target');
+            });
+
+            iconEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                iconEl.classList.remove('drop-target');
+                this.handleRecycleBinDrop(e);
+            });
+        }
+
         // HTML5 drag start - set transfer data
         iconEl.addEventListener('dragstart', (e) => {
             // Store the icon being dragged for repositioning
@@ -426,6 +449,134 @@ class DesktopRendererClass {
             EventBus.emit(Events.ICON_MOVE, { id: iconInfo.id, x, y });
         } catch (err) {
             console.error('Failed to reposition desktop icon:', err);
+        }
+    }
+
+    /**
+     * Handle drop on Recycle Bin - delete/recycle the dropped item
+     * @param {DragEvent} e - Drag event
+     */
+    handleRecycleBinDrop(e) {
+        // Check if it's a desktop icon (app/link/file)
+        const desktopIconData = e.dataTransfer.getData('application/retros-desktop-icon');
+        if (desktopIconData) {
+            try {
+                const iconInfo = JSON.parse(desktopIconData);
+
+                // Don't allow recycling the recycle bin
+                if (iconInfo.id === 'recyclebin') return;
+
+                // For file icons, use the file recycling system
+                if (iconInfo.type === 'file') {
+                    // Find the icon element to get full data
+                    const iconEl = this.desktop.querySelector(`[data-icon-id="${iconInfo.id}"]`);
+                    if (iconEl && iconEl._iconData) {
+                        this.recycleFileToTrash(iconEl._iconData);
+                    }
+                } else {
+                    // For app/link icons, use StateManager recycling
+                    StateManager.recycleIcon(iconInfo.id);
+                    EventBus.emit(Events.SOUND_PLAY, { type: 'recycle' });
+                    this.showDropFeedback('Moved to Recycle Bin', 'success');
+                }
+
+                EventBus.emit('desktop:render');
+            } catch (err) {
+                console.error('Failed to recycle item:', err);
+            }
+            return;
+        }
+
+        // Handle files dragged from MyComputer
+        const fileData = e.dataTransfer.getData('application/retros-file');
+        if (fileData) {
+            try {
+                const file = JSON.parse(fileData);
+                if (file.filePath && Array.isArray(file.filePath)) {
+                    this.recycleFileToTrash({
+                        id: `file_${file.fileName}`,
+                        label: file.fileName,
+                        filePath: file.filePath,
+                        fileType: file.fileType,
+                        extension: file.extension || ''
+                    });
+                    EventBus.emit('desktop:render');
+                }
+            } catch (err) {
+                console.error('Failed to recycle file:', err);
+            }
+        }
+    }
+
+    /**
+     * Move a file to the recycle bin
+     * @param {Object} fileIcon - File icon data with filePath
+     */
+    recycleFileToTrash(fileIcon) {
+        const { filePath, fileType, label } = fileIcon;
+
+        try {
+            // Read file content before deleting (for potential restore)
+            let content = '';
+            let extension = fileIcon.extension || '';
+
+            if (fileType !== 'directory') {
+                try {
+                    content = FileSystemManager.readFile(filePath);
+                    const info = FileSystemManager.getInfo(filePath);
+                    extension = info.extension || extension;
+                } catch (e) {
+                    // File might not exist or be readable
+                }
+            }
+
+            // Add to recycled items with file info for restore
+            const recycledItem = {
+                id: `recycled_file_${Date.now()}`,
+                label: label,
+                emoji: this.getFileEmoji({ type: fileType, extension }),
+                type: 'recycled_file',
+                originalPath: filePath,
+                fileType: fileType,
+                extension: extension,
+                content: content,
+                deletedAt: Date.now()
+            };
+
+            const recycledItems = StateManager.getState('recycledItems') || [];
+            recycledItems.push(recycledItem);
+            StateManager.setState('recycledItems', recycledItems, true);
+
+            // Delete from filesystem
+            if (fileType === 'directory') {
+                try {
+                    FileSystemManager.deleteDirectory(filePath, true);
+                } catch (e) {
+                    console.error('Failed to delete directory:', e);
+                }
+            } else {
+                try {
+                    FileSystemManager.deleteFile(filePath);
+                } catch (e) {
+                    console.error('Failed to delete file:', e);
+                }
+            }
+
+            // Remove from file positions if tracked
+            const filePositions = StateManager.getState('filePositions') || {};
+            const fileId = `file_${label}`;
+            if (filePositions[fileId]) {
+                delete filePositions[fileId];
+                StateManager.setState('filePositions', filePositions, true);
+            }
+
+            EventBus.emit(Events.SOUND_PLAY, { type: 'recycle' });
+            this.showDropFeedback(`"${label}" moved to Recycle Bin`, 'success');
+
+        } catch (err) {
+            console.error('Failed to recycle file:', err);
+            EventBus.emit(Events.SOUND_PLAY, { type: 'error' });
+            this.showDropFeedback(`Failed to delete "${label}"`, 'error');
         }
     }
 
