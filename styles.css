@@ -723,29 +723,22 @@ body {
    ============================================ */
 .desktop-pet {
     position: fixed;
-    bottom: 55px;
     left: 0;
-    font-size: 32px;
+    top: 0;
     z-index: 8999;
     cursor: pointer;
     display: none;
-    transition: transform 0.1s;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
-.desktop-pet.active {
-    display: block;
-    animation: walkPet 20s linear infinite;
-}
-
-.desktop-pet:hover {
-    transform: scale(1.3);
-}
-
-@keyframes walkPet {
-    0% { left: -50px; transform: scaleX(1); }
-    49% { left: calc(100vw + 50px); transform: scaleX(1); }
-    50% { left: calc(100vw + 50px); transform: scaleX(-1); }
-    100% { left: -50px; transform: scaleX(-1); }
+.desktop-pet canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
 /* ============================================
@@ -4699,10 +4692,7 @@ body.loading * {
     font-size: 48px;
 }
 
-/* Desktop pet */
-.desktop-pet .retro-icon-emoji {
-    font-size: 48px;
-}
+/* Desktop pet - now uses canvas rendering */
 
 /* Button icons with text */
 .btn .retro-icon,
