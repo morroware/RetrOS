@@ -99,17 +99,18 @@ class DesktopPetClass {
         this.canvas.style.imageRendering = 'pixelated'; // Crisp pixel art
         this.canvas.style.imageRendering = '-moz-crisp-edges';
         this.canvas.style.imageRendering = 'crisp-edges';
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', { alpha: true }); // Enable transparency
 
         // Clear existing content and add canvas
         this.container.innerHTML = '';
         this.container.appendChild(this.canvas);
 
-        // Position container absolutely
+        // Position container absolutely with transparent background
         this.container.style.position = 'fixed';
         this.container.style.cursor = 'pointer';
         this.container.style.zIndex = '8999';
         this.container.style.pointerEvents = 'auto';
+        this.container.style.background = 'transparent';
 
         // Load saved state
         const enabled = StateManager.getState('settings.pet.enabled');
