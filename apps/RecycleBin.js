@@ -186,6 +186,25 @@ class RecycleBin extends AppBase {
                 .recyclebin-list-item.selected .recyclebin-list-info {
                     color: #ccc;
                 }
+                /* Drag and drop styles */
+                .recyclebin-content.drop-target {
+                    background: rgba(0, 0, 128, 0.1) !important;
+                    outline: 2px dashed #000080;
+                    outline-offset: -4px;
+                }
+                .recyclebin-item.dragging,
+                .recyclebin-list-item.dragging {
+                    opacity: 0.5;
+                    transform: scale(0.95);
+                }
+                .recyclebin-item[draggable="true"],
+                .recyclebin-list-item[draggable="true"] {
+                    cursor: grab;
+                }
+                .recyclebin-item[draggable="true"]:active,
+                .recyclebin-list-item[draggable="true"]:active {
+                    cursor: grabbing;
+                }
             </style>
 
             <div class="recyclebin-app">
@@ -229,6 +248,9 @@ class RecycleBin extends AppBase {
 
         // Setup item click handlers
         this.setupItemHandlers();
+
+        // Setup drag and drop
+        this.setupDragDrop();
 
         // Subscribe to recycle bin updates
         this.onEvent('recyclebin:update', () => {
@@ -352,8 +374,15 @@ class RecycleBin extends AppBase {
 
     setupItemHandlers() {
         const items = this.getElements('.recyclebin-item, .recyclebin-list-item');
+        const recycledItems = StateManager.getState('recycledItems') || [];
 
         items.forEach(item => {
+            const index = parseInt(item.dataset.index);
+            const recycledItem = recycledItems[index];
+
+            // Make item draggable for restoring by dragging out
+            item.draggable = true;
+
             // Single click - select
             this.addHandler(item, 'click', (e) => {
                 // Clear previous selection
@@ -366,18 +395,200 @@ class RecycleBin extends AppBase {
                 this.updateToolbarButtons(true);
 
                 // Update status
-                const index = parseInt(e.currentTarget.dataset.index);
-                const recycledItems = StateManager.getState('recycledItems');
-                const selectedItem = recycledItems[index];
-                this.updateStatus(selectedItem);
+                this.updateStatus(recycledItem);
             });
 
             // Double click - restore
             this.addHandler(item, 'dblclick', (e) => {
-                const index = parseInt(e.currentTarget.dataset.index);
                 this.restoreItem(index);
             });
+
+            // Drag start - for dragging items out to restore
+            this.addHandler(item, 'dragstart', (e) => {
+                item.classList.add('dragging');
+
+                // Set data for restoration
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('application/retros-recyclebin-item', JSON.stringify({
+                    index: index,
+                    item: recycledItem
+                }));
+
+                // Also set as a desktop icon for the desktop to recognize
+                if (recycledItem.type === 'recycled_file') {
+                    e.dataTransfer.setData('application/retros-restore-file', JSON.stringify({
+                        index: index,
+                        originalPath: recycledItem.originalPath,
+                        content: recycledItem.content,
+                        fileType: recycledItem.fileType,
+                        extension: recycledItem.extension,
+                        label: recycledItem.label
+                    }));
+                } else {
+                    e.dataTransfer.setData('application/retros-restore-icon', JSON.stringify({
+                        index: index,
+                        item: recycledItem
+                    }));
+                }
+            });
+
+            this.addHandler(item, 'dragend', (e) => {
+                item.classList.remove('dragging');
+            });
         });
+    }
+
+    setupDragDrop() {
+        const content = this.getElement('#content');
+        if (!content) return;
+
+        // Accept drops to delete items
+        this.addHandler(content, 'dragover', (e) => {
+            // Check if it's an item we can accept (desktop icon or file)
+            const hasDesktopIcon = e.dataTransfer.types.includes('application/retros-desktop-icon');
+            const hasFile = e.dataTransfer.types.includes('application/retros-file');
+            const hasRecycleItem = e.dataTransfer.types.includes('application/retros-recyclebin-item');
+
+            // Don't accept items from the recycle bin itself (that's for dragging OUT)
+            if (hasRecycleItem) return;
+
+            if (hasDesktopIcon || hasFile) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                content.classList.add('drop-target');
+            }
+        });
+
+        this.addHandler(content, 'dragleave', (e) => {
+            // Only remove highlight when actually leaving the content area
+            if (e.target === content || !content.contains(e.relatedTarget)) {
+                content.classList.remove('drop-target');
+            }
+        });
+
+        this.addHandler(content, 'drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            content.classList.remove('drop-target');
+
+            // Handle desktop icon drop
+            const desktopIconData = e.dataTransfer.getData('application/retros-desktop-icon');
+            if (desktopIconData) {
+                this.handleIconDrop(desktopIconData);
+                return;
+            }
+
+            // Handle file drop
+            const fileData = e.dataTransfer.getData('application/retros-file');
+            if (fileData) {
+                this.handleFileDrop(fileData);
+            }
+        });
+    }
+
+    handleIconDrop(dataString) {
+        try {
+            const iconInfo = JSON.parse(dataString);
+
+            // Don't allow recycling the recycle bin
+            if (iconInfo.id === 'recyclebin') return;
+
+            if (iconInfo.type === 'file') {
+                // Need to get full file data - emit event to have DesktopRenderer handle it
+                EventBus.emit('recyclebin:recycle-file', { iconId: iconInfo.id });
+            } else {
+                // Recycle app/link icon
+                StateManager.recycleIcon(iconInfo.id);
+                this.playSound('recycle');
+            }
+
+            EventBus.emit('desktop:render');
+            this.refreshView();
+        } catch (err) {
+            console.error('[RecycleBin] Failed to handle icon drop:', err);
+        }
+    }
+
+    handleFileDrop(dataString) {
+        try {
+            const fileData = JSON.parse(dataString);
+
+            if (!fileData.filePath || !Array.isArray(fileData.filePath)) {
+                console.error('[RecycleBin] Invalid file data');
+                return;
+            }
+
+            // Read file content before deleting
+            let content = '';
+            let extension = fileData.extension || '';
+
+            if (fileData.fileType !== 'directory') {
+                try {
+                    content = FileSystemManager.readFile(fileData.filePath);
+                    const info = FileSystemManager.getInfo(fileData.filePath);
+                    extension = info.extension || extension;
+                } catch (e) {
+                    // File might not be readable
+                }
+            }
+
+            // Add to recycled items
+            const recycledItem = {
+                id: `recycled_file_${Date.now()}`,
+                label: fileData.fileName,
+                emoji: this.getFileEmoji(fileData.fileType, extension),
+                type: 'recycled_file',
+                originalPath: fileData.filePath,
+                fileType: fileData.fileType,
+                extension: extension,
+                content: content,
+                deletedAt: Date.now()
+            };
+
+            const recycledItems = StateManager.getState('recycledItems') || [];
+            recycledItems.push(recycledItem);
+            StateManager.setState('recycledItems', recycledItems, true);
+
+            // Delete from filesystem
+            if (fileData.fileType === 'directory') {
+                try {
+                    FileSystemManager.deleteDirectory(fileData.filePath, true);
+                } catch (e) {
+                    console.error('Failed to delete directory:', e);
+                }
+            } else {
+                try {
+                    FileSystemManager.deleteFile(fileData.filePath);
+                } catch (e) {
+                    console.error('Failed to delete file:', e);
+                }
+            }
+
+            this.playSound('recycle');
+            EventBus.emit('filesystem:changed');
+            this.refreshView();
+        } catch (err) {
+            console.error('[RecycleBin] Failed to handle file drop:', err);
+        }
+    }
+
+    getFileEmoji(fileType, extension) {
+        if (fileType === 'directory') return '📁';
+        switch (extension) {
+            case 'txt':
+            case 'md':
+                return '📝';
+            case 'png':
+            case 'jpg':
+            case 'bmp':
+                return '🖼️';
+            case 'exe':
+                return '⚙️';
+            case 'log':
+                return '📋';
+            default:
+                return '📄';
+        }
     }
 
     updateToolbarButtons(hasSelection) {
