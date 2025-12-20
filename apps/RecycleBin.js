@@ -252,10 +252,22 @@ class RecycleBin extends AppBase {
         // Setup drag and drop
         this.setupDragDrop();
 
-        // Subscribe to recycle bin updates
+        // Subscribe to recycle bin updates via event
         this.onEvent('recyclebin:update', () => {
             this.refreshView();
         });
+
+        // Also subscribe directly to state changes for more reliable updates
+        this._unsubscribeState = StateManager.subscribe('recycledItems', () => {
+            this.refreshView();
+        });
+    }
+
+    onClose() {
+        // Clean up state subscription
+        if (this._unsubscribeState) {
+            this._unsubscribeState();
+        }
     }
 
     renderEmptyView() {
