@@ -328,24 +328,49 @@ class ContextMenuRendererClass {
     async deleteFileIcon(icon) {
         const { filePath, fileType } = icon;
 
-        const confirmed = await SystemDialogs.confirm(`Delete "${icon.label}"?`, 'Confirm Delete');
+        const confirmed = await SystemDialogs.confirm(`Are you sure you want to send "${icon.label}" to the Recycle Bin?`, 'Confirm Delete');
         if (!confirmed) return;
 
         try {
+            // Read file content before deleting (for potential restore)
+            let content = '';
+            let extension = icon.extension || '';
+
+            if (fileType !== 'directory') {
+                try {
+                    content = FileSystemManager.readFile(filePath);
+                    const info = FileSystemManager.getInfo(filePath);
+                    extension = info.extension || extension;
+                } catch (e) {
+                    // File might not exist or be readable
+                }
+            }
+
+            // Add to recycled items with file info for restore
+            const recycledItem = {
+                id: `recycled_file_${Date.now()}`,
+                label: icon.label,
+                emoji: icon.emoji || '📄',
+                type: 'recycled_file',
+                originalPath: filePath,
+                fileType: fileType,
+                extension: extension,
+                content: content,
+                deletedAt: Date.now()
+            };
+
+            const recycledItems = StateManager.getState('recycledItems') || [];
+            recycledItems.push(recycledItem);
+            StateManager.setState('recycledItems', recycledItems, true);
+
+            // Delete from filesystem
             if (fileType === 'directory') {
-                // Try normal delete first
+                // Try normal delete first, then recursive if needed
                 try {
                     FileSystemManager.deleteDirectory(filePath);
                 } catch (e) {
                     if (e.message.includes('not empty')) {
-                        // Ask if user wants to delete recursively
-                        const deleteAll = await SystemDialogs.confirm(
-                            `"${icon.label}" is not empty. Delete all contents?`,
-                            'Confirm Delete'
-                        );
-                        if (deleteAll) {
-                            FileSystemManager.deleteDirectory(filePath, true);
-                        }
+                        FileSystemManager.deleteDirectory(filePath, true);
                     } else {
                         throw e;
                     }
@@ -353,6 +378,16 @@ class ContextMenuRendererClass {
             } else {
                 FileSystemManager.deleteFile(filePath);
             }
+
+            // Remove from file positions if tracked
+            const filePositions = StateManager.getState('filePositions') || {};
+            const fileId = `file_${icon.label}`;
+            if (filePositions[fileId]) {
+                delete filePositions[fileId];
+                StateManager.setState('filePositions', filePositions, true);
+            }
+
+            EventBus.emit('filesystem:changed');
         } catch (e) {
             await SystemDialogs.alert(`Error deleting: ${e.message}`, 'Error', 'error');
         }

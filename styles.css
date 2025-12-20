@@ -543,6 +543,20 @@ body {
     transition: transform 0.15s ease;
 }
 
+/* Desktop icon (recycle bin) drop target */
+.icon.drop-target {
+    background: rgba(0, 0, 128, 0.3) !important;
+    outline: 2px dashed var(--win95-blue) !important;
+    outline-offset: 2px;
+    transform: scale(1.1);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.icon.drop-target .icon-image {
+    transform: scale(1.2);
+    transition: transform 0.15s ease;
+}
+
 /* Dragging items styling */
 .mycomputer-item.dragging,
 .mycomputer-list-item.dragging {

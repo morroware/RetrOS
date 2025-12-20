@@ -74,8 +74,9 @@ export const DESKTOP = {
     ICON_WIDTH: 100,
     ICON_HEIGHT: 100,
     GRID_SIZE: 20,
-    FILE_ICONS_START_X: 120,
-    FILE_ICONS_START_Y: 10,
+    // File icons start in column 5 (after the 4 app icon columns at x: 20, 120, 220, 320)
+    FILE_ICONS_START_X: 420,
+    FILE_ICONS_START_Y: 20,
     FILE_ICON_SPACING: 90
 };
 
