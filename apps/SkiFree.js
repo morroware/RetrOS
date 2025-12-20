@@ -69,6 +69,7 @@ class SkiFree extends AppBase {
         this.distance = 0;
         this.score = 0;
         this.highScore = StorageManager.get('skifree_highscore') || 0;
+        this.lives = 3;
 
         // Obstacles
         this.obstacles = [];
@@ -171,6 +172,7 @@ class SkiFree extends AppBase {
                     <span class="skifree-menu-item" id="menuHelp">Help</span>
                 </div>
                 <div class="skifree-header">
+                    <span>Lives: <span class="skifree-stat" id="lives" style="color: #f66;">❤❤❤</span></span>
                     <span>Distance: <span class="skifree-stat" id="distance">0</span>m</span>
                     <span>Score: <span class="skifree-stat" id="score">0</span></span>
                     <span>Best: <span class="skifree-stat" id="highscore">${this.highScore}</span></span>
@@ -313,6 +315,7 @@ class SkiFree extends AppBase {
             'Space : Start/Restart\n' +
             'P : Pause\n\n' +
             'Tips:\n' +
+            '• You have 3 lives - crashes cost 1 life!\n' +
             '• Hit jumps for bonus points!\n' +
             '• Ski through flags for points\n' +
             '• Avoid trees and rocks\n' +
@@ -627,12 +630,10 @@ class SkiFree extends AppBase {
     }
 
     crashPlayer(obs) {
-        this.state = this.STATE.CRASHED;
-        this.player.speed = 0;
+        this.lives--;
         this.screenShake = 15;
         this.score = Math.max(0, this.score - 25);
         this.playSound('crash');
-        this.updateStateText('CRASH! -25 points');
 
         // Create crash particles
         for (let i = 0; i < 15; i++) {
@@ -680,6 +681,16 @@ class SkiFree extends AppBase {
             rotSpeed: 0.2 * (Math.random() < 0.5 ? 1 : -1),
             life: 50
         });
+
+        // Check if out of lives
+        if (this.lives <= 0) {
+            this.updateStateText('OUT OF LIVES! Press SPACE to restart');
+            this.gameOver(false);
+        } else {
+            this.state = this.STATE.CRASHED;
+            this.player.speed = 0;
+            this.updateStateText(`CRASH! ${this.lives} ${this.lives === 1 ? 'life' : 'lives'} left`);
+        }
     }
 
     activateYeti() {
@@ -800,11 +811,13 @@ class SkiFree extends AppBase {
         const scoreEl = this.getElement('#score');
         const speedEl = this.getElement('#speed');
         const highEl = this.getElement('#highscore');
+        const livesEl = this.getElement('#lives');
 
         if (distEl) distEl.textContent = Math.floor(this.distance);
         if (scoreEl) scoreEl.textContent = this.score;
         if (speedEl) speedEl.textContent = Math.floor(this.player.speed * 10);
         if (highEl) highEl.textContent = Math.max(this.highScore, this.score);
+        if (livesEl) livesEl.textContent = '❤'.repeat(this.lives) + '♡'.repeat(3 - this.lives);
     }
 
     updateStateText(text) {
@@ -1355,14 +1368,17 @@ class SkiFree extends AppBase {
 
         ctx.translate(0, -bounce);
 
-        // Body (white fur)
-        ctx.fillStyle = '#f8fafc';
+        // Body (gray-blue fur - visible against snow)
+        ctx.fillStyle = '#8b9eb3';
+        ctx.strokeStyle = '#4a5568';
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.ellipse(0, 5, 18, 22, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
 
         // Fur texture
-        ctx.strokeStyle = '#e2e8f0';
+        ctx.strokeStyle = '#6b7a8a';
         ctx.lineWidth = 2;
         for (let i = 0; i < 8; i++) {
             const angle = (i / 8) * Math.PI - Math.PI / 2;
@@ -1376,15 +1392,19 @@ class SkiFree extends AppBase {
 
         // Arms reaching forward
         const armWave = Math.sin(y.frame * Math.PI * 2) * 0.2;
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#8b9eb3';
 
         // Left arm
         ctx.save();
         ctx.translate(-16, -5);
         ctx.rotate(-0.8 + armWave);
+        ctx.fillStyle = '#8b9eb3';
+        ctx.strokeStyle = '#4a5568';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.ellipse(0, -15, 6, 18, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
         // Claws
         ctx.fillStyle = '#1f2937';
         for (let i = -1; i <= 1; i++) {
@@ -1400,10 +1420,13 @@ class SkiFree extends AppBase {
         ctx.save();
         ctx.translate(16, -5);
         ctx.rotate(0.8 - armWave);
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#8b9eb3';
+        ctx.strokeStyle = '#4a5568';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.ellipse(0, -15, 6, 18, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
         ctx.fillStyle = '#1f2937';
         for (let i = -1; i <= 1; i++) {
             ctx.beginPath();
@@ -1415,10 +1438,13 @@ class SkiFree extends AppBase {
         ctx.restore();
 
         // Head
-        ctx.fillStyle = '#f8fafc';
+        ctx.fillStyle = '#8b9eb3';
+        ctx.strokeStyle = '#4a5568';
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.ellipse(0, -22, 14, 12, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
 
         // Face
         // Eyes (angry, red)
@@ -1464,19 +1490,23 @@ class SkiFree extends AppBase {
         }
 
         // Horns/ears
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = '#6b7a8a';
+        ctx.strokeStyle = '#4a5568';
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(-10, -32);
         ctx.lineTo(-14, -40);
         ctx.lineTo(-6, -34);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(10, -32);
         ctx.lineTo(14, -40);
         ctx.lineTo(6, -34);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
 
         // Eating animation
         if (y.eating) {
@@ -1578,7 +1608,7 @@ class SkiFree extends AppBase {
         ctx.fillStyle = '#374151';
         ctx.font = '14px "Segoe UI", sans-serif';
         ctx.fillText('← → to steer   |   ↓ to speed up   |   F for maximum speed', w / 2, h / 2 + 80);
-        ctx.fillText('Collect flags (+50) and hit jumps (+100)', w / 2, h / 2 + 105);
+        ctx.fillText('You have 3 lives! Collect flags (+50) and hit jumps (+100)', w / 2, h / 2 + 105);
 
         // Warning
         ctx.fillStyle = '#dc2626';
@@ -1653,6 +1683,10 @@ class SkiFree extends AppBase {
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 36px "Segoe UI", sans-serif';
             ctx.fillText('GAME OVER', w / 2, h / 3);
+
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '16px "Segoe UI", sans-serif';
+            ctx.fillText('You ran out of lives!', w / 2, h / 3 + 35);
         }
 
         // Stats
