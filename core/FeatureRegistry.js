@@ -45,6 +45,17 @@ class FeatureRegistryClass {
      * @param {Object} overrideMeta - Optional metadata overrides
      */
     register(feature, overrideMeta = {}) {
+        // Validate feature object
+        if (!feature || typeof feature !== 'object') {
+            console.error('[FeatureRegistry] Invalid feature object:', feature);
+            return;
+        }
+
+        if (!feature.id) {
+            console.error('[FeatureRegistry] Feature missing id:', feature);
+            return;
+        }
+
         if (this.features.has(feature.id)) {
             console.warn(`[FeatureRegistry] Feature "${feature.id}" already registered`);
             return;
@@ -60,6 +71,7 @@ class FeatureRegistryClass {
         this.metadata.set(feature.id, meta);
 
         console.log(`[FeatureRegistry] Registered: ${feature.name} (${feature.id}) [${meta.category}]`);
+        console.log(`[FeatureRegistry] Total registered: ${this.features.size} features, ${this.metadata.size} metadata entries`);
 
         // Emit registration event
         EventBus.emit('feature:registered', { id: feature.id, name: feature.name });
@@ -70,7 +82,19 @@ class FeatureRegistryClass {
      * @param {FeatureBase[]} features - Array of feature instances
      */
     registerAll(features) {
-        features.forEach(feature => this.register(feature));
+        console.log(`[FeatureRegistry] registerAll called with ${features?.length || 0} features`);
+
+        if (!Array.isArray(features)) {
+            console.error('[FeatureRegistry] registerAll: features is not an array:', features);
+            return;
+        }
+
+        features.forEach((feature, index) => {
+            console.log(`[FeatureRegistry] Registering feature ${index + 1}/${features.length}: ${feature?.id || 'INVALID'}`);
+            this.register(feature);
+        });
+
+        console.log(`[FeatureRegistry] registerAll complete. Total: ${this.features.size} features`);
     }
 
     /**

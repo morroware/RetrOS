@@ -25,6 +25,16 @@ class FeaturesSettings extends AppBase {
         console.log('[FeaturesSettings] Features from registry:', features);
         console.log('[FeaturesSettings] Feature count:', features.length);
 
+        // Debug: If no features, log additional info
+        if (features.length === 0) {
+            console.error('[FeaturesSettings] WARNING: No features returned from registry!');
+            console.log('[FeaturesSettings] Checking FeatureRegistry state...');
+            const debugInfo = FeatureRegistry.getDebugInfo();
+            console.log('[FeaturesSettings] Registry debug info:', debugInfo);
+        } else {
+            console.log('[FeaturesSettings] Features loaded:', features.map(f => `${f.id} (${f.category})`));
+        }
+
         return `
             <div class="features-settings">
                 <div class="features-header">
