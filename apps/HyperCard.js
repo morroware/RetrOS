@@ -6,8 +6,8 @@ class HyperCard extends AppBase {
             id: 'hypercard',
             name: 'HyperCard',
             icon: '📇',
-            width: 800,
-            height: 640,
+            width: 720,
+            height: 540,
             resizable: true,
             category: 'accessories',
             showInMenu: true
@@ -100,8 +100,8 @@ class HyperCard extends AppBase {
                 <div class="hypercard-content">
                     <div class="hypercard-loading" id="loadingMsg">Loading Macintosh System 7...</div>
                     <iframe class="hypercard-iframe" id="hyperCardFrame"
-                            src="https://archive.org/details/HyperCardBootSystem7"
-                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-top-navigation"
+                            src="https://archive.org/embed/HyperCardBootSystem7"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
                             allowfullscreen webkitallowfullscreen mozallowfullscreen>
                     </iframe>
                 </div>
@@ -136,7 +136,7 @@ class HyperCard extends AppBase {
 
     goHome() {
         const frame = this.getElement('#hyperCardFrame');
-        frame.src = 'https://archive.org/details/HyperCardBootSystem7';
+        frame.src = 'https://archive.org/embed/HyperCardBootSystem7';
         this.updateStatus('Loading home...');
     }
 
