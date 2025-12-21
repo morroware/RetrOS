@@ -199,29 +199,30 @@ async function initializeOS(onProgress = () => {}) {
         FeatureRegistry.registerAll(featuresToRegister);
     });
 
-    // Initialize all registered features (respects dependencies and enabled state)
-    onProgress(45, 'Initializing features...');
-    await initComponent('FeatureRegistry.initializeAll', async () => {
-        await FeatureRegistry.initializeAll();
-    });
-
     // === Phase 2.5: Load Plugins ===
     console.log('[RetrOS] Phase 2.5: Plugin System');
-    onProgress(50, 'Loading plugins...');
+    onProgress(45, 'Loading plugins...');
     await initComponent('PluginLoader', async () => {
         // Add DVD Bouncer plugin to manifest
-        // Use absolute path from root to avoid resolution issues
+        // Use path relative to PluginLoader's location in /core/
         PluginLoader.addToManifest({
             path: '../plugins/features/dvd-bouncer/index.js',
             enabled: true
         });
 
-        // Load all plugins from manifest
+        // Load all plugins (registers plugin features with FeatureRegistry)
         await PluginLoader.loadAllPlugins();
 
         // Log status for debugging
         console.log('[RetrOS] Plugins loaded:');
         PluginLoader.logStatus();
+    });
+
+    // === Phase 2.7: Initialize All Features (Core + Plugin) ===
+    console.log('[RetrOS] Phase 2.7: Initializing all features');
+    onProgress(50, 'Initializing features...');
+    await initComponent('FeatureRegistry.initializeAll', async () => {
+        await FeatureRegistry.initializeAll();
     });
 
     // === Phase 3: UI Renderers ===
