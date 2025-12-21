@@ -102,9 +102,9 @@ class Asteroids extends AppBase {
         this.canvas = this.getElement('#gameCanvas');
         this.ctx = this.canvas.getContext('2d');
 
-        // Handle resizing properly (though window is fixed, internal canvas needs exact pixels)
-        this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
+        // Use fixed canvas dimensions to ensure consistent game area
+        this.canvas.width = 680;
+        this.canvas.height = 480;
 
         // Load high score from state
         const savedHighScore = StateManager.getState('asteroids_highscore');
@@ -527,11 +527,11 @@ class Asteroids extends AppBase {
             // Rotate ship
             this.ship.a += this.ship.rot;
 
-            // Screen wrapping
-            if (this.ship.x < 0 - this.ship.r) this.ship.x = width + this.ship.r;
-            else if (this.ship.x > width + this.ship.r) this.ship.x = 0 - this.ship.r;
-            if (this.ship.y < 0 - this.ship.r) this.ship.y = height + this.ship.r;
-            else if (this.ship.y > height + this.ship.r) this.ship.y = 0 - this.ship.r;
+            // Screen wrapping - keep within visible bounds
+            if (this.ship.x < 0) this.ship.x = width;
+            else if (this.ship.x > width) this.ship.x = 0;
+            if (this.ship.y < 0) this.ship.y = height;
+            else if (this.ship.y > height) this.ship.y = 0;
         }
 
         // --- ASTEROIDS LOGIC ---
@@ -558,11 +558,11 @@ class Asteroids extends AppBase {
             roid.x += roid.xv;
             roid.y += roid.yv;
 
-            // Handle edge of screen
-            if (roid.x < 0 - roid.r) roid.x = width + roid.r;
-            else if (roid.x > width + roid.r) roid.x = 0 - roid.r;
-            if (roid.y < 0 - roid.r) roid.y = height + roid.r;
-            else if (roid.y > height + roid.r) roid.y = 0 - roid.r;
+            // Handle edge of screen - keep within visible bounds
+            if (roid.x < 0) roid.x = width;
+            else if (roid.x > width) roid.x = 0;
+            if (roid.y < 0) roid.y = height;
+            else if (roid.y > height) roid.y = 0;
         }
 
         // --- LASER LOGIC ---
