@@ -95,14 +95,14 @@ class HyperCard extends AppBase {
                     <button class="hypercard-btn" id="btnHome" title="Home">🏠</button>
                     <button class="hypercard-btn" id="btnRefresh" title="Refresh">↻</button>
                     <div class="hypercard-info">
-                        <span>HyperCard Simulator - The software erector set</span>
+                        <span>Classic Macintosh System 7 with HyperCard 2.4</span>
                     </div>
                 </div>
 
                 <div class="hypercard-content">
-                    <div class="hypercard-loading" id="loadingMsg">Loading HyperCard Simulator...</div>
+                    <div class="hypercard-loading" id="loadingMsg">Loading Macintosh System 7...</div>
                     <iframe class="hypercard-iframe" id="hyperCardFrame"
-                            src="https://hcsimulator.com"
+                            src="https://archive.org/embed/HyperCardBootSystem7"
                             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads">
                     </iframe>
                 </div>
@@ -132,12 +132,12 @@ class HyperCard extends AppBase {
         });
 
         // Update initial status
-        this.updateStatus('Loading HyperCard Simulator...');
+        this.updateStatus('Loading Macintosh System 7...');
     }
 
     goHome() {
         const frame = this.getElement('#hyperCardFrame');
-        frame.src = 'https://hcsimulator.com';
+        frame.src = 'https://archive.org/embed/HyperCardBootSystem7';
         this.updateStatus('Loading home...');
     }
 
