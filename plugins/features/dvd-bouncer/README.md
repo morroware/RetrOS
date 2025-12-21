@@ -16,31 +16,39 @@ A nostalgic bouncing DVD logo screensaver that brings back memories of the class
 
 ## Installation
 
-### Method 1: Using PluginLoader (Recommended)
+The DVD Bouncer plugin is included by default in RetrOS. It's automatically registered during the boot sequence in Phase 2.5 (Plugin System).
+
+### Manual Installation (for custom plugins)
+
+If you're creating your own plugin based on DVD Bouncer, here's how to register it:
 
 ```javascript
-import PluginLoader from './core/PluginLoader.js';
+// In index.js, Phase 2.5: Load Plugins
+await initComponent('PluginLoader', async () => {
+    const manifest = PluginLoader.getPluginManifest();
 
-// Add to manifest
-PluginLoader.addToManifest({
-    path: './plugins/features/dvd-bouncer/index.js',
-    enabled: true
+    // Add your plugin (path is relative to /core/ directory)
+    manifest.plugins.push({
+        path: '../plugins/features/your-plugin/index.js',
+        enabled: true
+    });
+
+    PluginLoader.savePluginManifest(manifest);
+    await PluginLoader.loadAllPlugins();
 });
-
-// Load all plugins
-await PluginLoader.loadAllPlugins();
 ```
 
-### Method 2: Manual Console Testing
+### Console Testing
 
 ```javascript
 // In browser console
 import PluginLoader from './core/PluginLoader.js';
-PluginLoader.addToManifest({
-    path: './plugins/features/dvd-bouncer/index.js',
-    enabled: true
-});
-await PluginLoader.loadAllPlugins();
+
+// Check if DVD Bouncer is loaded
+PluginLoader.isLoaded('dvd-bouncer-plugin');
+
+// Get plugin status
+PluginLoader.logStatus();
 ```
 
 ## Usage
@@ -84,7 +92,9 @@ The plugin emits the following events that other features can subscribe to:
 Emitted when the screensaver starts.
 
 ```javascript
-EventBus.subscribe('dvd-bouncer:started', (data) => {
+import EventBus from './core/EventBus.js';
+
+EventBus.on('dvd-bouncer:started', (data) => {
     console.log('Screensaver started at:', data.timestamp);
 });
 ```
@@ -93,7 +103,7 @@ EventBus.subscribe('dvd-bouncer:started', (data) => {
 Emitted when the screensaver stops, includes corner hit count.
 
 ```javascript
-EventBus.subscribe('dvd-bouncer:stopped', (data) => {
+EventBus.on('dvd-bouncer:stopped', (data) => {
     console.log(`Screensaver stopped. Corner hits: ${data.cornerHits}`);
 });
 ```
@@ -102,7 +112,7 @@ EventBus.subscribe('dvd-bouncer:stopped', (data) => {
 Emitted each time the logo hits a perfect corner.
 
 ```javascript
-EventBus.subscribe('dvd-bouncer:corner-hit', (data) => {
+EventBus.on('dvd-bouncer:corner-hit', (data) => {
     console.log(`Corner hit #${data.count}!`);
 });
 ```

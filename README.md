@@ -10,7 +10,7 @@
 [![No Dependencies](https://img.shields.io/badge/Dependencies-None-brightgreen?style=flat-square)](https://github.com/morroware/RetrOS)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-[Features](#features) | [Installation](#installation) | [Usage](#usage) | [Applications](#applications) | [Easter Eggs](#easter-eggs) | [Architecture](#architecture)
+[Features](#features) | [Installation](#installation) | [Usage](#usage) | [Applications](#applications) | [Plugin System](#plugin-system) | [Easter Eggs](#easter-eggs) | [Architecture](#architecture)
 
 </div>
 
@@ -23,8 +23,9 @@ RetrOS is a fully-functional Windows 95 desktop environment simulator built enti
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
 **Project Stats:**
-- **~30,900 lines of code** across 43+ JavaScript files
+- **~32,500 lines of code** across 47+ JavaScript files
 - **29 fully-functional applications**
+- **Extensible plugin system** with example DVD Bouncer screensaver
 - **Zero external dependencies** - pure vanilla JavaScript
 
 ---
@@ -371,6 +372,97 @@ Unlock achievements by performing various actions:
 
 Achievements persist between sessions and display as toast notifications when unlocked.
 
+### DVD Bouncer Screensaver
+
+A nostalgic bouncing DVD logo screensaver plugin that brings back memories of the classic DVD player experience!
+
+**Features:**
+- Classic bouncing DVD logo animation
+- Color changes on every wall bounce
+- Corner hit tracking with celebration messages
+- Configurable speed, size, and idle timeout
+- Auto-start after period of inactivity
+
+**Configuration (Settings > Features > DVD Bouncer):**
+| Setting | Range | Description |
+|---------|-------|-------------|
+| Bounce Speed | 1-10 | How fast the logo bounces |
+| Logo Size | 40-200px | Size of the DVD logo |
+| Idle Timeout | 10-300s | Seconds before auto-start |
+| Auto-start | On/Off | Enable idle activation |
+
+**Tips:**
+- Wait for the legendary corner hit!
+- Every 5th corner hit gets a special message
+- Click anywhere to dismiss the screensaver
+
+---
+
+## Plugin System
+
+RetrOS features a powerful plugin system for extending functionality without modifying core code.
+
+### Architecture
+
+```
+plugins/
+├── features/                    # Feature plugins
+│   └── dvd-bouncer/            # Example plugin
+│       ├── index.js            # Plugin manifest
+│       ├── DVDBouncerFeature.js # Feature implementation
+│       └── README.md           # Documentation
+└── apps/                        # App plugins (future)
+```
+
+### Creating Plugins
+
+Plugins can provide new features, apps, and integrate with existing systems:
+
+1. **Create a feature class** extending `FeatureBase`
+2. **Create a plugin manifest** with metadata and exports
+3. **Register in boot sequence** via `PluginLoader`
+
+See the [Developer Guide](DEVELOPER_GUIDE.md#plugin-system) for comprehensive documentation.
+
+### Plugin Features
+
+| Capability | Description |
+|------------|-------------|
+| **FeatureBase** | Base class with lifecycle hooks, config management, event helpers |
+| **FeatureRegistry** | Central registry with dependency resolution |
+| **PluginLoader** | Dynamic loading from manifest |
+| **Settings UI** | Auto-generated settings from feature definitions |
+| **Event Integration** | Emit/subscribe to system events |
+| **Auto-cleanup** | Handlers automatically cleaned on disable |
+
+### Example: DVD Bouncer Plugin
+
+```javascript
+// plugins/features/dvd-bouncer/DVDBouncerFeature.js
+import FeatureBase from '../../../core/FeatureBase.js';
+
+class DVDBouncerFeature extends FeatureBase {
+    constructor() {
+        super({
+            id: 'dvd-bouncer',
+            name: 'DVD Bouncer',
+            category: 'plugin',
+            config: { speed: 2, logoSize: 80, idleTimeout: 60000 },
+            settings: [/* UI definitions */]
+        });
+    }
+
+    async initialize() {
+        this.subscribe('window:open', () => this.resetIdleTimer());
+        this.addHandler(document, 'mousemove', () => this.onUserActivity());
+        this.startIdleMonitoring();
+    }
+
+    start() { /* Create UI, start animation */ }
+    stop() { /* Clean up, emit events */ }
+}
+```
+
 ---
 
 ## Easter Eggs
@@ -481,16 +573,19 @@ RetrOS/
 │   ├── TaskManager.js      # Task manager
 │   └── Help.js             # Help system
 │
-├── core/                   # Core system modules (7 modules)
+├── core/                   # Core system modules (10 modules)
 │   ├── EventBus.js         # Pub/sub event system
 │   ├── StateManager.js     # Centralized state management
 │   ├── WindowManager.js    # Window lifecycle & operations
 │   ├── StorageManager.js   # LocalStorage abstraction
 │   ├── FileSystemManager.js # Virtual file system
 │   ├── IconSystem.js       # FontAwesome + emoji icon support
-│   └── Constants.js        # Centralized configuration
+│   ├── Constants.js        # Centralized configuration
+│   ├── PluginLoader.js     # Plugin loading & management
+│   ├── FeatureRegistry.js  # Feature registration & lifecycle
+│   └── FeatureBase.js      # Base class for features
 │
-├── features/               # Optional system features (7 modules)
+├── features/               # Core system features (7 modules)
 │   ├── ClippyAssistant.js  # Clippy helper popup
 │   ├── DesktopPet.js       # Desktop pet companion
 │   ├── Screensaver.js      # Screensaver module
@@ -498,6 +593,10 @@ RetrOS/
 │   ├── AchievementSystem.js # Achievement tracking
 │   ├── SoundSystem.js      # Web Audio sound effects
 │   └── SystemDialogs.js    # Windows 95-style dialogs
+│
+├── plugins/                # Third-party plugins
+│   └── features/           # Feature plugins
+│       └── dvd-bouncer/    # DVD Bouncer screensaver plugin
 │
 └── ui/                     # UI rendering components (4 renderers)
     ├── DesktopRenderer.js  # Desktop icons
