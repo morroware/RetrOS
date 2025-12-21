@@ -167,12 +167,28 @@ class AppRegistryClass {
         ]);
 
         // --- Settings ---
-        this.registerAll([
-            new ControlPanel(),
-            new DisplayProperties(),
-            new SoundSettings(),
-            new FeaturesSettings(),
-        ]);
+        // Register each settings app individually with error handling
+        // to identify if any fail to load
+        console.log('[AppRegistry] Registering Settings apps...');
+
+        try { this.register(new ControlPanel()); }
+        catch (e) { console.error('[AppRegistry] FAILED: ControlPanel:', e); }
+
+        try { this.register(new DisplayProperties()); }
+        catch (e) { console.error('[AppRegistry] FAILED: DisplayProperties:', e); }
+
+        try { this.register(new SoundSettings()); }
+        catch (e) { console.error('[AppRegistry] FAILED: SoundSettings:', e); }
+
+        try {
+            console.log('[AppRegistry] Creating FeaturesSettings...');
+            const fs = new FeaturesSettings();
+            console.log('[AppRegistry] FeaturesSettings created successfully:', fs.id);
+            this.register(fs);
+        } catch (e) {
+            console.error('[AppRegistry] FAILED: FeaturesSettings:', e);
+            console.error('[AppRegistry] FeaturesSettings error stack:', e.stack);
+        }
 
         // --- Hidden System Apps ---
         this.registerAll([
