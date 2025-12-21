@@ -32,6 +32,9 @@ import DesktopPet from './features/DesktopPet.js';
 import Screensaver from './features/Screensaver.js';
 import SystemDialogs from './features/SystemDialogs.js';
 
+// === PLUGIN SYSTEM ===
+import PluginLoader from './core/PluginLoader.js';
+
 // Log successful module loading
 console.log('[RetrOS] All modules imported successfully');
 
@@ -200,6 +203,24 @@ async function initializeOS(onProgress = () => {}) {
     onProgress(45, 'Initializing features...');
     await initComponent('FeatureRegistry.initializeAll', async () => {
         await FeatureRegistry.initializeAll();
+    });
+
+    // === Phase 2.5: Load Plugins ===
+    console.log('[RetrOS] Phase 2.5: Plugin System');
+    onProgress(50, 'Loading plugins...');
+    await initComponent('PluginLoader', async () => {
+        // Add DVD Bouncer plugin to manifest
+        PluginLoader.addToManifest({
+            path: './plugins/features/dvd-bouncer/index.js',
+            enabled: true
+        });
+
+        // Load all plugins from manifest
+        await PluginLoader.loadAllPlugins();
+
+        // Log status for debugging
+        console.log('[RetrOS] Plugins loaded:');
+        PluginLoader.logStatus();
     });
 
     // === Phase 3: UI Renderers ===
