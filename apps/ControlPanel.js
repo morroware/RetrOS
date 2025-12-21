@@ -23,8 +23,10 @@ class ControlPanel extends AppBase {
     }
 
     onOpen() {
+        console.log('[ControlPanel] Opening Control Panel...');
         const settings = StateManager.getState('settings');
         const desktopBg = StorageManager.get('desktopBg') || '#008080';
+        console.log('[ControlPanel] Rendering with settings:', settings);
 
         return `
             <style>
@@ -424,9 +426,11 @@ class ControlPanel extends AppBase {
 
         // Settings app links
         const settingsLinks = this.getElements('.control-link');
+        console.log('[ControlPanel] Found', settingsLinks.length, 'settings links:', Array.from(settingsLinks).map(l => l.dataset.app));
         settingsLinks.forEach(link => {
             this.addHandler(link, 'click', (e) => {
                 const appId = e.currentTarget.dataset.app;
+                console.log('[ControlPanel] Settings link clicked:', appId);
                 if (appId) {
                     AppRegistry.launch(appId);
                 }

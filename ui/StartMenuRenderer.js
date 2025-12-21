@@ -153,8 +153,17 @@ class StartMenuRendererClass {
         const settingsSubmenu = this.element.querySelector('[data-app="controlpanel"]')?.closest('.start-submenu');
         if (settingsSubmenu) {
             const items = settingsSubmenu.querySelectorAll('[data-app]');
-            console.log('[StartMenuRenderer] Settings submenu items in DOM:',
-                Array.from(items).map(i => i.dataset.app));
+            const itemList = Array.from(items).map(i => i.dataset.app);
+            console.log('[StartMenuRenderer] Settings submenu items in DOM:', itemList);
+
+            // Verify all expected items are present
+            const expected = ['controlpanel', 'display', 'sounds', 'features-settings'];
+            const missing = expected.filter(id => !itemList.includes(id));
+            if (missing.length > 0) {
+                console.error('[StartMenuRenderer] MISSING Settings items:', missing);
+            } else {
+                console.log('[StartMenuRenderer] All 4 Settings items present ✓');
+            }
         } else {
             console.error('[StartMenuRenderer] Settings submenu NOT found in DOM!');
         }
@@ -355,15 +364,10 @@ class StartMenuRendererClass {
                 }
             });
 
-            trigger.addEventListener('mouseleave', () => {
-                const submenu = trigger.querySelector(':scope > .start-submenu');
-                if (submenu) {
-                    // Reset positioning when leaving
-                    submenu.style.left = '';
-                    submenu.style.top = '';
-                    submenu.style.maxHeight = '';
-                }
-            });
+            // Note: We intentionally don't reset positioning on mouseleave
+            // because the submenu is a child of the trigger - resetting position
+            // while hovering the submenu would cause it to jump away.
+            // The CSS handles hiding the submenu when the parent loses hover state.
         });
     }
 
@@ -383,6 +387,11 @@ class StartMenuRendererClass {
         // Position submenu to the right of the trigger
         let left = triggerRect.right;
         let top = triggerRect.top;
+
+        // Debug: log submenu info
+        const triggerName = trigger.querySelector('span:not(.submenu-arrow):not(.start-menu-icon)')?.textContent || 'unknown';
+        const itemCount = submenu.querySelectorAll('.start-menu-item').length;
+        console.log(`[StartMenuRenderer] Positioning submenu for "${triggerName}" with ${itemCount} items`);
 
         // Temporarily show to measure
         const wasHidden = getComputedStyle(submenu).display === 'none';

@@ -171,7 +171,8 @@ async function initializeOS(onProgress = () => {}) {
 
     // Register all features with FeatureRegistry
     initComponent('FeatureRegistry', () => {
-        FeatureRegistry.registerAll([
+        // Debug: Log features before registration
+        const featuresToRegister = [
             SoundSystem,
             AchievementSystem,
             SystemDialogs,
@@ -179,7 +180,20 @@ async function initializeOS(onProgress = () => {}) {
             ClippyAssistant,
             DesktopPet,
             EasterEggs
-        ]);
+        ];
+
+        console.log('[RetrOS] Features to register:', featuresToRegister.map(f => f?.id || 'UNDEFINED'));
+
+        // Verify each feature is valid
+        featuresToRegister.forEach((feature, i) => {
+            if (!feature) {
+                console.error(`[RetrOS] Feature at index ${i} is undefined/null!`);
+            } else if (!feature.id) {
+                console.error(`[RetrOS] Feature at index ${i} has no id:`, feature);
+            }
+        });
+
+        FeatureRegistry.registerAll(featuresToRegister);
     });
 
     // Initialize all registered features (respects dependencies and enabled state)
