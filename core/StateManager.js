@@ -17,26 +17,14 @@ const DEFAULT_ICONS = [
     { id: 'mycomputer', label: 'My Computer', emoji: '💻', type: 'app', x: 20, y: 20 },
     { id: 'recyclebin', label: 'Recycle Bin', emoji: '🗑️', type: 'app', x: 20, y: 110 },
     { id: 'terminal', label: 'Terminal', emoji: '📟', type: 'app', x: 20, y: 200 },
-
-    // --- COLUMN 2: Productivity & Tools (x: 120) ---
-    { id: 'notepad', label: 'Notepad', emoji: '📝', type: 'app', x: 120, y: 20 },
-    { id: 'paint', label: 'Paint', emoji: '🖌️', type: 'app', x: 120, y: 110 },
-    { id: 'calculator', label: 'Calculator', emoji: '🔢', type: 'app', x: 120, y: 200 },
-    { id: 'imagegen', label: 'Image Gen', emoji: '🎨', url: 'https://sethmorrow.com/imagegen', x: 120, y: 290, type: 'link' },
-    { id: 'ciphers', label: 'Cipher Decoder', emoji: '🔍', url: 'https://sethmorrow.com/ciphers', x: 120, y: 380, type: 'link' },
+    { id: 'ciphers', label: 'Cipher Decoder', emoji: '🔍', url: 'https://sethmorrow.com/ciphers', x: 20, y: 290, type: 'link' },
 
     // --- COLUMN 3: Content / "My Documents" (x: 220) ---
-    { id: 'music', label: 'Music', emoji: '🎵', url: 'https://sethmorrow.com/music', x: 220, y: 20, type: 'link' },
-    { id: 'videos', label: 'Videos', emoji: '📺', url: 'https://sethmorrow.com/videos', x: 220, y: 110, type: 'link' },
-    { id: 'books', label: 'Books', emoji: '📚', url: 'https://sethmorrow.com/books', x: 220, y: 200, type: 'link' },
-    { id: 'audiobooks', label: 'Audiobooks', emoji: '🎧', url: 'https://sethmorrow.com/audiobooks', x: 220, y: 290, type: 'link' },
+    { id: 'music', label: 'Music', emoji: '🎵', url: 'https://sethmorrow.com/music', x: 20, y: 380, type: 'link' },
+    { id: 'videos', label: 'Videos', emoji: '📺', url: 'https://sethmorrow.com/videos', x: 20, y: 470, type: 'link' },
+    { id: 'books', label: 'Books', emoji: '📚', url: 'https://sethmorrow.com/books', x: 20, y: 560, type: 'link' },
+    { id: 'audiobooks', label: 'Audiobooks', emoji: '🎧', url: 'https://sethmorrow.com/audiobooks', x: 20, y: 650, type: 'link' },
 
-    // --- COLUMN 4: Games (x: 320) ---
-    { id: 'solitaire', label: 'Solitaire', emoji: '🃏', type: 'app', x: 320, y: 20 },
-    { id: 'minesweeper', label: 'Minesweeper', emoji: '💣', type: 'app', x: 320, y: 110 },
-    { id: 'snake', label: 'Snake', emoji: '🐍', type: 'app', x: 320, y: 200 },
-    { id: 'asteroids', label: 'Asteroids', emoji: '🚀', type: 'app', x: 320, y: 290 },
-    { id: 'doom', label: 'DOOM', emoji: '👹', type: 'app', x: 320, y: 380 }
 ];
 
 
