@@ -248,6 +248,7 @@ class FeatureRegistryClass {
      * @returns {Object[]}
      */
     getAll() {
+        console.log('[FeatureRegistry] getAll() - metadata size:', this.metadata.size, 'features size:', this.features.size);
         // Return metadata merged with current feature state
         return Array.from(this.metadata.values()).map(meta => {
             const feature = this.features.get(meta.id);
