@@ -210,8 +210,9 @@ async function initializeOS(onProgress = () => {}) {
     onProgress(50, 'Loading plugins...');
     await initComponent('PluginLoader', async () => {
         // Add DVD Bouncer plugin to manifest
+        // Use absolute path from root to avoid resolution issues
         PluginLoader.addToManifest({
-            path: './plugins/features/dvd-bouncer/index.js',
+            path: '../plugins/features/dvd-bouncer/index.js',
             enabled: true
         });
 
