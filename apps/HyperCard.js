@@ -6,8 +6,8 @@ class HyperCard extends AppBase {
             id: 'hypercard',
             name: 'HyperCard',
             icon: '📇',
-            width: 800,
-            height: 600,
+            width: 1024,
+            height: 768,
             resizable: true,
             category: 'accessories',
             showInMenu: true
@@ -58,9 +58,7 @@ class HyperCard extends AppBase {
                 }
                 .hypercard-content {
                     flex: 1;
-                    background: #fff;
-                    border: 2px inset #808080;
-                    margin: 4px;
+                    background: #000;
                     position: relative;
                     overflow: hidden;
                 }
