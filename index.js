@@ -279,8 +279,8 @@ function applySettings() {
         desktop.style.backgroundColor = savedBg;
     }
 
-    // Apply wallpaper pattern if saved
-    const savedWallpaper = StorageManager.get('desktopWallpaper');
+    // Apply wallpaper pattern (default: space)
+    const savedWallpaper = StorageManager.get('desktopWallpaper') ?? 'space';
     if (savedWallpaper && desktop) {
         const WALLPAPER_PATTERNS = {
             'clouds': `
@@ -318,8 +318,8 @@ function applySettings() {
         }
     }
 
-    // Apply color scheme if saved
-    const colorScheme = StorageManager.get('colorScheme');
+    // Apply color scheme (default: slate)
+    const colorScheme = StorageManager.get('colorScheme') ?? 'slate';
     if (colorScheme && colorScheme !== 'win95') {
         const COLOR_SCHEMES = {
             highcontrast: { window: '#000000', titlebar: '#800080' },

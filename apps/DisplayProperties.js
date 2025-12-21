@@ -148,12 +148,12 @@ class DisplayProperties extends AppBase {
     onOpen() {
         // Load all saved settings
         const currentBg = StorageManager.get('desktopBg') || '#008080';
-        const wallpaper = StorageManager.get('desktopWallpaper') || '';
+        const wallpaper = StorageManager.get('desktopWallpaper') ?? 'space';
         const crtEffect = StateManager.getState('settings.crtEffect');
         const screensaverDelay = StateManager.getState('settings.screensaverDelay') || 300000;
         const screensaverType = StorageManager.get('screensaverType') || 'toasters';
         const energySaving = StorageManager.get('energySaving') || false;
-        const colorScheme = StorageManager.get('colorScheme') || 'win95';
+        const colorScheme = StorageManager.get('colorScheme') ?? 'slate';
         const windowAnimations = StorageManager.get('windowAnimations') !== false;
         const menuShadows = StorageManager.get('menuShadows') !== false;
         const smoothScrolling = StorageManager.get('smoothScrolling') !== false;
