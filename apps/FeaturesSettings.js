@@ -368,115 +368,122 @@ class FeaturesSettings extends AppBase {
     }
 
     onMount() {
-        // Handle feature toggle
-        this.addHandler('.toggle-switch', 'change', async (e) => {
-            const featureId = e.target.dataset.feature;
-            const enabled = e.target.checked;
+        // Use event delegation on the window content for all handlers
+        const content = this.getElement();
+        if (!content) return;
 
-            try {
-                if (enabled) {
-                    await FeatureRegistry.enable(featureId);
-                } else {
-                    await FeatureRegistry.disable(featureId);
+        // Single delegated handler for all interactions
+        this.addHandler(content, 'change', async (e) => {
+            // Handle feature toggle switches
+            if (e.target.classList.contains('toggle-switch')) {
+                const featureId = e.target.dataset.feature;
+                const enabled = e.target.checked;
+
+                try {
+                    if (enabled) {
+                        await FeatureRegistry.enable(featureId);
+                    } else {
+                        await FeatureRegistry.disable(featureId);
+                    }
+
+                    // Update card appearance
+                    const card = e.target.closest('.feature-card');
+                    if (card) {
+                        card.classList.toggle('disabled', !enabled);
+                    }
+                } catch (error) {
+                    console.error('Failed to toggle feature:', error);
+                    // Revert the toggle
+                    e.target.checked = !enabled;
+                    EventBus.emit('dialog:alert', {
+                        title: 'Error',
+                        message: error.message,
+                        icon: 'error'
+                    });
+                }
+                return;
+            }
+
+            // Handle setting checkboxes
+            if (e.target.closest('.feature-settings') && e.target.type === 'checkbox') {
+                const featureId = e.target.dataset.feature;
+                const key = e.target.dataset.key;
+                const value = e.target.checked;
+                this.updateFeatureSetting(featureId, key, value);
+                return;
+            }
+
+            // Handle setting number inputs
+            if (e.target.closest('.feature-settings') && e.target.type === 'number') {
+                const featureId = e.target.dataset.feature;
+                const key = e.target.dataset.key;
+                const transform = e.target.dataset.transform;
+                let value = parseFloat(e.target.value);
+
+                if (transform === 'milliseconds') {
+                    value = value * 1000;
+                }
+                this.updateFeatureSetting(featureId, key, value);
+                return;
+            }
+
+            // Handle setting selects
+            if (e.target.closest('.feature-settings') && e.target.tagName === 'SELECT') {
+                const featureId = e.target.dataset.feature;
+                const key = e.target.dataset.key;
+                const value = e.target.value;
+                this.updateFeatureSetting(featureId, key, value);
+                return;
+            }
+        });
+
+        // Handle input events (for range sliders)
+        this.addHandler(content, 'input', (e) => {
+            if (e.target.closest('.feature-settings') && e.target.type === 'range') {
+                const featureId = e.target.dataset.feature;
+                const key = e.target.dataset.key;
+                const value = parseFloat(e.target.value);
+
+                // Update displayed value
+                const valueDisplay = e.target.nextElementSibling;
+                if (valueDisplay) {
+                    valueDisplay.textContent = value;
                 }
 
-                // Update card appearance
+                this.updateFeatureSetting(featureId, key, value);
+            }
+        });
+
+        // Handle click events
+        this.addHandler(content, 'click', (e) => {
+            // Handle expand/collapse settings
+            if (e.target.classList.contains('feature-expand')) {
                 const card = e.target.closest('.feature-card');
                 if (card) {
-                    card.classList.toggle('disabled', !enabled);
+                    card.classList.toggle('expanded');
+                    e.target.textContent = card.classList.contains('expanded')
+                        ? 'Settings ▲'
+                        : 'Settings ▼';
                 }
-            } catch (error) {
-                console.error('Failed to toggle feature:', error);
-                // Revert the toggle
-                e.target.checked = !enabled;
-                EventBus.emit('dialog:alert', {
-                    title: 'Error',
-                    message: error.message,
-                    icon: 'error'
-                });
-            }
-        });
-
-        // Handle expand/collapse settings
-        this.addHandler('.feature-expand', 'click', (e) => {
-            const card = e.target.closest('.feature-card');
-            if (card) {
-                card.classList.toggle('expanded');
-                e.target.textContent = card.classList.contains('expanded')
-                    ? 'Settings ▲'
-                    : 'Settings ▼';
-            }
-        });
-
-        // Handle category switching
-        this.addHandler('.feature-category', 'click', (e) => {
-            const category = e.target.closest('.feature-category').dataset.category;
-
-            // Update active state
-            this.getElement('.feature-category.active')?.classList.remove('active');
-            e.target.closest('.feature-category').classList.add('active');
-
-            // Re-render feature list
-            const features = FeatureRegistry.getAll();
-            const listContainer = this.getElement('.features-list');
-            if (listContainer) {
-                listContainer.innerHTML = this.renderFeatureList(features, category);
-                // Re-attach handlers for new elements
-                this.attachSettingHandlers();
-            }
-        });
-
-        // Attach handlers for settings inputs
-        this.attachSettingHandlers();
-    }
-
-    attachSettingHandlers() {
-        // Handle setting changes for checkboxes
-        this.addHandler('.feature-settings input[type="checkbox"]', 'change', (e) => {
-            const featureId = e.target.dataset.feature;
-            const key = e.target.dataset.key;
-            const value = e.target.checked;
-
-            this.updateFeatureSetting(featureId, key, value);
-        });
-
-        // Handle setting changes for range/slider
-        this.addHandler('.feature-settings input[type="range"]', 'input', (e) => {
-            const featureId = e.target.dataset.feature;
-            const key = e.target.dataset.key;
-            const value = parseFloat(e.target.value);
-
-            // Update displayed value
-            const valueDisplay = e.target.nextElementSibling;
-            if (valueDisplay) {
-                valueDisplay.textContent = value;
+                return;
             }
 
-            this.updateFeatureSetting(featureId, key, value);
-        });
+            // Handle category switching
+            const categoryEl = e.target.closest('.feature-category');
+            if (categoryEl) {
+                const category = categoryEl.dataset.category;
 
-        // Handle setting changes for number input
-        this.addHandler('.feature-settings input[type="number"]', 'change', (e) => {
-            const featureId = e.target.dataset.feature;
-            const key = e.target.dataset.key;
-            const transform = e.target.dataset.transform;
-            let value = parseFloat(e.target.value);
+                // Update active state
+                this.getElement('.feature-category.active')?.classList.remove('active');
+                categoryEl.classList.add('active');
 
-            // Apply transform if needed
-            if (transform === 'milliseconds') {
-                value = value * 1000;
+                // Re-render feature list
+                const features = FeatureRegistry.getAll();
+                const listContainer = this.getElement('.features-list');
+                if (listContainer) {
+                    listContainer.innerHTML = this.renderFeatureList(features, category);
+                }
             }
-
-            this.updateFeatureSetting(featureId, key, value);
-        });
-
-        // Handle setting changes for select
-        this.addHandler('.feature-settings select', 'change', (e) => {
-            const featureId = e.target.dataset.feature;
-            const key = e.target.dataset.key;
-            const value = e.target.value;
-
-            this.updateFeatureSetting(featureId, key, value);
         });
     }
 

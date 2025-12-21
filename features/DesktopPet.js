@@ -171,41 +171,59 @@ class DesktopPet extends FeatureBase {
         // Set up event listeners
         this.setupEventListeners();
 
-        // Listen for toggle events
-        EventBus.on(Events.PET_TOGGLE, ({ enabled }) => {
+        // Listen for toggle events (use subscribe for auto-cleanup)
+        this.subscribe(Events.PET_TOGGLE, ({ enabled }) => {
             this.toggle(enabled);
         });
 
         console.log('[DesktopPet] Enhanced desktop pet initialized');
     }
 
+    /**
+     * Cleanup resources when disabled
+     */
+    cleanup() {
+        // Stop animation loop
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+
+        // Hide the container
+        if (this.container) {
+            this.container.style.display = 'none';
+        }
+
+        this.enabled = false;
+
+        // Call parent cleanup for event handlers
+        super.cleanup();
+    }
+
     setupEventListeners() {
-        // Mouse tracking for cursor following
-        document.addEventListener('mousemove', (e) => {
+        // Mouse tracking for cursor following (use addHandler for auto-cleanup)
+        this.addHandler(document, 'mousemove', (e) => {
             this.lastMouseX = e.clientX;
             this.lastMouseY = e.clientY;
-        });
-
-        // Click on pet
-        this.container.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            this.startDrag(e);
-        });
-
-        document.addEventListener('mousemove', (e) => {
             if (this.isDragging) {
                 this.updateDrag(e);
             }
         });
 
-        document.addEventListener('mouseup', () => {
+        // Click on pet
+        this.addHandler(this.container, 'mousedown', (e) => {
+            e.preventDefault();
+            this.startDrag(e);
+        });
+
+        this.addHandler(document, 'mouseup', () => {
             if (this.isDragging) {
                 this.endDrag();
             }
         });
 
         // Double-click for fortune
-        this.container.addEventListener('dblclick', () => {
+        this.addHandler(this.container, 'dblclick', () => {
             this.showFortune();
         });
     }

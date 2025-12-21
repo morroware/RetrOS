@@ -294,20 +294,20 @@ class ClippyAssistant extends FeatureBase {
     }
 
     setupContextListeners() {
-        // React to window events
-        EventBus.on(Events.WINDOW_OPEN, (data) => {
+        // React to window events (use subscribe for auto-cleanup)
+        this.subscribe(Events.WINDOW_OPEN, (data) => {
             if (this.isVisible && Math.random() > 0.7) {
                 this.speakContext('windowOpen');
             }
         });
 
-        EventBus.on(Events.WINDOW_CLOSE, (data) => {
+        this.subscribe(Events.WINDOW_CLOSE, (data) => {
             if (this.isVisible && Math.random() > 0.8) {
                 this.speakContext('windowClose');
             }
         });
 
-        EventBus.on(Events.APP_OPEN, (data) => {
+        this.subscribe(Events.APP_OPEN, (data) => {
             if (Math.random() > 0.85 && !this.isVisible) {
                 setTimeout(() => {
                     this.show();
@@ -316,7 +316,7 @@ class ClippyAssistant extends FeatureBase {
             }
         });
 
-        EventBus.on(Events.ACHIEVEMENT_UNLOCK, () => {
+        this.subscribe(Events.ACHIEVEMENT_UNLOCK, () => {
             if (this.isVisible) {
                 this.speakContext('achievement');
             } else if (Math.random() > 0.5) {
@@ -325,13 +325,13 @@ class ClippyAssistant extends FeatureBase {
             }
         });
 
-        EventBus.on('recyclebin:update', () => {
+        this.subscribe('recyclebin:update', () => {
             if (this.isVisible && Math.random() > 0.7) {
                 this.speakContext('fileRecycle');
             }
         });
 
-        EventBus.on(Events.SCREENSAVER_START, () => {
+        this.subscribe(Events.SCREENSAVER_START, () => {
             if (this.isVisible) {
                 this.speakContext('screensaverStart');
                 setTimeout(() => this.hide(), 3000);
@@ -354,9 +354,10 @@ class ClippyAssistant extends FeatureBase {
             }, 60000); // 1 minute of inactivity
         };
 
-        document.addEventListener('mousemove', resetIdle);
-        document.addEventListener('keydown', resetIdle);
-        document.addEventListener('click', resetIdle);
+        // Use addHandler for auto-cleanup
+        this.addHandler(document, 'mousemove', resetIdle);
+        this.addHandler(document, 'keydown', resetIdle);
+        this.addHandler(document, 'click', resetIdle);
     }
 
     scheduleRandomAppearance() {
