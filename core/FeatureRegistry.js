@@ -503,5 +503,4 @@ class FeatureRegistryClass {
 // Singleton instance
 const FeatureRegistry = new FeatureRegistryClass();
 
-export { FEATURE_CATEGORIES };
 export default FeatureRegistry;
