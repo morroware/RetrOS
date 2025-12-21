@@ -73,6 +73,16 @@ class ControlPanel extends AppBase {
                     font-size: 11px;
                     color: #666;
                 }
+                .control-link {
+                    cursor: pointer;
+                    transition: background 0.1s;
+                }
+                .control-link:hover {
+                    background: #e8e8ff;
+                }
+                .control-link:active {
+                    background: #d0d0ff;
+                }
                 .control-toggle {
                     display: flex;
                     align-items: center;
@@ -273,6 +283,37 @@ class ControlPanel extends AppBase {
                 </div>
 
                 <div class="control-section">
+                    <div class="control-section-title">📋 More Settings</div>
+
+                    <div class="control-item control-link" data-app="display">
+                        <div class="control-item-icon">🖥️</div>
+                        <div class="control-item-info">
+                            <div class="control-item-label">Display Properties</div>
+                            <div class="control-item-desc">Wallpaper, themes, and visual effects</div>
+                        </div>
+                        <span style="color: #666;">▶</span>
+                    </div>
+
+                    <div class="control-item control-link" data-app="sounds">
+                        <div class="control-item-icon">🔊</div>
+                        <div class="control-item-info">
+                            <div class="control-item-label">Sound Settings</div>
+                            <div class="control-item-desc">Volume, sound effects, and audio</div>
+                        </div>
+                        <span style="color: #666;">▶</span>
+                    </div>
+
+                    <div class="control-item control-link" data-app="features-settings">
+                        <div class="control-item-icon">⚡</div>
+                        <div class="control-item-info">
+                            <div class="control-item-label">System Features</div>
+                            <div class="control-item-desc">Enable/disable features like Clippy, Easter Eggs</div>
+                        </div>
+                        <span style="color: #666;">▶</span>
+                    </div>
+                </div>
+
+                <div class="control-section">
                     <div class="control-section-title">⚠️ Advanced Options</div>
 
                     <div class="control-item">
@@ -379,6 +420,17 @@ class ControlPanel extends AppBase {
 
         // Storage info
         this.updateStorageInfo();
+
+        // Settings app links
+        const settingsLinks = this.getElements('.control-link');
+        settingsLinks.forEach(link => {
+            this.addHandler(link, 'click', (e) => {
+                const appId = e.currentTarget.dataset.app;
+                if (appId) {
+                    EventBus.emit('app:launch', { id: appId });
+                }
+            });
+        });
 
         // Reset button
         const resetButton = this.getElement('#reset-button');
