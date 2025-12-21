@@ -48,6 +48,7 @@ import Calendar from './Calendar.js';
 import Clock from './Clock.js';
 import FreeCell from './FreeCell.js';
 import Zork from './Zork.js';
+import HyperCard from './HyperCard.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -123,6 +124,7 @@ class AppRegistryClass {
             new Paint(),
             new Calendar(),
             new Clock(),
+            new HyperCard(),
         ]);
 
         // --- System Tools (Utilities) ---
