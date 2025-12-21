@@ -4,6 +4,7 @@
  */
 
 import AppBase from './AppBase.js';
+import AppRegistry from './AppRegistry.js';
 import StateManager from '../core/StateManager.js';
 import StorageManager from '../core/StorageManager.js';
 import EventBus from '../core/EventBus.js';
@@ -427,7 +428,7 @@ class ControlPanel extends AppBase {
             this.addHandler(link, 'click', (e) => {
                 const appId = e.currentTarget.dataset.app;
                 if (appId) {
-                    EventBus.emit('app:launch', { id: appId });
+                    AppRegistry.launch(appId);
                 }
             });
         });
