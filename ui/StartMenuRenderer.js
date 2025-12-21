@@ -273,6 +273,14 @@ class StartMenuRendererClass {
                         <span class="start-menu-icon">🖥️</span>
                         <span>Display</span>
                     </div>
+                    <div class="start-menu-item" data-app="sounds">
+                        <span class="start-menu-icon">🔊</span>
+                        <span>Sounds</span>
+                    </div>
+                    <div class="start-menu-item" data-app="features-settings">
+                        <span class="start-menu-icon">⚡</span>
+                        <span>Features</span>
+                    </div>
                 </div>
             </div>
         `;

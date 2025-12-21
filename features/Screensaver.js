@@ -1,11 +1,48 @@
 /**
  * Screensaver - Multiple screensaver types
- * Singleton pattern with proper event cleanup
+ * Now extends FeatureBase for integration with FeatureRegistry
  */
 
+import FeatureBase from '../core/FeatureBase.js';
 import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import StorageManager from '../core/StorageManager.js';
+
+// Feature metadata
+const FEATURE_METADATA = {
+    id: 'screensaver',
+    name: 'Screensaver',
+    description: 'Idle screensaver with multiple modes - flying toasters, starfield, marquee',
+    icon: '🌌',
+    category: 'core',
+    dependencies: [],
+    config: {
+        idleTimeout: 300000,
+        mode: 'toasters'
+    },
+    settings: [
+        {
+            key: 'enabled',
+            label: 'Enable Screensaver',
+            type: 'checkbox'
+        },
+        {
+            key: 'idleTimeout',
+            label: 'Idle Time (seconds)',
+            type: 'number',
+            min: 60,
+            max: 3600,
+            step: 30,
+            transform: 'milliseconds'
+        },
+        {
+            key: 'mode',
+            label: 'Screensaver Mode',
+            type: 'select',
+            options: ['toasters', 'starfield', 'marquee', 'none']
+        }
+    ]
+};
 
 // Screensaver configurations
 const SCREENSAVER_CONFIGS = {
@@ -26,12 +63,13 @@ const SCREENSAVER_CONFIGS = {
     none: null
 };
 
-class ScreensaverClass {
+class Screensaver extends FeatureBase {
     constructor() {
+        super(FEATURE_METADATA);
+
         this.timeout = null;
         this.delay = 300000; // 5 minutes
         this.isActive = false;
-        this.initialized = false;
         this.type = 'toasters';
         this.animationFrame = null;
 
@@ -40,12 +78,11 @@ class ScreensaverClass {
         this.boundHide = this.hide.bind(this);
     }
 
-    initialize() {
-        // Prevent double initialization
-        if (this.initialized) {
-            console.warn('[Screensaver] Already initialized');
-            return;
-        }
+    /**
+     * Initialize the screensaver
+     */
+    async initialize() {
+        if (!this.isEnabled()) return;
 
         const screensaver = document.getElementById('screensaver');
         if (!screensaver) return;
@@ -59,64 +96,67 @@ class ScreensaverClass {
             this.delay = savedDelay;
         }
 
+        // Load from config
+        const configDelay = this.getConfig('idleTimeout');
+        if (configDelay) {
+            this.delay = configDelay;
+        }
+
+        const configMode = this.getConfig('mode');
+        if (configMode) {
+            this.type = configMode;
+        }
+
         // Activity listeners - using bound handlers for cleanup capability
-        document.addEventListener('mousemove', this.boundReset);
-        document.addEventListener('keydown', this.boundReset);
-        document.addEventListener('click', this.boundReset);
+        this.addHandler(document, 'mousemove', this.boundReset);
+        this.addHandler(document, 'keydown', this.boundReset);
+        this.addHandler(document, 'click', this.boundReset);
 
         // Click/move to dismiss
-        screensaver.addEventListener('click', this.boundHide);
-        screensaver.addEventListener('mousemove', this.boundHide);
+        this.addHandler(screensaver, 'click', this.boundHide);
+        this.addHandler(screensaver, 'mousemove', this.boundHide);
 
         // Listen for type updates from Display Properties
-        EventBus.on('screensaver:update-type', ({ type }) => {
+        this.subscribe('screensaver:update-type', ({ type }) => {
             this.type = type;
+            this.setConfig('mode', type);
         });
 
         // Listen for delay updates
-        EventBus.on('screensaver:update-delay', ({ delay }) => {
+        this.subscribe('screensaver:update-delay', ({ delay }) => {
             this.delay = delay;
+            this.setConfig('idleTimeout', delay);
             this.reset();
         });
 
         // Listen for manual start
-        EventBus.on('screensaver:start', () => {
+        this.subscribe('screensaver:start', () => {
             this.show();
         });
 
         // Start timer
         this.reset();
-        this.initialized = true;
 
-        console.log('[Screensaver] Initialized with type:', this.type);
+        this.log('Initialized with type:', this.type);
     }
 
     /**
-     * Cleanup all event listeners (call when destroying)
+     * Cleanup all event listeners
      */
-    destroy() {
-        if (!this.initialized) return;
-
+    cleanup() {
         // Clear timeout
         clearTimeout(this.timeout);
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
 
-        // Remove document listeners
-        document.removeEventListener('mousemove', this.boundReset);
-        document.removeEventListener('keydown', this.boundReset);
-        document.removeEventListener('click', this.boundReset);
-
-        // Remove screensaver listeners
-        const screensaver = document.getElementById('screensaver');
-        if (screensaver) {
-            screensaver.removeEventListener('click', this.boundHide);
-            screensaver.removeEventListener('mousemove', this.boundHide);
+        // Hide if active
+        if (this.isActive) {
+            this.hide();
         }
 
-        this.initialized = false;
-        console.log('[Screensaver] Destroyed');
+        // Call parent cleanup
+        super.cleanup();
     }
 
     reset() {
@@ -135,6 +175,8 @@ class ScreensaverClass {
     }
 
     show() {
+        if (!this.isEnabled()) return;
+
         // Don't show if type is none
         if (this.type === 'none') return;
 
@@ -160,6 +202,9 @@ class ScreensaverClass {
         screensaver.classList.add('active');
         this.isActive = true;
         EventBus.emit(Events.SCREENSAVER_START);
+
+        // Trigger hook
+        this.triggerHook('screensaver:started', { type: this.type });
     }
 
     renderToasters(container, config) {
@@ -221,17 +266,43 @@ class ScreensaverClass {
 
         this.isActive = false;
         EventBus.emit(Events.SCREENSAVER_END);
+
+        // Trigger hook
+        this.triggerHook('screensaver:stopped', {});
     }
 
     setDelay(ms) {
         this.delay = ms;
+        this.setConfig('idleTimeout', ms);
         this.reset();
     }
 
     setType(type) {
         this.type = type;
+        this.setConfig('mode', type);
+    }
+
+    /**
+     * Get available screensaver modes
+     * @returns {string[]}
+     */
+    getModes() {
+        return Object.keys(SCREENSAVER_CONFIGS);
+    }
+
+    /**
+     * Get current screensaver state
+     * @returns {Object}
+     */
+    getState() {
+        return {
+            type: this.type,
+            delay: this.delay,
+            isActive: this.isActive
+        };
     }
 }
 
-const Screensaver = new ScreensaverClass();
-export default Screensaver;
+// Create and export singleton instance
+const ScreensaverInstance = new Screensaver();
+export default ScreensaverInstance;

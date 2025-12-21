@@ -1,11 +1,55 @@
 /**
  * DesktopPet - Animated desktop companion with retro behaviors
  * Inspired by classic desktop pets like eSheep, Neko, and Shimeji
- * Singleton pattern
+ *
+ * Now extends FeatureBase for integration with FeatureRegistry
  */
 
+import FeatureBase from '../core/FeatureBase.js';
 import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
+
+// Feature metadata
+const FEATURE_METADATA = {
+    id: 'desktoppet',
+    name: 'Desktop Pet',
+    description: 'Animated desktop companion with retro behaviors - drag, play, and get fortunes',
+    icon: '🐕',
+    category: 'enhancement',
+    dependencies: [],
+    config: {
+        petType: 'dog',
+        animationSpeed: 1.0,
+        enablePhysics: true,
+        enableFortunes: true
+    },
+    settings: [
+        {
+            key: 'enabled',
+            label: 'Enable Desktop Pet',
+            type: 'checkbox'
+        },
+        {
+            key: 'petType',
+            label: 'Pet Type',
+            type: 'select',
+            options: ['dog']
+        },
+        {
+            key: 'animationSpeed',
+            label: 'Animation Speed',
+            type: 'slider',
+            min: 0.5,
+            max: 2,
+            step: 0.1
+        },
+        {
+            key: 'enablePhysics',
+            label: 'Enable Physics',
+            type: 'checkbox'
+        }
+    ]
+};
 
 // Pet behavior states
 const STATES = {
@@ -36,8 +80,10 @@ const FORTUNES = [
     "Remember to backup your floppies!"
 ];
 
-class DesktopPetClass {
+class DesktopPet extends FeatureBase {
     constructor() {
+        super(FEATURE_METADATA);
+
         this.canvas = null;
         this.ctx = null;
         this.container = null;
@@ -79,11 +125,13 @@ class DesktopPetClass {
 
         // Animation loop
         this.animationId = null;
-        this.enabled = false;
+        this.petEnabled = false;
     }
 
-    initialize() {
-        console.log('[DesktopPet] Initializing enhanced desktop pet...');
+    async initialize() {
+        if (!this.isEnabled()) return;
+
+        this.log('Initializing enhanced desktop pet...');
 
         // Get container
         this.container = document.getElementById('desktopPet');
@@ -881,5 +929,6 @@ class DesktopPetClass {
     }
 }
 
-const DesktopPet = new DesktopPetClass();
-export default DesktopPet;
+// Create and export singleton instance
+const DesktopPetInstance = new DesktopPet();
+export default DesktopPetInstance;

@@ -2,8 +2,11 @@
  * SystemDialogs - Windows 95 style system dialogs
  * Run Dialog, Shutdown Dialog, About Dialog, Welcome Tips
  * Alert, Confirm, Prompt, File Open/Save dialogs
+ *
+ * Now extends FeatureBase for integration with FeatureRegistry
  */
 
+import FeatureBase from '../core/FeatureBase.js';
 import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import WindowManager from '../core/WindowManager.js';
@@ -11,8 +14,43 @@ import AppRegistry from '../apps/AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import { PATHS } from '../core/Constants.js';
 
-class SystemDialogsClass {
+// Feature metadata
+const FEATURE_METADATA = {
+    id: 'systemdialogs',
+    name: 'System Dialogs',
+    description: 'Windows 95 style dialogs - Run, Shutdown, File Open/Save, Alerts, and more',
+    icon: '💬',
+    category: 'core',
+    dependencies: [],
+    config: {
+        defaultPath: ['C:', 'Users', 'Seth', 'Documents'],
+        showHiddenFiles: false,
+        playDialogSounds: true,
+        showWelcomeOnBoot: true
+    },
+    settings: [
+        {
+            key: 'playDialogSounds',
+            label: 'Play Dialog Sounds',
+            type: 'checkbox'
+        },
+        {
+            key: 'showHiddenFiles',
+            label: 'Show Hidden Files in File Dialogs',
+            type: 'checkbox'
+        },
+        {
+            key: 'showWelcomeOnBoot',
+            label: 'Show Welcome Dialog on Boot',
+            type: 'checkbox'
+        }
+    ]
+};
+
+class SystemDialogs extends FeatureBase {
     constructor() {
+        super(FEATURE_METADATA);
+
         this.runDialogOpen = false;
         this.shutdownDialogOpen = false;
 
@@ -27,7 +65,8 @@ class SystemDialogsClass {
     /**
      * Initialize system dialogs
      */
-    initialize() {
+    async initialize() {
+        if (!this.isEnabled()) return;
         // Create dialog containers
         this.createDialogContainers();
 
@@ -35,30 +74,44 @@ class SystemDialogsClass {
         this.setupKeyboardShortcuts();
 
         // Listen for app launches
-        EventBus.on('app:open', ({ id }) => {
+        this.subscribe('app:open', ({ id }) => {
             if (id === 'run') this.showRunDialog();
             if (id === 'shutdown') this.showShutdownDialog();
             if (id === 'help') this.showAboutDialog();
         });
 
         // Listen for dialog requests via EventBus
-        EventBus.on('dialog:alert', (options) => this.showAlert(options));
-        EventBus.on('dialog:confirm', (options) => this.showConfirm(options));
-        EventBus.on('dialog:prompt', (options) => this.showPrompt(options));
-        EventBus.on('dialog:file-open', (options) => this.showFileOpen(options));
-        EventBus.on('dialog:file-save', (options) => this.showFileSave(options));
+        this.subscribe('dialog:alert', (options) => this.showAlert(options));
+        this.subscribe('dialog:confirm', (options) => this.showConfirm(options));
+        this.subscribe('dialog:prompt', (options) => this.showPrompt(options));
+        this.subscribe('dialog:file-open', (options) => this.showFileOpen(options));
+        this.subscribe('dialog:file-save', (options) => this.showFileSave(options));
 
         // Show welcome on first visit
-        EventBus.on(Events.BOOT_COMPLETE, () => {
+        this.subscribe(Events.BOOT_COMPLETE, () => {
             setTimeout(() => {
-                if (!StateManager.getState('user.seenWelcome')) {
+                if (this.getConfig('showWelcomeOnBoot', true) && !StateManager.getState('user.seenWelcome')) {
                     this.showWelcomeDialog();
                     StateManager.setState('user.seenWelcome', true, true);
                 }
             }, 1000);
         });
 
-        console.log('[SystemDialogs] Initialized');
+        this.log('Initialized');
+    }
+
+    /**
+     * Cleanup when disabled
+     */
+    cleanup() {
+        // Remove dialog containers
+        ['runDialog', 'shutdownDialog', 'aboutDialog', 'welcomeDialog',
+         'alertDialog', 'confirmDialog', 'promptDialog', 'fileDialog'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
+
+        super.cleanup();
     }
 
     /**
@@ -1174,7 +1227,6 @@ class SystemDialogsClass {
     }
 }
 
-// Singleton
-const SystemDialogs = new SystemDialogsClass();
-
-export default SystemDialogs;
+// Create and export singleton instance
+const SystemDialogsInstance = new SystemDialogs();
+export default SystemDialogsInstance;

@@ -49,6 +49,7 @@ import Clock from './Clock.js';
 import FreeCell from './FreeCell.js';
 import Zork from './Zork.js';
 import HyperCard from './HyperCard.js';
+import FeaturesSettings from './FeaturesSettings.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -170,6 +171,7 @@ class AppRegistryClass {
             new ControlPanel(),
             new DisplayProperties(),
             new SoundSettings(),
+            new FeaturesSettings(),
         ]);
 
         // --- Hidden System Apps ---
