@@ -23,6 +23,7 @@ import ContextMenuRenderer from './ui/ContextMenuRenderer.js';
 import AppRegistry from './apps/AppRegistry.js';
 
 // === FEATURES ===
+import FeatureRegistry from './core/FeatureRegistry.js';
 import SoundSystem from './features/SoundSystem.js';
 import AchievementSystem from './features/AchievementSystem.js';
 import EasterEggs from './features/EasterEggs.js';
@@ -167,13 +168,25 @@ async function initializeOS(onProgress = () => {}) {
     // === Phase 2: Features ===
     console.log('[RetrOS] Phase 2: Features');
     onProgress(35, 'Loading features...');
-    initComponent('SoundSystem', () => SoundSystem.initialize());
-    initComponent('AchievementSystem', () => AchievementSystem.initialize());
-    initComponent('EasterEggs', () => EasterEggs.initialize());
-    initComponent('ClippyAssistant', () => ClippyAssistant.initialize());
-    initComponent('DesktopPet', () => DesktopPet.initialize());
-    initComponent('Screensaver', () => Screensaver.initialize());
-    initComponent('SystemDialogs', () => SystemDialogs.initialize());
+
+    // Register all features with FeatureRegistry
+    initComponent('FeatureRegistry', () => {
+        FeatureRegistry.registerAll([
+            SoundSystem,
+            AchievementSystem,
+            SystemDialogs,
+            Screensaver,
+            ClippyAssistant,
+            DesktopPet,
+            EasterEggs
+        ]);
+    });
+
+    // Initialize all registered features (respects dependencies and enabled state)
+    onProgress(45, 'Initializing features...');
+    await initComponent('FeatureRegistry.initializeAll', async () => {
+        await FeatureRegistry.initializeAll();
+    });
 
     // === Phase 3: UI Renderers ===
     console.log('[RetrOS] Phase 3: UI Renderers');

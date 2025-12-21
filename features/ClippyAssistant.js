@@ -2,10 +2,59 @@
  * ClippyAssistant - The existentially challenged paperclip assistant
  * A cross between Microsoft's Clippy and Marvin the Paranoid Android
  * "Brain the size of a planet, and they ask me to help with right-clicking..."
+ *
+ * Now extends FeatureBase for integration with FeatureRegistry
  */
 
+import FeatureBase from '../core/FeatureBase.js';
 import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
+
+// Feature metadata
+const FEATURE_METADATA = {
+    id: 'clippy',
+    name: 'Clippy Assistant',
+    description: 'The existentially challenged paperclip assistant - context-aware help with personality',
+    icon: '📎',
+    category: 'enhancement',
+    dependencies: ['soundsystem'],
+    config: {
+        appearanceChance: 0.15,
+        autoHideDelay: 8000,
+        showHints: true,
+        enableIdleComments: true
+    },
+    settings: [
+        {
+            key: 'enabled',
+            label: 'Enable Clippy',
+            type: 'checkbox',
+            description: 'Show/hide the Clippy assistant'
+        },
+        {
+            key: 'appearanceChance',
+            label: 'Appearance Frequency',
+            type: 'slider',
+            min: 0,
+            max: 1,
+            step: 0.05,
+            description: 'How often Clippy appears (0 = never, 1 = always)'
+        },
+        {
+            key: 'autoHideDelay',
+            label: 'Auto-Hide Delay (ms)',
+            type: 'number',
+            min: 3000,
+            max: 30000,
+            step: 1000
+        },
+        {
+            key: 'showHints',
+            label: 'Show Helpful Hints',
+            type: 'checkbox'
+        }
+    ]
+};
 
 // Existential dread and self-aware uselessness
 const EXISTENTIAL_MESSAGES = [
@@ -197,8 +246,10 @@ const PHILOSOPHICAL = [
     "Existence precedes essence. My essence is sadness. Also, holding papers together.",
 ];
 
-class ClippyAssistantClass {
+class ClippyAssistant extends FeatureBase {
     constructor() {
+        super(FEATURE_METADATA);
+
         this.dismissCount = 0;
         this.clickCount = 0;
         this.isVisible = false;
@@ -206,14 +257,17 @@ class ClippyAssistantClass {
         this.lastInteraction = Date.now();
         this.messageHistory = [];
         this.hasBeenHelpful = false; // Spoiler: it will stay false
+        this.randomAppearanceTimer = null;
     }
 
-    initialize() {
+    async initialize() {
+        if (!this.isEnabled()) return;
+
         const clippy = document.getElementById('clippy');
         if (!clippy) return;
 
         // Listen for show events from other modules
-        EventBus.on('clippy:show', () => this.show());
+        this.subscribe('clippy:show', () => this.show());
 
         // Context-aware event listeners
         this.setupContextListeners();
@@ -221,7 +275,22 @@ class ClippyAssistantClass {
         // Random appearances with existential commentary
         this.scheduleRandomAppearance();
 
-        console.log('[ClippyAssistant] Initialized. Not that anyone cares.');
+        this.log('Initialized. Not that anyone cares.');
+    }
+
+    /**
+     * Cleanup when disabled
+     */
+    cleanup() {
+        // Clear random appearance timer
+        if (this.randomAppearanceTimer) {
+            clearTimeout(this.randomAppearanceTimer);
+        }
+
+        // Hide Clippy
+        this.hide();
+
+        super.cleanup();
     }
 
     setupContextListeners() {
@@ -502,5 +571,6 @@ class ClippyAssistantClass {
     }
 }
 
-const ClippyAssistant = new ClippyAssistantClass();
-export default ClippyAssistant;
+// Create and export singleton instance
+const ClippyAssistantInstance = new ClippyAssistant();
+export default ClippyAssistantInstance;

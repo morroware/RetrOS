@@ -8,13 +8,53 @@
  * - Volume control
  * - Sound caching for performance
  * - Multiple simultaneous sounds
+ *
+ * Now extends FeatureBase for integration with FeatureRegistry
  */
 
+import FeatureBase from '../core/FeatureBase.js';
 import EventBus, { Events } from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 
-class SoundSystemClass {
+// Feature metadata
+const FEATURE_METADATA = {
+    id: 'soundsystem',
+    name: 'Sound System',
+    description: 'Centralized audio management with MP3 support and synthesized fallbacks',
+    icon: '🔊',
+    category: 'core',
+    dependencies: [],
+    config: {
+        masterVolume: 0.5,
+        enableMp3: true,
+        enableFallbacks: true
+    },
+    settings: [
+        {
+            key: 'masterVolume',
+            label: 'Master Volume',
+            type: 'slider',
+            min: 0,
+            max: 1,
+            step: 0.1
+        },
+        {
+            key: 'enableMp3',
+            label: 'Enable MP3 Sounds',
+            type: 'checkbox'
+        },
+        {
+            key: 'enableFallbacks',
+            label: 'Enable Synthesized Fallbacks',
+            type: 'checkbox'
+        }
+    ]
+};
+
+class SoundSystem extends FeatureBase {
     constructor() {
+        super(FEATURE_METADATA);
+
         this.audioContext = null;
         this.masterGain = null;
         this.audioCache = new Map(); // Cache loaded audio buffers
@@ -65,24 +105,29 @@ class SoundSystemClass {
         this.mp3Available = new Map();
     }
 
-    initialize() {
+    /**
+     * Initialize the sound system
+     */
+    async initialize() {
+        if (!this.isEnabled()) return;
+
         // Listen for sound play requests
-        EventBus.on(Events.SOUND_PLAY, ({ type, force, volume, loop }) => {
+        this.subscribe(Events.SOUND_PLAY, ({ type, force, volume, loop }) => {
             this.play(type, force, volume, loop);
         });
 
         // Listen for MP3 file playback requests
-        EventBus.on(Events.AUDIO_PLAY, (data) => {
+        this.subscribe(Events.AUDIO_PLAY, (data) => {
             this.playAudio(data.src, data);
         });
 
         // Listen for audio stop requests
-        EventBus.on(Events.AUDIO_STOP, ({ src }) => {
+        this.subscribe(Events.AUDIO_STOP, ({ src }) => {
             this.stopAudio(src);
         });
 
         // Listen for audio stop all requests
-        EventBus.on(Events.AUDIO_STOP_ALL, () => {
+        this.subscribe(Events.AUDIO_STOP_ALL, () => {
             this.stopAllAudio();
         });
 
@@ -92,7 +137,31 @@ class SoundSystemClass {
             this.volume = savedVolume;
         }
 
-        console.log('[SoundSystem] Initialized with MP3 support');
+        // Load volume from feature config
+        const configVolume = this.getConfig('masterVolume');
+        if (configVolume !== undefined) {
+            this.volume = configVolume;
+        }
+
+        this.log('Initialized with MP3 support');
+    }
+
+    /**
+     * Cleanup resources when disabled
+     */
+    cleanup() {
+        // Stop all audio
+        this.stopAllAudio();
+
+        // Close audio context
+        if (this.audioContext) {
+            this.audioContext.close().catch(() => {});
+            this.audioContext = null;
+            this.masterGain = null;
+        }
+
+        // Call parent cleanup for event handlers
+        super.cleanup();
     }
 
     /**
@@ -125,7 +194,11 @@ class SoundSystemClass {
             audio.volume = this.volume;
         });
         StateManager.setState('settings.volume', this.volume, true);
+        this.setConfig('masterVolume', this.volume);
         EventBus.emit(Events.VOLUME_CHANGE, { volume: this.volume });
+
+        // Trigger hook for volume change
+        this.triggerHook('volume:changed', { volume: this.volume });
     }
 
     /**
@@ -144,6 +217,8 @@ class SoundSystemClass {
      * @param {boolean} loop - Whether to loop the sound
      */
     async play(type, force = false, volume = null, loop = false) {
+        if (!this.isEnabled() && !force) return;
+
         const enabled = force || StateManager.getState('settings.sound');
         if (!enabled) return;
 
@@ -151,18 +226,20 @@ class SoundSystemClass {
 
         // If no config, try to play as synthesized sound
         if (!config) {
-            this.playSynthesized(type);
+            if (this.getConfig('enableFallbacks', true)) {
+                this.playSynthesized(type);
+            }
             return;
         }
 
-        // Try to play MP3 first if available
-        if (config.mp3) {
+        // Try to play MP3 first if available and enabled
+        if (config.mp3 && this.getConfig('enableMp3', true)) {
             const mp3Played = await this.tryPlayMp3(config.mp3, volume, loop);
             if (mp3Played) return;
         }
 
         // Fall back to synthesized sound
-        if (config.fallback === 'synth') {
+        if (config.fallback === 'synth' && this.getConfig('enableFallbacks', true)) {
             this.playSynthesized(type);
         }
     }
@@ -214,6 +291,8 @@ class SoundSystemClass {
      * @returns {HTMLAudioElement|null} The audio element or null if failed
      */
     playAudio(src, options = {}) {
+        if (!this.isEnabled() && !options.force) return null;
+
         const enabled = options.force || StateManager.getState('settings.sound');
         if (!enabled && !options.force) return null;
 
@@ -258,13 +337,13 @@ class SoundSystemClass {
             });
 
             audio.play().catch(e => {
-                console.warn('[SoundSystem] Audio playback failed:', e);
+                this.warn('Audio playback failed:', e);
                 this.activeAudioElements.delete(audio);
             });
 
             return audio;
         } catch (e) {
-            console.warn('[SoundSystem] Failed to create audio:', e);
+            this.warn('Failed to create audio:', e);
             return null;
         }
     }
@@ -355,7 +434,7 @@ class SoundSystemClass {
             this.audioCache.set(src, audioBuffer);
             return audioBuffer;
         } catch (e) {
-            console.warn('[SoundSystem] Failed to load audio buffer:', src, e);
+            this.warn('Failed to load audio buffer:', src, e);
             return null;
         }
     }
@@ -366,6 +445,8 @@ class SoundSystemClass {
      * @param {Object} options - Playback options
      */
     async playBuffer(src, options = {}) {
+        if (!this.isEnabled() && !options.force) return;
+
         const enabled = options.force || StateManager.getState('settings.sound');
         if (!enabled) return;
 
@@ -391,7 +472,7 @@ class SoundSystemClass {
 
             return source;
         } catch (e) {
-            console.warn('[SoundSystem] Failed to play buffer:', e);
+            this.warn('Failed to play buffer:', e);
         }
     }
 
@@ -464,7 +545,7 @@ class SoundSystemClass {
                     this.synthClick(ctx, gainNode);
             }
         } catch (e) {
-            console.warn('[SoundSystem] Synthesized playback failed:', e);
+            this.warn('Synthesized playback failed:', e);
         }
     }
 
@@ -663,7 +744,6 @@ class SoundSystemClass {
     }
 
     synthTypewriter(ctx, gain) {
-        const osc = ctx.createOscillator();
         const noise = ctx.createBufferSource();
         const bufferSize = ctx.sampleRate * 0.02;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -694,6 +774,7 @@ class SoundSystemClass {
      */
     registerSound(type, config) {
         this.soundConfig[type] = config;
+        this.triggerHook('sound:registered', { type, config });
     }
 
     /**
@@ -720,5 +801,6 @@ class SoundSystemClass {
     }
 }
 
-const SoundSystem = new SoundSystemClass();
-export default SoundSystem;
+// Create and export singleton instance
+const SoundSystemInstance = new SoundSystem();
+export default SoundSystemInstance;
