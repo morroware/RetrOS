@@ -120,12 +120,12 @@ class BootSequence {
 /**
  * Initialize a single component with error handling
  * @param {string} name - Component name for logging
- * @param {Function} initFn - Initialization function
+ * @param {Function} initFn - Initialization function (can be async)
  */
-function initComponent(name, initFn) {
+async function initComponent(name, initFn) {
     try {
         console.log(`[RetrOS]   - Initializing ${name}...`);
-        initFn();
+        await initFn();
     } catch (error) {
         console.error(`[RetrOS] FAILED to initialize ${name}:`, error);
         throw new Error(`Failed to initialize ${name}: ${error.message}`);
@@ -142,19 +142,19 @@ async function initializeOS(onProgress = () => {}) {
     // === Phase 0: App Registry (CRITICAL - was running outside error handling!) ===
     console.log('[RetrOS] Phase 0: App Registry');
     onProgress(5, 'Registering applications...');
-    initComponent('AppRegistry', () => AppRegistry.initialize());
+    await initComponent('AppRegistry', () => AppRegistry.initialize());
 
     // === Phase 1: Core Systems ===
     console.log('[RetrOS] Phase 1: Core Systems');
     onProgress(15, 'Loading core systems...');
-    initComponent('StorageManager', () => StorageManager.initialize());
-    initComponent('StateManager', () => StateManager.initialize());
-    initComponent('WindowManager', () => WindowManager.initialize());
+    await initComponent('StorageManager', () => StorageManager.initialize());
+    await initComponent('StateManager', () => StateManager.initialize());
+    await initComponent('WindowManager', () => WindowManager.initialize());
 
     // === Phase 1.5: Sync Filesystem with Apps and Desktop ===
     console.log('[RetrOS] Phase 1.5: Filesystem Sync');
     onProgress(25, 'Syncing filesystem...');
-    initComponent('FilesystemSync', () => {
+    await initComponent('FilesystemSync', () => {
         // Sync desktop icons into filesystem as .lnk files
         // This allows Terminal and MyComputer to see all desktop items
         const icons = StateManager.getState('icons');
@@ -173,7 +173,7 @@ async function initializeOS(onProgress = () => {}) {
     onProgress(35, 'Loading features...');
 
     // Register all features with FeatureRegistry
-    initComponent('FeatureRegistry', () => {
+    await initComponent('FeatureRegistry', () => {
         // Debug: Log features before registration
         const featuresToRegister = [
             SoundSystem,
@@ -237,20 +237,20 @@ async function initializeOS(onProgress = () => {}) {
     // === Phase 3: UI Renderers ===
     console.log('[RetrOS] Phase 3: UI Renderers');
     onProgress(60, 'Rendering desktop...');
-    initComponent('TaskbarRenderer', () => TaskbarRenderer.initialize());
-    initComponent('DesktopRenderer', () => DesktopRenderer.initialize());
-    initComponent('StartMenuRenderer', () => StartMenuRenderer.initialize());
-    initComponent('ContextMenuRenderer', () => ContextMenuRenderer.initialize());
+    await initComponent('TaskbarRenderer', () => TaskbarRenderer.initialize());
+    await initComponent('DesktopRenderer', () => DesktopRenderer.initialize());
+    await initComponent('StartMenuRenderer', () => StartMenuRenderer.initialize());
+    await initComponent('ContextMenuRenderer', () => ContextMenuRenderer.initialize());
 
     // === Phase 4: Apply saved settings ===
     console.log('[RetrOS] Phase 4: Applying settings');
     onProgress(80, 'Applying settings...');
-    initComponent('Settings', () => applySettings());
+    await initComponent('Settings', () => applySettings());
 
     // === Phase 5: Setup global handlers ===
     console.log('[RetrOS] Phase 5: Global handlers');
     onProgress(90, 'Setting up handlers...');
-    initComponent('GlobalHandlers', () => setupGlobalHandlers());
+    await initComponent('GlobalHandlers', () => setupGlobalHandlers());
 
     // Mark as visited
     if (!StateManager.getState('user.hasVisited')) {
