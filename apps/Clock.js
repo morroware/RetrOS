@@ -1,6 +1,6 @@
 /**
  * Clock App
- * Windows 95 style clock with:
+ * IlluminatOS style clock with:
  * - Analog and digital clock display
  * - Multiple alarms
  * - Stopwatch with lap times

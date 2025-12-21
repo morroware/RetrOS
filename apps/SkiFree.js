@@ -1602,7 +1602,7 @@ class SkiFree extends AppBase {
         // Subtitle
         ctx.fillStyle = '#64748b';
         ctx.font = '16px "Segoe UI", sans-serif';
-        ctx.fillText('A Windows Classic', w / 2, h / 3 + 15);
+        ctx.fillText('A Classic Game', w / 2, h / 3 + 15);
 
         // Draw a skier
         ctx.save();

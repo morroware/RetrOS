@@ -16,7 +16,7 @@ A nostalgic bouncing DVD logo screensaver that brings back memories of the class
 
 ## Installation
 
-The DVD Bouncer plugin is included by default in RetrOS. It's automatically registered during the boot sequence in Phase 2.5 (Plugin System).
+The DVD Bouncer plugin is included by default in IlluminatOS. It's automatically registered during the boot sequence in Phase 2.5 (Plugin System).
 
 ### Manual Installation (for custom plugins)
 
@@ -127,7 +127,7 @@ EventBus.on('dvd-bouncer:corner-hit', (data) => {
 ## Technical Details
 
 ### Dependencies
-- Extends `FeatureBase` from RetrOS core
+- Extends `FeatureBase` from IlluminatOS core
 - Uses `EventBus` for event emission
 - Integrated with `FeatureRegistry` for lifecycle management
 
@@ -174,7 +174,7 @@ this.colors = [
 
 ## License
 
-Part of the RetrOS project.
+Part of the IlluminatOS project.
 
 ## Credits
 

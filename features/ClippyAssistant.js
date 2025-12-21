@@ -1,6 +1,6 @@
 /**
  * ClippyAssistant - The existentially challenged paperclip assistant
- * A cross between Microsoft's Clippy and Marvin the Paranoid Android
+ * A cross between Clippy and Marvin the Paranoid Android
  * "Brain the size of a planet, and they ask me to help with right-clicking..."
  *
  * Now extends FeatureBase for integration with FeatureRegistry

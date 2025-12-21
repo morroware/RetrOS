@@ -57,7 +57,7 @@ const SCREENSAVER_CONFIGS = {
         count: 50
     },
     marquee: {
-        text: 'RetrOS 95 - The Nostalgia Machine',
+        text: 'IlluminatOS 95 - The Nostalgia Machine',
         animation: 'marquee-scroll'
     },
     none: null

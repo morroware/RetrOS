@@ -1,5 +1,5 @@
 /**
- * Disk Defragmenter - Classic Windows 95/98 Defrag
+ * Disk Defragmenter - Classic IlluminatOS/98 Defrag
  * The satisfying block-moving visualization
  */
 

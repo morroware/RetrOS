@@ -1,6 +1,6 @@
 /**
  * Minesweeper Game (Final)
- * Classic Windows 95 implementation.
+ * Classic IlluminatOS implementation.
  * Features: First-click safety, Chording, Accurate Timer, Win95 Visuals.
  */
 

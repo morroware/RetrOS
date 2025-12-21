@@ -1,5 +1,5 @@
 /**
- * StartMenuRenderer - Renders and manages the Windows 95 style Start Menu
+ * StartMenuRenderer - Renders and manages the IlluminatOS style Start Menu
  * Updated to dynamically load apps by category with proper event cleanup
  */
 
@@ -133,7 +133,7 @@ class StartMenuRendererClass {
 
         this.element.innerHTML = `
             <div class="start-menu-sidebar">
-                <span class="sidebar-text">Seth Morrow OS 95</span>
+                <span class="sidebar-text">IlluminatOS 95</span>
             </div>
             <div class="start-menu-content">
                 <div class="start-menu-items">

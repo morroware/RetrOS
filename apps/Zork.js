@@ -1,6 +1,6 @@
 /**
  * Zork - A Classic Text Adventure Game
- * A tribute to the original Infocom classic, reimagined for RetrOS
+ * A tribute to the original Infocom classic, reimagined for IlluminatOS
  */
 
 import AppBase from './AppBase.js';

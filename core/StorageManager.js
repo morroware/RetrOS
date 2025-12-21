@@ -5,7 +5,7 @@
 
 class StorageManagerClass {
     constructor() {
-        this.prefix = 'smos_'; // Seth Morrow OS prefix
+        this.prefix = 'smos_'; // IlluminatOS prefix
         this.available = this.checkAvailability();
         this.memoryFallback = new Map();
     }

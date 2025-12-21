@@ -1,6 +1,6 @@
 /**
  * Calendar App
- * Windows 95 style calendar with event management
+ * IlluminatOS style calendar with event management
  * Supports viewing months, adding/editing/deleting events
  */
 

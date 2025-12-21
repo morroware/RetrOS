@@ -96,7 +96,7 @@ class TaskbarRendererClass {
                 if (app) {
                     AppRegistry.launch(app);
                 } else if (action === 'web') {
-                    AppRegistry.launch('browser', { url: 'https://sethmorrow.com' });
+                    AppRegistry.launch('browser', { url: 'https://example.com' });
                 }
             });
         });

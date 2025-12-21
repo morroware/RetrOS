@@ -22,14 +22,14 @@ const DEFAULT_ICONS = [
     { id: 'notepad', label: 'Notepad', emoji: '📝', type: 'app', x: 120, y: 20 },
     { id: 'paint', label: 'Paint', emoji: '🖌️', type: 'app', x: 120, y: 110 },
     { id: 'calculator', label: 'Calculator', emoji: '🔢', type: 'app', x: 120, y: 200 },
-    { id: 'imagegen', label: 'Image Gen', emoji: '🎨', url: 'https://sethmorrow.com/imagegen', x: 120, y: 290, type: 'link' },
-    { id: 'ciphers', label: 'Cipher Decoder', emoji: '🔍', url: 'https://sethmorrow.com/ciphers', x: 120, y: 380, type: 'link' },
+    { id: 'imagegen', label: 'Image Gen', emoji: '🎨', url: 'https://example.com/imagegen', x: 120, y: 290, type: 'link' },
+    { id: 'ciphers', label: 'Cipher Decoder', emoji: '🔍', url: 'https://example.com/ciphers', x: 120, y: 380, type: 'link' },
 
     // --- COLUMN 3: Content / "My Documents" (x: 220) ---
-    { id: 'music', label: 'Music', emoji: '🎵', url: 'https://sethmorrow.com/music', x: 220, y: 20, type: 'link' },
-    { id: 'videos', label: 'Videos', emoji: '📺', url: 'https://sethmorrow.com/videos', x: 220, y: 110, type: 'link' },
-    { id: 'books', label: 'Books', emoji: '📚', url: 'https://sethmorrow.com/books', x: 220, y: 200, type: 'link' },
-    { id: 'audiobooks', label: 'Audiobooks', emoji: '🎧', url: 'https://sethmorrow.com/audiobooks', x: 220, y: 290, type: 'link' },
+    { id: 'music', label: 'Music', emoji: '🎵', url: 'https://example.com/music', x: 220, y: 20, type: 'link' },
+    { id: 'videos', label: 'Videos', emoji: '📺', url: 'https://example.com/videos', x: 220, y: 110, type: 'link' },
+    { id: 'books', label: 'Books', emoji: '📚', url: 'https://example.com/books', x: 220, y: 200, type: 'link' },
+    { id: 'audiobooks', label: 'Audiobooks', emoji: '🎧', url: 'https://example.com/audiobooks', x: 220, y: 290, type: 'link' },
 
     // --- COLUMN 4: Games (x: 320) ---
     { id: 'solitaire', label: 'Solitaire', emoji: '🃏', type: 'app', x: 320, y: 20 },

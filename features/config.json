@@ -37,7 +37,7 @@
   "achievements": {
     "id": "achievements",
     "name": "Achievement System",
-    "description": "Unlock achievements and track milestones throughout RetrOS",
+    "description": "Unlock achievements and track milestones throughout IlluminatOS",
     "icon": "🏆",
     "category": "enhancement",
     "enabled": true,
@@ -228,13 +228,13 @@
   "systemdialogs": {
     "id": "systemdialogs",
     "name": "System Dialogs",
-    "description": "Windows 95 style dialogs - Run, Shutdown, File Open/Save, Alerts, and more",
+    "description": "IlluminatOS style dialogs - Run, Shutdown, File Open/Save, Alerts, and more",
     "icon": "💬",
     "category": "core",
     "enabled": true,
     "dependencies": [],
     "config": {
-      "defaultPath": ["C:", "Users", "Seth", "Documents"],
+      "defaultPath": ["C:", "Users", "User", "Documents"],
       "showHiddenFiles": false,
       "playDialogSounds": true,
       "showWelcomeOnBoot": true

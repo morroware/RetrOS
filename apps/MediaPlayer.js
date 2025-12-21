@@ -33,7 +33,7 @@ class MediaPlayer extends AppBase {
         // Default playlist with sample tracks (URLs to free audio)
         this.defaultPlaylist = [
             {
-                name: 'Windows 95 Startup',
+                name: 'IlluminatOS Startup',
                 src: 'assets/sounds/startup.mp3',
                 duration: null
             },

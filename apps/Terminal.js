@@ -1,7 +1,7 @@
 /**
  * Terminal App - Retro MS-DOS Style
  * Features: File System, Network Sim, Easter Eggs
- * Authentic DOS/Windows 95 command prompt experience
+ * Authentic DOS/IlluminatOS command prompt experience
  */
 
 import AppBase from './AppBase.js';
@@ -34,9 +34,9 @@ class Terminal extends AppBase {
             'COMSPEC': 'C:\\WINDOWS\\SYSTEM32\\CMD.EXE',
             'TEMP': 'C:\\TEMP',
             'TMP': 'C:\\TEMP',
-            'USERNAME': 'Seth',
+            'USERNAME': 'User',
             'COMPUTERNAME': 'RETROS-PC',
-            'OS': 'RetrOS',
+            'OS': 'IlluminatOS',
             'WINDIR': 'C:\\WINDOWS'
         };
     }
@@ -48,7 +48,7 @@ class Terminal extends AppBase {
                 <div class="terminal-scroll" id="terminalScroller">
                     <div id="terminalOutput"></div>
                     <div class="terminal-input-line" id="inputLine">
-                        <span class="terminal-prompt" id="promptText">C:\\Users\\Seth></span>
+                        <span class="terminal-prompt" id="promptText">C:\\Users\\User></span>
                         <input type="text" class="terminal-input" id="terminalInput" autocomplete="off" spellcheck="false">
                     </div>
                 </div>
@@ -147,14 +147,14 @@ class Terminal extends AppBase {
 
     runBootSequence() {
         const lines = [
-            'Microsoft(R) Windows 95',
-            '   (C)Copyright Microsoft Corp 1981-1995.',
+            'IlluminatOS',
+            '   (C)Copyright IlluminatOS 1995.',
             '',
             'C:\\>ver',
             '',
-            'Seth Morrow OS [Version 95.0.1995]',
+            'IlluminatOS [Version 95.0.1995]',
             '',
-            'C:\\>cd Users\\Seth',
+            'C:\\>cd Users\\User',
             ''
         ];
 
@@ -1023,7 +1023,7 @@ FUN:       matrix, disco, party, cowsay, fortune, color`;
     // === SYSTEM COMMANDS ===
 
     cmdVer() {
-        return `\nSeth Morrow OS [Version 95.0.1995]`;
+        return `\nIlluminatOS [Version 95.0.1995]`;
     }
 
     cmdVol(args) {
@@ -1066,9 +1066,9 @@ FUN:       matrix, disco, party, cowsay, fortune, color`;
 
     cmdWhoami() {
         if (this.godMode) {
-            return 'RETROS-PC\\Administrator (GOD MODE)';
+            return 'ILLUMINAT-PC\\Administrator (GOD MODE)';
         }
-        return 'RETROS-PC\\Seth';
+        return 'ILLUMINAT-PC\\User';
     }
 
     cmdSet(args) {
@@ -1209,7 +1209,7 @@ MS-DOS is resident in the high memory area.`;
 
         return `
 Host Name:                 RETROS-PC
-OS Name:                   Seth Morrow OS 95
+OS Name:                   IlluminatOS 95
 OS Version:                95.0.1995 Build 1995
 OS Manufacturer:           Morrow Systems Inc.
 OS Configuration:          Standalone Workstation
@@ -1222,7 +1222,7 @@ System Type:               x86-based PC
 Processor(s):              1 Processor(s) Installed.
                            [01]: Intel Pentium 133MHz
 BIOS Version:              Morrow Systems BIOS v2.1
-Windows Directory:         C:\\WINDOWS
+System Directory:         C:\\WINDOWS
 System Directory:          C:\\WINDOWS\\SYSTEM32
 Boot Device:               \\Device\\HarddiskVolume1
 System Locale:             en-us;English (United States)
@@ -1403,7 +1403,7 @@ Active Connections
             "It's not a bug, it's a feature.",
             "Have you tried turning it off and on again?",
             "The best thing about a boolean is even if you are wrong, you are only off by a bit.",
-            "In a world without walls and fences, who needs Windows and Gates?",
+            "In a world without walls and fences, who needs walls and gates?",
             "There's no place like 127.0.0.1",
             "To err is human... to really foul things up requires a computer.",
             "Artificial Intelligence usually beats natural stupidity.",
@@ -1477,11 +1477,11 @@ Active Connections
 
     cmdAbout() {
         return `
-Seth Morrow OS [Version 95.0.1995]
+IlluminatOS [Version 95.0.1995]
 (C) Copyright Morrow Systems Inc. 1995-2025
 
-A retro Windows 95 experience built with love and nostalgia.
-Visit: https://sethmorrow.com`;
+A retro IlluminatOS experience built with love and nostalgia.
+Visit: https://example.com`;
     }
 
     cmdCredits() {
@@ -1489,12 +1489,12 @@ Visit: https://sethmorrow.com`;
 SETH MORROW OS - CREDITS
 ========================
 
-Created by: Seth Morrow
+Created by: IlluminatOS Team
 Engine: Vanilla JavaScript
-Inspiration: Windows 95, MS-DOS
+Inspiration: IlluminatOS, MS-DOS
 
 Special Thanks:
-- Microsoft for the memories
+- Retro computing nostalgia
 - Everyone who remembers the 90s
 - Coffee
 

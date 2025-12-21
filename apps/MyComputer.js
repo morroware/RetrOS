@@ -1,5 +1,5 @@
 /**
- * My Computer - Windows 95 Style File Explorer
+ * My Computer - IlluminatOS Style File Explorer
  * Browse drives, folders, and system information
  */
 

@@ -329,7 +329,7 @@ class AdminPanel extends AppBase {
                     <div class="admin-section">
                         <div class="admin-section-title">System Diagnostics</div>
                         <div style="font-size: 11px; font-family: monospace; background: black; color: #0f0; padding: 10px; overflow-x: auto;">
-                            RetrOS System Diagnostics v1.0<br>
+                            IlluminatOS System Diagnostics v1.0<br>
                             ═══════════════════════════════<br><br>
                             Desktop Icons: ${icons.length}<br>
                             Open Windows: ${StateManager.getState('windows').length}<br>
@@ -605,7 +605,7 @@ class AdminPanel extends AppBase {
         const consoleBtn = this.getElement('#console-btn');
         if (consoleBtn) {
             this.addHandler(consoleBtn, 'click', () => {
-                console.log('RetrOS State:', StateManager.exportState());
+                console.log('IlluminatOS State:', StateManager.exportState());
                 alert('State logged to console. Press F12 to view.');
             });
         }
@@ -620,7 +620,7 @@ class AdminPanel extends AppBase {
         const clearAllBtn = this.getElement('#clear-all-btn');
         if (clearAllBtn) {
             this.addHandler(clearAllBtn, 'click', () => {
-                if (confirm('WARNING: This will erase ALL data and reset RetrOS to factory defaults. Continue?')) {
+                if (confirm('WARNING: This will erase ALL data and reset IlluminatOS to factory defaults. Continue?')) {
                     if (confirm('Are you absolutely sure? This cannot be undone.')) {
                         StateManager.reset();
                     }

@@ -1,5 +1,5 @@
 /**
- * FileSystemManager - Shared virtual file system for RetrOS
+ * FileSystemManager - Shared virtual file system for IlluminatOS
  * Provides a unified file system accessible by all applications
  */
 
@@ -143,7 +143,7 @@ class FileSystemManager {
           'Users': {
             type: 'directory',
             children: {
-              'Seth': {
+              'User': {
                 type: 'directory',
                 children: {
                   'Desktop': {
@@ -151,7 +151,7 @@ class FileSystemManager {
                     children: {
                       'Welcome.txt': {
                         type: 'file',
-                        content: 'Welcome to RetrOS!\n\nEverything you see here is running in your browser.\n\nTry exploring the file system using:\n- Terminal (type "dir" and "cd")\n- My Computer\n- This desktop!\n\nYou can create, edit, and save files that persist across your session.\n\nHave fun!',
+                        content: 'Welcome to IlluminatOS!\n\nEverything you see here is running in your browser.\n\nTry exploring the file system using:\n- Terminal (type "dir" and "cd")\n- My Computer\n- This desktop!\n\nYou can create, edit, and save files that persist across your session.\n\nHave fun!',
                         extension: 'txt',
                         size: 250,
                         created: new Date('2024-01-01').toISOString(),
@@ -164,7 +164,7 @@ class FileSystemManager {
                     children: {
                       'resume.txt': {
                         type: 'file',
-                        content: 'Seth Morrow - Developer\n\nSkills:\n- JavaScript\n- Python\n- Linux Administration\n- Web Development\n\nExperience:\nBuilding retro operating systems and cool web experiences!',
+                        content: 'IlluminatOS Team - Developer\n\nSkills:\n- JavaScript\n- Python\n- Linux Administration\n- Web Development\n\nExperience:\nBuilding retro operating systems and cool web experiences!',
                         extension: 'txt',
                         size: 150,
                         created: new Date('2024-06-15').toISOString(),
@@ -180,7 +180,7 @@ class FileSystemManager {
                       },
                       'welcome.txt': {
                         type: 'file',
-                        content: 'Welcome to RetrOS!\n\nThis is a fully functional retro desktop environment.\nTry exploring the file system, opening applications, and discovering easter eggs!\n\nHave fun!',
+                        content: 'Welcome to IlluminatOS!\n\nThis is a fully functional retro desktop environment.\nTry exploring the file system, opening applications, and discovering easter eggs!\n\nHave fun!',
                         extension: 'txt',
                         size: 165,
                         created: new Date('2024-01-01').toISOString(),
@@ -208,7 +208,7 @@ class FileSystemManager {
                         children: {
                           'README.md': {
                             type: 'file',
-                            content: '# RetrOS\n\nA Windows 95-style operating system built with vanilla JavaScript.\n\n## Features\n- Virtual file system\n- Multiple applications\n- Desktop environment\n- And more!',
+                            content: '# IlluminatOS\n\nA IlluminatOS-style operating system built with vanilla JavaScript.\n\n## Features\n- Virtual file system\n- Multiple applications\n- Desktop environment\n- And more!',
                             extension: 'md',
                             size: 180,
                             created: new Date('2024-05-01').toISOString(),
@@ -283,7 +283,7 @@ class FileSystemManager {
 
   /**
    * Parse a path string into an array of parts
-   * @param {string} path - Path like "C:/Users/Seth/Documents"
+   * @param {string} path - Path like "C:/Users/User/Documents"
    * @returns {string[]} Array of path parts
    */
   parsePath(path) {

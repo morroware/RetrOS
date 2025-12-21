@@ -1,5 +1,5 @@
 /**
- * Task Manager - Windows 95 Style Process Manager
+ * Task Manager - IlluminatOS Style Process Manager
  * Monitor running processes, system performance, and end tasks
  */
 

@@ -1,6 +1,6 @@
 /**
  * Paint App (Final Polish)
- * Windows 95 style painting with optimized layout for 800x600
+ * IlluminatOS style painting with optimized layout for 800x600
  */
 
 import AppBase from './AppBase.js';
@@ -434,7 +434,7 @@ class Paint extends AppBase {
     }
 
     openImage() {
-        const path = prompt('Enter image file path (e.g., C:/Users/Seth/Pictures/image.png):');
+        const path = prompt('Enter image file path (e.g., C:/Users/User/Pictures/image.png):');
         if (!path) return;
 
         try {
@@ -475,10 +475,10 @@ class Paint extends AppBase {
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         const defaultName = `drawing_${timestamp}.png`;
-        const defaultPath = `C:/Users/Seth/Desktop/${defaultName}`;
+        const defaultPath = `C:/Users/User/Desktop/${defaultName}`;
 
         const path = prompt(
-            'Save image to:\n\nTip: Save to Desktop for easy access!\nOr use Pictures folder: C:/Users/Seth/Pictures/',
+            'Save image to:\n\nTip: Save to Desktop for easy access!\nOr use Pictures folder: C:/Users/User/Pictures/',
             defaultPath
         );
         if (!path) return;

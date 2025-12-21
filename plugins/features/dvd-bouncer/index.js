@@ -44,7 +44,7 @@ export default {
     id: 'dvd-bouncer-plugin',
     name: 'DVD Bouncer Screensaver',
     version: '1.0.0',
-    author: 'RetrOS Team',
+    author: 'IlluminatOS Team',
     description: 'Nostalgic bouncing DVD logo screensaver with corner hit tracking',
 
     // Features provided by this plugin

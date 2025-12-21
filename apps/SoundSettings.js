@@ -1,5 +1,5 @@
 /**
- * Sound Settings - Windows 95 Style Sound Control Panel
+ * Sound Settings - IlluminatOS Style Sound Control Panel
  * Configure system sounds and volume
  */
 
@@ -223,11 +223,11 @@ class SoundSettings extends AppBase {
                             <div class="events-list" id="events-list">
                                 <div class="event-item" data-event="startup">
                                     <span class="event-icon">🔔</span>
-                                    <span>Start Windows</span>
+                                    <span>Start IlluminatOS</span>
                                 </div>
                                 <div class="event-item" data-event="shutdown">
                                     <span class="event-icon">🔔</span>
-                                    <span>Exit Windows</span>
+                                    <span>Exit IlluminatOS</span>
                                 </div>
                                 <div class="event-item" data-event="error">
                                     <span class="event-icon">🔔</span>
@@ -270,7 +270,7 @@ class SoundSettings extends AppBase {
                         <div class="sound-group">
                             <div class="sound-group-title">Schemes</div>
                             <div class="scheme-list" id="scheme-list">
-                                <div class="scheme-item selected" data-scheme="default">Windows Default</div>
+                                <div class="scheme-item selected" data-scheme="default">IlluminatOS Default</div>
                                 <div class="scheme-item" data-scheme="none">No Sounds</div>
                                 <div class="scheme-item" data-scheme="retro">Retro Beeps</div>
                                 <div class="scheme-item" data-scheme="nature">Nature</div>

@@ -1,6 +1,6 @@
 /**
- * RetrOS - Main Entry Point
- * Seth Morrow OS - Windows 95 Style Desktop Environment
+ * IlluminatOS - Main Entry Point
+ * IlluminatOS - IlluminatOS Style Desktop Environment
  *
  * This file initializes all core systems, UI renderers, and features
  * in the correct order to boot the operating system.
@@ -36,7 +36,7 @@ import SystemDialogs from './features/SystemDialogs.js';
 import PluginLoader from './core/PluginLoader.js';
 
 // Log successful module loading
-console.log('[RetrOS] All modules imported successfully');
+console.log('[IlluminatOS] All modules imported successfully');
 
 // === BOOT TIPS ===
 const BOOT_TIPS = [
@@ -113,7 +113,7 @@ class BootSequence {
         // Play startup sound
         EventBus.emit(Events.SOUND_PLAY, { type: 'startup' });
 
-        console.log('[RetrOS] Boot complete!');
+        console.log('[IlluminatOS] Boot complete!');
     }
 }
 
@@ -124,10 +124,10 @@ class BootSequence {
  */
 async function initComponent(name, initFn) {
     try {
-        console.log(`[RetrOS]   - Initializing ${name}...`);
+        console.log(`[IlluminatOS]   - Initializing ${name}...`);
         await initFn();
     } catch (error) {
-        console.error(`[RetrOS] FAILED to initialize ${name}:`, error);
+        console.error(`[IlluminatOS] FAILED to initialize ${name}:`, error);
         throw new Error(`Failed to initialize ${name}: ${error.message}`);
     }
 }
@@ -137,22 +137,22 @@ async function initComponent(name, initFn) {
  * @param {Function} onProgress - Callback for progress updates
  */
 async function initializeOS(onProgress = () => {}) {
-    console.log('[RetrOS] Starting initialization...');
+    console.log('[IlluminatOS] Starting initialization...');
 
     // === Phase 0: App Registry (CRITICAL - was running outside error handling!) ===
-    console.log('[RetrOS] Phase 0: App Registry');
+    console.log('[IlluminatOS] Phase 0: App Registry');
     onProgress(5, 'Registering applications...');
     await initComponent('AppRegistry', () => AppRegistry.initialize());
 
     // === Phase 1: Core Systems ===
-    console.log('[RetrOS] Phase 1: Core Systems');
+    console.log('[IlluminatOS] Phase 1: Core Systems');
     onProgress(15, 'Loading core systems...');
     await initComponent('StorageManager', () => StorageManager.initialize());
     await initComponent('StateManager', () => StateManager.initialize());
     await initComponent('WindowManager', () => WindowManager.initialize());
 
     // === Phase 1.5: Sync Filesystem with Apps and Desktop ===
-    console.log('[RetrOS] Phase 1.5: Filesystem Sync');
+    console.log('[IlluminatOS] Phase 1.5: Filesystem Sync');
     onProgress(25, 'Syncing filesystem...');
     await initComponent('FilesystemSync', () => {
         // Sync desktop icons into filesystem as .lnk files
@@ -169,7 +169,7 @@ async function initializeOS(onProgress = () => {}) {
     });
 
     // === Phase 2: Features ===
-    console.log('[RetrOS] Phase 2: Features');
+    console.log('[IlluminatOS] Phase 2: Features');
     onProgress(35, 'Loading features...');
 
     // Register all features with FeatureRegistry
@@ -185,14 +185,14 @@ async function initializeOS(onProgress = () => {}) {
             EasterEggs
         ];
 
-        console.log('[RetrOS] Features to register:', featuresToRegister.map(f => f?.id || 'UNDEFINED'));
+        console.log('[IlluminatOS] Features to register:', featuresToRegister.map(f => f?.id || 'UNDEFINED'));
 
         // Verify each feature is valid
         featuresToRegister.forEach((feature, i) => {
             if (!feature) {
-                console.error(`[RetrOS] Feature at index ${i} is undefined/null!`);
+                console.error(`[IlluminatOS] Feature at index ${i} is undefined/null!`);
             } else if (!feature.id) {
-                console.error(`[RetrOS] Feature at index ${i} has no id:`, feature);
+                console.error(`[IlluminatOS] Feature at index ${i} has no id:`, feature);
             }
         });
 
@@ -200,7 +200,7 @@ async function initializeOS(onProgress = () => {}) {
     });
 
     // === Phase 2.5: Load Plugins ===
-    console.log('[RetrOS] Phase 2.5: Plugin System');
+    console.log('[IlluminatOS] Phase 2.5: Plugin System');
     onProgress(45, 'Loading plugins...');
     await initComponent('PluginLoader', async () => {
         // Clear any old manifest entries to start fresh
@@ -223,19 +223,19 @@ async function initializeOS(onProgress = () => {}) {
         await PluginLoader.loadAllPlugins();
 
         // Log status for debugging
-        console.log('[RetrOS] Plugins loaded:');
+        console.log('[IlluminatOS] Plugins loaded:');
         PluginLoader.logStatus();
     });
 
     // === Phase 2.7: Initialize All Features (Core + Plugin) ===
-    console.log('[RetrOS] Phase 2.7: Initializing all features');
+    console.log('[IlluminatOS] Phase 2.7: Initializing all features');
     onProgress(50, 'Initializing features...');
     await initComponent('FeatureRegistry.initializeAll', async () => {
         await FeatureRegistry.initializeAll();
     });
 
     // === Phase 3: UI Renderers ===
-    console.log('[RetrOS] Phase 3: UI Renderers');
+    console.log('[IlluminatOS] Phase 3: UI Renderers');
     onProgress(60, 'Rendering desktop...');
     await initComponent('TaskbarRenderer', () => TaskbarRenderer.initialize());
     await initComponent('DesktopRenderer', () => DesktopRenderer.initialize());
@@ -243,12 +243,12 @@ async function initializeOS(onProgress = () => {}) {
     await initComponent('ContextMenuRenderer', () => ContextMenuRenderer.initialize());
 
     // === Phase 4: Apply saved settings ===
-    console.log('[RetrOS] Phase 4: Applying settings');
+    console.log('[IlluminatOS] Phase 4: Applying settings');
     onProgress(80, 'Applying settings...');
     await initComponent('Settings', () => applySettings());
 
     // === Phase 5: Setup global handlers ===
-    console.log('[RetrOS] Phase 5: Global handlers');
+    console.log('[IlluminatOS] Phase 5: Global handlers');
     onProgress(90, 'Setting up handlers...');
     await initComponent('GlobalHandlers', () => setupGlobalHandlers());
 
@@ -258,7 +258,7 @@ async function initializeOS(onProgress = () => {}) {
     }
 
     onProgress(100, 'Ready!');
-    console.log('[RetrOS] Initialization complete');
+    console.log('[IlluminatOS] Initialization complete');
 }
 
 /**
@@ -481,7 +481,7 @@ function showBSOD() {
 
 // === MAIN EXECUTION ===
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[RetrOS] DOM Ready - Starting boot sequence');
+    console.log('[IlluminatOS] DOM Ready - Starting boot sequence');
 
     // Signal that the real boot sequence has started (stops fallback animation)
     window.bootSequenceStarted = true;
@@ -558,9 +558,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Wait for boot animation to finish
         await bootPromise;
 
-        console.log('[RetrOS] System ready!');
+        console.log('[IlluminatOS] System ready!');
     } catch (error) {
-        console.error('[RetrOS] Boot failed with error:', error);
+        console.error('[IlluminatOS] Boot failed with error:', error);
         initError = error;
 
         // Show error to user and allow recovery
@@ -568,12 +568,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (bootScreen) {
             bootScreen.innerHTML = `
                 <div style="color: white; text-align: center; padding: 20px; font-family: 'Courier New', monospace;">
-                    <h2 style="color: #ff6b6b;">⚠️ RetrOS Boot Error</h2>
+                    <h2 style="color: #ff6b6b;">⚠️ IlluminatOS Boot Error</h2>
                     <p style="color: #aaa; margin: 15px 0;">An error occurred during startup:</p>
                     <pre style="background: #1a1a1a; padding: 15px; margin: 15px auto; border-radius: 4px; text-align: left; max-width: 600px; overflow: auto; border: 1px solid #333; color: #ff6b6b; font-size: 12px;">${error.message}</pre>
                     <p style="color: #888; font-size: 12px; margin: 10px 0;">Check browser console (F12) for full details</p>
                     <button onclick="location.reload()" style="padding: 12px 24px; cursor: pointer; margin-top: 15px; background: #4a4a4a; color: white; border: 2px outset #666; font-size: 14px;">
-                        🔄 Restart RetrOS
+                        🔄 Restart IlluminatOS
                     </button>
                     <button onclick="localStorage.clear(); location.reload()" style="padding: 12px 24px; cursor: pointer; margin-top: 15px; margin-left: 10px; background: #8b0000; color: white; border: 2px outset #666; font-size: 14px;">
                         🗑️ Reset & Restart
