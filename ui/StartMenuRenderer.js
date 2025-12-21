@@ -129,6 +129,8 @@ class StartMenuRendererClass {
         if (!this.element) return;
         const isAdmin = StateManager.getState('user.isAdmin');
 
+        console.log('[StartMenuRenderer] render() called - building menu HTML');
+
         this.element.innerHTML = `
             <div class="start-menu-sidebar">
                 <span class="sidebar-text">Seth Morrow OS 95</span>
@@ -146,6 +148,17 @@ class StartMenuRendererClass {
                 </div>
             </div>
         `;
+
+        // Debug: verify Settings submenu items in DOM
+        const settingsSubmenu = this.element.querySelector('[data-app="controlpanel"]')?.closest('.start-submenu');
+        if (settingsSubmenu) {
+            const items = settingsSubmenu.querySelectorAll('[data-app]');
+            console.log('[StartMenuRenderer] Settings submenu items in DOM:',
+                Array.from(items).map(i => i.dataset.app));
+        } else {
+            console.error('[StartMenuRenderer] Settings submenu NOT found in DOM!');
+        }
+
         // Attach only submenu positioning (click handlers use event delegation)
         this.attachSubmenuPositioning();
     }
@@ -259,7 +272,7 @@ class StartMenuRendererClass {
     }
 
     renderSettingsSection() {
-        return `
+        const settingsHtml = `
             <div class="start-menu-item submenu-trigger">
                 <span class="start-menu-icon">⚙️</span>
                 <span>Settings</span>
@@ -284,6 +297,9 @@ class StartMenuRendererClass {
                 </div>
             </div>
         `;
+        // Debug: log that we're rendering with all 4 items
+        console.log('[StartMenuRenderer] Settings section rendered with 4 items: controlpanel, display, sounds, features-settings');
+        return settingsHtml;
     }
 
     renderQuickItems() {
