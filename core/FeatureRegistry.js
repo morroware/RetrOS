@@ -90,6 +90,13 @@ class FeatureRegistryClass {
             // Load saved enabled state
             feature.loadEnabledState();
 
+            // Update metadata with current enabled state
+            const meta = this.metadata.get(featureId);
+            if (meta) {
+                meta.enabled = feature.isEnabled();
+                meta.config = feature.getAllConfig();
+            }
+
             // Check if feature should be enabled
             if (feature.isEnabled()) {
                 try {
@@ -98,6 +105,11 @@ class FeatureRegistryClass {
 
                     await feature.initialize();
                     feature.initialized = true;
+
+                    // Update initialized state in metadata
+                    if (meta) {
+                        meta.initialized = true;
+                    }
 
                     // Trigger after-init hook
                     this.triggerGlobalHook('feature:after-init', { featureId });
@@ -232,11 +244,23 @@ class FeatureRegistryClass {
     }
 
     /**
-     * Get all feature metadata
+     * Get all feature metadata with current state
      * @returns {Object[]}
      */
     getAll() {
-        return Array.from(this.metadata.values());
+        // Return metadata merged with current feature state
+        return Array.from(this.metadata.values()).map(meta => {
+            const feature = this.features.get(meta.id);
+            if (feature) {
+                return {
+                    ...meta,
+                    enabled: feature.isEnabled(),
+                    initialized: feature.initialized,
+                    config: feature.getAllConfig()
+                };
+            }
+            return meta;
+        });
     }
 
     /**
