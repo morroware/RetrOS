@@ -203,12 +203,21 @@ async function initializeOS(onProgress = () => {}) {
     console.log('[RetrOS] Phase 2.5: Plugin System');
     onProgress(45, 'Loading plugins...');
     await initComponent('PluginLoader', async () => {
-        // Add DVD Bouncer plugin to manifest
-        // Use path relative to PluginLoader's location in /core/
-        PluginLoader.addToManifest({
+        // Clear any old manifest entries to start fresh
+        const manifest = PluginLoader.getPluginManifest();
+
+        // Remove any existing DVD Bouncer entries (cleanup old paths)
+        manifest.plugins = manifest.plugins.filter(p =>
+            !p.path.includes('dvd-bouncer')
+        );
+
+        // Add DVD Bouncer plugin with correct path
+        manifest.plugins.push({
             path: '../plugins/features/dvd-bouncer/index.js',
             enabled: true
         });
+
+        PluginLoader.savePluginManifest(manifest);
 
         // Load all plugins (registers plugin features with FeatureRegistry)
         await PluginLoader.loadAllPlugins();

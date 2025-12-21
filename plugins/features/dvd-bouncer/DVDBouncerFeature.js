@@ -13,7 +13,6 @@ class DVDBouncerFeature extends FeatureBase {
             icon: '📀',
             category: 'plugin',
             config: {
-                enabled: false,
                 speed: 2,
                 logoSize: 80,
                 idleTimeout: 60000, // 1 minute of no activity
