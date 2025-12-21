@@ -1,6 +1,6 @@
 # RetrOS Developer Guide
 
-A comprehensive guide for creating new applications and extending RetrOS.
+A comprehensive guide for creating new applications, features, and plugins for RetrOS.
 
 ---
 
@@ -18,7 +18,9 @@ A comprehensive guide for creating new applications and extending RetrOS.
 10. [Configuration Constants](#configuration-constants)
 11. [Best Practices](#best-practices)
 12. [Common Patterns](#common-patterns)
-13. [Troubleshooting](#troubleshooting)
+13. [Plugin System](#plugin-system)
+14. [Feature Development](#feature-development)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -713,6 +715,550 @@ onOpen() {
     `;
 }
 ```
+
+---
+
+## Plugin System
+
+RetrOS features a powerful plugin system that allows third-party extensions without modifying core code. Plugins can provide new features, apps, and integrate with existing systems.
+
+### Plugin Architecture
+
+```
+plugins/
+├── features/                    # Feature plugins
+│   ├── dvd-bouncer/            # Example: DVD Bouncer screensaver
+│   │   ├── index.js            # Plugin manifest (entry point)
+│   │   ├── DVDBouncerFeature.js # Feature implementation
+│   │   └── README.md           # Documentation
+│   └── your-plugin/            # Your custom plugin
+│       ├── index.js
+│       └── YourFeature.js
+└── apps/                        # App plugins (future)
+```
+
+### Core Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `PluginLoader` | `/core/PluginLoader.js` | Loads and manages plugins |
+| `FeatureRegistry` | `/core/FeatureRegistry.js` | Registers and initializes features |
+| `FeatureBase` | `/core/FeatureBase.js` | Base class for all features |
+
+### Creating a Plugin
+
+#### Step 1: Create Plugin Directory
+
+```bash
+mkdir -p plugins/features/my-plugin
+```
+
+#### Step 2: Create the Feature Class
+
+Create `plugins/features/my-plugin/MyFeature.js`:
+
+```javascript
+import FeatureBase from '../../../core/FeatureBase.js';
+
+class MyFeature extends FeatureBase {
+    constructor() {
+        super({
+            // Required
+            id: 'my-feature',           // Unique identifier
+            name: 'My Feature',         // Display name
+
+            // Optional
+            description: 'Description of what my feature does',
+            icon: '🚀',                 // Emoji or FontAwesome class
+            category: 'plugin',         // 'core', 'enhancement', or 'plugin'
+            dependencies: [],           // Feature IDs this depends on
+
+            // Configuration with defaults
+            config: {
+                speed: 5,
+                enabled: true,
+                color: '#FF6B6B'
+            },
+
+            // Settings UI definition
+            settings: [
+                {
+                    key: 'speed',
+                    label: 'Speed',
+                    type: 'number',
+                    min: 1,
+                    max: 10,
+                    step: 1,
+                    description: 'Movement speed (1-10)'
+                },
+                {
+                    key: 'enabled',
+                    label: 'Enable Effect',
+                    type: 'checkbox',
+                    description: 'Toggle the effect on/off'
+                },
+                {
+                    key: 'color',
+                    label: 'Color',
+                    type: 'select',
+                    options: [
+                        { value: '#FF6B6B', label: 'Red' },
+                        { value: '#4ECDC4', label: 'Teal' },
+                        { value: '#45B7D1', label: 'Blue' }
+                    ],
+                    description: 'Choose the primary color'
+                }
+            ]
+        });
+
+        // Instance properties
+        this.animationFrame = null;
+        this.isRunning = false;
+    }
+
+    /**
+     * Called during system initialization when feature is enabled
+     */
+    async initialize() {
+        this.log('Initializing...');
+
+        // Subscribe to system events (auto-cleanup)
+        this.subscribe('window:open', (data) => this.onWindowOpen(data));
+        this.subscribe('boot:complete', () => this.onBootComplete());
+
+        // Add DOM event listeners (auto-cleanup)
+        this.addHandler(document, 'keydown', this.handleKeydown);
+
+        this.log('Initialized successfully!');
+    }
+
+    /**
+     * Called when feature is enabled at runtime
+     */
+    async enable() {
+        this.log('Feature enabled');
+        // Re-initialize if needed
+        if (!this.initialized) {
+            await this.initialize();
+            this.initialized = true;
+        }
+    }
+
+    /**
+     * Called when feature is disabled at runtime
+     */
+    async disable() {
+        this.log('Feature disabled');
+        this.stop();
+    }
+
+    /**
+     * Called when feature is cleaned up
+     */
+    cleanup() {
+        this.stop();
+        this.log('Cleaned up');
+    }
+
+    // Custom methods
+    start() {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.log('Started');
+
+        // Emit event for other features
+        this.emit('my-feature:started', { timestamp: Date.now() });
+    }
+
+    stop() {
+        if (!this.isRunning) return;
+        this.isRunning = false;
+
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+
+        this.emit('my-feature:stopped', { timestamp: Date.now() });
+    }
+
+    handleKeydown(e) {
+        // Access config values
+        const speed = this.getConfig('speed', 5);
+        this.log(`Key pressed, speed is: ${speed}`);
+    }
+
+    onWindowOpen(data) {
+        this.log(`Window opened: ${data.title}`);
+    }
+
+    onBootComplete() {
+        this.log('System boot complete!');
+    }
+}
+
+export default MyFeature;
+```
+
+#### Step 3: Create the Plugin Manifest
+
+Create `plugins/features/my-plugin/index.js`:
+
+```javascript
+import MyFeature from './MyFeature.js';
+
+export default {
+    // Plugin metadata
+    id: 'my-plugin',
+    name: 'My Awesome Plugin',
+    version: '1.0.0',
+    author: 'Your Name',
+    description: 'A brief description of what this plugin does',
+
+    // Features provided by this plugin
+    features: [
+        new MyFeature()
+    ],
+
+    // Apps provided by this plugin (optional)
+    apps: [],
+
+    // Lifecycle hooks
+    onLoad: async () => {
+        console.log('🚀 My Plugin loaded!');
+    },
+
+    onUnload: async () => {
+        console.log('👋 My Plugin unloaded');
+    }
+};
+```
+
+#### Step 4: Register the Plugin
+
+Plugins are registered in the boot sequence. Add your plugin to `index.js`:
+
+```javascript
+// In initializeOS(), Phase 2.5: Load Plugins
+await initComponent('PluginLoader', async () => {
+    const manifest = PluginLoader.getPluginManifest();
+
+    // Add your plugin
+    manifest.plugins.push({
+        path: '../plugins/features/my-plugin/index.js',
+        enabled: true
+    });
+
+    PluginLoader.savePluginManifest(manifest);
+    await PluginLoader.loadAllPlugins();
+});
+```
+
+### Plugin Loading Flow
+
+```
+Boot Sequence
+     │
+     ▼
+Phase 2: Register Core Features
+     │ FeatureRegistry.registerAll([SoundSystem, ...])
+     ▼
+Phase 2.5: Load Plugins
+     │ PluginLoader.loadAllPlugins()
+     │   ├── Load plugin from path
+     │   ├── Register plugin features with FeatureRegistry
+     │   └── Call plugin.onLoad()
+     ▼
+Phase 2.7: Initialize All Features
+     │ FeatureRegistry.initializeAll()
+     │   ├── Resolve dependencies (topological sort)
+     │   ├── Load enabled state from storage
+     │   └── Call feature.initialize() for enabled features
+     ▼
+System Ready
+```
+
+### PluginLoader API
+
+```javascript
+import PluginLoader from './core/PluginLoader.js';
+
+// Load a plugin from path
+await PluginLoader.loadPluginFromPath('../plugins/features/my-plugin/index.js');
+
+// Load all plugins from manifest
+await PluginLoader.loadAllPlugins();
+
+// Unload a plugin
+await PluginLoader.unloadPlugin('my-plugin');
+
+// Get/save manifest
+const manifest = PluginLoader.getPluginManifest();
+PluginLoader.savePluginManifest(manifest);
+
+// Add plugin to manifest
+PluginLoader.addToManifest({
+    path: '../plugins/features/my-plugin/index.js',
+    enabled: true
+});
+
+// Check if plugin is loaded
+const isLoaded = PluginLoader.isLoaded('my-plugin');
+
+// Get all loaded plugins
+const plugins = PluginLoader.getAll();
+
+// Get features provided by a plugin
+const features = PluginLoader.getPluginFeatures('my-plugin');
+
+// Debug info
+PluginLoader.logStatus();
+```
+
+### Plugin Manifest Storage
+
+The plugin manifest is stored in localStorage and contains:
+
+```javascript
+{
+    plugins: [
+        {
+            path: '../plugins/features/dvd-bouncer/index.js',
+            enabled: true
+        },
+        {
+            path: '../plugins/features/my-plugin/index.js',
+            enabled: true
+        }
+    ]
+}
+```
+
+---
+
+## Feature Development
+
+Features are modular system enhancements that extend RetrOS functionality. They differ from apps in that they run in the background and integrate with the OS itself.
+
+### Feature Categories
+
+| Category | Purpose | Can Disable? |
+|----------|---------|--------------|
+| `core` | Essential system features | No |
+| `enhancement` | Optional system features | Yes |
+| `plugin` | Third-party plugin features | Yes |
+
+### FeatureBase API
+
+```javascript
+class MyFeature extends FeatureBase {
+    constructor() {
+        super({
+            id: 'my-feature',
+            name: 'My Feature',
+            description: 'Description',
+            icon: '🚀',
+            category: 'enhancement',
+            dependencies: ['soundsystem'],  // Initialize after SoundSystem
+            config: { /* defaults */ },
+            settings: [ /* UI definitions */ ]
+        });
+    }
+}
+```
+
+### Lifecycle Methods
+
+| Method | When Called | Purpose |
+|--------|-------------|---------|
+| `initialize()` | Boot sequence (if enabled) | Setup subscriptions, handlers |
+| `enable()` | User enables feature | Activate feature |
+| `disable()` | User disables feature | Deactivate feature |
+| `cleanup()` | Feature disabled/unloaded | Clean up resources |
+
+### Configuration Helpers
+
+```javascript
+// Get config value (with optional default)
+const speed = this.getConfig('speed', 5);
+
+// Set config value (auto-persists)
+this.setConfig('speed', 10);
+
+// Get all config
+const allConfig = this.getAllConfig();
+
+// Reset to defaults
+this.resetConfig();
+
+// Load config from storage
+const saved = this.loadConfigFromStorage();
+```
+
+### State Helpers
+
+```javascript
+// Check if enabled
+if (this.isEnabled()) { ... }
+
+// Load enabled state from storage
+this.loadEnabledState();
+
+// Save enabled state to storage
+this.saveEnabledState(true);
+```
+
+### Event Helpers
+
+```javascript
+// Subscribe to EventBus (auto-cleanup on disable)
+this.subscribe('window:open', (data) => { ... });
+
+// Emit events
+this.emit('my-feature:started', { data: 'value' });
+
+// Add DOM event listener (auto-cleanup on disable)
+this.addHandler(document, 'keydown', this.handleKeydown);
+this.addHandler(element, 'click', this.handleClick, { capture: true });
+
+// Remove specific handler
+this.removeHandler(document, 'keydown');
+```
+
+### Logging Helpers
+
+```javascript
+this.log('Info message');      // [My Feature] Info message
+this.warn('Warning message');  // [My Feature] Warning message
+this.error('Error message');   // [My Feature] Error message
+```
+
+### Hook System
+
+Features can expose hooks for other features to extend:
+
+```javascript
+// In your feature - trigger a hook
+const results = this.triggerHook('before:start', { data: 'value' });
+
+// In another feature - register a hook handler
+myFeature.registerHook('before:start', (data) => {
+    console.log('About to start with:', data);
+    return { modified: true };
+});
+```
+
+### FeatureRegistry API
+
+```javascript
+import FeatureRegistry from './core/FeatureRegistry.js';
+
+// Register a feature
+FeatureRegistry.register(new MyFeature());
+
+// Get a feature instance
+const feature = FeatureRegistry.get('my-feature');
+
+// Enable/disable at runtime
+await FeatureRegistry.enable('my-feature');
+await FeatureRegistry.disable('my-feature');
+
+// Toggle
+const newState = await FeatureRegistry.toggle('my-feature');
+
+// Check status
+const isEnabled = FeatureRegistry.isEnabled('my-feature');
+const isInitialized = FeatureRegistry.isInitialized('my-feature');
+
+// Get all features
+const allFeatures = FeatureRegistry.getAll();
+
+// Get by category
+const plugins = FeatureRegistry.getByCategory('plugin');
+
+// Get enabled/disabled
+const enabled = FeatureRegistry.getEnabled();
+const disabled = FeatureRegistry.getDisabled();
+
+// Feature config
+const value = FeatureRegistry.getFeatureConfig('my-feature', 'speed', 5);
+FeatureRegistry.setFeatureConfig('my-feature', 'speed', 10);
+FeatureRegistry.resetFeatureConfig('my-feature');
+
+// Debug
+FeatureRegistry.logStatus();
+const debug = FeatureRegistry.getDebugInfo();
+```
+
+### Settings UI Definition
+
+Features can define settings that appear in the Settings app:
+
+```javascript
+settings: [
+    // Number input
+    {
+        key: 'speed',
+        label: 'Speed',
+        type: 'number',
+        min: 1,
+        max: 10,
+        step: 1,
+        description: 'Movement speed'
+    },
+
+    // Checkbox
+    {
+        key: 'autoStart',
+        label: 'Auto-start',
+        type: 'checkbox',
+        description: 'Start automatically'
+    },
+
+    // Select dropdown
+    {
+        key: 'theme',
+        label: 'Theme',
+        type: 'select',
+        options: [
+            { value: 'dark', label: 'Dark' },
+            { value: 'light', label: 'Light' }
+        ],
+        description: 'Choose theme'
+    },
+
+    // Text input
+    {
+        key: 'name',
+        label: 'Name',
+        type: 'text',
+        description: 'Enter a name'
+    },
+
+    // With transform (store in ms, display in seconds)
+    {
+        key: 'timeout',
+        label: 'Timeout (seconds)',
+        type: 'number',
+        min: 10,
+        max: 300,
+        transform: (value) => value * 1000,        // Input → Storage
+        displayTransform: (value) => value / 1000  // Storage → Display
+    }
+]
+```
+
+### Example: Complete Feature Plugin
+
+See the DVD Bouncer plugin for a complete example:
+
+- **Location**: `/plugins/features/dvd-bouncer/`
+- **Features**:
+  - Idle detection and auto-start
+  - Animation with requestAnimationFrame
+  - Configuration persistence
+  - Event emission for integration
+  - DOM event handling with cleanup
 
 ---
 

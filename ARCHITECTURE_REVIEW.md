@@ -11,19 +11,22 @@ RetrOS is a well-architected Windows 95 simulator built with vanilla JavaScript,
 ### Project Structure
 ```
 RetrOS/
-├── core/                    # Core OS systems (7 modules)
+├── core/                    # Core OS systems (10 modules)
 │   ├── EventBus.js         # Central pub/sub messaging
 │   ├── StateManager.js     # Centralized state + persistence
 │   ├── WindowManager.js    # Window lifecycle management
 │   ├── StorageManager.js   # localStorage abstraction
 │   ├── FileSystemManager.js # Virtual file system
 │   ├── IconSystem.js       # FontAwesome + emoji icons
-│   └── Constants.js        # Centralized configuration
+│   ├── Constants.js        # Centralized configuration
+│   ├── PluginLoader.js     # Plugin loading & management (NEW)
+│   ├── FeatureRegistry.js  # Feature registration & lifecycle (NEW)
+│   └── FeatureBase.js      # Base class for features (NEW)
 ├── apps/                    # Application implementations
 │   ├── AppBase.js          # Base class for all apps
 │   ├── AppRegistry.js      # App registration & launching
 │   └── [27 app files]      # Individual applications
-├── features/               # Optional system features (7 modules)
+├── features/               # Core system features (7 modules)
 │   ├── AchievementSystem.js
 │   ├── ClippyAssistant.js
 │   ├── DesktopPet.js
@@ -31,6 +34,12 @@ RetrOS/
 │   ├── Screensaver.js
 │   ├── SoundSystem.js
 │   └── SystemDialogs.js
+├── plugins/                # Third-party plugins (NEW)
+│   └── features/           # Feature plugins
+│       └── dvd-bouncer/    # Example plugin
+│           ├── index.js
+│           ├── DVDBouncerFeature.js
+│           └── README.md
 ├── ui/                     # UI renderers (4 modules)
 │   ├── DesktopRenderer.js
 │   ├── StartMenuRenderer.js
@@ -52,11 +61,134 @@ RetrOS/
 | Observer | StateManager.subscribe() | Reactive state updates |
 
 ### Statistics
-- **Total Files**: 43+ JavaScript files
-- **Lines of Code**: ~30,900
+- **Total Files**: 47+ JavaScript files
+- **Lines of Code**: ~32,500
 - **Dependencies**: Zero (pure vanilla JS)
 - **Apps**: 29 registered applications
-- **Features**: 7 system features
+- **Core Features**: 7 system features
+- **Plugins**: Extensible plugin system with example DVD Bouncer
+
+---
+
+## Plugin System (NEW)
+
+RetrOS now features a comprehensive plugin system enabling third-party extensions without modifying core code.
+
+### Plugin Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      PLUGIN SYSTEM                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────┐     ┌─────────────────────┐               │
+│  │   PluginLoader   │────▶│   FeatureRegistry   │               │
+│  │  (loads plugins) │     │ (manages features)  │               │
+│  └────────┬─────────┘     └──────────┬──────────┘               │
+│           │                          │                           │
+│           ▼                          ▼                           │
+│  ┌──────────────────┐     ┌─────────────────────┐               │
+│  │  Plugin Manifest │     │    FeatureBase      │               │
+│  │  (localStorage)  │     │ (base class)        │               │
+│  └──────────────────┘     └─────────────────────┘               │
+│                                      │                           │
+│                                      ▼                           │
+│                          ┌─────────────────────┐                │
+│                          │   Plugin Features   │                │
+│                          │ (DVDBouncerFeature) │                │
+│                          └─────────────────────┘                │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Core Components
+
+| Component | Purpose |
+|-----------|---------|
+| `PluginLoader` | Loads plugins from manifest, registers features/apps |
+| `FeatureRegistry` | Central registry for all features with dependency resolution |
+| `FeatureBase` | Base class providing lifecycle, config, and event helpers |
+
+### Boot Sequence Integration
+
+```
+Phase 0: App Registry
+Phase 1: Core Systems (Storage, State, Window)
+Phase 1.5: Filesystem Sync
+Phase 2: Register Core Features (FeatureRegistry.registerAll)
+Phase 2.5: Load Plugins (PluginLoader.loadAllPlugins)  ◀── NEW
+Phase 2.7: Initialize All Features (Core + Plugin)     ◀── NEW
+Phase 3: UI Renderers
+Phase 4: Apply Settings
+Phase 5: Global Handlers
+```
+
+### Feature Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  FEATURE LIFECYCLE                       │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Registration                                            │
+│       │ FeatureRegistry.register(feature)               │
+│       ▼                                                  │
+│  ┌─────────────┐                                        │
+│  │ loadEnabled │ ──► Load enabled state from storage    │
+│  │   State()   │                                        │
+│  └──────┬──────┘                                        │
+│         │                                                │
+│         ▼                                                │
+│  ┌─────────────┐     ┌───────────────────────┐          │
+│  │ initialize()│ ──► │ Setup subscriptions   │          │
+│  │  (if enabled)     │ Add event handlers    │          │
+│  └──────┬──────┘     │ Configure feature     │          │
+│         │            └───────────────────────┘          │
+│         ▼                                                │
+│  ┌──────────────────────────────────┐                   │
+│  │         FEATURE ACTIVE           │                   │
+│  │  • Responds to events            │                   │
+│  │  • Config persisted to storage   │                   │
+│  │  • Can be enabled/disabled       │                   │
+│  └───────────────┬──────────────────┘                   │
+│                  │                                       │
+│  ┌───────────────┴───────────────┐                      │
+│  │                               │                      │
+│  ▼                               ▼                      │
+│  ┌─────────┐               ┌──────────┐                 │
+│  │ enable()│               │ disable()│                 │
+│  └────┬────┘               └────┬─────┘                 │
+│       │                         │                       │
+│       ▼                         ▼                       │
+│  Activate feature          ┌─────────┐                  │
+│  Save enabled state        │cleanup()│                  │
+│                            │ Unsubscribe events         │
+│                            │ Remove handlers            │
+│                            │ Save disabled state        │
+│                            └─────────┘                  │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Example Plugin: DVD Bouncer
+
+The DVD Bouncer screensaver demonstrates plugin development:
+
+```javascript
+// Plugin structure
+plugins/features/dvd-bouncer/
+├── index.js              // Plugin manifest
+├── DVDBouncerFeature.js  // Feature implementation
+└── README.md             // Documentation
+
+// Features demonstrated:
+- Extends FeatureBase
+- Configuration with settings UI
+- Idle detection with auto-start
+- Animation with requestAnimationFrame
+- Event emission (dvd-bouncer:started, :stopped, :corner-hit)
+- Automatic cleanup on disable
+```
 
 ---
 
@@ -211,17 +343,26 @@ class MyApp extends AppBase {
    - Each app exports default class extending AppBase
    - Registration happens automatically
 
-2. **Dynamic Feature Loading**
-   - Enable/disable features at runtime
-   - Lazy loading for large features
-
-3. **Plugin System**
-   - Third-party app installation
-   - Feature extensions
-
-4. **Service Worker**
+2. **Service Worker**
    - Offline support
    - Asset caching
+
+3. **Plugin Marketplace**
+   - Browser-based plugin discovery
+   - One-click installation
+
+### Recently Implemented ✅
+
+1. **Plugin System** (Completed)
+   - PluginLoader for third-party extensions
+   - FeatureRegistry for feature management
+   - FeatureBase class with lifecycle hooks
+   - Example: DVD Bouncer screensaver plugin
+
+2. **Dynamic Feature Loading** (Completed)
+   - Enable/disable features at runtime
+   - Configuration persistence
+   - Dependency resolution
 
 ---
 
