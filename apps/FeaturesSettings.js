@@ -22,6 +22,8 @@ class FeaturesSettings extends AppBase {
 
     onOpen() {
         const features = FeatureRegistry.getAll();
+        console.log('[FeaturesSettings] Features from registry:', features);
+        console.log('[FeaturesSettings] Feature count:', features.length);
 
         return `
             <div class="features-settings">
