@@ -1,0 +1,246 @@
+{
+    "$schema": "./schema.json",
+    "id": "tutorial-basics",
+    "name": "RetrOS Tutorial",
+    "description": "Learn the basics of RetrOS - open apps, play games, and discover secrets!",
+    "version": "1.0.0",
+    "author": "RetrOS Team",
+    "icon": "📚",
+    "difficulty": "easy",
+    "estimatedTime": "5 minutes",
+    "tags": ["tutorial", "beginner", "introduction"],
+
+    "requirements": {
+        "apps": ["notepad", "minesweeper"],
+        "features": []
+    },
+
+    "config": {
+        "allowSkip": true,
+        "showProgress": true,
+        "autoSave": true,
+        "hintDelay": 30000,
+        "maxHints": 3
+    },
+
+    "variables": {
+        "appsOpened": 0,
+        "gamesPlayed": 0,
+        "notesWritten": false
+    },
+
+    "onStart": {
+        "actions": [
+            {
+                "type": "showNotification",
+                "message": "Welcome to the RetrOS Tutorial! Let's learn the basics."
+            },
+            {
+                "type": "showClippy",
+                "message": "Hi there! I'm here to help you learn RetrOS. Let's start by opening Notepad!"
+            }
+        ]
+    },
+
+    "stages": [
+        {
+            "id": "open-notepad",
+            "name": "Open Your First App",
+            "description": "Open Notepad from the desktop or Start menu",
+            "isInitialStage": true,
+
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showNotification",
+                        "message": "📝 Step 1: Double-click the Notepad icon on the desktop, or find it in the Start menu!"
+                    }
+                ]
+            },
+
+            "hints": [
+                { "delay": 15000, "message": "Look for the 📝 icon on the desktop!" },
+                { "delay": 30000, "message": "You can also click Start → Programs → Accessories → Notepad" }
+            ],
+
+            "triggers": [
+                {
+                    "id": "notepad-opened",
+                    "event": "notepad:opened",
+                    "actions": [
+                        {
+                            "type": "modifyVariable",
+                            "name": "appsOpened",
+                            "operation": "increment"
+                        },
+                        {
+                            "type": "showNotification",
+                            "message": "Great! You opened Notepad! Now try typing something."
+                        },
+                        {
+                            "type": "advanceStage",
+                            "stageId": "write-note"
+                        }
+                    ],
+                    "once": true
+                }
+            ]
+        },
+
+        {
+            "id": "write-note",
+            "name": "Write a Note",
+            "description": "Type something in Notepad",
+
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "Now type something! Try writing 'Hello RetrOS' or anything you like."
+                    }
+                ]
+            },
+
+            "hints": [
+                { "delay": 20000, "message": "Just click in the text area and start typing!" }
+            ],
+
+            "triggers": [
+                {
+                    "id": "text-typed",
+                    "event": "notepad:typed",
+                    "conditions": {
+                        "type": "eventData",
+                        "path": "length",
+                        "value": 5
+                    },
+                    "actions": [
+                        {
+                            "type": "setVariable",
+                            "name": "notesWritten",
+                            "value": true
+                        },
+                        {
+                            "type": "showNotification",
+                            "message": "Excellent! You're getting the hang of it! Now let's try a game."
+                        },
+                        {
+                            "type": "advanceStage",
+                            "stageId": "play-minesweeper"
+                        }
+                    ],
+                    "once": true
+                }
+            ]
+        },
+
+        {
+            "id": "play-minesweeper",
+            "name": "Play a Game",
+            "description": "Open and play Minesweeper",
+
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showNotification",
+                        "message": "💣 Step 3: Now let's play Minesweeper! Find it in Start → Programs → Games"
+                    },
+                    {
+                        "type": "showClippy",
+                        "message": "Minesweeper is a classic! Left-click to reveal cells, right-click to flag mines."
+                    }
+                ]
+            },
+
+            "hints": [
+                { "delay": 20000, "message": "Look in Start → Programs → Games → Minesweeper" },
+                { "delay": 40000, "message": "The 💣 icon should be on your desktop too!" }
+            ],
+
+            "triggers": [
+                {
+                    "id": "minesweeper-started",
+                    "event": "minesweeper:started",
+                    "actions": [
+                        {
+                            "type": "modifyVariable",
+                            "name": "gamesPlayed",
+                            "operation": "increment"
+                        },
+                        {
+                            "type": "showNotification",
+                            "message": "You started Minesweeper! Try to reveal some cells."
+                        }
+                    ],
+                    "once": true
+                },
+                {
+                    "id": "cell-revealed",
+                    "event": "minesweeper:cell:revealed",
+                    "actions": [
+                        {
+                            "type": "advanceStage",
+                            "stageId": "complete"
+                        }
+                    ],
+                    "once": true
+                }
+            ]
+        },
+
+        {
+            "id": "complete",
+            "name": "Tutorial Complete",
+            "description": "You've learned the basics!",
+
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "completeScenario"
+                    }
+                ]
+            }
+        }
+    ],
+
+    "globalTriggers": [
+        {
+            "id": "win-any-game",
+            "event": "game:win",
+            "actions": [
+                {
+                    "type": "showNotification",
+                    "message": "🎉 Congratulations on winning!"
+                }
+            ]
+        }
+    ],
+
+    "onComplete": {
+        "actions": [
+            {
+                "type": "showDialog",
+                "title": "🎉 Tutorial Complete!",
+                "message": "You've learned the basics of RetrOS!\n\n• Opening apps\n• Using Notepad\n• Playing games\n\nNow explore on your own! There are many more apps, games, and even some easter eggs to discover."
+            },
+            {
+                "type": "playSound",
+                "sound": "achievement"
+            },
+            {
+                "type": "unlockAchievement",
+                "id": "tutorial_complete"
+            }
+        ]
+    },
+
+    "onFail": {
+        "actions": [
+            {
+                "type": "showDialog",
+                "title": "Tutorial Interrupted",
+                "message": "No worries! You can restart the tutorial anytime."
+            }
+        ]
+    }
+}

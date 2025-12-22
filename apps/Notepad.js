@@ -8,6 +8,7 @@ import StorageManager from '../core/StorageManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import SystemDialogs from '../features/SystemDialogs.js';
 import { PATHS } from '../core/Constants.js';
+import { Events } from '../core/scripted-events/SemanticEvents.js';
 
 class Notepad extends AppBase {
     constructor() {
@@ -125,6 +126,30 @@ class Notepad extends AppBase {
         // Keyboard shortcut
         this.addHandler(document, 'keydown', this.handleKeypress);
 
+        // Text change handler with debounce for typing events
+        const textarea = this.getElement('#notepadText');
+        if (textarea) {
+            let debounceTimer = null;
+            textarea.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const content = textarea.value;
+                    const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+                    this.emit(Events.NOTEPAD_TYPED, {
+                        content,
+                        length: content.length,
+                        wordCount
+                    });
+                }, 500);
+            });
+        }
+
+        // Emit opened event
+        this.emit(Events.NOTEPAD_OPENED, {
+            path: this.getInstanceState('currentFile'),
+            content: this.getElement('#notepadText')?.value || ''
+        });
+
         // Focus textarea
         setTimeout(() => {
             this.getElement('#notepadText')?.focus();
@@ -165,6 +190,12 @@ class Notepad extends AppBase {
             this.updateTitle(fileName);
             this.updateFilePathDisplay();
             this.alert('📂 File opened!');
+
+            // Emit file opened event
+            this.emit(Events.NOTEPAD_FILE_OPENED, {
+                path: result.fullPath,
+                content
+            });
         } catch (e) {
             await SystemDialogs.alert(`Error opening file: ${e.message}`, 'Error', 'error');
         }
@@ -175,14 +206,24 @@ class Notepad extends AppBase {
         if (!textarea) return;
 
         const currentFile = this.getInstanceState('currentFile');
+        const content = textarea.value;
+        const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
         if (currentFile) {
             // Save to existing file
             try {
-                FileSystemManager.writeFile(currentFile, textarea.value);
+                FileSystemManager.writeFile(currentFile, content);
                 this.alert('💾 File saved!');
+
+                // Emit saved event
+                this.emit(Events.NOTEPAD_SAVED, {
+                    path: currentFile,
+                    content,
+                    wordCount
+                });
             } catch (e) {
                 await SystemDialogs.alert(`Error saving file: ${e.message}`, 'Error', 'error');
+                this.emit(Events.NOTEPAD_SAVE_FAILED, { path: currentFile, error: e.message });
             }
         } else {
             // No file selected, prompt for Save As
@@ -190,7 +231,7 @@ class Notepad extends AppBase {
         }
 
         // Also save to StorageManager for legacy support
-        StorageManager.set(this.storageKey, textarea.value);
+        StorageManager.set(this.storageKey, content);
     }
 
     async saveAs() {
@@ -266,6 +307,9 @@ class Notepad extends AppBase {
 
         // Clear legacy storage
         StorageManager.remove(this.storageKey);
+
+        // Emit new file event
+        this.emit(Events.NOTEPAD_FILE_NEW, {});
     }
 
     download() {

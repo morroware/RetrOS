@@ -6,6 +6,7 @@
 import AppBase from './AppBase.js';
 import StorageManager from '../core/StorageManager.js';
 import StateManager from '../core/StateManager.js';
+import { Events } from '../core/scripted-events/SemanticEvents.js';
 
 class Snake extends AppBase {
     constructor() {
@@ -117,7 +118,7 @@ class Snake extends AppBase {
     startGame() {
         if (this.blinkInterval) clearInterval(this.blinkInterval);
         this.isGameRunning = true;
-        
+
         // Init Snake (Center-ish)
         this.snake = [
             { x: 10, y: 15 },
@@ -127,7 +128,11 @@ class Snake extends AppBase {
         this.velocity = { x: 0, y: -1 }; // Move up
         this.moveQueue = [];
         this.gameSpeed = 110;
-        
+
+        // Emit game started events
+        this.emit(Events.SNAKE_STARTED, { difficulty: 'normal' });
+        this.emit(Events.GAME_STARTED, { appId: 'snake', difficulty: 'normal' });
+
         this.placeFood();
         this.gameLoop();
     }
@@ -206,11 +211,14 @@ class Snake extends AppBase {
     update() {
         if (this.moveQueue.length > 0) {
             const nextDir = this.moveQueue.shift();
-            if ((this.velocity.x === 0 && nextDir.x !== 0) || 
+            if ((this.velocity.x === 0 && nextDir.x !== 0) ||
                 (this.velocity.y === 0 && nextDir.y !== 0)) {
+                const oldDir = this.getDirectionName(this.velocity);
                 this.velocity = nextDir;
+                const newDir = this.getDirectionName(this.velocity);
+                this.emit(Events.SNAKE_DIRECTION_CHANGED, { from: oldDir, to: newDir });
             } else if (this.moveQueue.length > 0) {
-                this.update(); 
+                this.update();
                 return;
             }
         }
@@ -222,29 +230,54 @@ class Snake extends AppBase {
 
         // Wall Collision - Strict check against tile count
         if (head.x < 0 || head.x >= this.tileCount || head.y < 0 || head.y >= this.tileCount) {
-            this.gameOver();
+            this.emit(Events.SNAKE_COLLIDED, { type: 'wall', position: head });
+            this.gameOver('wall');
             return;
         }
 
         // Self Collision
         for (let i = 0; i < this.snake.length - 1; i++) {
             if (head.x === this.snake[i].x && head.y === this.snake[i].y) {
-                this.gameOver();
+                this.emit(Events.SNAKE_COLLIDED, { type: 'self', position: head });
+                this.gameOver('self');
                 return;
             }
         }
 
         this.snake.unshift(head);
 
+        // Emit moved event
+        this.emit(Events.SNAKE_MOVED, {
+            direction: this.getDirectionName(this.velocity),
+            position: head,
+            length: this.snake.length
+        });
+
         if (head.x === this.food.x && head.y === this.food.y) {
             this.score += 10;
             this.updateScoreUI();
             this.placeFood();
             this.playSound('click');
-            if (this.gameSpeed > 50) this.gameSpeed -= 2; 
+            if (this.gameSpeed > 50) this.gameSpeed -= 2;
+
+            // Emit ate and grew events
+            this.emit(Events.SNAKE_ATE, {
+                position: head,
+                newLength: this.snake.length,
+                score: this.score
+            });
+            this.emit(Events.SNAKE_GREW, { length: this.snake.length });
         } else {
             this.snake.pop();
         }
+    }
+
+    getDirectionName(velocity) {
+        if (velocity.y < 0) return 'up';
+        if (velocity.y > 0) return 'down';
+        if (velocity.x < 0) return 'left';
+        if (velocity.x > 0) return 'right';
+        return 'none';
     }
 
     // --- Rendering ---
@@ -307,10 +340,22 @@ class Snake extends AppBase {
         }
     }
 
-    gameOver() {
+    gameOver(reason = 'collision') {
         this.isGameOver = true;
         this.playSound('error');
-        
+
+        // Emit lose events
+        this.emit(Events.SNAKE_LOSE, {
+            score: this.score,
+            length: this.snake.length,
+            reason
+        });
+        this.emit(Events.GAME_LOSE, {
+            appId: 'snake',
+            score: this.score,
+            reason
+        });
+
         if (this.score > this.highScore) {
             this.highScore = this.score;
             StorageManager.set('snakeHigh', this.score);

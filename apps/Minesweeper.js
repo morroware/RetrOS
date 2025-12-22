@@ -6,6 +6,7 @@
 
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
+import { Events } from '../core/scripted-events/SemanticEvents.js';
 
 class Minesweeper extends AppBase {
     constructor() {
@@ -71,6 +72,15 @@ class Minesweeper extends AppBase {
         this.gameOver = false;
         this.isFirstClick = true;
         this.grid = [];
+
+        // Emit game started event
+        this.emit(Events.MINESWEEPER_STARTED, {
+            difficulty: 'beginner',
+            rows: this.rows,
+            cols: this.cols,
+            mines: this.mines
+        });
+        this.emit(Events.GAME_STARTED, { appId: 'minesweeper', difficulty: 'beginner' });
         
         // Reset UI
         this.updateFace('😀');
@@ -186,6 +196,7 @@ class Minesweeper extends AppBase {
             this.time++;
             if (this.time > 999) this.time = 999;
             this.updateTimerDisplay();
+            this.emit(Events.MINESWEEPER_TIMER_TICK, { time: this.time });
         }, 1000);
     }
 
@@ -209,6 +220,14 @@ class Minesweeper extends AppBase {
 
         cell.revealed = true;
         cell.element.classList.add('revealed');
+
+        // Emit cell revealed event
+        this.emit(Events.MINESWEEPER_CELL_REVEALED, {
+            row: r,
+            col: c,
+            value: cell.mine ? 'mine' : cell.count,
+            isFirstClick: !this.timer // First click just started the timer
+        });
 
         if (cell.mine) {
             this.triggerGameOver(false, cell); // Pass the killing cell
@@ -238,8 +257,9 @@ class Minesweeper extends AppBase {
         if (cell.count === 0) return;
 
         const flagCount = this.countNeighbors(r, c, (n) => n.flagged);
-        
+
         if (flagCount === cell.count) {
+            let cellsRevealed = 0;
             for (let di = -1; di <= 1; di++) {
                 for (let dj = -1; dj <= 1; dj++) {
                     const ni = r + di, nj = c + dj;
@@ -247,9 +267,14 @@ class Minesweeper extends AppBase {
                         const neighbor = this.grid[ni][nj];
                         if (!neighbor.revealed && !neighbor.flagged) {
                             this.reveal(ni, nj);
+                            cellsRevealed++;
                         }
                     }
                 }
+            }
+            // Emit chord event
+            if (cellsRevealed > 0) {
+                this.emit(Events.MINESWEEPER_CHORD, { row: r, col: c, cellsRevealed });
             }
         }
     }
@@ -261,7 +286,14 @@ class Minesweeper extends AppBase {
 
         cell.flagged = !cell.flagged;
         cell.element.classList.toggle('flagged', cell.flagged);
-        
+
+        // Emit flag event
+        this.emit(Events.MINESWEEPER_CELL_FLAGGED, {
+            row: r,
+            col: c,
+            flagged: cell.flagged
+        });
+
         const totalFlagged = this.grid.flat().filter(c => c.flagged).length;
         this.updateMineCounter(this.mines - totalFlagged);
     }
@@ -275,18 +307,44 @@ class Minesweeper extends AppBase {
         this.gameOver = true;
         this.stopTimer();
 
+        const totalFlagged = this.grid.flat().filter(c => c.flagged).length;
+
         if (win) {
             this.updateFace('😎');
             this.flagAllMines();
             StateManager.unlockAchievement('mine_sweeper');
+
+            // Emit win events
+            this.emit(Events.MINESWEEPER_WIN, {
+                time: this.time,
+                difficulty: 'beginner',
+                flagsUsed: totalFlagged
+            });
+            this.emit(Events.GAME_WIN, {
+                appId: 'minesweeper',
+                time: this.time,
+                difficulty: 'beginner'
+            });
         } else {
             this.updateFace('😵');
-            
+
+            // Emit lose events
+            this.emit(Events.MINESWEEPER_LOSE, {
+                time: this.time,
+                row: killingCell?.r,
+                col: killingCell?.c
+            });
+            this.emit(Events.GAME_LOSE, {
+                appId: 'minesweeper',
+                time: this.time,
+                reason: 'hit_mine'
+            });
+
             // Highlight ONLY the mine that killed you
             if (killingCell) {
-                killingCell.element.classList.add('mine-hit'); 
+                killingCell.element.classList.add('mine-hit');
             }
-            
+
             this.revealAllMines();
             this.playSound('error');
         }

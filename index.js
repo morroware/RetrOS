@@ -31,6 +31,7 @@ import ClippyAssistant from './features/ClippyAssistant.js';
 import DesktopPet from './features/DesktopPet.js';
 import Screensaver from './features/Screensaver.js';
 import SystemDialogs from './features/SystemDialogs.js';
+import ScenarioManager from './core/scripted-events/ScenarioManager.js';
 
 // === PLUGIN SYSTEM ===
 import PluginLoader from './core/PluginLoader.js';
@@ -182,7 +183,8 @@ async function initializeOS(onProgress = () => {}) {
             Screensaver,
             ClippyAssistant,
             DesktopPet,
-            EasterEggs
+            EasterEggs,
+            ScenarioManager
         ];
 
         console.log('[RetrOS] Features to register:', featuresToRegister.map(f => f?.id || 'UNDEFINED'));

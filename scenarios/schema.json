@@ -1,0 +1,225 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://retros.dev/scenario.schema.json",
+    "title": "RetrOS Scenario",
+    "description": "Schema for RetrOS scenario files",
+    "type": "object",
+    "required": ["id", "name", "stages"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique scenario identifier"
+        },
+        "name": {
+            "type": "string",
+            "description": "Display name"
+        },
+        "description": {
+            "type": "string",
+            "description": "Scenario description"
+        },
+        "version": {
+            "type": "string",
+            "default": "1.0.0"
+        },
+        "author": {
+            "type": "string"
+        },
+        "icon": {
+            "type": "string",
+            "description": "Emoji icon"
+        },
+        "difficulty": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard", "expert"]
+        },
+        "estimatedTime": {
+            "type": "string",
+            "description": "Estimated completion time"
+        },
+        "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+        },
+        "requirements": {
+            "type": "object",
+            "properties": {
+                "apps": { "type": "array", "items": { "type": "string" } },
+                "features": { "type": "array", "items": { "type": "string" } },
+                "minVersion": { "type": "string" }
+            }
+        },
+        "config": {
+            "type": "object",
+            "properties": {
+                "allowSkip": { "type": "boolean", "default": false },
+                "showProgress": { "type": "boolean", "default": true },
+                "autoSave": { "type": "boolean", "default": true },
+                "hintDelay": { "type": "integer", "default": 30000 },
+                "maxHints": { "type": "integer", "default": 3 }
+            }
+        },
+        "variables": {
+            "type": "object",
+            "description": "Initial scenario variables"
+        },
+        "onStart": {
+            "$ref": "#/definitions/actionBlock"
+        },
+        "onComplete": {
+            "$ref": "#/definitions/actionBlock"
+        },
+        "onFail": {
+            "$ref": "#/definitions/actionBlock"
+        },
+        "onAbort": {
+            "$ref": "#/definitions/actionBlock"
+        },
+        "stages": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "$ref": "#/definitions/stage"
+            }
+        },
+        "globalTriggers": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/trigger"
+            }
+        }
+    },
+    "definitions": {
+        "stage": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "isInitialStage": { "type": "boolean" },
+                "onEnter": { "$ref": "#/definitions/actionBlock" },
+                "onExit": { "$ref": "#/definitions/actionBlock" },
+                "hints": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "delay": { "type": "integer" },
+                            "message": { "type": "string" }
+                        }
+                    }
+                },
+                "triggers": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/trigger" }
+                }
+            }
+        },
+        "trigger": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "event": { "type": "string" },
+                "conditions": { "$ref": "#/definitions/condition" },
+                "actions": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/action" }
+                },
+                "once": { "type": "boolean", "default": false },
+                "priority": { "type": "integer", "default": 0 }
+            }
+        },
+        "condition": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "and": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/condition" }
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "or": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/condition" }
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "not": { "$ref": "#/definitions/condition" }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": ["type"],
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "stageActive", "stageCompleted",
+                                "stateEquals", "stateExists", "stateGreater", "stateLess", "stateContains",
+                                "fileExists", "fileContains", "fileEquals",
+                                "appOpen", "appFocused", "appLocked",
+                                "windowExists", "windowMinimized", "windowCount",
+                                "achievementUnlocked", "featureEnabled",
+                                "timeElapsed", "timeBefore", "timeAfter",
+                                "eventMatch", "eventData",
+                                "random", "count",
+                                "variableEquals", "variableGreater", "variableLess", "variableContains"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "action": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "createFile", "modifyFile", "deleteFile", "createFolder",
+                        "createDesktopIcon", "removeDesktopIcon",
+                        "showDialog", "showNotification", "showClippy",
+                        "playSound", "playAudio", "stopAudio",
+                        "unlockApp", "lockApp", "launchApp", "closeApp",
+                        "unlockAchievement",
+                        "setState", "modifyState",
+                        "emitEvent",
+                        "advanceStage", "completeScenario", "failScenario",
+                        "wait", "showHint", "visualEffect",
+                        "setWallpaper", "enableFeature", "disableFeature",
+                        "modifyClipboard", "focusWindow", "minimizeAll", "triggerScreensaver",
+                        "setVariable", "modifyVariable",
+                        "log"
+                    ]
+                }
+            }
+        },
+        "actionBlock": {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/action" }
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "actions": {
+                            "type": "array",
+                            "items": { "$ref": "#/definitions/action" }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
