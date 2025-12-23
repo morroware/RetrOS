@@ -213,7 +213,7 @@ class FindFiles extends AppBase {
                                 <select id="search-location">
                                     <option value="C:">Local Disk (C:)</option>
                                     <option value="C:/Users">My Documents</option>
-                                    <option value="C:/Users/Seth/Desktop">Desktop</option>
+                                    <option value="C:/Users/User/Desktop">Desktop</option>
                                     <option value="all">All Drives</option>
                                 </select>
                             </div>

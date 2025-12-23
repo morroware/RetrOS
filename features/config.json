@@ -37,7 +37,7 @@
   "achievements": {
     "id": "achievements",
     "name": "Achievement System",
-    "description": "Unlock achievements and track milestones throughout RetrOS",
+    "description": "Unlock achievements and track milestones throughout IlluminatOS!",
     "icon": "🏆",
     "category": "enhancement",
     "enabled": true,
@@ -234,7 +234,7 @@
     "enabled": true,
     "dependencies": [],
     "config": {
-      "defaultPath": ["C:", "Users", "Seth", "Documents"],
+      "defaultPath": ["C:", "Users", "User", "Documents"],
       "showHiddenFiles": false,
       "playDialogSounds": true,
       "showWelcomeOnBoot": true

@@ -11,7 +11,7 @@ import StateManager from '../core/StateManager.js';
 const FEATURE_METADATA = {
     id: 'achievements',
     name: 'Achievement System',
-    description: 'Unlock achievements and track milestones throughout RetrOS',
+    description: 'Unlock achievements and track milestones throughout IlluminatOS!',
     icon: '🏆',
     category: 'enhancement',
     dependencies: ['soundsystem'],

@@ -619,7 +619,7 @@ class DisplayProperties extends AppBase {
                 <span class="starfield-preview" style="left: 80%; top: 50%; animation-delay: 1.5s;">⋆</span>
             `;
         } else if (type === 'marquee') {
-            return '<span class="marquee-preview">RetrOS 95 - The Nostalgia Machine</span>';
+            return '<span class="marquee-preview">IlluminatOS! - The Nostalgia Machine</span>';
         }
         return '';
     }

@@ -277,7 +277,7 @@ class ControlPanel extends AppBase {
                         <div class="control-item-icon">🏆</div>
                         <div class="control-item-info">
                             <div class="control-item-label">Achievements Unlocked</div>
-                            <div class="control-item-desc">Your progress in RetrOS</div>
+                            <div class="control-item-desc">Your progress in IlluminatOS!</div>
                         </div>
                         <div style="font-size: 11px; font-weight: bold;">
                             ${StateManager.getState('achievements').length} achievements
@@ -322,7 +322,7 @@ class ControlPanel extends AppBase {
                     <div class="control-item">
                         <div class="control-item-icon">🔄</div>
                         <div class="control-item-info">
-                            <div class="control-item-label">Reset RetrOS</div>
+                            <div class="control-item-label">Reset IlluminatOS!</div>
                             <div class="control-item-desc">Clear all data and restore defaults</div>
                         </div>
                         <button class="control-button" id="reset-button">Reset</button>
@@ -441,7 +441,7 @@ class ControlPanel extends AppBase {
         const resetButton = this.getElement('#reset-button');
         if (resetButton) {
             this.addHandler(resetButton, 'click', () => {
-                if (confirm('This will delete all your data and reset RetrOS to defaults. Continue?')) {
+                if (confirm('This will delete all your data and reset IlluminatOS! to defaults. Continue?')) {
                     StateManager.reset();
                 }
             });

@@ -242,7 +242,7 @@ class HelpSystem extends AppBase {
                 Getting Started
             </div>
             <div class="help-tree-children expanded">
-                <div class="help-tree-item topic" data-topic="welcome">Welcome to RetrOS</div>
+                <div class="help-tree-item topic" data-topic="welcome">Welcome to IlluminatOS!</div>
                 <div class="help-tree-item topic" data-topic="desktop">Using the Desktop</div>
                 <div class="help-tree-item topic" data-topic="start-menu">The Start Menu</div>
                 <div class="help-tree-item topic" data-topic="windows">Working with Windows</div>
@@ -293,7 +293,7 @@ class HelpSystem extends AppBase {
             </div>
             <div class="help-tree-children">
                 <div class="help-tree-item topic" data-topic="common-issues">Common Issues</div>
-                <div class="help-tree-item topic" data-topic="reset">Reset RetrOS</div>
+                <div class="help-tree-item topic" data-topic="reset">Reset IlluminatOS!</div>
             </div>
         `;
     }
@@ -301,10 +301,10 @@ class HelpSystem extends AppBase {
     getTopicContent(topic) {
         const topics = {
             'welcome': `
-                <div class="help-title">Welcome to RetrOS 95</div>
+                <div class="help-title">Welcome to IlluminatOS!</div>
                 <div class="help-section">
-                    <p>Welcome to RetrOS, a nostalgic recreation of the Windows 95 experience in your web browser!</p>
-                    <p>RetrOS includes many of the classic features you remember:</p>
+                    <p>Welcome to IlluminatOS!, a nostalgic recreation of the Windows 95 experience in your web browser!</p>
+                    <p>IlluminatOS! includes many of the classic features you remember:</p>
                     <ul class="help-list">
                         <li>Classic Start Menu navigation</li>
                         <li>Desktop icons and shortcuts</li>
@@ -327,7 +327,7 @@ class HelpSystem extends AppBase {
             'desktop': `
                 <div class="help-title">Using the Desktop</div>
                 <div class="help-section">
-                    <p>The desktop is your main workspace in RetrOS. Here you can:</p>
+                    <p>The desktop is your main workspace in IlluminatOS!. Here you can:</p>
                     <ul class="help-list">
                         <li><strong>Double-click icons</strong> to open applications</li>
                         <li><strong>Right-click</strong> for context menus</li>
@@ -408,7 +408,7 @@ class HelpSystem extends AppBase {
             'easter-eggs': `
                 <div class="help-title">Easter Eggs & Secrets</div>
                 <div class="help-section">
-                    <p>RetrOS is full of hidden surprises! Here are some hints:</p>
+                    <p>IlluminatOS! is full of hidden surprises! Here are some hints:</p>
                     <ul class="help-list">
                         <li>Try the <strong>Konami Code</strong>: ↑↑↓↓←→←→BA</li>
                         <li>Click the <strong>clock</strong> in the taskbar... a lot!</li>
@@ -425,7 +425,7 @@ class HelpSystem extends AppBase {
             'achievements': `
                 <div class="help-title">Achievements</div>
                 <div class="help-section">
-                    <p>RetrOS has a hidden achievement system. Unlock achievements by:</p>
+                    <p>IlluminatOS! has a hidden achievement system. Unlock achievements by:</p>
                     <ul class="help-list">
                         <li>Using various applications</li>
                         <li>Playing games</li>
@@ -455,9 +455,9 @@ class HelpSystem extends AppBase {
                 </div>
             `,
             'reset': `
-                <div class="help-title">Reset RetrOS</div>
+                <div class="help-title">Reset IlluminatOS!</div>
                 <div class="help-section">
-                    <p>If you need to start fresh, you can reset RetrOS to its default settings.</p>
+                    <p>If you need to start fresh, you can reset IlluminatOS! to its default settings.</p>
                     <div class="help-tip">
                         <span class="help-tip-icon">⚠️ Warning:</span> This will delete all your files, settings, and achievements!
                     </div>
@@ -558,7 +558,7 @@ class HelpSystem extends AppBase {
             'control-panel': `
                 <div class="help-title">Control Panel</div>
                 <div class="help-section">
-                    <p>The Control Panel lets you customize RetrOS settings.</p>
+                    <p>The Control Panel lets you customize IlluminatOS! settings.</p>
                     <div class="help-section-title">Settings Available</div>
                     <ul class="help-list">
                         <li><strong>Display</strong> - Background color, CRT effect</li>
@@ -733,7 +733,7 @@ class HelpSystem extends AppBase {
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <html>
-                <head><title>RetrOS Help - ${this.currentTopic}</title></head>
+                <head><title>IlluminatOS! Help - ${this.currentTopic}</title></head>
                 <body style="font-family: 'MS Sans Serif', Arial, sans-serif; padding: 20px;">
                     ${content.innerHTML}
                 </body>

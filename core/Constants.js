@@ -1,5 +1,5 @@
 /**
- * Constants - Centralized configuration values for RetrOS
+ * Constants - Centralized configuration values for IlluminatOS!
  *
  * This file contains all configurable constants to make the codebase
  * more maintainable and easier to customize.
@@ -26,17 +26,17 @@ export { IconSystem, icon, emoji, renderIcon, getIconClass, getEmoji, FAIcons, E
 /**
  * Default user name - used for folder paths
  */
-export const USER_NAME = 'Seth';
+export const USER_NAME = 'User';
 
 /**
  * Common file system paths
  */
 export const PATHS = {
-    USER_HOME: ['C:', 'Users', 'Seth'],
-    DESKTOP: ['C:', 'Users', 'Seth', 'Desktop'],
-    DOCUMENTS: ['C:', 'Users', 'Seth', 'Documents'],
-    PICTURES: ['C:', 'Users', 'Seth', 'Pictures'],
-    MUSIC: ['C:', 'Users', 'Seth', 'Music'],
+    USER_HOME: ['C:', 'Users', 'User'],
+    DESKTOP: ['C:', 'Users', 'User', 'Desktop'],
+    DOCUMENTS: ['C:', 'Users', 'User', 'Documents'],
+    PICTURES: ['C:', 'Users', 'User', 'Pictures'],
+    MUSIC: ['C:', 'Users', 'User', 'Music'],
     PROGRAM_FILES: ['C:', 'Program Files'],
     WINDOWS: ['C:', 'Windows'],
     SYSTEM32: ['C:', 'Windows', 'System32'],
