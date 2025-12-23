@@ -57,8 +57,6 @@ class DesktopRendererClass {
 
         // Setup desktop events
         this.setupDesktopEvents();
-
-        console.log('[DesktopRenderer] Initialized');
     }
 
     /**
@@ -147,7 +145,7 @@ class DesktopRendererClass {
                 StateManager.setState('filePositions', filePositions, true);
             }
         } catch (e) {
-            console.log('Desktop folder empty or not found:', e.message);
+            // Desktop folder empty or not found - silently ignore
         }
     }
 
@@ -321,8 +319,6 @@ class DesktopRendererClass {
                 AppRegistry.launch('notepad', { filePath });
             } else if (extension === 'png' || extension === 'jpg' || extension === 'bmp') {
                 AppRegistry.launch('paint', { filePath });
-            } else {
-                console.log('No app registered for file type:', extension);
             }
         }
     }
@@ -532,8 +528,6 @@ class DesktopRendererClass {
             EventBus.emit('recyclebin:update');
             EventBus.emit(Events.SOUND_PLAY, { type: 'restore' });
             this.showDropFeedback(`"${label}" restored`, 'success');
-
-            console.log(`[DesktopRenderer] Restored file to: ${originalPath.join('\\')}`);
         } catch (err) {
             console.error('Failed to restore file from recycle bin:', err);
             EventBus.emit(Events.SOUND_PLAY, { type: 'error' });
@@ -559,8 +553,6 @@ class DesktopRendererClass {
             EventBus.emit('recyclebin:update');
             EventBus.emit(Events.SOUND_PLAY, { type: 'restore' });
             this.showDropFeedback(`"${item.label}" restored`, 'success');
-
-            console.log(`[DesktopRenderer] Restored icon: ${item.label}`);
         } catch (err) {
             console.error('Failed to restore icon from recycle bin:', err);
             EventBus.emit(Events.SOUND_PLAY, { type: 'error' });

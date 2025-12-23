@@ -656,8 +656,6 @@ class RecycleBin extends AppBase {
 
         // Show notification
         this.playSound('restore');
-
-        console.log(`[RecycleBin] Restored: ${item.label}`);
     }
 
     restoreFileItem(item, index) {
@@ -679,8 +677,6 @@ class RecycleBin extends AppBase {
 
             // Emit filesystem change event
             EventBus.emit('filesystem:changed');
-
-            console.log(`[RecycleBin] Restored file to: ${originalPath.join('\\')}`);
         } catch (err) {
             console.error('[RecycleBin] Failed to restore file:', err);
             alert(`Failed to restore "${item.label}": ${err.message}`);
@@ -707,8 +703,6 @@ class RecycleBin extends AppBase {
 
             // Refresh view
             this.refreshView();
-
-            console.log(`[RecycleBin] Permanently deleted: ${item.label}`);
         }
     }
 
@@ -722,8 +716,6 @@ class RecycleBin extends AppBase {
 
             // Refresh view
             this.refreshView();
-
-            console.log('[RecycleBin] Emptied recycle bin');
         }
     }
 

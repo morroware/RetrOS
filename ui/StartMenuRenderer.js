@@ -107,7 +107,6 @@ class StartMenuRendererClass {
         }
 
         this.initialized = false;
-        console.log('[StartMenuRenderer] Destroyed');
     }
 
     toggle() { this.isOpen ? this.close() : this.open(); }
@@ -129,8 +128,6 @@ class StartMenuRendererClass {
         if (!this.element) return;
         const isAdmin = StateManager.getState('user.isAdmin');
 
-        console.log('[StartMenuRenderer] render() called - building menu HTML');
-
         this.element.innerHTML = `
             <div class="start-menu-sidebar">
                 <span class="sidebar-text">Seth Morrow OS 95</span>
@@ -149,25 +146,6 @@ class StartMenuRendererClass {
             </div>
         `;
 
-        // Debug: verify Settings submenu items in DOM
-        const settingsSubmenu = this.element.querySelector('[data-app="controlpanel"]')?.closest('.start-submenu');
-        if (settingsSubmenu) {
-            const items = settingsSubmenu.querySelectorAll('[data-app]');
-            const itemList = Array.from(items).map(i => i.dataset.app);
-            console.log('[StartMenuRenderer] Settings submenu items in DOM:', itemList);
-
-            // Verify all expected items are present
-            const expected = ['controlpanel', 'display', 'sounds', 'features-settings'];
-            const missing = expected.filter(id => !itemList.includes(id));
-            if (missing.length > 0) {
-                console.error('[StartMenuRenderer] MISSING Settings items:', missing);
-            } else {
-                console.log('[StartMenuRenderer] All 4 Settings items present ✓');
-            }
-        } else {
-            console.error('[StartMenuRenderer] Settings submenu NOT found in DOM!');
-        }
-
         // Attach only submenu positioning (click handlers use event delegation)
         this.attachSubmenuPositioning();
     }
@@ -175,11 +153,7 @@ class StartMenuRendererClass {
     renderProgramsSection() {
         // Dynamically fetch apps by category
         const accessories = AppRegistry.getByCategory('accessories').filter(a => a.showInMenu !== false);
-        const gamesRaw = AppRegistry.getByCategory('games');
-        const games = gamesRaw.filter(a => a.showInMenu !== false);
-        console.log('[StartMenu] Games raw:', gamesRaw);
-        console.log('[StartMenu] Games filtered:', games);
-        console.log('[StartMenu] Zork in games?', games.find(g => g.id === 'zork'));
+        const games = AppRegistry.getByCategory('games').filter(a => a.showInMenu !== false);
         const multimedia = AppRegistry.getByCategory('multimedia').filter(a => a.showInMenu !== false);
         const internet = AppRegistry.getByCategory('internet').filter(a => a.showInMenu !== false);
         const systemtools = AppRegistry.getByCategory('systemtools').filter(a => a.showInMenu !== false);
@@ -306,8 +280,6 @@ class StartMenuRendererClass {
                 </div>
             </div>
         `;
-        // Debug: log that we're rendering with all 4 items
-        console.log('[StartMenuRenderer] Settings section rendered with 4 items: controlpanel, display, sounds, features-settings');
         return settingsHtml;
     }
 
@@ -387,11 +359,6 @@ class StartMenuRendererClass {
         // Position submenu to the right of the trigger
         let left = triggerRect.right;
         let top = triggerRect.top;
-
-        // Debug: log submenu info
-        const triggerName = trigger.querySelector('span:not(.submenu-arrow):not(.start-menu-icon)')?.textContent || 'unknown';
-        const itemCount = submenu.querySelectorAll('.start-menu-item').length;
-        console.log(`[StartMenuRenderer] Positioning submenu for "${triggerName}" with ${itemCount} items`);
 
         // Temporarily show to measure
         const wasHidden = getComputedStyle(submenu).display === 'none';

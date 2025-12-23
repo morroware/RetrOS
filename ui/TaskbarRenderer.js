@@ -44,7 +44,6 @@ class TaskbarRendererClass {
         this.renderButtons();
 
         this.initialized = true;
-        console.log('[TaskbarRenderer] Initialized');
     }
 
     /**
@@ -60,7 +59,6 @@ class TaskbarRendererClass {
         }
 
         this.initialized = false;
-        console.log('[TaskbarRenderer] Destroyed');
     }
 
     /**

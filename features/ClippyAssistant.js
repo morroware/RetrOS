@@ -568,7 +568,6 @@ class ClippyAssistant extends FeatureBase {
         this.messageHistory = [];
         this.hasBeenHelpful = false;
         localStorage.removeItem('clippyDismissed');
-        console.log('[ClippyAssistant] Reset. A fresh start. It will end the same way, but still.');
     }
 }
 

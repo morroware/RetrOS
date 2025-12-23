@@ -175,8 +175,6 @@ class DesktopPet extends FeatureBase {
         this.subscribe(Events.PET_TOGGLE, ({ enabled }) => {
             this.toggle(enabled);
         });
-
-        console.log('[DesktopPet] Enhanced desktop pet initialized');
     }
 
     /**

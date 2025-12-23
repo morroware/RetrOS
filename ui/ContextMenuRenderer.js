@@ -58,7 +58,6 @@ class ContextMenuRendererClass {
         });
 
         this.initialized = true;
-        console.log('[ContextMenuRenderer] Initialized');
     }
 
     /**
@@ -102,7 +101,6 @@ class ContextMenuRendererClass {
         }
 
         this.initialized = false;
-        console.log('[ContextMenuRenderer] Destroyed');
     }
 
     show(x, y, type, context = {}) {

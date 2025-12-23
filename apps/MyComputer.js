@@ -363,7 +363,6 @@ class MyComputer extends AppBase {
     handleFileDrop(e) {
         const currentPath = this.getInstanceState('currentPath') || [];
         if (currentPath.length === 0) {
-            console.log('Cannot drop files at My Computer root');
             return;
         }
 
@@ -396,7 +395,6 @@ class MyComputer extends AppBase {
             // Check if dropping to same location
             const sourceDir = filePath.slice(0, -1);
             if (JSON.stringify(sourceDir) === JSON.stringify(currentPath)) {
-                console.log('File is already in this directory');
                 return;
             }
 
@@ -481,7 +479,6 @@ class MyComputer extends AppBase {
 
             // Check if shortcut already exists
             if (children[fileName]) {
-                console.log(`Shortcut ${fileName} already exists`);
                 return;
             }
 
@@ -505,7 +502,6 @@ class MyComputer extends AppBase {
             };
 
             FileSystemManager.saveFileSystem();
-            console.log(`Created shortcut ${fileName} in ${targetPath.join('/')}`);
         } catch (err) {
             console.error('Failed to create shortcut file:', err);
         }
@@ -1048,20 +1044,17 @@ class MyComputer extends AppBase {
             // Check if dropping to same location
             const sourceDir = filePath.slice(0, -1);
             if (JSON.stringify(sourceDir) === JSON.stringify(targetPath)) {
-                console.log('File is already in this directory');
                 return;
             }
 
             // Can't drop a folder into itself
             if (JSON.stringify(filePath) === JSON.stringify(targetPath)) {
-                console.log('Cannot drop a folder into itself');
                 return;
             }
 
             // Move the file to target directory
             try {
                 FileSystemManager.moveItem(filePath, targetPath);
-                console.log(`Moved ${fileName} to ${targetPath.join('/')}`);
             } catch (err) {
                 console.error('Failed to move file:', err.message);
             }
@@ -1106,14 +1099,12 @@ class MyComputer extends AppBase {
             // Check if dropping to same location (drive root)
             const sourceDir = filePath.slice(0, -1);
             if (sourceDir.length === 1 && sourceDir[0] === driveLetter) {
-                console.log('File is already in this drive root');
                 return;
             }
 
             // Move the file to drive root
             try {
                 FileSystemManager.moveItem(filePath, targetPath);
-                console.log(`Moved ${fileName} to ${driveLetter}`);
             } catch (err) {
                 console.error('Failed to move file:', err.message);
             }
@@ -1139,7 +1130,6 @@ class MyComputer extends AppBase {
 
         const targetPath = folderPaths[folderName];
         if (!targetPath) {
-            console.log(`Cannot drop files to ${folderName}`);
             return;
         }
 
@@ -1171,14 +1161,12 @@ class MyComputer extends AppBase {
             // Check if dropping to same location
             const sourceDir = filePath.slice(0, -1);
             if (JSON.stringify(sourceDir) === JSON.stringify(targetPath)) {
-                console.log('File is already in this directory');
                 return;
             }
 
             // Move the file to system folder
             try {
                 FileSystemManager.moveItem(filePath, targetPath);
-                console.log(`Moved ${fileName} to ${folderName}`);
             } catch (err) {
                 console.error('Failed to move file:', err.message);
             }
@@ -1201,8 +1189,6 @@ class MyComputer extends AppBase {
             } else if (fileInfo.extension === 'png' || fileInfo.extension === 'jpg' || fileInfo.extension === 'bmp') {
                 // Open in Paint
                 AppRegistry.launch('paint', { filePath });
-            } else {
-                console.log('No app registered for this file type:', fileInfo.extension);
             }
         } catch (e) {
             console.error('Error opening file:', e);
