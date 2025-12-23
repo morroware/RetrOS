@@ -412,7 +412,7 @@ class StateManagerClass {
                 version: '2.0',
                 type: 'complete-snapshot',
                 timestamp: new Date().toISOString(),
-                exportedFrom: 'RetrOS'
+                exportedFrom: 'IlluminatOS!'
             },
 
             // Core StateManager state

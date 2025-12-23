@@ -1,6 +1,6 @@
-# RetrOS Developer Guide
+# IlluminatOS! Developer Guide
 
-A comprehensive guide for creating new applications, features, and plugins for RetrOS.
+A comprehensive guide for creating new applications, features, and plugins for IlluminatOS!.
 
 ---
 
@@ -133,7 +133,7 @@ Your app will now appear in:
 
 ### Core Modules
 
-RetrOS is built on these core modules in `/core/`:
+IlluminatOS! is built on these core modules in `/core/`:
 
 | Module | Purpose |
 |--------|---------|
@@ -298,16 +298,16 @@ this.emit('custom:event', { data: 'value' });
 import FileSystemManager from '../core/FileSystemManager.js';
 
 // Read a file
-const content = FileSystemManager.readFile(['C:', 'Users', 'Seth', 'Documents', 'file.txt']);
+const content = FileSystemManager.readFile(['C:', 'Users', 'User', 'Documents', 'file.txt']);
 
 // Write a file
 FileSystemManager.writeFile(
-    ['C:', 'Users', 'Seth', 'Documents', 'new.txt'],
+    ['C:', 'Users', 'User', 'Documents', 'new.txt'],
     'File content here'
 );
 
 // List directory
-const files = FileSystemManager.listDirectory(['C:', 'Users', 'Seth', 'Documents']);
+const files = FileSystemManager.listDirectory(['C:', 'Users', 'User', 'Documents']);
 // Returns: [{name, type, extension, size, created, modified}, ...]
 
 // Check if file exists
@@ -317,7 +317,7 @@ const exists = FileSystemManager.exists(['C:', 'file.txt']);
 FileSystemManager.createDirectory(['C:', 'MyFolder']);
 
 // Delete item
-FileSystemManager.deleteItem(['C:', 'Users', 'Seth', 'Desktop', 'file.txt']);
+FileSystemManager.deleteItem(['C:', 'Users', 'User', 'Desktop', 'file.txt']);
 
 // Move item
 FileSystemManager.moveItem(
@@ -344,9 +344,9 @@ FileSystemManager.renameItem(
 import { PATHS } from '../core/Constants.js';
 
 // Use predefined paths
-const desktopPath = PATHS.DESKTOP;      // ['C:', 'Users', 'Seth', 'Desktop']
-const documentsPath = PATHS.DOCUMENTS;  // ['C:', 'Users', 'Seth', 'Documents']
-const userHome = PATHS.USER_HOME;       // ['C:', 'Users', 'Seth']
+const desktopPath = PATHS.DESKTOP;      // ['C:', 'Users', 'User', 'Desktop']
+const documentsPath = PATHS.DOCUMENTS;  // ['C:', 'Users', 'User', 'Documents']
+const userHome = PATHS.USER_HOME;       // ['C:', 'Users', 'User']
 ```
 
 ---
@@ -376,7 +376,7 @@ if (input !== null) {
 const result = await SystemDialogs.showFileOpen({
     title: 'Open File',
     filter: 'txt',  // File extension filter
-    initialPath: ['C:', 'Users', 'Seth', 'Documents']
+    initialPath: ['C:', 'Users', 'User', 'Documents']
 });
 if (result) {
     // result = { filename, path, fullPath }
@@ -386,7 +386,7 @@ if (result) {
 const saveResult = await SystemDialogs.showFileSave({
     title: 'Save File',
     filter: 'txt',
-    initialPath: ['C:', 'Users', 'Seth', 'Documents'],
+    initialPath: ['C:', 'Users', 'User', 'Documents'],
     defaultFilename: 'untitled.txt'
 });
 ```
@@ -395,7 +395,7 @@ const saveResult = await SystemDialogs.showFileSave({
 
 ## Icon System
 
-RetrOS uses FontAwesome 6.5.1 for icons with automatic emoji fallback.
+IlluminatOS! uses FontAwesome 6.5.1 for icons with automatic emoji fallback.
 
 ### Using Icons in Apps
 
@@ -467,16 +467,16 @@ this.stopAllAudio();
 
 ## Configuration Constants
 
-RetrOS centralizes configuration in `/core/Constants.js`:
+IlluminatOS! centralizes configuration in `/core/Constants.js`:
 
 ```javascript
 import { PATHS, WINDOW, TIMING, STORAGE_KEYS, APP_CATEGORIES } from '../core/Constants.js';
 
 // User paths
-PATHS.USER_HOME      // ['C:', 'Users', 'Seth']
-PATHS.DESKTOP        // ['C:', 'Users', 'Seth', 'Desktop']
-PATHS.DOCUMENTS      // ['C:', 'Users', 'Seth', 'Documents']
-PATHS.PICTURES       // ['C:', 'Users', 'Seth', 'Pictures']
+PATHS.USER_HOME      // ['C:', 'Users', 'User']
+PATHS.DESKTOP        // ['C:', 'Users', 'User', 'Desktop']
+PATHS.DOCUMENTS      // ['C:', 'Users', 'User', 'Documents']
+PATHS.PICTURES       // ['C:', 'Users', 'User', 'Pictures']
 
 // Window configuration
 WINDOW.MIN_WIDTH     // 300
@@ -571,7 +571,7 @@ import { PATHS, WINDOW } from '../core/Constants.js';
 const desktopPath = PATHS.DESKTOP;
 
 // WRONG - Hardcoded paths
-const desktopPath = ['C:', 'Users', 'Seth', 'Desktop'];
+const desktopPath = ['C:', 'Users', 'User', 'Desktop'];
 ```
 
 ---
@@ -720,7 +720,7 @@ onOpen() {
 
 ## Plugin System
 
-RetrOS features a powerful plugin system that allows third-party extensions without modifying core code. Plugins can provide new features, apps, and integrate with existing systems.
+IlluminatOS! features a powerful plugin system that allows third-party extensions without modifying core code. Plugins can provide new features, apps, and integrate with existing systems.
 
 ### Plugin Architecture
 
@@ -1038,7 +1038,7 @@ The plugin manifest is stored in localStorage and contains:
 
 ## Feature Development
 
-Features are modular system enhancements that extend RetrOS functionality. They differ from apps in that they run in the background and integrate with the OS itself.
+Features are modular system enhancements that extend IlluminatOS! functionality. They differ from apps in that they run in the background and integrate with the OS itself.
 
 ### Feature Categories
 

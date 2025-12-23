@@ -1,8 +1,8 @@
-# RetrOS Architecture Review
+# IlluminatOS! Architecture Review
 
 ## Executive Summary
 
-RetrOS is a well-architected Windows 95 simulator built with vanilla JavaScript, demonstrating clean separation of concerns and modular design. The codebase features robust patterns including event-driven architecture, centralized state management, and a comprehensive app framework supporting multi-instance windows.
+IlluminatOS! is a well-architected Windows 95 simulator built with vanilla JavaScript, demonstrating clean separation of concerns and modular design. The codebase features robust patterns including event-driven architecture, centralized state management, and a comprehensive app framework supporting multi-instance windows.
 
 ---
 
@@ -10,7 +10,7 @@ RetrOS is a well-architected Windows 95 simulator built with vanilla JavaScript,
 
 ### Project Structure
 ```
-RetrOS/
+IlluminatOS!/
 ├── core/                    # Core OS systems (10 modules)
 │   ├── EventBus.js         # Central pub/sub messaging
 │   ├── StateManager.js     # Centralized state + persistence
@@ -72,7 +72,7 @@ RetrOS/
 
 ## Plugin System (NEW)
 
-RetrOS now features a comprehensive plugin system enabling third-party extensions without modifying core code.
+IlluminatOS! now features a comprehensive plugin system enabling third-party extensions without modifying core code.
 
 ### Plugin Architecture
 
@@ -385,7 +385,7 @@ When creating a new app, ensure:
 
 ## Conclusion
 
-RetrOS demonstrates excellent architectural principles with clean separation, event-driven design, and a solid app framework. The codebase is well-organized with:
+IlluminatOS! demonstrates excellent architectural principles with clean separation, event-driven design, and a solid app framework. The codebase is well-organized with:
 
 - **Centralized configuration** via Constants.js
 - **Consistent icon system** with FontAwesome + emoji fallback

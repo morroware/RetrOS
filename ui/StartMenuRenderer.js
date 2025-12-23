@@ -133,7 +133,7 @@ class StartMenuRendererClass {
 
         this.element.innerHTML = `
             <div class="start-menu-sidebar">
-                <span class="sidebar-text">Seth Morrow OS 95</span>
+                <span class="sidebar-text">IlluminatOS!</span>
             </div>
             <div class="start-menu-content">
                 <div class="start-menu-items">

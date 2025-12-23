@@ -23,7 +23,7 @@ const FEATURE_METADATA = {
     category: 'core',
     dependencies: [],
     config: {
-        defaultPath: ['C:', 'Users', 'Seth', 'Documents'],
+        defaultPath: ['C:', 'Users', 'User', 'Documents'],
         showHiddenFiles: false,
         playDialogSounds: true,
         showWelcomeOnBoot: true
@@ -203,17 +203,17 @@ class SystemDialogs extends FeatureBase {
             <div class="system-dialog about-dialog">
                 <div class="dialog-titlebar">
                     <span class="dialog-title-icon">ℹ️</span>
-                    <span>About RetrOS</span>
+                    <span>About IlluminatOS!</span>
                     <button class="dialog-close-btn">×</button>
                 </div>
                 <div class="dialog-body">
                     <div class="about-content">
                         <div class="about-logo">
-                            <div class="about-logo-text">RetrOS</div>
+                            <div class="about-logo-text">IlluminatOS!</div>
                             <div class="about-logo-subtitle">Windows 95 Experience</div>
                         </div>
                         <div class="about-info">
-                            <p><strong>Seth Morrow OS</strong></p>
+                            <p><strong>IlluminatOS!</strong></p>
                             <p>Version 95.0 Build 1995</p>
                             <p>Copyright © 2024</p>
                             <div class="about-divider"></div>
@@ -244,13 +244,13 @@ class SystemDialogs extends FeatureBase {
             <div class="system-dialog welcome-dialog">
                 <div class="dialog-titlebar">
                     <span class="dialog-title-icon">🎉</span>
-                    <span>Welcome to RetrOS</span>
+                    <span>Welcome to IlluminatOS!</span>
                     <button class="dialog-close-btn">×</button>
                 </div>
                 <div class="dialog-body">
                     <div class="welcome-content">
                         <div class="welcome-banner">
-                            <div class="welcome-logo">RetrOS 95</div>
+                            <div class="welcome-logo">IlluminatOS!</div>
                         </div>
                         <div class="welcome-tips">
                             <h3>💡 Did you know?</h3>

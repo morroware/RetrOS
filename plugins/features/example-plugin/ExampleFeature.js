@@ -1,5 +1,5 @@
 /**
- * ExampleFeature - A sample feature plugin for RetrOS
+ * ExampleFeature - A sample feature plugin for IlluminatOS!
  * Demonstrates how to create a feature that extends FeatureBase
  */
 

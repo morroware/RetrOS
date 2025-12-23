@@ -1,4 +1,4 @@
-# RetrOS
+# IlluminatOS!
 
 <div align="center">
 
@@ -18,7 +18,7 @@
 
 ## Overview
 
-RetrOS is a fully-functional Windows 95 desktop environment simulator built entirely with vanilla JavaScript, HTML5, and CSS3. Experience the nostalgic computing era of the mid-1990s right in your web browser, complete with draggable windows, classic applications, retro games, a virtual file system, and plenty of hidden surprises.
+IlluminatOS! is a fully-functional Windows 95 desktop environment simulator built entirely with vanilla JavaScript, HTML5, and CSS3. Experience the nostalgic computing era of the mid-1990s right in your web browser, complete with draggable windows, classic applications, retro games, a virtual file system, and plenty of hidden surprises.
 
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
@@ -66,7 +66,7 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 
 ### Quick Start (No Build Required)
 
-RetrOS requires no build process, package installation, or compilation. Simply:
+IlluminatOS! requires no build process, package installation, or compilation. Simply:
 
 1. **Clone the repository**
    ```bash
@@ -120,7 +120,7 @@ RetrOS requires no build process, package installation, or compilation. Simply:
 
 ### Boot Sequence
 
-When you first load RetrOS, you'll experience an authentic boot sequence:
+When you first load IlluminatOS!, you'll experience an authentic boot sequence:
 1. BIOS-style startup screen
 2. Loading bar animation
 3. "Starting Windows 95..." message
@@ -170,7 +170,7 @@ When you first load RetrOS, you'll experience an authentic boot sequence:
 
 ## Applications
 
-RetrOS includes 29 fully-functional applications organized into categories:
+IlluminatOS! includes 29 fully-functional applications organized into categories:
 
 ### Productivity (7 apps)
 
@@ -321,7 +321,7 @@ Experience the golden age of internet chat with this 90s AOL/IRC style chat room
 
 ### Clippy Assistant
 
-The iconic Microsoft Office Assistant makes an appearance! Clippy randomly spawns (50% chance) when you boot up and offers "helpful" advice.
+The iconic Clippy assistant makes an appearance! Clippy randomly spawns (50% chance) when you boot up and offers "helpful" advice.
 
 **Clippy's Personality:**
 - Offers random tips and commentary
@@ -363,7 +363,7 @@ Unlock achievements by performing various actions:
 
 | Achievement | How to Unlock |
 |-------------|---------------|
-| First Boot | Launch RetrOS for the first time |
+| First Boot | Launch IlluminatOS! for the first time |
 | Konami Master | Enter the Konami Code |
 | Disco Fever | Click the clock 10 times |
 | Multitasker | Open 10+ windows simultaneously |
@@ -400,7 +400,7 @@ A nostalgic bouncing DVD logo screensaver plugin that brings back memories of th
 
 ## Plugin System
 
-RetrOS features a powerful plugin system for extending functionality without modifying core code.
+IlluminatOS! features a powerful plugin system for extending functionality without modifying core code.
 
 ### Architecture
 
@@ -467,7 +467,7 @@ class DVDBouncerFeature extends FeatureBase {
 
 ## Easter Eggs
 
-RetrOS contains several hidden features and easter eggs. Here's how to discover them:
+IlluminatOS! contains several hidden features and easter eggs. Here's how to discover them:
 
 ### Konami Code
 
@@ -495,8 +495,8 @@ Enter these commands in the Terminal:
 ### Hidden Files
 
 Explore the file system to find secret files:
-- `C:/Users/Seth/Secret/aperture.log` - Portal reference
-- `C:/Users/Seth/Secret/hal9000.txt` - 2001: A Space Odyssey reference
+- `C:/Users/User/Secret/aperture.log` - Portal reference
+- `C:/Users/User/Secret/hal9000.txt` - 2001: A Space Odyssey reference
 
 ### Clock Easter Egg
 
@@ -510,7 +510,7 @@ Dismiss Clippy **5 times** to unlock the "Clippy Hater" achievement.
 
 ## System Dialogs
 
-RetrOS features authentic Windows 95-style dialog boxes that replace browser modals.
+IlluminatOS! features authentic Windows 95-style dialog boxes that replace browser modals.
 
 ### Run Dialog
 - Open with **Ctrl+R** or from Start Menu
@@ -537,7 +537,7 @@ RetrOS features authentic Windows 95-style dialog boxes that replace browser mod
 ### Project Structure
 
 ```
-RetrOS/
+IlluminatOS!/
 ├── index.html              # Main entry point with boot screen and UI placeholders
 ├── index.js                # Boot sequence & system initialization
 ├── styles.css              # Windows 95 styling (~2700 lines)
@@ -691,7 +691,7 @@ Settings are stored in localStorage and can be modified via Control Panel:
 
 ### LocalStorage Keys
 
-RetrOS uses the prefix `smos_` for all stored data:
+IlluminatOS! uses the prefix `illuminatos_` for all stored data:
 
 | Key | Purpose |
 |-----|---------|
@@ -708,7 +708,7 @@ RetrOS uses the prefix `smos_` for all stored data:
 
 ### Clearing Data
 
-To reset RetrOS to default state:
+To reset IlluminatOS! to default state:
 
 ```javascript
 // In browser console
@@ -813,11 +813,11 @@ AppRegistry.register(new MyApp(), {
 
 ## Credits
 
-- **Design Inspiration:** Microsoft Windows 95
+- **Design Inspiration:** Windows 95
 - **DOOM Port:** Chocolate Doom WebAssembly
 - **Icons:** FontAwesome 6.5.1
 - **Font:** VT323 (Google Fonts)
-- **Clippy:** Microsoft Office Assistant (1997-2007, RIP)
+- **Clippy:** The classic Office Assistant (1997-2007, RIP)
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * Example Plugin for RetrOS
+ * Example Plugin for IlluminatOS!
  * Demonstrates how to create a plugin that adds a new feature
  *
  * Plugin Structure:
@@ -9,7 +9,7 @@
  * To install this plugin:
  * 1. Place the plugin folder in /plugins/features/
  * 2. Add to plugin manifest in localStorage or use PluginLoader.addToManifest()
- * 3. Restart RetrOS or call PluginLoader.loadPluginFromPath()
+ * 3. Restart IlluminatOS! or call PluginLoader.loadPluginFromPath()
  */
 
 import ExampleFeature from './ExampleFeature.js';
@@ -26,10 +26,10 @@ export default {
     version: '1.0.0',
 
     // Author information
-    author: 'RetrOS Team',
+    author: 'IlluminatOS! Team',
 
     // Description
-    description: 'An example plugin demonstrating the RetrOS plugin system',
+    description: 'An example plugin demonstrating the IlluminatOS! plugin system',
 
     // Features provided by this plugin (instances of FeatureBase)
     features: [

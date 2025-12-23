@@ -34,9 +34,9 @@ class Terminal extends AppBase {
             'COMSPEC': 'C:\\WINDOWS\\SYSTEM32\\CMD.EXE',
             'TEMP': 'C:\\TEMP',
             'TMP': 'C:\\TEMP',
-            'USERNAME': 'Seth',
-            'COMPUTERNAME': 'RETROS-PC',
-            'OS': 'RetrOS',
+            'USERNAME': 'User',
+            'COMPUTERNAME': 'ILLUMINATOS-PC',
+            'OS': 'IlluminatOS!',
             'WINDIR': 'C:\\WINDOWS'
         };
     }
@@ -48,7 +48,7 @@ class Terminal extends AppBase {
                 <div class="terminal-scroll" id="terminalScroller">
                     <div id="terminalOutput"></div>
                     <div class="terminal-input-line" id="inputLine">
-                        <span class="terminal-prompt" id="promptText">C:\\Users\\Seth></span>
+                        <span class="terminal-prompt" id="promptText">C:\\Users\\User></span>
                         <input type="text" class="terminal-input" id="terminalInput" autocomplete="off" spellcheck="false">
                     </div>
                 </div>
@@ -147,14 +147,14 @@ class Terminal extends AppBase {
 
     runBootSequence() {
         const lines = [
-            'Microsoft(R) Windows 95',
-            '   (C)Copyright Microsoft Corp 1981-1995.',
+            'IlluminatOS! [Version 95.0.1995]',
+            '   Starting command prompt...',
             '',
             'C:\\>ver',
             '',
-            'Seth Morrow OS [Version 95.0.1995]',
+            'IlluminatOS! [Version 95.0.1995]',
             '',
-            'C:\\>cd Users\\Seth',
+            'C:\\>cd Users\\User',
             ''
         ];
 
@@ -1023,7 +1023,7 @@ FUN:       matrix, disco, party, cowsay, fortune, color`;
     // === SYSTEM COMMANDS ===
 
     cmdVer() {
-        return `\nSeth Morrow OS [Version 95.0.1995]`;
+        return `\nIlluminatOS! [Version 95.0.1995]`;
     }
 
     cmdVol(args) {
@@ -1066,9 +1066,9 @@ FUN:       matrix, disco, party, cowsay, fortune, color`;
 
     cmdWhoami() {
         if (this.godMode) {
-            return 'RETROS-PC\\Administrator (GOD MODE)';
+            return 'ILLUMINATOS-PC\\Administrator (GOD MODE)';
         }
-        return 'RETROS-PC\\Seth';
+        return 'ILLUMINATOS-PC\\User';
     }
 
     cmdSet(args) {
@@ -1208,10 +1208,10 @@ MS-DOS is resident in the high memory area.`;
         const bootTime = new Date(Date.now() - Math.random() * 86400000);
 
         return `
-Host Name:                 RETROS-PC
-OS Name:                   Seth Morrow OS 95
+Host Name:                 ILLUMINATOS-PC
+OS Name:                   IlluminatOS! 95
 OS Version:                95.0.1995 Build 1995
-OS Manufacturer:           Morrow Systems Inc.
+OS Manufacturer:           IlluminatOS Team
 OS Configuration:          Standalone Workstation
 OS Build Type:             Multiprocessor Free
 Original Install Date:     12/25/1995, 12:00:00 AM
@@ -1221,7 +1221,7 @@ System Model:              IBM Compatible
 System Type:               x86-based PC
 Processor(s):              1 Processor(s) Installed.
                            [01]: Intel Pentium 133MHz
-BIOS Version:              Morrow Systems BIOS v2.1
+BIOS Version:              IlluminatOS BIOS v2.1
 Windows Directory:         C:\\WINDOWS
 System Directory:          C:\\WINDOWS\\SYSTEM32
 Boot Device:               \\Device\\HarddiskVolume1
@@ -1477,8 +1477,8 @@ Active Connections
 
     cmdAbout() {
         return `
-Seth Morrow OS [Version 95.0.1995]
-(C) Copyright Morrow Systems Inc. 1995-2025
+IlluminatOS! [Version 95.0.1995]
+(C) Copyright IlluminatOS Team 1995-2025
 
 A retro Windows 95 experience built with love and nostalgia.
 Visit: https://sethmorrow.com`;
@@ -1486,15 +1486,13 @@ Visit: https://sethmorrow.com`;
 
     cmdCredits() {
         return `
-SETH MORROW OS - CREDITS
-========================
+ILLUMINATOS! - CREDITS
+======================
 
-Created by: Seth Morrow
 Engine: Vanilla JavaScript
 Inspiration: Windows 95, MS-DOS
 
 Special Thanks:
-- Microsoft for the memories
 - Everyone who remembers the 90s
 - Coffee
 
