@@ -387,8 +387,8 @@ class StateManagerClass {
     }
 
     /**
-     * Export full state for backup
-     * @returns {Object} Complete state
+     * Export full state for backup (legacy - basic export)
+     * @returns {Object} Basic state export
      */
     exportState() {
         return {
@@ -402,7 +402,252 @@ class StateManagerClass {
     }
 
     /**
-     * Import state from backup
+     * Export COMPLETE system snapshot including all state, file system, and app data
+     * @returns {Object} Complete system snapshot
+     */
+    exportCompleteState() {
+        const snapshot = {
+            // Metadata
+            _meta: {
+                version: '2.0',
+                type: 'complete-snapshot',
+                timestamp: new Date().toISOString(),
+                exportedFrom: 'RetrOS'
+            },
+
+            // Core StateManager state
+            state: {
+                icons: this.state.icons,
+                filePositions: this.state.filePositions,
+                menuItems: this.state.menuItems,
+                recycledItems: this.state.recycledItems,
+                achievements: this.state.achievements,
+                settings: this.state.settings,
+                user: {
+                    hasVisited: this.state.user.hasVisited
+                    // Note: isAdmin is session-only, not exported
+                }
+            },
+
+            // Complete File System
+            fileSystem: StorageManager.get('fileSystem'),
+
+            // Display Settings
+            displaySettings: {
+                desktopBg: StorageManager.get('desktopBg'),
+                desktopWallpaper: StorageManager.get('desktopWallpaper'),
+                colorScheme: StorageManager.get('colorScheme'),
+                screensaverType: StorageManager.get('screensaverType'),
+                screensaverDelay: StorageManager.get('screensaverDelay'),
+                windowAnimations: StorageManager.get('windowAnimations'),
+                menuShadows: StorageManager.get('menuShadows'),
+                smoothScrolling: StorageManager.get('smoothScrolling'),
+                iconSize: StorageManager.get('iconSize'),
+                energySaving: StorageManager.get('energySaving')
+            },
+
+            // App-specific data
+            appData: {
+                // Calendar events
+                calendar: this._getDirectLocalStorage('smos_calendar_events'),
+
+                // Clock alarms
+                clock: this._getDirectLocalStorage('smos_clock_alarms'),
+
+                // Media Player playlist
+                mediaPlayer: {
+                    playlist: StorageManager.get('mediaPlayerPlaylist')
+                },
+
+                // Game high scores and saves
+                games: {
+                    skifree: StorageManager.get('skifree_highscore'),
+                    snake: StorageManager.get('snakeHigh'),
+                    zork: this._getDirectLocalStorage('zork_save')
+                },
+
+                // Notepad (legacy content if any)
+                notepad: StorageManager.get('notepadContent')
+            },
+
+            // Feature configuration
+            features: {
+                clippyDismissed: StorageManager.get('clippyDismissed')
+            },
+
+            // Security (admin password)
+            security: {
+                adminPassword: StorageManager.get('adminPassword')
+            }
+        };
+
+        return snapshot;
+    }
+
+    /**
+     * Helper to get localStorage items that aren't managed by StorageManager
+     * @param {string} key - Direct localStorage key
+     * @returns {*} Parsed value or null
+     */
+    _getDirectLocalStorage(key) {
+        try {
+            const value = localStorage.getItem(key);
+            if (value === null) return null;
+            return JSON.parse(value);
+        } catch (e) {
+            // Return raw value if not JSON
+            return localStorage.getItem(key);
+        }
+    }
+
+    /**
+     * Helper to set localStorage items directly (not through StorageManager)
+     * @param {string} key - Direct localStorage key
+     * @param {*} value - Value to store
+     */
+    _setDirectLocalStorage(key, value) {
+        try {
+            if (value === null || value === undefined) {
+                localStorage.removeItem(key);
+            } else {
+                localStorage.setItem(key, JSON.stringify(value));
+            }
+        } catch (e) {
+            console.error('[StateManager] Failed to set direct localStorage:', key, e);
+        }
+    }
+
+    /**
+     * Import COMPLETE system snapshot
+     * @param {Object} data - Complete snapshot data to import
+     * @returns {Object} Result with success status and any warnings
+     */
+    importCompleteState(data) {
+        const warnings = [];
+
+        // Validate snapshot
+        if (!data._meta || data._meta.type !== 'complete-snapshot') {
+            // Try legacy import if not a complete snapshot
+            if (data.icons || data.settings) {
+                this.importState(data);
+                return { success: true, legacy: true, warnings: ['Imported as legacy backup (partial state)'] };
+            }
+            return { success: false, error: 'Invalid snapshot format' };
+        }
+
+        try {
+            // 1. Import core state
+            if (data.state) {
+                if (data.state.icons) this.setState('icons', data.state.icons, true);
+                if (data.state.filePositions) this.setState('filePositions', data.state.filePositions, true);
+                if (data.state.menuItems) this.setState('menuItems', data.state.menuItems, true);
+                if (data.state.recycledItems) this.setState('recycledItems', data.state.recycledItems, true);
+                if (data.state.achievements) this.setState('achievements', data.state.achievements, true);
+
+                // Settings (nested)
+                if (data.state.settings) {
+                    Object.entries(data.state.settings).forEach(([key, value]) => {
+                        if (typeof value === 'object' && value !== null) {
+                            Object.entries(value).forEach(([subKey, subValue]) => {
+                                this.setState(`settings.${key}.${subKey}`, subValue, true);
+                            });
+                        } else {
+                            this.setState(`settings.${key}`, value, true);
+                        }
+                    });
+                }
+
+                // User state
+                if (data.state.user) {
+                    if (data.state.user.hasVisited !== undefined) {
+                        this.setState('user.hasVisited', data.state.user.hasVisited, true);
+                    }
+                }
+            }
+
+            // 2. Import file system
+            if (data.fileSystem) {
+                StorageManager.set('fileSystem', data.fileSystem);
+            }
+
+            // 3. Import display settings
+            if (data.displaySettings) {
+                const displayKeys = [
+                    'desktopBg', 'desktopWallpaper', 'colorScheme',
+                    'screensaverType', 'screensaverDelay', 'windowAnimations',
+                    'menuShadows', 'smoothScrolling', 'iconSize', 'energySaving'
+                ];
+                displayKeys.forEach(key => {
+                    if (data.displaySettings[key] !== undefined && data.displaySettings[key] !== null) {
+                        StorageManager.set(key, data.displaySettings[key]);
+                    }
+                });
+            }
+
+            // 4. Import app data
+            if (data.appData) {
+                // Calendar
+                if (data.appData.calendar !== undefined) {
+                    this._setDirectLocalStorage('smos_calendar_events', data.appData.calendar);
+                }
+
+                // Clock alarms
+                if (data.appData.clock !== undefined) {
+                    this._setDirectLocalStorage('smos_clock_alarms', data.appData.clock);
+                }
+
+                // Media Player
+                if (data.appData.mediaPlayer?.playlist) {
+                    StorageManager.set('mediaPlayerPlaylist', data.appData.mediaPlayer.playlist);
+                }
+
+                // Games
+                if (data.appData.games) {
+                    if (data.appData.games.skifree !== undefined) {
+                        StorageManager.set('skifree_highscore', data.appData.games.skifree);
+                    }
+                    if (data.appData.games.snake !== undefined) {
+                        StorageManager.set('snakeHigh', data.appData.games.snake);
+                    }
+                    if (data.appData.games.zork !== undefined) {
+                        this._setDirectLocalStorage('zork_save', data.appData.games.zork);
+                    }
+                }
+
+                // Notepad
+                if (data.appData.notepad !== undefined) {
+                    StorageManager.set('notepadContent', data.appData.notepad);
+                }
+            }
+
+            // 5. Import features
+            if (data.features) {
+                if (data.features.clippyDismissed !== undefined) {
+                    StorageManager.set('clippyDismissed', data.features.clippyDismissed);
+                }
+            }
+
+            // 6. Import security
+            if (data.security?.adminPassword) {
+                StorageManager.set('adminPassword', data.security.adminPassword);
+            }
+
+            return {
+                success: true,
+                warnings,
+                meta: data._meta
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message,
+                warnings
+            };
+        }
+    }
+
+    /**
+     * Import state from backup (legacy - basic import)
      * @param {Object} data - State data to import
      */
     importState(data) {

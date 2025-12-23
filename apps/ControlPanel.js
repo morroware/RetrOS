@@ -447,23 +447,29 @@ class ControlPanel extends AppBase {
             });
         }
 
-        // Export button
+        // Export button - Complete System Snapshot
         const exportButton = this.getElement('#export-button');
         if (exportButton) {
             this.addHandler(exportButton, 'click', () => {
-                const data = StateManager.exportState();
+                const data = StateManager.exportCompleteState();
                 const json = JSON.stringify(data, null, 2);
                 const blob = new Blob([json], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'retros-backup.json';
+                // Include timestamp in filename for versioning
+                const timestamp = new Date().toISOString().split('T')[0];
+                a.download = `retros-snapshot-${timestamp}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
+
+                // Show success message with snapshot info
+                const sizeKB = (json.length / 1024).toFixed(2);
+                alert(`Complete system snapshot exported!\n\nIncludes:\n• Desktop icons & positions\n• File system\n• Display settings\n• App data (calendar, games, etc.)\n• All preferences\n\nSize: ${sizeKB} KB`);
             });
         }
 
-        // Import button
+        // Import button - Complete System Snapshot
         const importButton = this.getElement('#import-button');
         if (importButton) {
             this.addHandler(importButton, 'click', () => {
@@ -478,11 +484,25 @@ class ControlPanel extends AppBase {
                     reader.onload = (event) => {
                         try {
                             const data = JSON.parse(event.target.result);
-                            StateManager.importState(data);
-                            alert('Settings imported successfully! Reloading...');
-                            window.location.reload();
+                            const result = StateManager.importCompleteState(data);
+
+                            if (result.success) {
+                                let message = 'System snapshot restored successfully!';
+                                if (result.legacy) {
+                                    message = 'Legacy backup imported (partial restore).';
+                                } else if (result.meta) {
+                                    message = `Snapshot restored!\n\nFrom: ${result.meta.timestamp}\nVersion: ${result.meta.version}`;
+                                }
+                                if (result.warnings && result.warnings.length > 0) {
+                                    message += '\n\nWarnings:\n• ' + result.warnings.join('\n• ');
+                                }
+                                alert(message + '\n\nReloading...');
+                                window.location.reload();
+                            } else {
+                                alert('Failed to import snapshot: ' + result.error);
+                            }
                         } catch (err) {
-                            alert('Failed to import settings: ' + err.message);
+                            alert('Failed to import snapshot: ' + err.message);
                         }
                     };
                     reader.readAsText(file);
