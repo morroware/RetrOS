@@ -50,6 +50,7 @@ import FreeCell from './FreeCell.js';
 import Zork from './Zork.js';
 import HyperCard from './HyperCard.js';
 import FeaturesSettings from './FeaturesSettings.js';
+import ScenarioPlayer from './ScenarioPlayer.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -145,6 +146,7 @@ class AppRegistryClass {
             new FreeCell(),
             new SkiFree(),
             new Zork(),
+            new ScenarioPlayer(),
         ]);
 
         // --- Multimedia ---

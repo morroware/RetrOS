@@ -1,0 +1,296 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://retros.example.com/scenario.schema.json",
+    "title": "RetrOS Scenario",
+    "description": "Schema for RetrOS scripted scenario files",
+    "type": "object",
+    "required": ["id", "name", "stages"],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "JSON Schema reference"
+        },
+        "id": {
+            "type": "string",
+            "description": "Unique identifier for the scenario",
+            "pattern": "^[a-z0-9-]+$"
+        },
+        "name": {
+            "type": "string",
+            "description": "Display name of the scenario"
+        },
+        "description": {
+            "type": "string",
+            "description": "Detailed description of the scenario"
+        },
+        "version": {
+            "type": "string",
+            "description": "Semantic version of the scenario",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "author": {
+            "type": "string",
+            "description": "Author or creator of the scenario"
+        },
+        "icon": {
+            "type": "string",
+            "description": "Emoji icon for the scenario"
+        },
+        "difficulty": {
+            "type": "string",
+            "enum": ["easy", "medium", "hard", "expert"],
+            "description": "Difficulty level"
+        },
+        "estimatedTime": {
+            "type": "string",
+            "description": "Estimated completion time"
+        },
+        "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Tags for categorization"
+        },
+        "requirements": {
+            "type": "object",
+            "properties": {
+                "apps": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Required app IDs"
+                },
+                "features": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Required feature IDs"
+                },
+                "minVersion": {
+                    "type": "string",
+                    "description": "Minimum RetrOS version"
+                }
+            }
+        },
+        "config": {
+            "type": "object",
+            "properties": {
+                "allowSkip": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Allow skipping stages"
+                },
+                "showProgress": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show progress indicator"
+                },
+                "autoSave": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto-save progress"
+                },
+                "hintDelay": {
+                    "type": "integer",
+                    "default": 30000,
+                    "description": "Delay before showing hints (ms)"
+                },
+                "maxHints": {
+                    "type": "integer",
+                    "default": 3,
+                    "description": "Maximum number of hints"
+                },
+                "pauseOnBlur": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Pause when window loses focus"
+                }
+            }
+        },
+        "variables": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Initial scenario state variables"
+        },
+        "onStart": {
+            "$ref": "#/definitions/lifecycleHook",
+            "description": "Actions to run when scenario starts"
+        },
+        "stages": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/stage" },
+            "minItems": 1,
+            "description": "Scenario stages"
+        },
+        "globalTriggers": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/trigger" },
+            "description": "Triggers active throughout the scenario"
+        },
+        "onComplete": {
+            "$ref": "#/definitions/lifecycleHook",
+            "description": "Actions when scenario completes successfully"
+        },
+        "onFail": {
+            "$ref": "#/definitions/lifecycleHook",
+            "description": "Actions when scenario fails"
+        },
+        "onAbort": {
+            "$ref": "#/definitions/lifecycleHook",
+            "description": "Actions when scenario is aborted"
+        }
+    },
+    "definitions": {
+        "lifecycleHook": {
+            "type": "object",
+            "properties": {
+                "actions": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/action" }
+                }
+            }
+        },
+        "stage": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique stage identifier"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Display name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Stage description"
+                },
+                "isInitialStage": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Is this the starting stage?"
+                },
+                "onEnter": {
+                    "$ref": "#/definitions/lifecycleHook",
+                    "description": "Actions when entering stage"
+                },
+                "onExit": {
+                    "$ref": "#/definitions/lifecycleHook",
+                    "description": "Actions when exiting stage"
+                },
+                "hints": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "delay": { "type": "integer" },
+                            "message": { "type": "string" }
+                        },
+                        "required": ["message"]
+                    }
+                },
+                "triggers": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/trigger" }
+                }
+            }
+        },
+        "trigger": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Trigger identifier"
+                },
+                "event": {
+                    "type": "string",
+                    "description": "Event name to listen for"
+                },
+                "events": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Multiple events to listen for"
+                },
+                "conditions": {
+                    "$ref": "#/definitions/condition",
+                    "description": "Conditions to check"
+                },
+                "actions": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/action" },
+                    "description": "Actions to execute"
+                },
+                "once": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Only fire once?"
+                },
+                "priority": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Execution priority (higher = first)"
+                },
+                "debounce": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Debounce delay (ms)"
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                }
+            }
+        },
+        "condition": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "stageActive", "stageCompleted",
+                        "stateEquals", "stateExists", "stateGreater", "stateLess", "stateContains", "stateMatches",
+                        "fileExists", "fileContains", "fileEquals",
+                        "appOpen", "appFocused", "appLocked",
+                        "windowExists", "windowMinimized",
+                        "achievementUnlocked", "featureEnabled",
+                        "timeElapsed", "timeBefore", "timeAfter",
+                        "eventMatch", "eventData",
+                        "random", "count",
+                        "and", "or", "not",
+                        "globalStateEquals", "globalStateExists",
+                        "compare", "inRange",
+                        "always", "never"
+                    ]
+                }
+            },
+            "additionalProperties": true
+        },
+        "action": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "createFile", "modifyFile", "deleteFile", "createFolder",
+                        "createDesktopIcon", "removeDesktopIcon",
+                        "showDialog", "showNotification", "showClippy",
+                        "playSound", "playAudio", "stopAudio",
+                        "unlockApp", "lockApp", "launchApp", "closeApp",
+                        "unlockAchievement",
+                        "setState", "modifyState",
+                        "emitEvent",
+                        "advanceStage", "completeScenario", "failScenario",
+                        "wait", "showHint",
+                        "visualEffect", "setWallpaper",
+                        "enableFeature", "disableFeature",
+                        "modifyClipboard", "sendKeys",
+                        "focusWindow", "minimizeAll",
+                        "triggerScreensaver",
+                        "log", "conditional", "repeat"
+                    ]
+                }
+            },
+            "additionalProperties": true
+        }
+    }
+}

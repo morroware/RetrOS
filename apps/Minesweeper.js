@@ -6,6 +6,8 @@
 
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
+import { MinesweeperEvents, GameEvents } from '../core/scripted-events/SemanticEvents.js';
+import EventBus from '../core/EventBus.js';
 
 class Minesweeper extends AppBase {
     constructor() {
@@ -71,11 +73,20 @@ class Minesweeper extends AppBase {
         this.gameOver = false;
         this.isFirstClick = true;
         this.grid = [];
-        
+
         // Reset UI
         this.updateFace('😀');
         this.updateTimerDisplay();
         this.updateMineCounter(this.mines);
+
+        // Emit game started event
+        EventBus.emit(MinesweeperEvents.STARTED, {
+            difficulty: 'beginner',
+            rows: this.rows,
+            cols: this.cols,
+            mines: this.mines
+        });
+        EventBus.emit(GameEvents.STARTED, { appId: 'minesweeper', difficulty: 'beginner' });
 
         const gridEl = this.getElement('#mineGrid');
         if (!gridEl) return;
@@ -210,6 +221,14 @@ class Minesweeper extends AppBase {
         cell.revealed = true;
         cell.element.classList.add('revealed');
 
+        // Emit cell revealed event
+        EventBus.emit(MinesweeperEvents.CELL_REVEALED, {
+            row: r,
+            col: c,
+            value: cell.mine ? 'mine' : cell.count,
+            isFirstClick: this.isFirstClick
+        });
+
         if (cell.mine) {
             this.triggerGameOver(false, cell); // Pass the killing cell
             return;
@@ -261,7 +280,14 @@ class Minesweeper extends AppBase {
 
         cell.flagged = !cell.flagged;
         cell.element.classList.toggle('flagged', cell.flagged);
-        
+
+        // Emit flag event
+        EventBus.emit(MinesweeperEvents.CELL_FLAGGED, {
+            row: r,
+            col: c,
+            flagged: cell.flagged
+        });
+
         const totalFlagged = this.grid.flat().filter(c => c.flagged).length;
         this.updateMineCounter(this.mines - totalFlagged);
     }
@@ -279,16 +305,40 @@ class Minesweeper extends AppBase {
             this.updateFace('😎');
             this.flagAllMines();
             StateManager.unlockAchievement('mine_sweeper');
+
+            // Emit win events
+            const totalFlagged = this.grid.flat().filter(c => c.flagged).length;
+            EventBus.emit(MinesweeperEvents.WIN, {
+                time: this.time,
+                difficulty: 'beginner',
+                flagsUsed: totalFlagged
+            });
+            EventBus.emit(GameEvents.WIN, {
+                appId: 'minesweeper',
+                time: this.time,
+                difficulty: 'beginner'
+            });
         } else {
             this.updateFace('😵');
-            
+
             // Highlight ONLY the mine that killed you
             if (killingCell) {
-                killingCell.element.classList.add('mine-hit'); 
+                killingCell.element.classList.add('mine-hit');
             }
-            
+
             this.revealAllMines();
             this.playSound('error');
+
+            // Emit lose events
+            EventBus.emit(MinesweeperEvents.LOSE, {
+                time: this.time,
+                row: killingCell?.r,
+                col: killingCell?.c
+            });
+            EventBus.emit(GameEvents.LOSE, {
+                appId: 'minesweeper',
+                time: this.time
+            });
         }
     }
 

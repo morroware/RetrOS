@@ -6,6 +6,8 @@
 import AppBase from './AppBase.js';
 import StorageManager from '../core/StorageManager.js';
 import StateManager from '../core/StateManager.js';
+import { SnakeEvents, GameEvents } from '../core/scripted-events/SemanticEvents.js';
+import EventBus from '../core/EventBus.js';
 
 class Snake extends AppBase {
     constructor() {
@@ -117,7 +119,7 @@ class Snake extends AppBase {
     startGame() {
         if (this.blinkInterval) clearInterval(this.blinkInterval);
         this.isGameRunning = true;
-        
+
         // Init Snake (Center-ish)
         this.snake = [
             { x: 10, y: 15 },
@@ -127,7 +129,11 @@ class Snake extends AppBase {
         this.velocity = { x: 0, y: -1 }; // Move up
         this.moveQueue = [];
         this.gameSpeed = 110;
-        
+
+        // Emit game started events
+        EventBus.emit(SnakeEvents.STARTED, { difficulty: 'normal' });
+        EventBus.emit(GameEvents.STARTED, { appId: 'snake' });
+
         this.placeFood();
         this.gameLoop();
     }
@@ -181,6 +187,15 @@ class Snake extends AppBase {
         const desiredDir = keyMap[e.key];
         if (desiredDir) {
             this.moveQueue.push(desiredDir);
+
+            // Emit direction change event
+            const dirName = desiredDir.x === 1 ? 'right' : desiredDir.x === -1 ? 'left' :
+                desiredDir.y === 1 ? 'down' : 'up';
+            EventBus.emit(SnakeEvents.DIRECTION_CHANGED, {
+                from: this.velocity,
+                to: desiredDir,
+                direction: dirName
+            });
         }
     }
 
@@ -241,7 +256,15 @@ class Snake extends AppBase {
             this.updateScoreUI();
             this.placeFood();
             this.playSound('click');
-            if (this.gameSpeed > 50) this.gameSpeed -= 2; 
+            if (this.gameSpeed > 50) this.gameSpeed -= 2;
+
+            // Emit ate/grew events
+            EventBus.emit(SnakeEvents.ATE, {
+                position: { x: head.x, y: head.y },
+                newLength: this.snake.length,
+                score: this.score
+            });
+            EventBus.emit(SnakeEvents.GREW, { length: this.snake.length });
         } else {
             this.snake.pop();
         }
@@ -310,7 +333,27 @@ class Snake extends AppBase {
     gameOver() {
         this.isGameOver = true;
         this.playSound('error');
-        
+
+        // Determine collision type
+        const head = this.snake[0];
+        const hitWall = head.x < 0 || head.x >= this.tileCount ||
+            head.y < 0 || head.y >= this.tileCount;
+
+        // Emit collision and lose events
+        EventBus.emit(SnakeEvents.COLLIDED, {
+            type: hitWall ? 'wall' : 'self',
+            position: head
+        });
+        EventBus.emit(SnakeEvents.LOSE, {
+            score: this.score,
+            length: this.snake.length,
+            reason: hitWall ? 'wall' : 'self'
+        });
+        EventBus.emit(GameEvents.LOSE, {
+            appId: 'snake',
+            score: this.score
+        });
+
         if (this.score > this.highScore) {
             this.highScore = this.score;
             StorageManager.set('snakeHigh', this.score);

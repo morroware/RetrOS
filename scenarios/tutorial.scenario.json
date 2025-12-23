@@ -1,0 +1,281 @@
+{
+    "$schema": "./schema.json",
+    "id": "tutorial",
+    "name": "IlluminatOS Tutorial",
+    "description": "Learn the basics of IlluminatOS! This guided tutorial will walk you through the desktop, apps, and features.",
+    "version": "1.0.0",
+    "author": "IlluminatOS Team",
+    "icon": "📚",
+    "difficulty": "easy",
+    "estimatedTime": "5-10 minutes",
+    "tags": ["tutorial", "beginner", "guided"],
+
+    "requirements": {
+        "apps": ["notepad", "minesweeper"],
+        "features": []
+    },
+
+    "config": {
+        "allowSkip": true,
+        "showProgress": true,
+        "autoSave": false,
+        "hintDelay": 15000,
+        "maxHints": 5
+    },
+
+    "variables": {
+        "stepsCompleted": 0,
+        "notepadOpened": false,
+        "fileSaved": false,
+        "gameWon": false
+    },
+
+    "onStart": {
+        "actions": [
+            {
+                "type": "showDialog",
+                "title": "Welcome to IlluminatOS!",
+                "message": "This tutorial will guide you through the basics of using IlluminatOS. Let's get started!",
+                "icon": "info",
+                "buttons": ["Let's Go!"]
+            },
+            {
+                "type": "showNotification",
+                "message": "Tutorial started! Follow the on-screen instructions.",
+                "duration": 3000
+            }
+        ]
+    },
+
+    "stages": [
+        {
+            "id": "intro",
+            "name": "Welcome",
+            "description": "Introduction to IlluminatOS",
+            "isInitialStage": true,
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "Hi! I'm here to help you learn IlluminatOS. First, let's open an app. Click on the Start button in the bottom-left corner!",
+                        "duration": 8000
+                    }
+                ]
+            },
+            "hints": [
+                { "delay": 10000, "message": "Look for the Start button in the bottom-left corner of the screen." },
+                { "delay": 20000, "message": "Click on 'Start' to open the Start Menu." }
+            ],
+            "triggers": [
+                {
+                    "id": "start-menu-opened",
+                    "event": "startmenu:opened",
+                    "actions": [
+                        { "type": "advanceStage", "stageId": "open-notepad" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "open-notepad",
+            "name": "Open Notepad",
+            "description": "Learn to open applications",
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "Great! Now find 'Programs' and then 'Accessories'. Look for Notepad and click on it!",
+                        "duration": 6000
+                    }
+                ]
+            },
+            "hints": [
+                { "delay": 15000, "message": "Hover over 'Programs' to see more options." },
+                { "delay": 25000, "message": "Notepad is in the Accessories submenu." }
+            ],
+            "triggers": [
+                {
+                    "id": "notepad-opened",
+                    "event": "notepad:opened",
+                    "actions": [
+                        { "type": "setState", "path": "notepadOpened", "value": true },
+                        { "type": "modifyState", "path": "stepsCompleted", "operation": "increment" },
+                        { "type": "advanceStage", "stageId": "type-text" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "type-text",
+            "name": "Type Something",
+            "description": "Learn to use Notepad",
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "Excellent! Notepad is a simple text editor. Try typing something - maybe 'Hello World'!",
+                        "duration": 5000
+                    }
+                ]
+            },
+            "hints": [
+                { "delay": 10000, "message": "Just start typing in the text area." }
+            ],
+            "triggers": [
+                {
+                    "id": "text-typed",
+                    "event": "notepad:typed",
+                    "conditions": {
+                        "type": "eventMatch",
+                        "field": "wordCount",
+                        "op": "greaterOrEqual",
+                        "value": 1
+                    },
+                    "actions": [
+                        { "type": "modifyState", "path": "stepsCompleted", "operation": "increment" },
+                        { "type": "advanceStage", "stageId": "save-file" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "save-file",
+            "name": "Save Your Work",
+            "description": "Learn to save files",
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "Good job! Now let's save your work. Click the 'Save' button or press Ctrl+S.",
+                        "duration": 5000
+                    }
+                ]
+            },
+            "hints": [
+                { "delay": 10000, "message": "Click the 'Save' button in the toolbar." },
+                { "delay": 20000, "message": "You can also press Ctrl+S on your keyboard." }
+            ],
+            "triggers": [
+                {
+                    "id": "file-saved",
+                    "event": "notepad:saved",
+                    "actions": [
+                        { "type": "setState", "path": "fileSaved", "value": true },
+                        { "type": "modifyState", "path": "stepsCompleted", "operation": "increment" },
+                        { "type": "advanceStage", "stageId": "play-game" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "play-game",
+            "name": "Play a Game",
+            "description": "Have some fun!",
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "You're doing great! Now let's have some fun. Open the Start menu and find Minesweeper in Games!",
+                        "duration": 6000
+                    }
+                ]
+            },
+            "hints": [
+                { "delay": 15000, "message": "Go to Start > Programs > Games > Minesweeper" }
+            ],
+            "triggers": [
+                {
+                    "id": "game-started",
+                    "event": "minesweeper:started",
+                    "actions": [
+                        { "type": "advanceStage", "stageId": "win-game" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "win-game",
+            "name": "Win the Game",
+            "description": "Try to win at Minesweeper",
+            "onEnter": {
+                "actions": [
+                    {
+                        "type": "showClippy",
+                        "message": "Click cells to reveal them. Avoid the mines! The numbers tell you how many mines are nearby.",
+                        "duration": 6000
+                    }
+                ]
+            },
+            "hints": [
+                { "delay": 20000, "message": "Right-click to flag suspected mines." },
+                { "delay": 40000, "message": "If you lose, click the smiley face to try again!" }
+            ],
+            "triggers": [
+                {
+                    "id": "game-won",
+                    "event": "minesweeper:win",
+                    "actions": [
+                        { "type": "setState", "path": "gameWon", "value": true },
+                        { "type": "modifyState", "path": "stepsCompleted", "operation": "increment" },
+                        { "type": "completeScenario" }
+                    ]
+                },
+                {
+                    "id": "game-lost-skip",
+                    "event": "minesweeper:lose",
+                    "once": false,
+                    "actions": [
+                        {
+                            "type": "showClippy",
+                            "message": "Oops! Don't worry, try again. Click the smiley face!",
+                            "duration": 4000
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+
+    "globalTriggers": [],
+
+    "onComplete": {
+        "actions": [
+            {
+                "type": "showDialog",
+                "title": "Tutorial Complete!",
+                "message": "Congratulations! You've completed the IlluminatOS tutorial. You learned how to:\n\n• Open the Start Menu\n• Launch applications\n• Use Notepad to write and save text\n• Play Minesweeper\n\nEnjoy exploring IlluminatOS!",
+                "icon": "success",
+                "buttons": ["Finish"]
+            },
+            {
+                "type": "unlockAchievement",
+                "id": "tutorial_complete"
+            },
+            {
+                "type": "playSound",
+                "sound": "tada"
+            }
+        ]
+    },
+
+    "onFail": {
+        "actions": [
+            {
+                "type": "showDialog",
+                "title": "Tutorial Incomplete",
+                "message": "The tutorial was not completed. You can restart it anytime from the Scenario Player!",
+                "icon": "info"
+            }
+        ]
+    },
+
+    "onAbort": {
+        "actions": [
+            {
+                "type": "showNotification",
+                "message": "Tutorial cancelled. Come back anytime!",
+                "duration": 3000
+            }
+        ]
+    }
+}
