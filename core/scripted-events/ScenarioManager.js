@@ -115,8 +115,8 @@ class ScenarioManagerFeature extends FeatureBase {
     }
 
     /**
-     * Load a scenario from a file path or object
-     * @param {string|Object} source - File path or scenario object
+     * Load a scenario from a URL path or object
+     * @param {string|Object} source - URL path or scenario object
      * @returns {boolean} - Success status
      */
     async loadScenario(source) {
@@ -129,8 +129,11 @@ class ScenarioManagerFeature extends FeatureBase {
             let scenario;
 
             if (typeof source === 'string') {
-                // Load from file
-                scenario = this.loader.loadFromFile(source);
+                // Convert path to URL - scenarios are served as static files
+                // Remove leading slash for relative URL if present
+                const url = source.startsWith('/') ? `.${source}` : source;
+                this.log(`Loading scenario from URL: ${url}`);
+                scenario = await this.loader.loadFromUrl(url);
             } else if (typeof source === 'object') {
                 // Load from object
                 scenario = this.loader.loadFromObject(source);

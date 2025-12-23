@@ -399,15 +399,17 @@ class ScenarioPlayer extends AppBase {
     }
 
     async startScenario(scenario) {
-        this.alert(`Starting "${scenario.name}"...`);
+        console.log('[ScenarioPlayer] Starting scenario:', scenario.name, 'path:', scenario.path);
 
         try {
             // Try to load from file
             const loaded = await ScenarioManager.loadScenario(scenario.path);
 
             if (!loaded) {
-                // File doesn't exist yet, show message
-                this.alert(`Scenario file not found. Create ${scenario.path} to play!`);
+                // File doesn't exist or failed to load
+                const errors = ScenarioManager.loader?.getLastErrors?.() || [];
+                console.error('[ScenarioPlayer] Failed to load scenario:', errors);
+                this.alert(`Could not load scenario: ${errors[0]?.message || 'Unknown error'}`);
                 return;
             }
 
@@ -417,7 +419,7 @@ class ScenarioPlayer extends AppBase {
             // Close this window to let user play
             this.close();
         } catch (error) {
-            console.error('Error starting scenario:', error);
+            console.error('[ScenarioPlayer] Error starting scenario:', error);
             this.alert(`Error: ${error.message}`);
         }
     }
