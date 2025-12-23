@@ -307,24 +307,35 @@ class FeaturesSettings extends AppBase {
             return '';
         }
 
+        // Check if user is admin for adminOnly settings
+        const isAdmin = this.getState('user.isAdmin');
+
         return feature.settings
-            .filter(s => s.key !== 'enabled') // Skip the main enable toggle
+            .filter(s => {
+                const key = s.key || s.id;
+                if (key === 'enabled') return false; // Skip the main enable toggle
+                if (s.adminOnly && !isAdmin) return false; // Skip admin-only settings for non-admins
+                return true;
+            })
             .map(setting => this.renderSetting(feature.id, setting, feature.config))
             .join('');
     }
 
     renderSetting(featureId, setting, config) {
-        const currentValue = config[setting.key] ?? setting.default;
+        // Support both 'key' and 'id' for setting identifier
+        const settingKey = setting.key || setting.id;
+        const currentValue = config[settingKey] ?? setting.default;
 
         switch (setting.type) {
             case 'checkbox':
+            case 'boolean':
                 return `
                     <div class="setting-row">
                         <label class="setting-label">${setting.label}</label>
                         <input type="checkbox"
                                ${currentValue ? 'checked' : ''}
                                data-feature="${featureId}"
-                               data-key="${setting.key}">
+                               data-key="${settingKey}">
                     </div>
                 `;
 
@@ -339,7 +350,7 @@ class FeaturesSettings extends AppBase {
                                step="${setting.step}"
                                value="${currentValue}"
                                data-feature="${featureId}"
-                               data-key="${setting.key}">
+                               data-key="${settingKey}">
                         <span class="setting-value">${currentValue}</span>
                     </div>
                 `;
@@ -355,21 +366,28 @@ class FeaturesSettings extends AppBase {
                                step="${setting.step || 1}"
                                value="${setting.transform === 'milliseconds' ? currentValue / 1000 : currentValue}"
                                data-feature="${featureId}"
-                               data-key="${setting.key}"
+                               data-key="${settingKey}"
                                data-transform="${setting.transform || ''}">
                     </div>
                 `;
 
             case 'select':
+                // Support both string options and {value, label} object options
+                const renderOption = (opt) => {
+                    const value = typeof opt === 'object' ? opt.value : opt;
+                    const label = typeof opt === 'object' ? opt.label : opt;
+                    return `<option value="${value}" ${value === currentValue ? 'selected' : ''}>${label}</option>`;
+                };
                 return `
                     <div class="setting-row">
-                        <label class="setting-label">${setting.label}</label>
+                        <label class="setting-label">
+                            ${setting.label}
+                            ${setting.description ? `<br><small style="color:#666;font-weight:normal;">${setting.description}</small>` : ''}
+                        </label>
                         <select class="setting-input"
                                 data-feature="${featureId}"
-                                data-key="${setting.key}">
-                            ${setting.options.map(opt =>
-                                `<option value="${opt}" ${opt === currentValue ? 'selected' : ''}>${opt}</option>`
-                            ).join('')}
+                                data-key="${settingKey}">
+                            ${setting.options.map(renderOption).join('')}
                         </select>
                     </div>
                 `;

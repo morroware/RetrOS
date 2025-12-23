@@ -401,6 +401,13 @@ class ScenarioPlayer extends AppBase {
     async startScenario(scenario) {
         console.log('[ScenarioPlayer] Starting scenario:', scenario.name, 'path:', scenario.path);
 
+        // Show loading message via system dialog
+        EventBus.emit('dialog:alert', {
+            message: `Loading "${scenario.name}"...`,
+            title: 'Scenario Player',
+            icon: 'info'
+        });
+
         try {
             // Try to load from file
             const loaded = await ScenarioManager.loadScenario(scenario.path);
@@ -409,7 +416,11 @@ class ScenarioPlayer extends AppBase {
                 // File doesn't exist or failed to load
                 const errors = ScenarioManager.loader?.getLastErrors?.() || [];
                 console.error('[ScenarioPlayer] Failed to load scenario:', errors);
-                this.alert(`Could not load scenario: ${errors[0]?.message || 'Unknown error'}`);
+                EventBus.emit('dialog:alert', {
+                    message: `Could not load scenario: ${errors[0]?.message || 'Unknown error'}`,
+                    title: 'Scenario Error',
+                    icon: 'error'
+                });
                 return;
             }
 
@@ -420,7 +431,11 @@ class ScenarioPlayer extends AppBase {
             this.close();
         } catch (error) {
             console.error('[ScenarioPlayer] Error starting scenario:', error);
-            this.alert(`Error: ${error.message}`);
+            EventBus.emit('dialog:alert', {
+                message: `Error starting scenario: ${error.message}`,
+                title: 'Scenario Error',
+                icon: 'error'
+            });
         }
     }
 

@@ -20,13 +20,20 @@
  */
 
 import FeatureBase from '../FeatureBase.js';
-import EventBus from '../EventBus.js';
+import EventBus, { Events } from '../EventBus.js';
 import StateManager from '../StateManager.js';
 import { TriggerEngine } from './TriggerEngine.js';
 import { ScenarioLoader, scenarioLoader } from './ScenarioLoader.js';
 import { executeSequence } from './ActionExecutor.js';
 import { emitScenarioEvent } from './EventEmitterMixin.js';
 import { ScenarioEvents } from './SemanticEvents.js';
+
+// Available built-in scenarios for the dropdown
+const BUILT_IN_SCENARIOS = [
+    { value: '', label: 'None (disabled)' },
+    { value: '/scenarios/tutorial.scenario.json', label: 'RetrOS Tutorial' },
+    { value: '/scenarios/cipher-hunt.scenario.json', label: 'The Cipher Hunt' }
+];
 
 /**
  * ScenarioManager Feature
@@ -43,7 +50,8 @@ class ScenarioManagerFeature extends FeatureBase {
             config: {
                 autoStart: false,
                 debugMode: false,
-                showIndicator: true
+                showIndicator: true,
+                defaultScenario: ''  // Path to auto-start scenario on boot
             },
             settings: [
                 {
@@ -57,6 +65,15 @@ class ScenarioManagerFeature extends FeatureBase {
                     label: 'Debug Mode',
                     type: 'boolean',
                     default: false
+                },
+                {
+                    id: 'defaultScenario',
+                    label: 'Auto-Start Scenario on Boot',
+                    type: 'select',
+                    options: BUILT_IN_SCENARIOS,
+                    default: '',
+                    adminOnly: true,  // Only admins can configure this
+                    description: 'Select a scenario to automatically start when the site loads'
                 }
             ]
         });
@@ -91,6 +108,11 @@ class ScenarioManagerFeature extends FeatureBase {
     async initialize() {
         this.log('Initializing Scenario Manager');
 
+        // Subscribe to boot complete event for auto-starting default scenario
+        this.subscribe(Events.BOOT_COMPLETE, () => {
+            this.handleBootComplete();
+        });
+
         // Subscribe to system events for pause/resume
         this.subscribe('system:blur', () => {
             if (this.scenario?.config?.pauseOnBlur && this.runtime.isRunning) {
@@ -112,6 +134,36 @@ class ScenarioManagerFeature extends FeatureBase {
         this.subscribe('scenario:resume', () => this.resumeScenario());
 
         this.log('Scenario Manager initialized');
+    }
+
+    /**
+     * Handle boot complete event - auto-start default scenario if configured
+     */
+    async handleBootComplete() {
+        // Get the default scenario setting
+        const defaultScenario = this.getConfig('defaultScenario');
+
+        if (!defaultScenario) {
+            this.log('No default scenario configured');
+            return;
+        }
+
+        this.log(`Auto-starting default scenario: ${defaultScenario}`);
+
+        // Small delay to let the UI fully initialize
+        setTimeout(async () => {
+            try {
+                const loaded = await this.loadScenario(defaultScenario);
+                if (loaded) {
+                    await this.startScenario();
+                    this.log('Default scenario started successfully');
+                } else {
+                    this.warn(`Failed to load default scenario: ${defaultScenario}`);
+                }
+            } catch (error) {
+                this.error('Error starting default scenario:', error);
+            }
+        }, 1500);  // Wait 1.5s after boot for UI to settle
     }
 
     /**
