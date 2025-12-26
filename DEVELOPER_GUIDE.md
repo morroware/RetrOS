@@ -137,13 +137,16 @@ IlluminatOS! is built on these core modules in `/core/`:
 
 | Module | Purpose |
 |--------|---------|
-| `EventBus.js` | Central pub/sub messaging system |
+| `SemanticEventBus.js` | Event bus with 200+ events, validation, priorities, channels |
+| `EventSchema.js` | Schema definitions for all semantic events |
+| `SystemMonitor.js` | System monitoring (input, performance, activity tracking) |
 | `StateManager.js` | Centralized state management with persistence |
 | `WindowManager.js` | Window creation, focus, resize, and lifecycle |
 | `StorageManager.js` | LocalStorage abstraction layer |
-| `FileSystemManager.js` | Virtual file system with multi-drive support |
+| `FileSystemManager.js` | Virtual file system with multi-drive support and events |
 | `IconSystem.js` | FontAwesome icons with emoji fallback |
 | `Constants.js` | Centralized configuration values |
+| `ScriptEngine.js` | Scripting engine for automation |
 
 ### App Base Class
 
@@ -267,28 +270,108 @@ handleClick(e) {
 ### EventBus Events (Use onEvent)
 
 ```javascript
+import EventBus, { Events, Priority } from '../core/SemanticEventBus.js';
+
 onMount() {
     // Subscribe to system events (auto-cleanup)
-    this.onEvent('window:focus', this.handleWindowFocus);
-    this.onEvent('setting:changed', this.handleSettingChanged);
+    this.onEvent(Events.WINDOW_FOCUS, this.handleWindowFocus);
+    this.onEvent(Events.SETTING_CHANGED, this.handleSettingChanged);
+
+    // Subscribe with priority control
+    this.onEvent(Events.KEYBOARD_KEYDOWN, this.handleKeyboard, { priority: Priority.HIGH });
+
+    // Pattern matching (wildcards)
+    this.onEvent('window:*', this.handleAnyWindowEvent);
 }
 
 // Emit events
-this.emit('custom:event', { data: 'value' });
+this.emit(Events.APP_STATE_CHANGE, {
+    appId: this.id,
+    key: 'status',
+    value: 'active'
+});
 ```
 
-### Common Events
+### Common Events (200+ Available)
 
+**Window Events:**
 | Event | Data | Description |
 |-------|------|-------------|
-| `window:open` | `{id, title}` | Window opened |
-| `window:close` | `{id}` | Window closed |
-| `window:focus` | `{id}` | Window focused |
+| `window:create` | `{id, title, appId, width, height}` | Window being created |
+| `window:open` | `{id, appId, element}` | Window opened in DOM |
+| `window:close` | `{id, appId}` | Window closing |
+| `window:focus` | `{id, previousId}` | Window focused |
 | `window:resize` | `{id, width, height}` | Window resized |
-| `sound:play` | `{type, force}` | Play sound effect |
-| `audio:play` | `{src, volume, loop}` | Play audio file |
-| `achievement:unlock` | `{id}` | Achievement unlocked |
-| `setting:changed` | `{path, value}` | Setting changed |
+| `window:move` | `{id, x, y}` | Window moved |
+| `window:minimize` | `{id}` | Window minimized |
+| `window:maximize` | `{id}` | Window maximized |
+
+**App Events:**
+| Event | Data | Description |
+|-------|------|-------------|
+| `app:launch` | `{appId, params}` | App launch requested |
+| `app:ready` | `{appId, windowId}` | App mounted and ready |
+| `app:close` | `{appId, windowId}` | App closing |
+| `app:focus` | `{appId, windowId}` | App gained focus |
+| `app:blur` | `{appId, windowId}` | App lost focus |
+| `app:state:change` | `{appId, key, value, oldValue}` | App state changed |
+| `app:message` | `{from, to, message, type}` | App-to-app message |
+| `app:broadcast` | `{from, message, type}` | Broadcast to all apps |
+
+**Input Events:**
+| Event | Data | Description |
+|-------|------|-------------|
+| `mouse:click` | `{x, y, button, target}` | Mouse click |
+| `mouse:dblclick` | `{x, y, button, target}` | Double click |
+| `keyboard:keydown` | `{key, code, ctrl, alt, shift, meta}` | Key pressed |
+| `keyboard:combo` | `{combo, keys}` | Modifier combo (Ctrl+S) |
+| `gesture:swipe` | `{direction, startX, startY, endX, endY}` | Swipe gesture |
+| `gesture:pinch` | `{scale, centerX, centerY}` | Pinch/zoom gesture |
+
+**System Events:**
+| Event | Data | Description |
+|-------|------|-------------|
+| `system:ready` | `{timestamp, bootTime}` | System fully initialized |
+| `system:idle` | `{idleTime, threshold}` | User idle (no activity) |
+| `system:active` | `{idleDuration}` | User became active |
+| `system:online` | `{}` | Network connected |
+| `system:offline` | `{}` | Network disconnected |
+
+See [SEMANTIC_EVENTS.md](SEMANTIC_EVENTS.md) for complete event documentation.
+
+### App-to-App Messaging
+
+Apps can communicate with each other using the built-in messaging system:
+
+```javascript
+class MyApp extends AppBase {
+    onMount() {
+        // Listen for direct messages
+        this.onMessage((message, fromAppId, type) => {
+            console.log(`Message from ${fromAppId}:`, message);
+        });
+
+        // Listen for broadcasts from any app
+        this.onBroadcast((message, fromAppId, type) => {
+            console.log(`Broadcast from ${fromAppId}:`, message);
+        });
+    }
+
+    sendUpdate() {
+        // Send direct message to specific app
+        this.sendMessage('notepad', { action: 'refresh' }, 'command');
+
+        // Broadcast to all apps
+        this.broadcast({ event: 'dataUpdated' }, 'notification');
+    }
+
+    // Set busy/idle status (emits app:busy/app:idle events)
+    async doWork() {
+        this.setBusy('Processing...');
+        await processData();
+        this.setIdle();
+    }
+}
 
 ---
 
@@ -1342,29 +1425,108 @@ See the DVD Bouncer plugin for a complete example:
 
 ---
 
+## SystemMonitor
+
+The SystemMonitor service tracks all system activity and emits events for scripting and automation.
+
+### What It Tracks
+
+| Category | Events |
+|----------|--------|
+| **Activity** | `system:idle`, `system:active` - User activity detection |
+| **Visibility** | `system:focus`, `system:blur`, `system:visibility:change`, `system:sleep`, `system:wake` |
+| **Network** | `system:online`, `system:offline` |
+| **Viewport** | `system:resize`, `system:fullscreen:enter`, `system:fullscreen:exit` |
+| **Mouse** | `mouse:move`, `mouse:click`, `mouse:dblclick`, `mouse:down`, `mouse:up`, `mouse:scroll`, `mouse:contextmenu` |
+| **Keyboard** | `keyboard:keydown`, `keyboard:keyup`, `keyboard:combo` |
+| **Touch** | `touch:start`, `touch:move`, `touch:end`, `touch:cancel` |
+| **Gestures** | `gesture:tap`, `gesture:doubletap`, `gesture:swipe`, `gesture:pinch`, `gesture:longpress` |
+| **Performance** | `perf:fps`, `perf:fps:low`, `perf:memory`, `perf:longtask` |
+| **Session** | `session:start`, `session:end`, `session:activity` |
+
+### Configuration
+
+```javascript
+import SystemMonitor from './core/SystemMonitor.js';
+
+// Configure the monitor
+SystemMonitor.configure({
+    idleThreshold: 60000,      // 1 minute before idle
+    idleCheckInterval: 10000,  // Check every 10s
+    lowFpsThreshold: 30,       // Warn below 30 FPS
+    trackMouseMove: false,     // High frequency - disabled by default
+    trackKeyboard: true,
+    trackTouch: true
+});
+
+// Get current state
+const state = SystemMonitor.getState();
+// { isIdle, lastActivity, isVisible, hasFocus, isOnline, sessionId, fps, ... }
+
+// Performance marks and measures
+SystemMonitor.mark('start-operation');
+// ... do work ...
+const duration = SystemMonitor.measure('operation', 'start-operation');
+
+// Record user action for analytics
+SystemMonitor.recordAction('button-click', 'submit-form', { form: 'login' });
+```
+
+### Using Events in Apps
+
+```javascript
+class MyApp extends AppBase {
+    onMount() {
+        // React to system state
+        this.onEvent('system:idle', () => this.pauseAnimations());
+        this.onEvent('system:active', () => this.resumeAnimations());
+
+        // React to input
+        this.onEvent('gesture:swipe', ({ direction }) => {
+            if (direction === 'left') this.nextSlide();
+            if (direction === 'right') this.prevSlide();
+        });
+
+        // Monitor performance
+        this.onEvent('perf:fps:low', ({ fps }) => {
+            this.reduceGraphicsQuality();
+        });
+    }
+}
+```
+
+---
+
 ## Project Structure Reference
 
 ```
 RetrOS/
 ├── apps/                   # Application implementations
-│   ├── AppBase.js          # Base class - extend this
+│   ├── AppBase.js          # Base class - extend this (with messaging)
 │   ├── AppRegistry.js      # Register apps here
 │   └── [YourApp.js]        # Your new app
 │
 ├── core/                   # Core systems
+│   ├── SemanticEventBus.js # Event system with validation, priorities
+│   ├── EventSchema.js      # 200+ event definitions
+│   ├── SystemMonitor.js    # System monitoring (input, performance)
 │   ├── Constants.js        # Configuration constants
-│   ├── EventBus.js         # Event system
 │   ├── StateManager.js     # State management
 │   ├── WindowManager.js    # Window management
-│   ├── FileSystemManager.js # Virtual file system
+│   ├── FileSystemManager.js # Virtual file system with events
 │   ├── StorageManager.js   # LocalStorage
-│   └── IconSystem.js       # Icon rendering
+│   ├── IconSystem.js       # Icon rendering
+│   └── ScriptEngine.js     # Scripting engine
 │
 ├── features/               # Optional features
 │   ├── SystemDialogs.js    # Dialogs (alert, confirm, file open/save)
 │   ├── SoundSystem.js      # Audio system
 │   ├── AchievementSystem.js # Achievements
 │   └── ...
+│
+├── plugins/                # Plugin system
+│   └── features/           # Feature plugins
+│       └── dvd-bouncer/    # Example plugin
 │
 └── ui/                     # UI components
     ├── DesktopRenderer.js  # Desktop icons

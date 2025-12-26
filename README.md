@@ -23,9 +23,11 @@ IlluminatOS! is a fully-functional Windows 95 desktop environment simulator buil
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
 **Project Stats:**
-- **~32,500 lines of code** across 47+ JavaScript files
+- **~35,000 lines of code** across 50+ JavaScript files
 - **29 fully-functional applications**
+- **200+ semantic events** for complete system observability
 - **Extensible plugin system** with example DVD Bouncer screensaver
+- **Full scripting support** via comprehensive event system
 - **Zero external dependencies** - pure vanilla JavaScript
 
 ---
@@ -59,6 +61,16 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 - **Responsive Windows** - Apps resize properly when windows are resized
 - **Touch Support** - Mobile and tablet compatible
 - **Modular Architecture** - Clean, maintainable codebase with separation of concerns
+
+### Event System & Scripting
+- **200+ Semantic Events** - Everything that happens in the OS is an event
+- **Event Validation** - Schema-based payload validation
+- **Priority System** - Control handler execution order
+- **Request/Response Pattern** - Async operations with promises
+- **Event Channels** - Scoped communication between components
+- **Throttling/Debouncing** - Rate-limit high-frequency events
+- **Pattern Matching** - Subscribe with wildcards (e.g., `window:*`)
+- **SystemMonitor** - Tracks all input, activity, and performance events
 
 ---
 
@@ -573,17 +585,20 @@ IlluminatOS!/
 │   ├── TaskManager.js      # Task manager
 │   └── Help.js             # Help system
 │
-├── core/                   # Core system modules (10 modules)
-│   ├── EventBus.js         # Pub/sub event system
+├── core/                   # Core system modules (13 modules)
+│   ├── SemanticEventBus.js # Enhanced event bus with validation, priorities, channels
+│   ├── EventSchema.js      # Schema definitions for 200+ semantic events
+│   ├── SystemMonitor.js    # System monitoring (input, performance, activity)
 │   ├── StateManager.js     # Centralized state management
 │   ├── WindowManager.js    # Window lifecycle & operations
 │   ├── StorageManager.js   # LocalStorage abstraction
-│   ├── FileSystemManager.js # Virtual file system
+│   ├── FileSystemManager.js # Virtual file system with event emissions
 │   ├── IconSystem.js       # FontAwesome + emoji icon support
 │   ├── Constants.js        # Centralized configuration
 │   ├── PluginLoader.js     # Plugin loading & management
 │   ├── FeatureRegistry.js  # Feature registration & lifecycle
-│   └── FeatureBase.js      # Base class for features
+│   ├── FeatureBase.js      # Base class for features (lifecycle events)
+│   └── ScriptEngine.js     # Scripting engine for automation
 │
 ├── features/               # Core system features (7 modules)
 │   ├── ClippyAssistant.js  # Clippy helper popup
@@ -609,9 +624,23 @@ IlluminatOS!/
 
 **Event-Driven Architecture**
 ```javascript
-// Central pub/sub messaging
-EventBus.on('window:open', (data) => { ... });
-EventBus.emit('app:launch', { appId: 'calculator' });
+// 200+ semantic events for everything that happens in the OS
+import EventBus, { Events, Priority } from './core/SemanticEventBus.js';
+
+// Subscribe with priority control
+EventBus.on(Events.WINDOW_OPEN, (payload, metadata, event) => {
+    console.log(`Window opened: ${payload.id}`);
+}, { priority: Priority.NORMAL });
+
+// Pattern matching (wildcards)
+EventBus.on('window:*', handler);  // All window events
+EventBus.on('app:*', handler);     // All app events
+
+// Request/response for async operations
+const result = await EventBus.request('dialog:confirm', { message: 'OK?' });
+
+// Throttled emissions for high-frequency events
+EventBus.emitThrottled(Events.MOUSE_MOVE, { x, y }, 16);
 ```
 
 **Singleton Pattern**
@@ -807,6 +836,56 @@ AppRegistry.register(new MyApp(), {
     category: 'accessories',
     description: 'My custom application'
 });
+```
+
+---
+
+## Event System
+
+IlluminatOS! features a comprehensive event system with 200+ semantic events organized into namespaces. Every action in the OS emits events that can be observed and scripted.
+
+### Event Namespaces
+
+| Namespace | Events | Description |
+|-----------|--------|-------------|
+| `window` | 18 | Window lifecycle (create, open, close, focus, resize, move, snap, etc.) |
+| `app` | 12 | App lifecycle (launch, ready, close, focus, blur, state, messaging) |
+| `system` | 18 | System events (boot, ready, idle, sleep, wake, network, fullscreen) |
+| `mouse` | 10 | Mouse input (move, click, dblclick, down, up, scroll, contextmenu) |
+| `keyboard` | 5 | Keyboard input (keydown, keyup, combo, shortcut, input) |
+| `touch` | 4 | Touch input (start, move, end, cancel) |
+| `gesture` | 6 | Gesture detection (tap, doubletap, swipe, pinch, rotate, longpress) |
+| `fs` | 12 | File system (create, read, update, delete, rename, move, copy) |
+| `feature` | 5 | Feature lifecycle (initialize, ready, enable, disable, config) |
+| `perf` | 5 | Performance (fps, memory, longtask, measure) |
+| `audio` | 8 | Audio playback (play, pause, resume, stop, ended, error) |
+| `ui` | 7 | UI interactions (menu, taskbar, context menu) |
+| `dialog` | 8 | System dialogs (alert, confirm, prompt, file dialogs) |
+
+See [SEMANTIC_EVENTS.md](SEMANTIC_EVENTS.md) for complete documentation.
+
+### Quick Example
+
+```javascript
+import EventBus, { Events, Priority } from './core/SemanticEventBus.js';
+
+// Listen to all file system events
+EventBus.on('fs:*', (payload, metadata) => {
+    console.log(`File operation: ${metadata.name}`, payload);
+});
+
+// Listen to specific events with priority
+EventBus.on(Events.APP_LAUNCH, (payload) => {
+    console.log(`App launched: ${payload.appId}`);
+}, { priority: Priority.SCRIPT });
+
+// Wait for an event
+const { payload } = await EventBus.waitFor(Events.SYSTEM_READY);
+
+// Use channels for scoped communication
+const channel = EventBus.channel('my-channel', 'subscriber-1');
+channel.send({ message: 'Hello!' });
+channel.receive((msg, sender) => console.log(`From ${sender}:`, msg));
 ```
 
 ---
