@@ -204,6 +204,15 @@ class AppRegistryClass {
     }
 
     /**
+     * Get an app instance by ID
+     * @param {string} appId - App ID
+     * @returns {AppBase|undefined} App instance
+     */
+    get(appId) {
+        return this.apps.get(appId);
+    }
+
+    /**
      * Launch an application
      */
     launch(appId, params = {}) {

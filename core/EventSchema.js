@@ -1124,6 +1124,18 @@ export const EventSchema = {
         }
     },
 
+    'script:output': {
+        namespace: 'script',
+        action: 'output',
+        description: 'Script print/log output',
+        payload: {
+            message: 'string'
+        },
+        example: {
+            message: 'Hello from script!'
+        }
+    },
+
     // ==========================================
     // CHANNEL/SCOPE EVENTS (for isolated communication)
     // ==========================================

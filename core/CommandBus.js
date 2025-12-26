@@ -153,19 +153,19 @@ class CommandBusClass {
             const { appId, params } = payload;
             // Dynamic import to avoid circular dependency
             const AppRegistry = (await import('../apps/AppRegistry.js')).default;
-            const app = AppRegistry.get(appId);
-            if (!app) {
-                throw new Error(`App not found: ${appId}`);
-            }
-            if (params) {
-                app.setParams(params);
-            }
-            app.launch();
 
-            // Get the window ID that was created
-            const windowId = app.windowId || app._currentWindowId;
+            // Use AppRegistry.launch which handles everything
+            const success = AppRegistry.launch(appId, params);
+            if (!success) {
+                throw new Error(`Failed to launch app: ${appId}`);
+            }
+
+            // Get the app to find window ID
+            const app = AppRegistry.get(appId);
+            const windowId = app?._currentWindowId || app?.windowId;
+
             EventBus.emit('app:launched', { appId, windowId, params });
-            return { appId, windowId };
+            return { appId, windowId, success: true };
         });
 
         this.register('app:close', async (payload) => {

@@ -157,31 +157,61 @@ class ScriptEngineClass {
      * @private
      */
     _parse(scriptText) {
-        const lines = scriptText.split('\n');
         const statements = [];
+        const lines = scriptText.split('\n');
         let lineNum = 0;
+        let blockBuffer = '';
+        let braceDepth = 0;
+        let blockStartLine = 0;
 
         for (let line of lines) {
             lineNum++;
-            line = line.trim();
+            let trimmedLine = line.trim();
 
-            // Skip empty lines and comments
-            if (!line || line.startsWith('#')) continue;
+            // Skip empty lines and comments (but not if we're in a block)
+            if (braceDepth === 0 && (!trimmedLine || trimmedLine.startsWith('#'))) continue;
 
-            // Remove inline comments
-            const commentIdx = line.indexOf('#');
-            if (commentIdx > 0) {
-                line = line.substring(0, commentIdx).trim();
+            // Remove inline comments (but not inside strings)
+            if (!trimmedLine.includes('"') && !trimmedLine.includes("'")) {
+                const commentIdx = trimmedLine.indexOf('#');
+                if (commentIdx > 0) {
+                    trimmedLine = trimmedLine.substring(0, commentIdx).trim();
+                }
             }
 
-            try {
-                const statement = this._parseLine(line, lineNum);
-                if (statement) {
-                    statements.push(statement);
+            // Count braces to handle multi-line blocks
+            for (const char of trimmedLine) {
+                if (char === '{') braceDepth++;
+                if (char === '}') braceDepth--;
+            }
+
+            if (braceDepth > 0 || trimmedLine.includes('{')) {
+                if (blockBuffer === '') blockStartLine = lineNum;
+                blockBuffer += (blockBuffer ? '\n' : '') + trimmedLine;
+
+                // If we've closed all braces, parse the complete block
+                if (braceDepth === 0 && blockBuffer) {
+                    try {
+                        const statement = this._parseLine(blockBuffer, blockStartLine);
+                        if (statement) {
+                            statements.push(statement);
+                        }
+                    } catch (error) {
+                        error.line = blockStartLine;
+                        throw error;
+                    }
+                    blockBuffer = '';
                 }
-            } catch (error) {
-                error.line = lineNum;
-                throw error;
+            } else if (braceDepth === 0 && trimmedLine) {
+                try {
+                    const statement = this._parseLine(trimmedLine, lineNum);
+                    if (statement) {
+                        statements.push(statement);
+                    }
+                } catch (error) {
+                    error.line = lineNum;
+                    throw error;
+                }
             }
         }
 
@@ -336,10 +366,28 @@ class ScriptEngineClass {
 
     _parseSet(parts) {
         // set $varName = value
+        // set $varName = $other + 1
         const varName = parts[1].replace(/^\$/, '');
         const eqIdx = parts.indexOf('=');
-        const value = parts.slice(eqIdx + 1).join(' ');
-        return { type: 'set', varName, value: this._parseValue(value) };
+        const valueStr = parts.slice(eqIdx + 1).join(' ').trim();
+
+        // Check for arithmetic expression
+        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/])\s*(.+)$/);
+        if (mathMatch) {
+            const [, left, op, right] = mathMatch;
+            return {
+                type: 'set',
+                varName,
+                value: {
+                    type: 'expression',
+                    operator: op,
+                    left: this._parseValue(left.trim()),
+                    right: this._parseValue(right.trim())
+                }
+            };
+        }
+
+        return { type: 'set', varName, value: this._parseValue(valueStr) };
     }
 
     _parsePrint(parts) {
@@ -418,17 +466,25 @@ class ScriptEngineClass {
         // loop while condition { statements }
         const count = parseInt(parts[1]);
 
+        // Find the body between { and }
         const braceStart = line.indexOf('{');
         const braceEnd = line.lastIndexOf('}');
 
         let body = [];
         if (braceStart > 0 && braceEnd > braceStart) {
-            body = this._parse(line.substring(braceStart + 1, braceEnd).trim());
+            const bodyText = line.substring(braceStart + 1, braceEnd).trim();
+            // Split body by newlines or semicolons
+            const bodyLines = bodyText.split(/[\n;]/).map(l => l.trim()).filter(l => l && l !== '}');
+            for (const bodyLine of bodyLines) {
+                const stmt = this._parseLine(bodyLine, 0);
+                if (stmt) body.push(stmt);
+            }
         }
 
         if (isNaN(count)) {
             // While loop
-            const condition = parts.slice(2, parts.indexOf('{')).join(' ');
+            const whileIdx = parts.indexOf('while');
+            const condition = parts.slice(whileIdx + 1).join(' ').replace(/\{.*/, '').trim();
             return { type: 'while', condition: this._parseCondition(condition), body };
         }
 
@@ -719,14 +775,31 @@ class ScriptEngineClass {
     }
 
     /**
-     * Resolve a value (handle variables)
+     * Resolve a value (handle variables and expressions)
      * @private
      */
     _resolveValue(value) {
         if (value === null || value === undefined) return null;
 
-        if (typeof value === 'object' && value.type === 'variable') {
-            return this.variables.get(value.name);
+        if (typeof value === 'object') {
+            if (value.type === 'variable') {
+                return this.variables.get(value.name);
+            }
+
+            if (value.type === 'expression') {
+                const left = this._resolveValue(value.left);
+                const right = this._resolveValue(value.right);
+                const numLeft = typeof left === 'number' ? left : parseFloat(left) || 0;
+                const numRight = typeof right === 'number' ? right : parseFloat(right) || 0;
+
+                switch (value.operator) {
+                    case '+': return numLeft + numRight;
+                    case '-': return numLeft - numRight;
+                    case '*': return numLeft * numRight;
+                    case '/': return numRight !== 0 ? numLeft / numRight : 0;
+                    default: return numLeft;
+                }
+            }
         }
 
         if (typeof value === 'string') {
