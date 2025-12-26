@@ -129,6 +129,132 @@ class Notepad extends AppBase {
         setTimeout(() => {
             this.getElement('#notepadText')?.focus();
         }, 100);
+
+        // ===== SCRIPTING SUPPORT =====
+        // Register command handlers for scripting automation
+        this._registerScriptingCommands();
+    }
+
+    /**
+     * Register commands and queries for scripting support
+     * Enables scripts to control Notepad via semantic events
+     */
+    _registerScriptingCommands() {
+        // Command: Set text content
+        this.registerCommand('setText', (payload) => {
+            const textarea = this.getElement('#notepadText');
+            if (textarea) {
+                textarea.value = payload.text || '';
+                this.emitAppEvent('textChanged', { text: textarea.value });
+                return { success: true, length: textarea.value.length };
+            }
+            return { success: false, error: 'Textarea not found' };
+        });
+
+        // Command: Append text
+        this.registerCommand('appendText', (payload) => {
+            const textarea = this.getElement('#notepadText');
+            if (textarea) {
+                textarea.value += payload.text || '';
+                this.emitAppEvent('textChanged', { text: textarea.value });
+                return { success: true, length: textarea.value.length };
+            }
+            return { success: false, error: 'Textarea not found' };
+        });
+
+        // Command: Clear text
+        this.registerCommand('clear', () => {
+            const textarea = this.getElement('#notepadText');
+            if (textarea) {
+                textarea.value = '';
+                this.emitAppEvent('textCleared', {});
+                return { success: true };
+            }
+            return { success: false, error: 'Textarea not found' };
+        });
+
+        // Command: Save file
+        this.registerCommand('save', async (payload) => {
+            if (payload.path) {
+                // Save to specific path
+                const textarea = this.getElement('#notepadText');
+                if (textarea) {
+                    try {
+                        FileSystemManager.writeFile(payload.path, textarea.value);
+                        this.setInstanceState('currentFile', payload.path);
+                        this.setInstanceState('fileName', payload.path.split('/').pop());
+                        this.updateTitle(this.getInstanceState('fileName'));
+                        this.updateFilePathDisplay();
+                        this.emitAppEvent('saved', { path: payload.path });
+                        return { success: true, path: payload.path };
+                    } catch (e) {
+                        return { success: false, error: e.message };
+                    }
+                }
+            } else {
+                await this.save();
+                return { success: true };
+            }
+        });
+
+        // Command: Open file
+        this.registerCommand('open', async (payload) => {
+            if (payload.path) {
+                try {
+                    const content = FileSystemManager.readFile(payload.path);
+                    const textarea = this.getElement('#notepadText');
+                    if (textarea) {
+                        textarea.value = content;
+                        const pathArray = Array.isArray(payload.path) ? payload.path : payload.path.split('/');
+                        const fileName = pathArray[pathArray.length - 1];
+                        this.setInstanceState('currentFile', pathArray);
+                        this.setInstanceState('fileName', fileName);
+                        this.updateTitle(fileName);
+                        this.updateFilePathDisplay();
+                        this.emitAppEvent('fileOpened', { path: payload.path, content });
+                        return { success: true, path: payload.path, length: content.length };
+                    }
+                } catch (e) {
+                    return { success: false, error: e.message };
+                }
+            }
+            return { success: false, error: 'No path specified' };
+        });
+
+        // Command: New document
+        this.registerCommand('new', async () => {
+            await this.newDocument();
+            this.emitAppEvent('newDocument', {});
+            return { success: true };
+        });
+
+        // Query: Get text content
+        this.registerQuery('getText', () => {
+            const textarea = this.getElement('#notepadText');
+            return textarea ? textarea.value : '';
+        });
+
+        // Query: Get current file path
+        this.registerQuery('getFilePath', () => {
+            return this.getInstanceState('currentFile') || null;
+        });
+
+        // Query: Get file name
+        this.registerQuery('getFileName', () => {
+            return this.getInstanceState('fileName') || 'Untitled';
+        });
+
+        // Query: Get text length
+        this.registerQuery('getLength', () => {
+            const textarea = this.getElement('#notepadText');
+            return textarea ? textarea.value.length : 0;
+        });
+
+        // Query: Get line count
+        this.registerQuery('getLineCount', () => {
+            const textarea = this.getElement('#notepadText');
+            return textarea ? textarea.value.split('\n').length : 0;
+        });
     }
 
     handleKeypress(e) {

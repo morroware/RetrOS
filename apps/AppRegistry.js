@@ -50,6 +50,7 @@ import FreeCell from './FreeCell.js';
 import Zork from './Zork.js';
 import HyperCard from './HyperCard.js';
 import FeaturesSettings from './FeaturesSettings.js';
+import ScriptRunner from './ScriptRunner.js';
 // --- System App Placeholders (Simple implementations for completeness) ---
 import AppBase from './AppBase.js';
 
@@ -133,6 +134,7 @@ class AppRegistryClass {
             new Terminal(),
             new Defrag(),
             new TaskManager(),
+            ScriptRunner,
         ]);
 
         // --- Games ---
@@ -199,6 +201,15 @@ class AppRegistryClass {
         ]);
 
         console.log(`[AppRegistry] Initialized with ${this.apps.size} apps`);
+    }
+
+    /**
+     * Get an app instance by ID
+     * @param {string} appId - App ID
+     * @returns {AppBase|undefined} App instance
+     */
+    get(appId) {
+        return this.apps.get(appId);
     }
 
     /**

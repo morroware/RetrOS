@@ -83,6 +83,72 @@ class Calculator extends AppBase {
 
         // Keyboard support - only responds when this window is active
         this.addHandler(document, 'keydown', (e) => this.handleKeyboard(e));
+
+        // ===== SCRIPTING SUPPORT =====
+        this._registerScriptingCommands();
+    }
+
+    /**
+     * Register commands and queries for scripting support
+     */
+    _registerScriptingCommands() {
+        // Command: Input a digit
+        this.registerCommand('input', (payload) => {
+            const value = String(payload.value);
+            for (const char of value) {
+                if (/[0-9]/.test(char)) {
+                    this.inputDigit(char);
+                } else if (char === '.') {
+                    this.inputDecimal();
+                } else if (['+', '-', '*', '/'].includes(char)) {
+                    this.handleOperator(char);
+                } else if (char === '=') {
+                    this.handleEqual();
+                }
+            }
+            this.updateDisplay();
+            this.emitAppEvent('input', { value, display: this.displayValue });
+            return { success: true, display: this.displayValue };
+        });
+
+        // Command: Clear calculator
+        this.registerCommand('clear', () => {
+            this.resetCalculator();
+            this.updateDisplay();
+            this.emitAppEvent('cleared', {});
+            return { success: true };
+        });
+
+        // Command: Calculate expression
+        this.registerCommand('calculate', (payload) => {
+            const expression = String(payload.expression);
+            // Parse simple expressions like "5+3" or "10*2"
+            const match = expression.match(/^(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)$/);
+            if (match) {
+                const [, first, op, second] = match;
+                const result = this.calculate(parseFloat(first), parseFloat(second), op);
+                this.displayValue = String(parseFloat(result.toFixed(7)));
+                this.updateDisplay();
+                this.emitAppEvent('calculated', { expression, result: this.displayValue });
+                return { success: true, result: parseFloat(this.displayValue) };
+            }
+            return { success: false, error: 'Invalid expression' };
+        });
+
+        // Query: Get current display value
+        this.registerQuery('getValue', () => {
+            return parseFloat(this.displayValue);
+        });
+
+        // Query: Get display text
+        this.registerQuery('getDisplay', () => {
+            return this.displayValue;
+        });
+
+        // Query: Get current operator
+        this.registerQuery('getOperator', () => {
+            return this.operator;
+        });
     }
 
     // --- State Helpers (use instance state) ---
