@@ -6,6 +6,7 @@
 
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Minesweeper extends AppBase {
     constructor() {
@@ -186,6 +187,9 @@ class Minesweeper extends AppBase {
             this.time++;
             if (this.time > 999) this.time = 999;
             this.updateTimerDisplay();
+
+            // Emit timer event every second
+            EventBus.emit('minesweeper:timer', { time: this.time });
         }, 1000);
     }
 
@@ -205,12 +209,33 @@ class Minesweeper extends AppBase {
             this.isFirstClick = false;
             this.placeMines(r, c);
             this.startTimer();
+
+            // Emit game started event
+            EventBus.emit('game:start', {
+                appId: 'minesweeper',
+                difficulty: this.mines === 10 ? 'beginner' : this.mines === 40 ? 'intermediate' : 'expert',
+                settings: { rows: this.rows, cols: this.cols, mines: this.mines }
+            });
         }
 
         cell.revealed = true;
         cell.element.classList.add('revealed');
 
+        // Emit cell revealed event
+        EventBus.emit('minesweeper:cell:reveal', {
+            row: r,
+            col: c,
+            value: cell.count,
+            isMine: cell.mine
+        });
+
         if (cell.mine) {
+            // Emit mine hit event
+            EventBus.emit('minesweeper:mine:hit', {
+                row: r,
+                col: c,
+                time: this.time
+            });
             this.triggerGameOver(false, cell); // Pass the killing cell
             return;
         }
@@ -261,9 +286,17 @@ class Minesweeper extends AppBase {
 
         cell.flagged = !cell.flagged;
         cell.element.classList.toggle('flagged', cell.flagged);
-        
+
         const totalFlagged = this.grid.flat().filter(c => c.flagged).length;
         this.updateMineCounter(this.mines - totalFlagged);
+
+        // Emit cell flag event
+        EventBus.emit('minesweeper:cell:flag', {
+            row: r,
+            col: c,
+            flagged: cell.flagged,
+            minesRemaining: this.mines - totalFlagged
+        });
     }
 
     updateMineCounter(count) {
@@ -279,16 +312,39 @@ class Minesweeper extends AppBase {
             this.updateFace('😎');
             this.flagAllMines();
             StateManager.unlockAchievement('mine_sweeper');
+
+            // Emit win events
+            EventBus.emit('minesweeper:win', {
+                time: this.time,
+                difficulty: this.mines === 10 ? 'beginner' : this.mines === 40 ? 'intermediate' : 'expert',
+                rows: this.rows,
+                cols: this.cols,
+                mines: this.mines
+            });
+            EventBus.emit('game:over', {
+                appId: 'minesweeper',
+                won: true,
+                time: this.time,
+                stats: { rows: this.rows, cols: this.cols, mines: this.mines }
+            });
         } else {
             this.updateFace('😵');
-            
+
             // Highlight ONLY the mine that killed you
             if (killingCell) {
-                killingCell.element.classList.add('mine-hit'); 
+                killingCell.element.classList.add('mine-hit');
             }
-            
+
             this.revealAllMines();
             this.playSound('error');
+
+            // Emit game over event (loss)
+            EventBus.emit('game:over', {
+                appId: 'minesweeper',
+                won: false,
+                time: this.time,
+                stats: { rows: this.rows, cols: this.cols, mines: this.mines }
+            });
         }
     }
 

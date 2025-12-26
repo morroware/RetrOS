@@ -10,6 +10,7 @@
  */
 
 import AppBase from './AppBase.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class FreeCell extends AppBase {
     constructor() {
@@ -168,6 +169,12 @@ class FreeCell extends AppBase {
 
         this.renderBoard();
         this.updateDisplay();
+
+        // Emit game started event
+        EventBus.emit('game:start', {
+            appId: 'freecell',
+            settings: { type: 'freecell' }
+        });
     }
 
     getRankDisplay(rank) {
@@ -304,6 +311,21 @@ class FreeCell extends AppBase {
         this.cells[cellIndex] = card;
         this.moves++;
 
+        // Emit cell occupy event
+        EventBus.emit('freecell:cell:occupy', {
+            card: `${card.value}${card.suit}`,
+            cell: cellIndex,
+            freeCellsRemaining: this.cells.filter(c => c === null).length
+        });
+
+        // Emit card move event
+        EventBus.emit('freecell:card:move', {
+            card: `${card.value}${card.suit}`,
+            from: `${source}:${sourceIndex}`,
+            to: `cell:${cellIndex}`,
+            moves: this.moves
+        });
+
         this.clearSelection();
         this.renderBoard();
         this.updateDisplay();
@@ -351,6 +373,21 @@ class FreeCell extends AppBase {
         this.removeCard(source, sourceIndex, cardIndex);
         this.foundations[foundIndex].push(card);
         this.moves++;
+
+        // Emit foundation add event
+        EventBus.emit('freecell:foundation:add', {
+            card: `${card.value}${card.suit}`,
+            foundation: foundIndex,
+            count: this.foundations[foundIndex].length
+        });
+
+        // Emit card move event
+        EventBus.emit('freecell:card:move', {
+            card: `${card.value}${card.suit}`,
+            from: `${source}:${sourceIndex}`,
+            to: `foundation:${foundIndex}`,
+            moves: this.moves
+        });
 
         this.clearSelection();
         this.renderBoard();
@@ -520,6 +557,12 @@ class FreeCell extends AppBase {
         this.columns = state.columns;
         this.moves = state.moves;
 
+        // Emit undo event
+        EventBus.emit('freecell:undo', {
+            card: 'unknown',
+            moves: this.moves
+        });
+
         if (this.moveHistory.length === 0) {
             this.getElement('#fcUndo').disabled = true;
         }
@@ -546,6 +589,18 @@ class FreeCell extends AppBase {
         this.getElement('#fcWinScreen').classList.add('active');
 
         this.playSound('achievement');
+
+        // Emit win events
+        EventBus.emit('freecell:win', {
+            moves: this.moves,
+            time: this.time
+        });
+        EventBus.emit('game:over', {
+            appId: 'freecell',
+            won: true,
+            time: this.time,
+            stats: { moves: this.moves }
+        });
 
         // Victory animation - cascade cards
         this.cascadeVictory();

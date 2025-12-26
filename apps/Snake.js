@@ -6,6 +6,7 @@
 import AppBase from './AppBase.js';
 import StorageManager from '../core/StorageManager.js';
 import StateManager from '../core/StateManager.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Snake extends AppBase {
     constructor() {
@@ -117,7 +118,7 @@ class Snake extends AppBase {
     startGame() {
         if (this.blinkInterval) clearInterval(this.blinkInterval);
         this.isGameRunning = true;
-        
+
         // Init Snake (Center-ish)
         this.snake = [
             { x: 10, y: 15 },
@@ -127,9 +128,15 @@ class Snake extends AppBase {
         this.velocity = { x: 0, y: -1 }; // Move up
         this.moveQueue = [];
         this.gameSpeed = 110;
-        
+
         this.placeFood();
         this.gameLoop();
+
+        // Emit game started event
+        EventBus.emit('game:start', {
+            appId: 'snake',
+            settings: { gridSize: this.gridSize, tileCount: this.tileCount }
+        });
     }
 
     stopLoop() {
@@ -188,7 +195,14 @@ class Snake extends AppBase {
         if (!this.isGameRunning || this.isGameOver) return;
         this.isPaused = !this.isPaused;
         this.getElement('#btnPause').innerText = this.isPaused ? "RESUME" : "PAUSE";
-        
+
+        // Emit pause/resume events
+        EventBus.emit(this.isPaused ? 'game:pause' : 'game:resume', {
+            appId: 'snake',
+            time: null,
+            score: this.score
+        });
+
         if (this.isPaused) {
             this.ctx.fillStyle = "rgba(0,0,0,0.4)";
             this.ctx.fillRect(0, 0, 300, 300);
@@ -222,6 +236,7 @@ class Snake extends AppBase {
 
         // Wall Collision - Strict check against tile count
         if (head.x < 0 || head.x >= this.tileCount || head.y < 0 || head.y >= this.tileCount) {
+            EventBus.emit('snake:collision', { type: 'wall', x: head.x, y: head.y });
             this.gameOver();
             return;
         }
@@ -229,6 +244,7 @@ class Snake extends AppBase {
         // Self Collision
         for (let i = 0; i < this.snake.length - 1; i++) {
             if (head.x === this.snake[i].x && head.y === this.snake[i].y) {
+                EventBus.emit('snake:collision', { type: 'self', x: head.x, y: head.y });
                 this.gameOver();
                 return;
             }
@@ -237,11 +253,38 @@ class Snake extends AppBase {
         this.snake.unshift(head);
 
         if (head.x === this.food.x && head.y === this.food.y) {
+            const oldScore = this.score;
             this.score += 10;
             this.updateScoreUI();
+
+            // Emit food eaten event
+            EventBus.emit('snake:food:eat', {
+                x: this.food.x,
+                y: this.food.y,
+                score: this.score,
+                length: this.snake.length
+            });
+
+            // Emit score change event
+            EventBus.emit('game:score', {
+                appId: 'snake',
+                score: this.score,
+                delta: 10,
+                reason: 'food_eaten'
+            });
+
             this.placeFood();
             this.playSound('click');
-            if (this.gameSpeed > 50) this.gameSpeed -= 2; 
+
+            if (this.gameSpeed > 50) {
+                const oldSpeed = this.gameSpeed;
+                this.gameSpeed -= 2;
+                // Emit speed change event
+                EventBus.emit('snake:speed', {
+                    speed: this.gameSpeed,
+                    previousSpeed: oldSpeed
+                });
+            }
         } else {
             this.snake.pop();
         }
@@ -310,13 +353,30 @@ class Snake extends AppBase {
     gameOver() {
         this.isGameOver = true;
         this.playSound('error');
-        
-        if (this.score > this.highScore) {
+
+        const isHighScore = this.score > this.highScore;
+        if (isHighScore) {
+            const previousScore = this.highScore;
             this.highScore = this.score;
             StorageManager.set('snakeHigh', this.score);
             this.getElement('#s-high').innerText = this.highScore;
             if(StateManager.unlockAchievement) StateManager.unlockAchievement('snake_master');
+
+            // Emit high score event
+            EventBus.emit('game:highscore', {
+                appId: 'snake',
+                score: this.score,
+                previousScore: previousScore
+            });
         }
+
+        // Emit game over event
+        EventBus.emit('game:over', {
+            appId: 'snake',
+            won: false,
+            score: this.score,
+            stats: { length: this.snake.length, isHighScore }
+        });
 
         this.getElement('#overlay').classList.remove('hidden');
     }

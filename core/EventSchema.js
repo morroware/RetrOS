@@ -3957,6 +3957,799 @@ export const EventSchema = {
             activity: 'app_launch',
             timestamp: 1234567890
         }
+    },
+
+    // ==========================================
+    // GAME EVENTS - Generic
+    // ==========================================
+    'game:start': {
+        namespace: 'game',
+        action: 'start',
+        description: 'Game started',
+        payload: {
+            appId: 'string',
+            difficulty: 'string?',
+            settings: 'object?'
+        },
+        example: {
+            appId: 'minesweeper',
+            difficulty: 'beginner',
+            settings: { rows: 9, cols: 9, mines: 10 }
+        }
+    },
+
+    'game:pause': {
+        namespace: 'game',
+        action: 'pause',
+        description: 'Game paused',
+        payload: {
+            appId: 'string',
+            time: 'number?',
+            score: 'number?'
+        },
+        example: {
+            appId: 'snake',
+            time: 45,
+            score: 120
+        }
+    },
+
+    'game:resume': {
+        namespace: 'game',
+        action: 'resume',
+        description: 'Game resumed',
+        payload: {
+            appId: 'string'
+        },
+        example: {
+            appId: 'snake'
+        }
+    },
+
+    'game:over': {
+        namespace: 'game',
+        action: 'over',
+        description: 'Game ended',
+        payload: {
+            appId: 'string',
+            won: 'boolean',
+            score: 'number?',
+            time: 'number?',
+            stats: 'object?'
+        },
+        example: {
+            appId: 'minesweeper',
+            won: true,
+            score: 100,
+            time: 45
+        }
+    },
+
+    'game:score': {
+        namespace: 'game',
+        action: 'score',
+        description: 'Score changed',
+        payload: {
+            appId: 'string',
+            score: 'number',
+            delta: 'number?',
+            reason: 'string?'
+        },
+        example: {
+            appId: 'asteroids',
+            score: 1500,
+            delta: 100,
+            reason: 'asteroid_destroyed'
+        }
+    },
+
+    'game:highscore': {
+        namespace: 'game',
+        action: 'highscore',
+        description: 'New high score achieved',
+        payload: {
+            appId: 'string',
+            score: 'number',
+            previousScore: 'number?'
+        },
+        example: {
+            appId: 'snake',
+            score: 500,
+            previousScore: 350
+        }
+    },
+
+    'game:level': {
+        namespace: 'game',
+        action: 'level',
+        description: 'Level changed',
+        payload: {
+            appId: 'string',
+            level: 'number',
+            previousLevel: 'number?'
+        },
+        example: {
+            appId: 'asteroids',
+            level: 5,
+            previousLevel: 4
+        }
+    },
+
+    'game:lives': {
+        namespace: 'game',
+        action: 'lives',
+        description: 'Lives changed',
+        payload: {
+            appId: 'string',
+            lives: 'number',
+            delta: 'number?'
+        },
+        example: {
+            appId: 'asteroids',
+            lives: 2,
+            delta: -1
+        }
+    },
+
+    'game:state': {
+        namespace: 'game',
+        action: 'state',
+        description: 'Game state changed',
+        payload: {
+            appId: 'string',
+            state: 'string',
+            previousState: 'string?',
+            data: 'object?'
+        },
+        example: {
+            appId: 'skifree',
+            state: 'playing',
+            previousState: 'menu'
+        }
+    },
+
+    // ==========================================
+    // MINESWEEPER EVENTS
+    // ==========================================
+    'minesweeper:cell:reveal': {
+        namespace: 'minesweeper',
+        action: 'cell:reveal',
+        description: 'Cell revealed',
+        payload: {
+            row: 'number',
+            col: 'number',
+            value: 'number',
+            isMine: 'boolean'
+        },
+        example: { row: 3, col: 5, value: 2, isMine: false }
+    },
+
+    'minesweeper:cell:flag': {
+        namespace: 'minesweeper',
+        action: 'cell:flag',
+        description: 'Cell flagged or unflagged',
+        payload: {
+            row: 'number',
+            col: 'number',
+            flagged: 'boolean',
+            minesRemaining: 'number'
+        },
+        example: { row: 2, col: 4, flagged: true, minesRemaining: 8 }
+    },
+
+    'minesweeper:mine:hit': {
+        namespace: 'minesweeper',
+        action: 'mine:hit',
+        description: 'Mine hit - game over',
+        payload: {
+            row: 'number',
+            col: 'number',
+            time: 'number'
+        },
+        example: { row: 5, col: 3, time: 32 }
+    },
+
+    'minesweeper:win': {
+        namespace: 'minesweeper',
+        action: 'win',
+        description: 'Game won - all safe cells revealed',
+        payload: {
+            time: 'number',
+            difficulty: 'string?',
+            rows: 'number',
+            cols: 'number',
+            mines: 'number'
+        },
+        example: { time: 45, difficulty: 'beginner', rows: 9, cols: 9, mines: 10 }
+    },
+
+    'minesweeper:timer': {
+        namespace: 'minesweeper',
+        action: 'timer',
+        description: 'Timer updated',
+        payload: {
+            time: 'number'
+        },
+        example: { time: 15 }
+    },
+
+    // ==========================================
+    // ASTEROIDS EVENTS
+    // ==========================================
+    'asteroids:asteroid:destroy': {
+        namespace: 'asteroids',
+        action: 'asteroid:destroy',
+        description: 'Asteroid destroyed',
+        payload: {
+            size: 'string',
+            points: 'number',
+            x: 'number',
+            y: 'number',
+            combo: 'number?'
+        },
+        example: { size: 'large', points: 20, x: 200, y: 150, combo: 3 }
+    },
+
+    'asteroids:ufo:spawn': {
+        namespace: 'asteroids',
+        action: 'ufo:spawn',
+        description: 'UFO spawned',
+        payload: {
+            type: 'string?'
+        },
+        example: { type: 'small' }
+    },
+
+    'asteroids:ufo:destroy': {
+        namespace: 'asteroids',
+        action: 'ufo:destroy',
+        description: 'UFO destroyed',
+        payload: {
+            points: 'number'
+        },
+        example: { points: 200 }
+    },
+
+    'asteroids:powerup:spawn': {
+        namespace: 'asteroids',
+        action: 'powerup:spawn',
+        description: 'Power-up spawned',
+        payload: {
+            type: 'string',
+            x: 'number',
+            y: 'number'
+        },
+        example: { type: 'shield', x: 300, y: 200 }
+    },
+
+    'asteroids:powerup:collect': {
+        namespace: 'asteroids',
+        action: 'powerup:collect',
+        description: 'Power-up collected',
+        payload: {
+            type: 'string',
+            duration: 'number?'
+        },
+        example: { type: 'triple', duration: 10000 }
+    },
+
+    'asteroids:powerup:expire': {
+        namespace: 'asteroids',
+        action: 'powerup:expire',
+        description: 'Power-up expired',
+        payload: {
+            type: 'string'
+        },
+        example: { type: 'shield' }
+    },
+
+    'asteroids:ship:explode': {
+        namespace: 'asteroids',
+        action: 'ship:explode',
+        description: 'Player ship exploded',
+        payload: {
+            livesRemaining: 'number',
+            x: 'number',
+            y: 'number'
+        },
+        example: { livesRemaining: 2, x: 400, y: 300 }
+    },
+
+    'asteroids:combo': {
+        namespace: 'asteroids',
+        action: 'combo',
+        description: 'Combo updated',
+        payload: {
+            combo: 'number',
+            multiplier: 'number'
+        },
+        example: { combo: 5, multiplier: 2.5 }
+    },
+
+    // ==========================================
+    // SNAKE EVENTS
+    // ==========================================
+    'snake:food:eat': {
+        namespace: 'snake',
+        action: 'food:eat',
+        description: 'Food eaten',
+        payload: {
+            x: 'number',
+            y: 'number',
+            score: 'number',
+            length: 'number'
+        },
+        example: { x: 10, y: 5, score: 10, length: 5 }
+    },
+
+    'snake:collision': {
+        namespace: 'snake',
+        action: 'collision',
+        description: 'Snake collision detected',
+        payload: {
+            type: 'string',
+            x: 'number',
+            y: 'number'
+        },
+        example: { type: 'wall', x: 0, y: 10 }
+    },
+
+    'snake:direction': {
+        namespace: 'snake',
+        action: 'direction',
+        description: 'Direction changed',
+        payload: {
+            direction: 'string',
+            previousDirection: 'string?'
+        },
+        example: { direction: 'up', previousDirection: 'left' }
+    },
+
+    'snake:speed': {
+        namespace: 'snake',
+        action: 'speed',
+        description: 'Speed increased',
+        payload: {
+            speed: 'number',
+            previousSpeed: 'number?'
+        },
+        example: { speed: 150, previousSpeed: 200 }
+    },
+
+    // ==========================================
+    // SOLITAIRE EVENTS
+    // ==========================================
+    'solitaire:card:move': {
+        namespace: 'solitaire',
+        action: 'card:move',
+        description: 'Card moved',
+        payload: {
+            card: 'string',
+            from: 'string',
+            to: 'string',
+            moves: 'number'
+        },
+        example: { card: 'AS', from: 'tableau:3', to: 'foundation:0', moves: 15 }
+    },
+
+    'solitaire:stock:draw': {
+        namespace: 'solitaire',
+        action: 'stock:draw',
+        description: 'Card drawn from stock',
+        payload: {
+            card: 'string',
+            stockRemaining: 'number'
+        },
+        example: { card: 'KH', stockRemaining: 20 }
+    },
+
+    'solitaire:stock:recycle': {
+        namespace: 'solitaire',
+        action: 'stock:recycle',
+        description: 'Waste pile recycled to stock',
+        payload: {
+            cardsRecycled: 'number'
+        },
+        example: { cardsRecycled: 24 }
+    },
+
+    'solitaire:foundation:add': {
+        namespace: 'solitaire',
+        action: 'foundation:add',
+        description: 'Card added to foundation',
+        payload: {
+            card: 'string',
+            foundation: 'number',
+            count: 'number'
+        },
+        example: { card: '2S', foundation: 2, count: 2 }
+    },
+
+    'solitaire:win': {
+        namespace: 'solitaire',
+        action: 'win',
+        description: 'Game won',
+        payload: {
+            moves: 'number',
+            time: 'number'
+        },
+        example: { moves: 95, time: 180 }
+    },
+
+    'solitaire:invalid:move': {
+        namespace: 'solitaire',
+        action: 'invalid:move',
+        description: 'Invalid move attempted',
+        payload: {
+            card: 'string',
+            from: 'string',
+            to: 'string',
+            reason: 'string?'
+        },
+        example: { card: 'QH', from: 'waste', to: 'tableau:5', reason: 'wrong_color' }
+    },
+
+    // ==========================================
+    // FREECELL EVENTS
+    // ==========================================
+    'freecell:card:move': {
+        namespace: 'freecell',
+        action: 'card:move',
+        description: 'Card moved',
+        payload: {
+            card: 'string',
+            from: 'string',
+            to: 'string',
+            moves: 'number'
+        },
+        example: { card: '7D', from: 'column:3', to: 'cell:1', moves: 12 }
+    },
+
+    'freecell:cell:occupy': {
+        namespace: 'freecell',
+        action: 'cell:occupy',
+        description: 'Free cell occupied',
+        payload: {
+            card: 'string',
+            cell: 'number',
+            freeCellsRemaining: 'number'
+        },
+        example: { card: 'JC', cell: 0, freeCellsRemaining: 3 }
+    },
+
+    'freecell:foundation:add': {
+        namespace: 'freecell',
+        action: 'foundation:add',
+        description: 'Card added to foundation',
+        payload: {
+            card: 'string',
+            foundation: 'number',
+            count: 'number'
+        },
+        example: { card: 'AS', foundation: 0, count: 1 }
+    },
+
+    'freecell:undo': {
+        namespace: 'freecell',
+        action: 'undo',
+        description: 'Move undone',
+        payload: {
+            card: 'string',
+            moves: 'number'
+        },
+        example: { card: '5H', moves: 11 }
+    },
+
+    'freecell:win': {
+        namespace: 'freecell',
+        action: 'win',
+        description: 'Game won',
+        payload: {
+            moves: 'number',
+            time: 'number'
+        },
+        example: { moves: 82, time: 240 }
+    },
+
+    // ==========================================
+    // SKIFREE EVENTS
+    // ==========================================
+    'skifree:distance': {
+        namespace: 'skifree',
+        action: 'distance',
+        description: 'Distance updated',
+        payload: {
+            distance: 'number',
+            delta: 'number?'
+        },
+        example: { distance: 1500, delta: 10 }
+    },
+
+    'skifree:obstacle:hit': {
+        namespace: 'skifree',
+        action: 'obstacle:hit',
+        description: 'Obstacle collision',
+        payload: {
+            type: 'string',
+            x: 'number',
+            y: 'number'
+        },
+        example: { type: 'tree', x: 200, y: 500 }
+    },
+
+    'skifree:jump': {
+        namespace: 'skifree',
+        action: 'jump',
+        description: 'Player jumped',
+        payload: {
+            x: 'number',
+            y: 'number',
+            points: 'number?'
+        },
+        example: { x: 300, y: 600, points: 50 }
+    },
+
+    'skifree:yeti:spawn': {
+        namespace: 'skifree',
+        action: 'yeti:spawn',
+        description: 'Yeti spawned',
+        payload: {
+            distance: 'number'
+        },
+        example: { distance: 2000 }
+    },
+
+    'skifree:yeti:caught': {
+        namespace: 'skifree',
+        action: 'yeti:caught',
+        description: 'Player caught by yeti',
+        payload: {
+            distance: 'number',
+            score: 'number'
+        },
+        example: { distance: 2100, score: 420 }
+    },
+
+    // ==========================================
+    // PAINT EVENTS
+    // ==========================================
+    'paint:tool:change': {
+        namespace: 'paint',
+        action: 'tool:change',
+        description: 'Tool changed',
+        payload: {
+            tool: 'string',
+            previousTool: 'string?'
+        },
+        example: { tool: 'eraser', previousTool: 'brush' }
+    },
+
+    'paint:color:change': {
+        namespace: 'paint',
+        action: 'color:change',
+        description: 'Color changed',
+        payload: {
+            color: 'string',
+            previousColor: 'string?'
+        },
+        example: { color: '#FF0000', previousColor: '#000000' }
+    },
+
+    'paint:brush:size': {
+        namespace: 'paint',
+        action: 'brush:size',
+        description: 'Brush size changed',
+        payload: {
+            size: 'number',
+            previousSize: 'number?'
+        },
+        example: { size: 8, previousSize: 4 }
+    },
+
+    'paint:stroke:start': {
+        namespace: 'paint',
+        action: 'stroke:start',
+        description: 'Stroke started',
+        payload: {
+            x: 'number',
+            y: 'number',
+            tool: 'string'
+        },
+        example: { x: 100, y: 50, tool: 'brush' }
+    },
+
+    'paint:stroke:end': {
+        namespace: 'paint',
+        action: 'stroke:end',
+        description: 'Stroke ended',
+        payload: {
+            x: 'number',
+            y: 'number'
+        },
+        example: { x: 200, y: 150 }
+    },
+
+    'paint:canvas:clear': {
+        namespace: 'paint',
+        action: 'canvas:clear',
+        description: 'Canvas cleared',
+        payload: {},
+        example: {}
+    },
+
+    'paint:file:save': {
+        namespace: 'paint',
+        action: 'file:save',
+        description: 'Image saved',
+        payload: {
+            path: 'array',
+            filename: 'string'
+        },
+        example: { path: ['C:', 'Users', 'User', 'Pictures'], filename: 'drawing.png' }
+    },
+
+    'paint:file:open': {
+        namespace: 'paint',
+        action: 'file:open',
+        description: 'Image opened',
+        payload: {
+            path: 'array',
+            filename: 'string'
+        },
+        example: { path: ['C:', 'Users', 'User', 'Pictures'], filename: 'photo.png' }
+    },
+
+    // ==========================================
+    // WINAMP/MEDIA EVENTS
+    // ==========================================
+    'media:track:change': {
+        namespace: 'media',
+        action: 'track:change',
+        description: 'Track changed',
+        payload: {
+            track: 'string',
+            index: 'number',
+            duration: 'number?'
+        },
+        example: { track: 'Song Title', index: 3, duration: 180 }
+    },
+
+    'media:play': {
+        namespace: 'media',
+        action: 'play',
+        description: 'Playback started',
+        payload: {
+            track: 'string',
+            position: 'number?'
+        },
+        example: { track: 'My Song', position: 0 }
+    },
+
+    'media:pause': {
+        namespace: 'media',
+        action: 'pause',
+        description: 'Playback paused',
+        payload: {
+            track: 'string',
+            position: 'number'
+        },
+        example: { track: 'My Song', position: 45 }
+    },
+
+    'media:stop': {
+        namespace: 'media',
+        action: 'stop',
+        description: 'Playback stopped',
+        payload: {
+            track: 'string?'
+        },
+        example: { track: 'My Song' }
+    },
+
+    'media:volume': {
+        namespace: 'media',
+        action: 'volume',
+        description: 'Volume changed',
+        payload: {
+            volume: 'number',
+            previousVolume: 'number?'
+        },
+        example: { volume: 0.8, previousVolume: 0.5 }
+    },
+
+    'media:position': {
+        namespace: 'media',
+        action: 'position',
+        description: 'Playback position changed',
+        payload: {
+            position: 'number',
+            duration: 'number'
+        },
+        example: { position: 60, duration: 180 }
+    },
+
+    // ==========================================
+    // TERMINAL EVENTS
+    // ==========================================
+    'terminal:command': {
+        namespace: 'terminal',
+        action: 'command',
+        description: 'Command executed',
+        payload: {
+            command: 'string',
+            args: 'array?',
+            cwd: 'string?'
+        },
+        example: { command: 'dir', args: ['/w'], cwd: 'C:\\Users\\User' }
+    },
+
+    'terminal:output': {
+        namespace: 'terminal',
+        action: 'output',
+        description: 'Output generated',
+        payload: {
+            text: 'string',
+            type: 'string?'
+        },
+        example: { text: 'Directory listing...', type: 'normal' }
+    },
+
+    'terminal:error': {
+        namespace: 'terminal',
+        action: 'error',
+        description: 'Error occurred',
+        payload: {
+            message: 'string',
+            command: 'string?'
+        },
+        example: { message: 'Command not found', command: 'xyz' }
+    },
+
+    'terminal:cwd:change': {
+        namespace: 'terminal',
+        action: 'cwd:change',
+        description: 'Directory changed',
+        payload: {
+            cwd: 'string',
+            previousCwd: 'string?'
+        },
+        example: { cwd: 'C:\\Users\\User\\Documents', previousCwd: 'C:\\Users\\User' }
+    },
+
+    // ==========================================
+    // BROWSER EVENTS
+    // ==========================================
+    'browser:navigate': {
+        namespace: 'browser',
+        action: 'navigate',
+        description: 'Navigation started',
+        payload: {
+            url: 'string',
+            previousUrl: 'string?'
+        },
+        example: { url: 'https://example.com', previousUrl: 'about:blank' }
+    },
+
+    'browser:load': {
+        namespace: 'browser',
+        action: 'load',
+        description: 'Page loaded',
+        payload: {
+            url: 'string',
+            title: 'string?'
+        },
+        example: { url: 'https://example.com', title: 'Example Site' }
+    },
+
+    'browser:bookmark:add': {
+        namespace: 'browser',
+        action: 'bookmark:add',
+        description: 'Bookmark added',
+        payload: {
+            url: 'string',
+            title: 'string'
+        },
+        example: { url: 'https://example.com', title: 'Example' }
     }
 };
 

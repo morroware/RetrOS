@@ -4,7 +4,7 @@
  */
 
 import AppBase from './AppBase.js';
-import EventBus, { Events } from '../core/EventBus.js';
+import EventBus from '../core/SemanticEventBus.js';
 import StorageManager from '../core/StorageManager.js';
 
 class SkiFree extends AppBase {
@@ -339,6 +339,12 @@ class SkiFree extends AppBase {
         this.gameLoop = requestAnimationFrame((t) => this.update(t));
         this.playSound('start');
         this.updateStateText('Skiing!');
+
+        // Emit game started event
+        EventBus.emit('game:start', {
+            appId: 'skifree',
+            settings: { lives: this.lives }
+        });
     }
 
     togglePause() {
@@ -346,11 +352,20 @@ class SkiFree extends AppBase {
             this.state = this.STATE.PAUSED;
             this.updateStateText('PAUSED - Press P to resume');
             this.drawPauseOverlay();
+
+            // Emit pause event
+            EventBus.emit('game:pause', {
+                appId: 'skifree',
+                score: this.score
+            });
         } else if (this.state === this.STATE.PAUSED) {
             this.state = this.STATE.PLAYING;
             this.updateStateText('Skiing!');
             this.lastTime = performance.now();
             this.gameLoop = requestAnimationFrame((t) => this.update(t));
+
+            // Emit resume event
+            EventBus.emit('game:resume', { appId: 'skifree' });
         }
     }
 
@@ -620,11 +635,32 @@ class SkiFree extends AppBase {
                         this.score += 100;
                         this.createBonusText(obs.x, obs.y, '+100 JUMP!');
                         this.playSound('jump');
+
+                        // Emit jump event
+                        EventBus.emit('skifree:jump', {
+                            x: obs.x,
+                            y: obs.y,
+                            points: 100
+                        });
+                        EventBus.emit('game:score', {
+                            appId: 'skifree',
+                            score: this.score,
+                            delta: 100,
+                            reason: 'jump'
+                        });
                     }
                 } else if (obs.type === 'flag') {
                     this.score += 50;
                     this.createBonusText(obs.x, obs.y, '+50');
                     this.playSound('flag');
+
+                    // Emit score event
+                    EventBus.emit('game:score', {
+                        appId: 'skifree',
+                        score: this.score,
+                        delta: 50,
+                        reason: 'flag'
+                    });
                 } else {
                     // Crash! Stop checking after first crash
                     this.crashPlayer(obs);
@@ -639,6 +675,20 @@ class SkiFree extends AppBase {
         this.screenShake = 15;
         this.score = Math.max(0, this.score - 25);
         this.playSound('crash');
+
+        // Emit obstacle hit event
+        EventBus.emit('skifree:obstacle:hit', {
+            type: obs.type,
+            x: obs.x,
+            y: obs.y
+        });
+
+        // Emit lives change event
+        EventBus.emit('game:lives', {
+            appId: 'skifree',
+            lives: this.lives,
+            delta: -1
+        });
 
         // Create crash particles
         for (let i = 0; i < 15; i++) {
@@ -707,6 +757,11 @@ class SkiFree extends AppBase {
         this.playSound('yeti');
         this.updateStateText('⚠️ YETI! RUN! Press F for speed!');
         this.flashTimer = 30;
+
+        // Emit yeti spawn event
+        EventBus.emit('skifree:yeti:spawn', {
+            distance: this.distance
+        });
     }
 
     updateYeti() {
@@ -758,6 +813,12 @@ class SkiFree extends AppBase {
             this.screenShake = 30;
             this.playSound('eaten');
             this.updateStateText('🥶 EATEN BY YETI!');
+
+            // Emit yeti caught event
+            EventBus.emit('skifree:yeti:caught', {
+                distance: this.distance,
+                score: this.score
+            });
         }
 
         // Yeti left behind?
@@ -835,10 +896,31 @@ class SkiFree extends AppBase {
         this.state = this.STATE.GAMEOVER;
 
         // Update high score
-        if (this.score > this.highScore) {
+        const isHighScore = this.score > this.highScore;
+        if (isHighScore) {
+            const previousScore = this.highScore;
             this.highScore = this.score;
             StorageManager.set('skifree_highscore', this.highScore);
+
+            // Emit high score event
+            EventBus.emit('game:highscore', {
+                appId: 'skifree',
+                score: this.score,
+                previousScore
+            });
         }
+
+        // Emit game over event
+        EventBus.emit('game:over', {
+            appId: 'skifree',
+            won: false,
+            score: this.score,
+            stats: {
+                distance: Math.floor(this.distance),
+                byYeti,
+                isHighScore
+            }
+        });
 
         this.drawGameOverScreen(byYeti);
     }
