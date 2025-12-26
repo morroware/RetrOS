@@ -23,11 +23,12 @@ IlluminatOS! is a fully-functional Windows 95 desktop environment simulator buil
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
 **Project Stats:**
-- **~35,000 lines of code** across 50+ JavaScript files
-- **29 fully-functional applications**
+- **~35,000+ lines of code** across 64 JavaScript files
+- **32 fully-functional applications**
 - **200+ semantic events** for complete system observability
+- **16 core system modules** powering the OS
 - **Extensible plugin system** with example DVD Bouncer screensaver
-- **Full scripting support** via comprehensive event system
+- **Full scripting support** via CommandBus and ScriptEngine
 - **Zero external dependencies** - pure vanilla JavaScript
 
 ---
@@ -182,7 +183,7 @@ When you first load IlluminatOS!, you'll experience an authentic boot sequence:
 
 ## Applications
 
-IlluminatOS! includes 29 fully-functional applications organized into categories:
+IlluminatOS! includes 32 fully-functional applications organized into categories:
 
 ### Productivity (7 apps)
 
@@ -233,13 +234,16 @@ IlluminatOS! includes 29 fully-functional applications organized into categories
 | **Internet Explorer** | Web browser with bookmarks, history, and address bar |
 | **Chat Room** | 90s AOL/IRC style chat room simulator with bot users |
 
-### Utilities (5 apps)
+### Utilities (8 apps)
 
 | App | Description |
 |-----|-------------|
 | **Disk Defragmenter** | Classic satisfying block-moving defrag visualization |
 | **Task Manager** | Process viewer and management |
 | **Help System** | Built-in help documentation |
+| **HyperCard** | Stack-based information system for creating interactive content |
+| **Features Settings** | Configure and manage system features and plugins |
+| **Script Runner** | Execute and test RetroScript automation scripts |
 
 ---
 
@@ -554,7 +558,7 @@ IlluminatOS!/
 ├── index.js                # Boot sequence & system initialization
 ├── styles.css              # Windows 95 styling (~2700 lines)
 │
-├── apps/                   # Application implementations (29 apps)
+├── apps/                   # Application implementations (32 apps)
 │   ├── AppBase.js          # Base class for all apps (multi-instance support)
 │   ├── AppRegistry.js      # Central app registry & launcher
 │   ├── Calculator.js       # Calculator with keyboard support
@@ -583,9 +587,12 @@ IlluminatOS!/
 │   ├── Clock.js            # Clock app
 │   ├── FindFiles.js        # File search utility
 │   ├── TaskManager.js      # Task manager
-│   └── Help.js             # Help system
+│   ├── Help.js             # Help system
+│   ├── HyperCard.js        # Stack-based information system
+│   ├── FeaturesSettings.js # Features and plugin configuration
+│   └── ScriptRunner.js     # Script execution and testing
 │
-├── core/                   # Core system modules (13 modules)
+├── core/                   # Core system modules (16 modules)
 │   ├── SemanticEventBus.js # Enhanced event bus with validation, priorities, channels
 │   ├── EventSchema.js      # Schema definitions for 200+ semantic events
 │   ├── SystemMonitor.js    # System monitoring (input, performance, activity)
@@ -598,7 +605,10 @@ IlluminatOS!/
 │   ├── PluginLoader.js     # Plugin loading & management
 │   ├── FeatureRegistry.js  # Feature registration & lifecycle
 │   ├── FeatureBase.js      # Base class for features (lifecycle events)
-│   └── ScriptEngine.js     # Scripting engine for automation
+│   ├── ScriptEngine.js     # Scripting engine for automation
+│   ├── CommandBus.js       # Command execution layer for scripting
+│   ├── EventBus.js         # Backward compatibility wrapper
+│   └── EventBus.js.backup  # Original EventBus backup
 │
 ├── features/               # Core system features (7 modules)
 │   ├── ClippyAssistant.js  # Clippy helper popup

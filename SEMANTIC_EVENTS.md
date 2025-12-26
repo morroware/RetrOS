@@ -1,6 +1,6 @@
 # Semantic Event System
 
-RetrOS features a **comprehensive semantic event architecture** with 200+ events that enables typed, validated, and well-documented communication between all system components (apps, features, UI, system functions).
+RetrOS (IlluminatOS!) features a **comprehensive semantic event architecture** with 200+ events that enables typed, validated, and well-documented communication between all system components (32 apps, 7 features, 4 UI renderers, 16 core modules).
 
 ## Overview
 
@@ -16,6 +16,8 @@ The **SemanticEventBus** is an enhanced event system that provides:
 - **Pattern matching** - Subscribe with wildcards (`window:*`, `fs:*`)
 - **Event streams** - Async iterators for event processing
 - **Middleware support** - Intercept and transform events
+- **CommandBus integration** - Execute commands via events for scripting
+- **ScriptEngine support** - Power RetroScript automation
 - **100% Backward compatible** - All existing code continues to work
 
 ## Quick Start
@@ -658,4 +660,51 @@ The semantic event system provides:
 
 ---
 
-**Built for RetrOS**
+## Scripting Integration
+
+### CommandBus
+
+The CommandBus (`/core/CommandBus.js`) provides a command execution layer that enables scripting support:
+
+```javascript
+import CommandBus from './core/CommandBus.js';
+
+// Execute a command
+await CommandBus.execute('app:launch', { appId: 'notepad' });
+await CommandBus.execute('window:close', { id: 'window-1' });
+await CommandBus.execute('fs:create', { path: ['C:', 'test.txt'], content: 'Hello' });
+
+// Available command namespaces:
+// - app:* - Application commands (launch, close, focus)
+// - window:* - Window commands (open, close, minimize, maximize)
+// - fs:* - File system commands (create, read, update, delete)
+// - dialog:* - Dialog commands (alert, confirm, prompt)
+```
+
+### ScriptEngine
+
+The ScriptEngine (`/core/ScriptEngine.js`) enables RetroScript automation:
+
+```javascript
+import ScriptEngine from './core/ScriptEngine.js';
+
+// Execute a script
+const result = await ScriptEngine.execute(`
+    let counter = 0
+    app launch notepad
+    wait 500
+    emit custom:event { message: "Hello from script" }
+`);
+
+// Script features:
+// - Variables and expressions
+// - Conditionals (if/else)
+// - Loops (while, for)
+// - Event subscription
+// - Command execution
+// - Functions
+```
+
+---
+
+**Built for RetrOS (IlluminatOS!) - Version 95.0**
