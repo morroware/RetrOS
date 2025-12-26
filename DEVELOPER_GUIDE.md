@@ -147,6 +147,11 @@ IlluminatOS! is built on these core modules in `/core/`:
 | `IconSystem.js` | FontAwesome icons with emoji fallback |
 | `Constants.js` | Centralized configuration values |
 | `ScriptEngine.js` | Scripting engine for automation |
+| `CommandBus.js` | Command execution layer for scripting support |
+| `PluginLoader.js` | Plugin loading and management |
+| `FeatureRegistry.js` | Feature registration and lifecycle management |
+| `FeatureBase.js` | Base class for system features |
+| `EventBus.js` | Backward compatibility wrapper for SemanticEventBus |
 
 ### App Base Class
 
@@ -1415,12 +1420,12 @@ See the DVD Bouncer plugin for a complete example:
 
 | Category | Description |
 |----------|-------------|
-| `accessories` | Productivity tools (Calculator, Notepad, Paint, Calendar, Clock) |
+| `accessories` | Productivity tools (Calculator, Notepad, Paint, Calendar, Clock, HyperCard) |
 | `games` | Games (Minesweeper, Snake, Solitaire, FreeCell, SkiFree, Asteroids, DOOM) |
 | `multimedia` | Media apps (Media Player, Winamp) |
 | `internet` | Network apps (Browser, Chat Room) |
-| `systemtools` | Utilities (Terminal, Defrag, Find Files, Task Manager) |
-| `settings` | Settings apps (Control Panel, Display Properties, Sound Settings) |
+| `systemtools` | Utilities (Terminal, Defrag, Find Files, Task Manager, Script Runner) |
+| `settings` | Settings apps (Control Panel, Display Properties, Sound Settings, Features Settings) |
 | `system` | System apps (hidden from menu: My Computer, Recycle Bin, Admin Panel) |
 
 ---
@@ -1501,34 +1506,52 @@ class MyApp extends AppBase {
 
 ```
 RetrOS/
-├── apps/                   # Application implementations
+├── apps/                   # Application implementations (32 apps)
 │   ├── AppBase.js          # Base class - extend this (with messaging)
 │   ├── AppRegistry.js      # Register apps here
+│   ├── Calculator.js       # Calculator with keyboard support
+│   ├── Notepad.js          # Text editor with file system
+│   ├── Terminal.js         # MS-DOS terminal (30+ commands)
+│   ├── Paint.js            # Drawing app with file system
+│   ├── Snake.js, Minesweeper.js, Asteroids.js, etc.  # Games
+│   ├── HyperCard.js        # Stack-based information system
+│   ├── ScriptRunner.js     # Script execution and testing
+│   ├── FeaturesSettings.js # Features and plugin configuration
 │   └── [YourApp.js]        # Your new app
 │
-├── core/                   # Core systems
+├── core/                   # Core systems (16 modules)
 │   ├── SemanticEventBus.js # Event system with validation, priorities
 │   ├── EventSchema.js      # 200+ event definitions
 │   ├── SystemMonitor.js    # System monitoring (input, performance)
+│   ├── CommandBus.js       # Command execution layer for scripting
 │   ├── Constants.js        # Configuration constants
 │   ├── StateManager.js     # State management
 │   ├── WindowManager.js    # Window management
 │   ├── FileSystemManager.js # Virtual file system with events
 │   ├── StorageManager.js   # LocalStorage
 │   ├── IconSystem.js       # Icon rendering
-│   └── ScriptEngine.js     # Scripting engine
+│   ├── ScriptEngine.js     # Scripting engine
+│   ├── PluginLoader.js     # Plugin loading and management
+│   ├── FeatureRegistry.js  # Feature registration and lifecycle
+│   ├── FeatureBase.js      # Base class for features
+│   └── EventBus.js         # Backward compatibility wrapper
 │
-├── features/               # Optional features
+├── features/               # Optional features (7 modules)
 │   ├── SystemDialogs.js    # Dialogs (alert, confirm, file open/save)
 │   ├── SoundSystem.js      # Audio system
 │   ├── AchievementSystem.js # Achievements
-│   └── ...
+│   ├── ClippyAssistant.js  # Clippy helper assistant
+│   ├── DesktopPet.js       # Desktop pet companion
+│   ├── Screensaver.js      # Screensaver with multiple modes
+│   ├── EasterEggs.js       # Hidden surprises
+│   └── config.json         # Feature configuration
 │
 ├── plugins/                # Plugin system
 │   └── features/           # Feature plugins
-│       └── dvd-bouncer/    # Example plugin
+│       ├── dvd-bouncer/    # DVD Bouncer screensaver plugin
+│       └── example-plugin/ # Example template plugin
 │
-└── ui/                     # UI components
+└── ui/                     # UI components (4 renderers)
     ├── DesktopRenderer.js  # Desktop icons
     ├── TaskbarRenderer.js  # Taskbar
     ├── StartMenuRenderer.js # Start menu
