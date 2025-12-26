@@ -179,13 +179,18 @@ class ScriptEngineClass {
                 }
             }
 
+            // Track if we were already in a block before counting this line's braces
+            // This ensures closing braces on their own line are included in the block
+            const wasInBlock = braceDepth > 0;
+
             // Count braces to handle multi-line blocks
             for (const char of trimmedLine) {
                 if (char === '{') braceDepth++;
                 if (char === '}') braceDepth--;
             }
 
-            if (braceDepth > 0 || trimmedLine.includes('{')) {
+            // Include line in block if: we're entering a block, still in a block, OR were in a block
+            if (braceDepth > 0 || trimmedLine.includes('{') || wasInBlock) {
                 if (blockBuffer === '') blockStartLine = lineNum;
                 blockBuffer += (blockBuffer ? '\n' : '') + trimmedLine;
 
@@ -239,6 +244,11 @@ class ScriptEngineClass {
         if (parts.length === 0) return null;
 
         const command = parts[0].toLowerCase();
+
+        // Skip structural tokens - these are not statements
+        if (command === '{' || command === '}') {
+            return null;
+        }
 
         switch (command) {
             case 'launch':
