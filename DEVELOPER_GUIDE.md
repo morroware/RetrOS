@@ -377,6 +377,7 @@ class MyApp extends AppBase {
         this.setIdle();
     }
 }
+```
 
 ---
 
@@ -1506,6 +1507,19 @@ class MyApp extends AppBase {
 
 ```
 RetrOS/
+├── index.html              # Main entry point with boot screen and UI
+├── index.js                # Boot sequence & system initialization
+│
+├── styles/                 # Modular CSS architecture (~4800 lines)
+│   ├── main.css            # Entry point that imports all modules
+│   ├── core/               # Base styles and CSS variables
+│   ├── apps/               # App-specific styles (calculator, paint, etc.)
+│   ├── components/         # Reusable UI (buttons, dialogs, windows, forms)
+│   ├── features/           # Feature styles (clippy, screensaver, boot)
+│   ├── layout/             # Layout (desktop, taskbar, start menu)
+│   ├── effects/            # Animations and color schemes
+│   └── utilities/          # Helper utilities
+│
 ├── apps/                   # Application implementations (32 apps)
 │   ├── AppBase.js          # Base class - extend this (with messaging)
 │   ├── AppRegistry.js      # Register apps here

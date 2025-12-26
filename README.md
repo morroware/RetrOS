@@ -23,12 +23,13 @@ IlluminatOS! is a fully-functional Windows 95 desktop environment simulator buil
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
 **Project Stats:**
-- **~35,000+ lines of code** across 64 JavaScript files
+- **~45,000+ lines of JavaScript** across 64+ files
+- **~4,800+ lines of modular CSS** across 35+ files
 - **32 fully-functional applications**
 - **200+ semantic events** for complete system observability
 - **16 core system modules** powering the OS
-- **Extensible plugin system** with example DVD Bouncer screensaver
-- **Full scripting support** via CommandBus and ScriptEngine
+- **Extensible plugin system** with example plugins (DVD Bouncer, Example Plugin)
+- **Full scripting support** via RetroScript, CommandBus and ScriptEngine
 - **Zero external dependencies** - pure vanilla JavaScript
 
 ---
@@ -185,19 +186,18 @@ When you first load IlluminatOS!, you'll experience an authentic boot sequence:
 
 IlluminatOS! includes 32 fully-functional applications organized into categories:
 
-### Productivity (7 apps)
+### Productivity (6 apps)
 
 | App | Description |
 |-----|-------------|
 | **Notepad** | Text editor with file system integration (New, Open, Save, Save As, Download) |
 | **Calculator** | Full arithmetic operations with keyboard support, multiple instances |
 | **Paint** | Drawing application with brush, eraser, bucket fill, color picker, and file save/load |
-| **Terminal** | MS-DOS style command line with 30+ commands |
 | **Calendar** | Monthly calendar with date selection and navigation |
 | **Clock** | Analog clock display with timezone support |
-| **Find Files** | File search utility across the virtual file system |
+| **HyperCard** | Stack-based information system for creating interactive content |
 
-### System Applications (6 apps)
+### System Applications (7 apps)
 
 | App | Description |
 |-----|-------------|
@@ -205,10 +205,11 @@ IlluminatOS! includes 32 fully-functional applications organized into categories
 | **Control Panel** | System settings for display, sound, desktop pet, and screensaver |
 | **Display Properties** | Display settings with Background, Screensaver, Appearance, and Effects tabs |
 | **Sound Settings** | Audio control panel |
+| **Features Settings** | Configure and manage system features and plugins |
 | **Admin Panel** | Advanced administration for icons, security, achievements, and diagnostics |
 | **Recycle Bin** | View, restore, or permanently delete removed items |
 
-### Games (7 apps)
+### Games (8 apps)
 
 | App | Description |
 |-----|-------------|
@@ -219,6 +220,7 @@ IlluminatOS! includes 32 fully-functional applications organized into categories
 | **FreeCell** | Card game variant with 8 foundation piles |
 | **SkiFree** | Classic skiing game with obstacles - watch out for the Yeti! |
 | **DOOM** | Classic 1993 FPS via WebAssembly (Chocolate Doom port) |
+| **Zork** | Classic text adventure game - explore the Great Underground Empire |
 
 ### Multimedia (2 apps)
 
@@ -234,15 +236,15 @@ IlluminatOS! includes 32 fully-functional applications organized into categories
 | **Internet Explorer** | Web browser with bookmarks, history, and address bar |
 | **Chat Room** | 90s AOL/IRC style chat room simulator with bot users |
 
-### Utilities (8 apps)
+### Utilities (6 apps)
 
 | App | Description |
 |-----|-------------|
+| **Terminal** | MS-DOS style command line with 30+ commands |
 | **Disk Defragmenter** | Classic satisfying block-moving defrag visualization |
 | **Task Manager** | Process viewer and management |
+| **Find Files** | File search utility across the virtual file system |
 | **Help System** | Built-in help documentation |
-| **HyperCard** | Stack-based information system for creating interactive content |
-| **Features Settings** | Configure and manage system features and plugins |
 | **Script Runner** | Execute and test RetroScript automation scripts |
 
 ---
@@ -556,7 +558,16 @@ IlluminatOS! features authentic Windows 95-style dialog boxes that replace brows
 IlluminatOS!/
 ├── index.html              # Main entry point with boot screen and UI placeholders
 ├── index.js                # Boot sequence & system initialization
-├── styles.css              # Windows 95 styling (~2700 lines)
+│
+├── styles/                 # Modular CSS architecture (~4800 lines)
+│   ├── main.css            # Entry point that imports all modules
+│   ├── core/               # Base styles and CSS variables
+│   ├── apps/               # App-specific styles (calculator, paint, etc.)
+│   ├── components/         # Reusable UI components (buttons, dialogs, windows)
+│   ├── features/           # Feature styles (clippy, screensaver, boot screen)
+│   ├── layout/             # Layout components (desktop, taskbar, start menu)
+│   ├── effects/            # Animations and color schemes
+│   └── utilities/          # Helper utilities
 │
 ├── apps/                   # Application implementations (32 apps)
 │   ├── AppBase.js          # Base class for all apps (multi-instance support)
