@@ -17,11 +17,14 @@
  *   EventBus.getEventSchema('window:open')  // Get event documentation
  */
 
-import SemanticEventBus from './SemanticEventBus.js';
+import SemanticEventBus, { Priority as EventPriority } from './SemanticEventBus.js';
 
 // Re-export SemanticEventBus as EventBus for backward compatibility
 // All existing code will now use the enhanced semantic event bus!
 const EventBus = SemanticEventBus;
+
+// Export priority levels for convenience
+export const Priority = EventPriority;
 
 // Legacy event constants - mapped to new semantic events for compatibility
 // Old code using these constants will automatically use new event names
@@ -48,11 +51,13 @@ export const Events = {
     APP_LAUNCH: 'app:launch',
     APP_OPEN: 'app:open',
     APP_CLOSE: 'app:close',
+    APP_REGISTERED: 'app:registered',
 
     // Menu events
     START_MENU_TOGGLE: 'ui:menu:start:toggle',
     CONTEXT_MENU_SHOW: 'ui:menu:context:show',
     CONTEXT_MENU_HIDE: 'ui:menu:context:hide',
+    MENU_ACTION: 'ui:menu:action',
 
     // System events (note: boot:complete now maps to system:ready)
     BOOT_COMPLETE: 'system:ready',
@@ -86,12 +91,6 @@ export const Events = {
     DRAG_MOVE: 'drag:move',
     DRAG_END: 'drag:end',
 
-    // Menu action events
-    MENU_ACTION: 'ui:menu:action',
-
-    // App registration
-    APP_REGISTERED: 'app:registered',
-
     // Pet events
     PET_TOGGLE: 'feature:pet:toggle',
     PET_CHANGE: 'feature:pet:change',
@@ -101,7 +100,52 @@ export const Events = {
 
     // Desktop events
     DESKTOP_RENDER: 'desktop:render',
-    DESKTOP_REFRESH: 'desktop:refresh'
+    DESKTOP_REFRESH: 'desktop:refresh',
+
+    // Dialog events
+    DIALOG_ALERT: 'dialog:alert',
+    DIALOG_CONFIRM: 'dialog:confirm',
+    DIALOG_CONFIRM_RESPONSE: 'dialog:confirm:response',
+    DIALOG_PROMPT: 'dialog:prompt',
+    DIALOG_PROMPT_RESPONSE: 'dialog:prompt:response',
+    DIALOG_FILE_OPEN: 'dialog:file-open',
+    DIALOG_FILE_OPEN_RESPONSE: 'dialog:file-open:response',
+    DIALOG_FILE_SAVE: 'dialog:file-save',
+    DIALOG_FILE_SAVE_RESPONSE: 'dialog:file-save:response',
+
+    // Filesystem events
+    FILESYSTEM_CHANGED: 'filesystem:changed',
+    FS_FILE_CREATE: 'fs:file:create',
+    FS_FILE_UPDATE: 'fs:file:update',
+    FS_FILE_DELETE: 'fs:file:delete',
+    FS_DIRECTORY_CREATE: 'fs:directory:create',
+
+    // Recycle bin events
+    RECYCLEBIN_UPDATE: 'recyclebin:update',
+    RECYCLEBIN_RECYCLE_FILE: 'recyclebin:recycle-file',
+    RECYCLEBIN_RESTORE: 'recyclebin:restore',
+    RECYCLEBIN_EMPTY: 'recyclebin:empty',
+
+    // Notification events
+    NOTIFICATION_SHOW: 'notification:show',
+    NOTIFICATION_DISMISS: 'notification:dismiss',
+
+    // Clipboard events
+    CLIPBOARD_COPY: 'clipboard:copy',
+    CLIPBOARD_PASTE: 'clipboard:paste',
+
+    // Keyboard events
+    KEYBOARD_SHORTCUT: 'keyboard:shortcut',
+
+    // Script/automation events
+    SCRIPT_EXECUTE: 'script:execute',
+    SCRIPT_COMPLETE: 'script:complete',
+    SCRIPT_ERROR: 'script:error',
+
+    // Channel events
+    CHANNEL_MESSAGE: 'channel:message',
+    CHANNEL_SUBSCRIBE: 'channel:subscribe',
+    CHANNEL_UNSUBSCRIBE: 'channel:unsubscribe'
 };
 
 // Also register legacy event names that might be used directly as strings

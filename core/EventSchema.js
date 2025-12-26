@@ -760,6 +760,415 @@ export const EventSchema = {
         description: 'Desktop refresh requested',
         payload: {},
         example: {}
+    },
+
+    // ==========================================
+    // DIALOG EVENTS
+    // ==========================================
+    'dialog:alert': {
+        namespace: 'dialog',
+        action: 'alert',
+        description: 'Show an alert dialog',
+        payload: {
+            message: 'string',
+            title: 'string?',
+            icon: 'string?'
+        },
+        example: {
+            message: 'File saved successfully',
+            title: 'Success',
+            icon: '✅'
+        }
+    },
+
+    'dialog:confirm': {
+        namespace: 'dialog',
+        action: 'confirm',
+        description: 'Show a confirmation dialog',
+        payload: {
+            message: 'string',
+            title: 'string?',
+            confirmText: 'string?',
+            cancelText: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            message: 'Are you sure you want to delete this file?',
+            title: 'Confirm Delete',
+            confirmText: 'Delete',
+            cancelText: 'Cancel'
+        }
+    },
+
+    'dialog:confirm:response': {
+        namespace: 'dialog',
+        action: 'confirm:response',
+        description: 'Response from a confirmation dialog',
+        payload: {
+            requestId: 'string',
+            confirmed: 'boolean'
+        },
+        example: {
+            requestId: 'confirm-123',
+            confirmed: true
+        }
+    },
+
+    'dialog:prompt': {
+        namespace: 'dialog',
+        action: 'prompt',
+        description: 'Show an input prompt dialog',
+        payload: {
+            message: 'string',
+            title: 'string?',
+            defaultValue: 'string?',
+            placeholder: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            message: 'Enter file name:',
+            title: 'New File',
+            defaultValue: 'untitled.txt'
+        }
+    },
+
+    'dialog:prompt:response': {
+        namespace: 'dialog',
+        action: 'prompt:response',
+        description: 'Response from a prompt dialog',
+        payload: {
+            requestId: 'string',
+            value: 'string?',
+            cancelled: 'boolean'
+        },
+        example: {
+            requestId: 'prompt-123',
+            value: 'myfile.txt',
+            cancelled: false
+        }
+    },
+
+    'dialog:file-open': {
+        namespace: 'dialog',
+        action: 'file-open',
+        description: 'Show file open dialog',
+        payload: {
+            title: 'string?',
+            filter: 'string?',
+            directory: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            title: 'Open File',
+            filter: '.txt,.md',
+            directory: '/documents'
+        }
+    },
+
+    'dialog:file-open:response': {
+        namespace: 'dialog',
+        action: 'file-open:response',
+        description: 'Response from file open dialog',
+        payload: {
+            requestId: 'string',
+            path: 'string?',
+            cancelled: 'boolean'
+        },
+        example: {
+            requestId: 'file-open-123',
+            path: '/documents/readme.txt',
+            cancelled: false
+        }
+    },
+
+    'dialog:file-save': {
+        namespace: 'dialog',
+        action: 'file-save',
+        description: 'Show file save dialog',
+        payload: {
+            title: 'string?',
+            defaultName: 'string?',
+            filter: 'string?',
+            directory: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            title: 'Save File',
+            defaultName: 'document.txt',
+            directory: '/documents'
+        }
+    },
+
+    'dialog:file-save:response': {
+        namespace: 'dialog',
+        action: 'file-save:response',
+        description: 'Response from file save dialog',
+        payload: {
+            requestId: 'string',
+            path: 'string?',
+            cancelled: 'boolean'
+        },
+        example: {
+            requestId: 'file-save-123',
+            path: '/documents/document.txt',
+            cancelled: false
+        }
+    },
+
+    // ==========================================
+    // FILESYSTEM CHANGE EVENTS (broader than fs:*)
+    // ==========================================
+    'filesystem:changed': {
+        namespace: 'filesystem',
+        action: 'changed',
+        description: 'General filesystem change notification (triggers UI refresh)',
+        payload: {
+            path: 'string?',
+            type: 'string?'
+        },
+        example: {
+            path: '/documents',
+            type: 'file'
+        }
+    },
+
+    // ==========================================
+    // RECYCLE BIN EVENTS
+    // ==========================================
+    'recyclebin:update': {
+        namespace: 'recyclebin',
+        action: 'update',
+        description: 'Recycle bin contents changed',
+        payload: {
+            count: 'number?'
+        },
+        example: {
+            count: 5
+        }
+    },
+
+    'recyclebin:recycle-file': {
+        namespace: 'recyclebin',
+        action: 'recycle-file',
+        description: 'File moved to recycle bin',
+        payload: {
+            iconId: 'string',
+            path: 'string?',
+            originalPath: 'string?'
+        },
+        example: {
+            iconId: 'icon-readme',
+            path: '/recyclebin/readme.txt',
+            originalPath: '/documents/readme.txt'
+        }
+    },
+
+    'recyclebin:restore': {
+        namespace: 'recyclebin',
+        action: 'restore',
+        description: 'File restored from recycle bin',
+        payload: {
+            iconId: 'string',
+            originalPath: 'string'
+        },
+        example: {
+            iconId: 'icon-readme',
+            originalPath: '/documents/readme.txt'
+        }
+    },
+
+    'recyclebin:empty': {
+        namespace: 'recyclebin',
+        action: 'empty',
+        description: 'Recycle bin emptied',
+        payload: {
+            count: 'number?'
+        },
+        example: {
+            count: 3
+        }
+    },
+
+    // ==========================================
+    // NOTIFICATION EVENTS
+    // ==========================================
+    'notification:show': {
+        namespace: 'notification',
+        action: 'show',
+        description: 'Show a notification toast',
+        payload: {
+            message: 'string',
+            title: 'string?',
+            type: 'string?',
+            duration: 'number?',
+            icon: 'string?'
+        },
+        example: {
+            message: 'File saved',
+            title: 'Success',
+            type: 'success',
+            duration: 3000
+        }
+    },
+
+    'notification:dismiss': {
+        namespace: 'notification',
+        action: 'dismiss',
+        description: 'Dismiss a notification',
+        payload: {
+            id: 'string?'
+        },
+        example: {
+            id: 'notification-123'
+        }
+    },
+
+    // ==========================================
+    // CLIPBOARD EVENTS
+    // ==========================================
+    'clipboard:copy': {
+        namespace: 'clipboard',
+        action: 'copy',
+        description: 'Content copied to clipboard',
+        payload: {
+            content: 'any',
+            type: 'string?'
+        },
+        example: {
+            content: 'Hello world',
+            type: 'text'
+        }
+    },
+
+    'clipboard:paste': {
+        namespace: 'clipboard',
+        action: 'paste',
+        description: 'Paste from clipboard requested',
+        payload: {
+            target: 'string?'
+        },
+        example: {
+            target: 'notepad-1'
+        }
+    },
+
+    // ==========================================
+    // KEYBOARD/INPUT EVENTS
+    // ==========================================
+    'keyboard:shortcut': {
+        namespace: 'keyboard',
+        action: 'shortcut',
+        description: 'Keyboard shortcut triggered',
+        payload: {
+            key: 'string',
+            ctrl: 'boolean?',
+            alt: 'boolean?',
+            shift: 'boolean?',
+            meta: 'boolean?'
+        },
+        example: {
+            key: 's',
+            ctrl: true
+        }
+    },
+
+    // ==========================================
+    // SCRIPT/AUTOMATION EVENTS
+    // ==========================================
+    'script:execute': {
+        namespace: 'script',
+        action: 'execute',
+        description: 'Execute a script',
+        payload: {
+            scriptId: 'string',
+            params: 'object?',
+            requestId: 'string?'
+        },
+        example: {
+            scriptId: 'auto-backup',
+            params: { destination: '/backup' }
+        }
+    },
+
+    'script:complete': {
+        namespace: 'script',
+        action: 'complete',
+        description: 'Script execution completed',
+        payload: {
+            scriptId: 'string',
+            requestId: 'string?',
+            result: 'any?',
+            error: 'string?'
+        },
+        example: {
+            scriptId: 'auto-backup',
+            requestId: 'req-123',
+            result: { filesBackedUp: 5 }
+        }
+    },
+
+    'script:error': {
+        namespace: 'script',
+        action: 'error',
+        description: 'Script execution error',
+        payload: {
+            scriptId: 'string',
+            requestId: 'string?',
+            error: 'string',
+            line: 'number?'
+        },
+        example: {
+            scriptId: 'auto-backup',
+            error: 'Permission denied',
+            line: 15
+        }
+    },
+
+    // ==========================================
+    // CHANNEL/SCOPE EVENTS (for isolated communication)
+    // ==========================================
+    'channel:message': {
+        namespace: 'channel',
+        action: 'message',
+        description: 'Message sent to a specific channel',
+        payload: {
+            channel: 'string',
+            message: 'any',
+            sender: 'string?'
+        },
+        example: {
+            channel: 'notepad-sync',
+            message: { action: 'update', content: 'Hello' },
+            sender: 'notepad-1'
+        }
+    },
+
+    'channel:subscribe': {
+        namespace: 'channel',
+        action: 'subscribe',
+        description: 'Subscription to a channel',
+        payload: {
+            channel: 'string',
+            subscriber: 'string'
+        },
+        example: {
+            channel: 'notepad-sync',
+            subscriber: 'notepad-2'
+        }
+    },
+
+    'channel:unsubscribe': {
+        namespace: 'channel',
+        action: 'unsubscribe',
+        description: 'Unsubscription from a channel',
+        payload: {
+            channel: 'string',
+            subscriber: 'string'
+        },
+        example: {
+            channel: 'notepad-sync',
+            subscriber: 'notepad-2'
+        }
     }
 };
 
