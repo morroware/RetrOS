@@ -8,6 +8,14 @@
  *   - disable(): Disable feature at runtime
  *   - cleanup(): Clean up resources when disabled
  *
+ * Events emitted:
+ *   - feature:initialize - When feature starts initializing
+ *   - feature:ready - When feature initialization completes
+ *   - feature:enable - When feature is enabled
+ *   - feature:disable - When feature is disabled
+ *   - feature:error - When an error occurs in the feature
+ *   - feature:config:change - When feature configuration changes
+ *
  * Usage:
  *   class MyFeature extends FeatureBase {
  *       constructor() {
@@ -28,7 +36,7 @@
  *   }
  */
 
-import EventBus from './EventBus.js';
+import EventBus, { Events } from './SemanticEventBus.js';
 import StateManager from './StateManager.js';
 import StorageManager from './StorageManager.js';
 
@@ -80,13 +88,41 @@ class FeatureBase {
      * Called when user enables the feature in settings
      */
     async enable() {
-        if (!this.initialized) {
-            await this.initialize();
-            this.initialized = true;
+        try {
+            if (!this.initialized) {
+                // Emit initialize event
+                EventBus.emit(Events.FEATURE_INITIALIZE, {
+                    featureId: this.id,
+                    config: this.config
+                });
+
+                await this.initialize();
+                this.initialized = true;
+
+                // Emit ready event
+                EventBus.emit(Events.FEATURE_READY, {
+                    featureId: this.id
+                });
+            }
+
+            this.enabled = true;
+            this.saveEnabledState(true);
+
+            // Emit enable event
+            EventBus.emit(Events.FEATURE_ENABLE, {
+                featureId: this.id,
+                name: this.name
+            });
+
+            console.log(`[${this.name}] Enabled`);
+        } catch (error) {
+            EventBus.emit(Events.FEATURE_ERROR, {
+                featureId: this.id,
+                error: error.message,
+                fatal: false
+            });
+            throw error;
         }
-        this.enabled = true;
-        this.saveEnabledState(true);
-        console.log(`[${this.name}] Enabled`);
     }
 
     /**
@@ -94,10 +130,26 @@ class FeatureBase {
      * Called when user disables the feature in settings
      */
     async disable() {
-        this.cleanup();
-        this.enabled = false;
-        this.saveEnabledState(false);
-        console.log(`[${this.name}] Disabled`);
+        try {
+            this.cleanup();
+            this.enabled = false;
+            this.saveEnabledState(false);
+
+            // Emit disable event
+            EventBus.emit(Events.FEATURE_DISABLE, {
+                featureId: this.id,
+                name: this.name
+            });
+
+            console.log(`[${this.name}] Disabled`);
+        } catch (error) {
+            EventBus.emit(Events.FEATURE_ERROR, {
+                featureId: this.id,
+                error: error.message,
+                fatal: false
+            });
+            throw error;
+        }
     }
 
     /**
@@ -184,11 +236,20 @@ class FeatureBase {
      * @param {*} value - Value to set
      */
     setConfig(key, value) {
+        const oldValue = this.config[key];
         this.config[key] = value;
         this.saveConfigToStorage();
 
+        // Emit config change event
+        EventBus.emit(Events.FEATURE_CONFIG_CHANGE, {
+            featureId: this.id,
+            key,
+            value,
+            oldValue
+        });
+
         // Trigger config change hook
-        this.triggerHook('config:changed', { key, value });
+        this.triggerHook('config:changed', { key, value, oldValue });
     }
 
     /**

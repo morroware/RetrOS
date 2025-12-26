@@ -5,6 +5,7 @@
 
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Asteroids extends AppBase {
     constructor() {
@@ -143,15 +144,29 @@ class Asteroids extends AppBase {
         this.ship = this.newShip();
         this.newLevel();
         this.updateHUD();
+
+        // Emit game started event
+        EventBus.emit('game:start', {
+            appId: 'asteroids',
+            settings: { lives: this.lives }
+        });
     }
 
     newLevel() {
+        const previousLevel = this.level;
         this.level++;
         this.text = "LEVEL " + this.level;
         this.textAlpha = 1.0;
         this.createAsteroidBelt();
         this.ufoSpawnTimer = this.UFO_SPAWN_INTERVAL * this.FPS;
         this.updateHUD();
+
+        // Emit level change event
+        EventBus.emit('game:level', {
+            appId: 'asteroids',
+            level: this.level,
+            previousLevel: previousLevel
+        });
     }
 
     newShip() {
@@ -684,7 +699,35 @@ class Asteroids extends AppBase {
 
         // Add score (smaller asteroids = more points)
         const baseScore = r < 20 ? 100 : r < 40 ? 50 : 20;
-        this.score += baseScore * this.multiplier;
+        const points = baseScore * this.multiplier;
+        const oldScore = this.score;
+        this.score += points;
+
+        // Emit asteroid destroyed event
+        const size = r >= 40 ? 'large' : r >= 20 ? 'medium' : 'small';
+        EventBus.emit('asteroids:asteroid:destroy', {
+            size,
+            points,
+            x,
+            y,
+            combo: this.combo
+        });
+
+        // Emit score change event
+        EventBus.emit('game:score', {
+            appId: 'asteroids',
+            score: this.score,
+            delta: points,
+            reason: 'asteroid_destroyed'
+        });
+
+        // Emit combo event if active
+        if (this.combo >= 3) {
+            EventBus.emit('asteroids:combo', {
+                combo: this.combo,
+                multiplier: this.multiplier
+            });
+        }
 
         // Chance to spawn power-up
         if (Math.random() < this.POWERUP_CHANCE && this.powerups.length < 2) {
@@ -701,9 +744,19 @@ class Asteroids extends AppBase {
         this.ufos.splice(index, 1);
 
         // UFO worth lots of points!
-        this.score += 200 * this.multiplier;
+        const points = 200 * this.multiplier;
+        this.score += points;
         this.combo++;
         this.comboTimer = this.COMBO_TIMEOUT * this.FPS;
+
+        // Emit UFO destroyed event
+        EventBus.emit('asteroids:ufo:destroy', { points });
+        EventBus.emit('game:score', {
+            appId: 'asteroids',
+            score: this.score,
+            delta: points,
+            reason: 'ufo_destroyed'
+        });
 
         this.updateHUD();
         this.playSound('error');
@@ -717,6 +770,20 @@ class Asteroids extends AppBase {
         this.activePowerup = null;
         this.powerupTimeLeft = 0;
 
+        // Emit ship explode event
+        EventBus.emit('asteroids:ship:explode', {
+            livesRemaining: this.lives,
+            x: this.ship.x,
+            y: this.ship.y
+        });
+
+        // Emit lives change event
+        EventBus.emit('game:lives', {
+            appId: 'asteroids',
+            lives: this.lives,
+            delta: -1
+        });
+
         this.updateHUD();
 
         if (this.lives === 0) {
@@ -727,10 +794,26 @@ class Asteroids extends AppBase {
 
             // Save high score
             if (this.score > this.scoreHigh) {
+                const previousScore = this.scoreHigh;
                 this.scoreHigh = this.score;
                 StateManager.setState('asteroids_highscore', this.scoreHigh);
                 this.text = "NEW HIGH SCORE!";
+
+                // Emit high score event
+                EventBus.emit('game:highscore', {
+                    appId: 'asteroids',
+                    score: this.score,
+                    previousScore
+                });
             }
+
+            // Emit game over event
+            EventBus.emit('game:over', {
+                appId: 'asteroids',
+                won: false,
+                score: this.score,
+                stats: { level: this.level }
+            });
 
             setTimeout(() => this.newGame(), 3000);
         } else {
@@ -774,11 +857,25 @@ class Asteroids extends AppBase {
             color: powerupInfo[type].color,
             life: 300 // 5 seconds
         });
+
+        // Emit powerup spawn event
+        EventBus.emit('asteroids:powerup:spawn', { type, x, y });
     }
 
     collectPowerup(type) {
+        // Emit powerup collected event
+        EventBus.emit('asteroids:powerup:collect', {
+            type,
+            duration: type === 'extralife' ? 0 : this.POWERUP_DURATION * 1000
+        });
+
         if (type === 'extralife') {
             this.lives++;
+            EventBus.emit('game:lives', {
+                appId: 'asteroids',
+                lives: this.lives,
+                delta: 1
+            });
             this.updateHUD();
         } else {
             this.activePowerup = type;
@@ -803,6 +900,9 @@ class Asteroids extends AppBase {
             r: this.UFO_SIZE,
             shootTimer: this.UFO_SHOOT_INTERVAL * this.FPS
         });
+
+        // Emit UFO spawn event
+        EventBus.emit('asteroids:ufo:spawn', { type: 'standard' });
     }
 
     getPowerupColor() {

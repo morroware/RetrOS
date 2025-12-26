@@ -12,9 +12,20 @@
  *   - onFocus(): Handle focus (optional)
  *   - onBlur(): Handle blur (optional)
  *   - onMount(): Post-render initialization (optional)
+ *
+ * Events emitted:
+ *   - app:launch - When app starts launching
+ *   - app:ready - When app is mounted and ready
+ *   - app:focus - When app window gains focus
+ *   - app:blur - When app window loses focus
+ *   - app:close - When app window closes
+ *   - app:state:change - When app instance state changes
+ *   - app:error - When an error occurs in the app
+ *   - app:message - When app sends message to another app
+ *   - app:broadcast - When app broadcasts to all apps
  */
 
-import EventBus from '../core/EventBus.js';
+import EventBus, { Events } from '../core/SemanticEventBus.js';
 import StateManager from '../core/StateManager.js';
 import WindowManager from '../core/WindowManager.js';
 
@@ -128,6 +139,13 @@ class AppBase {
         this.instanceCounter++;
         const windowId = this.singleton ? this.id : `${this.id}-${this.instanceCounter}`;
 
+        // Emit app launch event
+        EventBus.emit(Events.APP_LAUNCH, {
+            appId: this.id,
+            windowId: windowId,
+            singleton: this.singleton
+        });
+
         // Set context BEFORE calling onOpen so it can use helpers if needed
         this._currentWindowId = windowId;
 
@@ -141,7 +159,19 @@ class AppBase {
         // Get content from subclass, passing any pending parameters
         const params = this._pendingParams || {};
         this._pendingParams = null; // Clear params after use
-        const content = this.onOpen(params);
+
+        let content;
+        try {
+            content = this.onOpen(params);
+        } catch (error) {
+            EventBus.emit(Events.APP_ERROR, {
+                appId: this.id,
+                windowId: windowId,
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
 
         // Create window with unique ID
         const windowEl = WindowManager.create({
@@ -169,7 +199,21 @@ class AppBase {
         setTimeout(() => {
             // Set context before calling onMount
             this._currentWindowId = windowId;
-            this.onMount();
+            try {
+                this.onMount();
+                // Emit app ready event after mount completes
+                EventBus.emit(Events.APP_READY, {
+                    appId: this.id,
+                    windowId: windowId
+                });
+            } catch (error) {
+                EventBus.emit(Events.APP_ERROR, {
+                    appId: this.id,
+                    windowId: windowId,
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
         }, 50);
     }
 
@@ -222,7 +266,22 @@ class AppBase {
         }
 
         // Call subclass cleanup
-        this.onClose();
+        try {
+            this.onClose();
+        } catch (error) {
+            EventBus.emit(Events.APP_ERROR, {
+                appId: this.id,
+                windowId: windowId,
+                error: error.message,
+                stack: error.stack
+            });
+        }
+
+        // Emit app close event
+        EventBus.emit(Events.APP_CLOSE, {
+            appId: this.id,
+            windowId: windowId
+        });
 
         // Remove from tracked windows
         this.openWindows.delete(windowId);
@@ -259,12 +318,25 @@ class AppBase {
      * Set instance-specific state value
      * @param {string} key - State key
      * @param {*} value - Value to set
+     * @param {boolean} emitEvent - Whether to emit state change event (default: true)
      */
-    setInstanceState(key, value) {
+    setInstanceState(key, value, emitEvent = true) {
         const windowId = this._currentWindowId;
         const instanceData = this.openWindows.get(windowId);
         if (instanceData) {
+            const oldValue = instanceData.state[key];
             instanceData.state[key] = value;
+
+            // Emit state change event if value changed
+            if (emitEvent && oldValue !== value) {
+                EventBus.emit(Events.APP_STATE_CHANGE, {
+                    appId: this.id,
+                    windowId: windowId,
+                    key,
+                    value,
+                    oldValue
+                });
+            }
         }
     }
 
@@ -602,6 +674,88 @@ class AppBase {
     }
 
     /**
+     * Send a message to a specific app
+     * @param {string} targetAppId - ID of the target app
+     * @param {*} message - Message content
+     * @param {string} messageType - Optional message type for routing
+     */
+    sendMessage(targetAppId, message, messageType = 'message') {
+        EventBus.emit(Events.APP_MESSAGE, {
+            fromAppId: this.id,
+            fromWindowId: this._currentWindowId,
+            toAppId: targetAppId,
+            message,
+            messageType
+        });
+
+        // Also emit a targeted event for the specific app
+        EventBus.emit(`app:${targetAppId}:message`, {
+            fromAppId: this.id,
+            fromWindowId: this._currentWindowId,
+            message,
+            messageType
+        });
+    }
+
+    /**
+     * Broadcast a message to all apps
+     * @param {*} message - Message content
+     * @param {string} messageType - Optional message type for routing
+     */
+    broadcast(message, messageType = 'broadcast') {
+        EventBus.emit(Events.APP_BROADCAST, {
+            fromAppId: this.id,
+            fromWindowId: this._currentWindowId,
+            message,
+            messageType
+        });
+    }
+
+    /**
+     * Listen for messages from other apps
+     * @param {Function} handler - Handler function (message, fromAppId, messageType) => void
+     * @returns {Function} Unsubscribe function
+     */
+    onMessage(handler) {
+        return this.onEvent(`app:${this.id}:message`, (data) => {
+            handler(data.message, data.fromAppId, data.messageType);
+        });
+    }
+
+    /**
+     * Listen for broadcasts from any app
+     * @param {Function} handler - Handler function (message, fromAppId, messageType) => void
+     * @returns {Function} Unsubscribe function
+     */
+    onBroadcast(handler) {
+        return this.onEvent(Events.APP_BROADCAST, (data) => {
+            handler(data.message, data.fromAppId, data.messageType);
+        });
+    }
+
+    /**
+     * Mark app as busy (processing)
+     * @param {string} task - Optional task description
+     */
+    setBusy(task = null) {
+        EventBus.emit(Events.APP_BUSY, {
+            appId: this.id,
+            windowId: this._currentWindowId,
+            task
+        });
+    }
+
+    /**
+     * Mark app as idle (done processing)
+     */
+    setIdle() {
+        EventBus.emit(Events.APP_IDLE, {
+            appId: this.id,
+            windowId: this._currentWindowId
+        });
+    }
+
+    /**
      * Respond to a request event (for request/response pattern)
      * @param {string} eventName - Response event name
      * @param {string} requestId - Request ID from the original request
@@ -628,14 +782,32 @@ class AppBase {
      * @param {string} windowId - The window ID to track
      */
     setupFocusTracking(windowId) {
+        let hadFocus = false;
+
         const checkFocus = ({ id }) => {
             if (id === windowId) {
                 this._currentWindowId = windowId;
+                hadFocus = true;
+
+                // Emit app focus event
+                EventBus.emit(Events.APP_FOCUS, {
+                    appId: this.id,
+                    windowId: windowId
+                });
+
                 this.onFocus();
-            } else if (this.openWindows.has(windowId)) {
+            } else if (hadFocus && this.openWindows.has(windowId)) {
                 // Another window got focus, we lost it
+                hadFocus = false;
                 const prevContext = this._currentWindowId;
                 this._currentWindowId = windowId;
+
+                // Emit app blur event
+                EventBus.emit(Events.APP_BLUR, {
+                    appId: this.id,
+                    windowId: windowId
+                });
+
                 this.onBlur();
                 this._currentWindowId = prevContext;
             }
