@@ -1169,6 +1169,718 @@ export const EventSchema = {
             channel: 'notepad-sync',
             subscriber: 'notepad-2'
         }
+    },
+
+    // ==========================================
+    // COMMAND EVENTS (for scripting - trigger actions)
+    // ==========================================
+    'command:app:launch': {
+        namespace: 'command',
+        action: 'app:launch',
+        description: 'Command to launch an application',
+        payload: {
+            appId: 'string',
+            params: 'object?',
+            requestId: 'string?'
+        },
+        example: {
+            appId: 'notepad',
+            params: { filePath: ['C:', 'Users', 'User', 'readme.txt'] }
+        }
+    },
+
+    'command:app:close': {
+        namespace: 'command',
+        action: 'app:close',
+        description: 'Command to close an application window',
+        payload: {
+            windowId: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:window:focus': {
+        namespace: 'command',
+        action: 'window:focus',
+        description: 'Command to focus a window',
+        payload: {
+            windowId: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:window:minimize': {
+        namespace: 'command',
+        action: 'window:minimize',
+        description: 'Command to minimize a window',
+        payload: {
+            windowId: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:window:maximize': {
+        namespace: 'command',
+        action: 'window:maximize',
+        description: 'Command to maximize a window',
+        payload: {
+            windowId: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:window:restore': {
+        namespace: 'command',
+        action: 'window:restore',
+        description: 'Command to restore a window from minimized/maximized',
+        payload: {
+            windowId: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:window:close': {
+        namespace: 'command',
+        action: 'window:close',
+        description: 'Command to close a window',
+        payload: {
+            windowId: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:fs:read': {
+        namespace: 'command',
+        action: 'fs:read',
+        description: 'Command to read a file',
+        payload: {
+            path: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            path: 'C:/Users/User/readme.txt'
+        }
+    },
+
+    'command:fs:write': {
+        namespace: 'command',
+        action: 'fs:write',
+        description: 'Command to write to a file',
+        payload: {
+            path: 'string',
+            content: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            path: 'C:/Users/User/newfile.txt',
+            content: 'Hello world'
+        }
+    },
+
+    'command:fs:delete': {
+        namespace: 'command',
+        action: 'fs:delete',
+        description: 'Command to delete a file',
+        payload: {
+            path: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            path: 'C:/Users/User/oldfile.txt'
+        }
+    },
+
+    'command:fs:mkdir': {
+        namespace: 'command',
+        action: 'fs:mkdir',
+        description: 'Command to create a directory',
+        payload: {
+            path: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            path: 'C:/Users/User/NewFolder'
+        }
+    },
+
+    'command:dialog:show': {
+        namespace: 'command',
+        action: 'dialog:show',
+        description: 'Command to show a dialog',
+        payload: {
+            type: 'string',
+            message: 'string',
+            title: 'string?',
+            options: 'object?',
+            requestId: 'string?'
+        },
+        example: {
+            type: 'alert',
+            message: 'Hello from script!',
+            title: 'Script Message'
+        }
+    },
+
+    'command:sound:play': {
+        namespace: 'command',
+        action: 'sound:play',
+        description: 'Command to play a sound',
+        payload: {
+            type: 'string',
+            volume: 'number?',
+            requestId: 'string?'
+        },
+        example: {
+            type: 'notify',
+            volume: 0.5
+        }
+    },
+
+    'command:setting:set': {
+        namespace: 'command',
+        action: 'setting:set',
+        description: 'Command to change a setting',
+        payload: {
+            key: 'string',
+            value: 'any',
+            requestId: 'string?'
+        },
+        example: {
+            key: 'sound',
+            value: true
+        }
+    },
+
+    'command:desktop:refresh': {
+        namespace: 'command',
+        action: 'desktop:refresh',
+        description: 'Command to refresh the desktop',
+        payload: {
+            requestId: 'string?'
+        },
+        example: {}
+    },
+
+    'command:notification:show': {
+        namespace: 'command',
+        action: 'notification:show',
+        description: 'Command to show a notification',
+        payload: {
+            message: 'string',
+            title: 'string?',
+            type: 'string?',
+            duration: 'number?',
+            requestId: 'string?'
+        },
+        example: {
+            message: 'Task completed!',
+            title: 'Script',
+            type: 'success'
+        }
+    },
+
+    // ==========================================
+    // QUERY EVENTS (for scripting - get state)
+    // ==========================================
+    'query:windows': {
+        namespace: 'query',
+        action: 'windows',
+        description: 'Query for list of open windows',
+        payload: {
+            requestId: 'string'
+        },
+        example: {
+            requestId: 'query-123'
+        }
+    },
+
+    'query:windows:response': {
+        namespace: 'query',
+        action: 'windows:response',
+        description: 'Response with list of open windows',
+        payload: {
+            requestId: 'string',
+            windows: 'array'
+        },
+        example: {
+            requestId: 'query-123',
+            windows: [{ id: 'notepad-1', title: 'Notepad', appId: 'notepad' }]
+        }
+    },
+
+    'query:apps': {
+        namespace: 'query',
+        action: 'apps',
+        description: 'Query for list of available apps',
+        payload: {
+            requestId: 'string'
+        },
+        example: {
+            requestId: 'query-456'
+        }
+    },
+
+    'query:apps:response': {
+        namespace: 'query',
+        action: 'apps:response',
+        description: 'Response with list of available apps',
+        payload: {
+            requestId: 'string',
+            apps: 'array'
+        },
+        example: {
+            requestId: 'query-456',
+            apps: [{ id: 'notepad', name: 'Notepad', category: 'accessories' }]
+        }
+    },
+
+    'query:fs:list': {
+        namespace: 'query',
+        action: 'fs:list',
+        description: 'Query directory listing',
+        payload: {
+            path: 'string',
+            requestId: 'string'
+        },
+        example: {
+            path: 'C:/Users/User',
+            requestId: 'query-789'
+        }
+    },
+
+    'query:fs:list:response': {
+        namespace: 'query',
+        action: 'fs:list:response',
+        description: 'Response with directory listing',
+        payload: {
+            requestId: 'string',
+            items: 'array',
+            path: 'string'
+        },
+        example: {
+            requestId: 'query-789',
+            path: 'C:/Users/User',
+            items: [{ name: 'Documents', type: 'directory' }]
+        }
+    },
+
+    'query:fs:read': {
+        namespace: 'query',
+        action: 'fs:read',
+        description: 'Query to read file contents',
+        payload: {
+            path: 'string',
+            requestId: 'string'
+        },
+        example: {
+            path: 'C:/Users/User/readme.txt',
+            requestId: 'query-abc'
+        }
+    },
+
+    'query:fs:read:response': {
+        namespace: 'query',
+        action: 'fs:read:response',
+        description: 'Response with file contents',
+        payload: {
+            requestId: 'string',
+            content: 'string',
+            path: 'string',
+            error: 'string?'
+        },
+        example: {
+            requestId: 'query-abc',
+            path: 'C:/Users/User/readme.txt',
+            content: 'File content here'
+        }
+    },
+
+    'query:fs:exists': {
+        namespace: 'query',
+        action: 'fs:exists',
+        description: 'Query if a path exists',
+        payload: {
+            path: 'string',
+            requestId: 'string'
+        },
+        example: {
+            path: 'C:/Users/User/readme.txt',
+            requestId: 'query-def'
+        }
+    },
+
+    'query:fs:exists:response': {
+        namespace: 'query',
+        action: 'fs:exists:response',
+        description: 'Response with existence check',
+        payload: {
+            requestId: 'string',
+            exists: 'boolean',
+            path: 'string',
+            type: 'string?'
+        },
+        example: {
+            requestId: 'query-def',
+            path: 'C:/Users/User/readme.txt',
+            exists: true,
+            type: 'file'
+        }
+    },
+
+    'query:settings': {
+        namespace: 'query',
+        action: 'settings',
+        description: 'Query current settings',
+        payload: {
+            key: 'string?',
+            requestId: 'string'
+        },
+        example: {
+            key: 'sound',
+            requestId: 'query-ghi'
+        }
+    },
+
+    'query:settings:response': {
+        namespace: 'query',
+        action: 'settings:response',
+        description: 'Response with settings values',
+        payload: {
+            requestId: 'string',
+            settings: 'object'
+        },
+        example: {
+            requestId: 'query-ghi',
+            settings: { sound: true, crt: false }
+        }
+    },
+
+    'query:state': {
+        namespace: 'query',
+        action: 'state',
+        description: 'Query system state by path',
+        payload: {
+            path: 'string',
+            requestId: 'string'
+        },
+        example: {
+            path: 'windows',
+            requestId: 'query-jkl'
+        }
+    },
+
+    'query:state:response': {
+        namespace: 'query',
+        action: 'state:response',
+        description: 'Response with state value',
+        payload: {
+            requestId: 'string',
+            path: 'string',
+            value: 'any'
+        },
+        example: {
+            requestId: 'query-jkl',
+            path: 'windows',
+            value: []
+        }
+    },
+
+    // ==========================================
+    // ACTION RESULT EVENTS (for scripting - command responses)
+    // ==========================================
+    'action:result': {
+        namespace: 'action',
+        action: 'result',
+        description: 'Result of a command action',
+        payload: {
+            requestId: 'string',
+            success: 'boolean',
+            data: 'any?',
+            error: 'string?'
+        },
+        example: {
+            requestId: 'cmd-123',
+            success: true,
+            data: { windowId: 'notepad-1' }
+        }
+    },
+
+    // ==========================================
+    // MACRO/AUTOMATION EVENTS
+    // ==========================================
+    'macro:record:start': {
+        namespace: 'macro',
+        action: 'record:start',
+        description: 'Start recording a macro',
+        payload: {
+            macroId: 'string?'
+        },
+        example: {
+            macroId: 'my-macro'
+        }
+    },
+
+    'macro:record:stop': {
+        namespace: 'macro',
+        action: 'record:stop',
+        description: 'Stop recording a macro',
+        payload: {},
+        example: {}
+    },
+
+    'macro:play': {
+        namespace: 'macro',
+        action: 'play',
+        description: 'Play a recorded macro',
+        payload: {
+            macroId: 'string',
+            speed: 'number?'
+        },
+        example: {
+            macroId: 'my-macro',
+            speed: 1.0
+        }
+    },
+
+    'macro:save': {
+        namespace: 'macro',
+        action: 'save',
+        description: 'Save a macro to storage',
+        payload: {
+            macroId: 'string',
+            events: 'array'
+        },
+        example: {
+            macroId: 'my-macro',
+            events: []
+        }
+    },
+
+    // ==========================================
+    // APP-SPECIFIC COMMAND EVENTS
+    // ==========================================
+    'command:notepad:new': {
+        namespace: 'command',
+        action: 'notepad:new',
+        description: 'Command to create a new document in Notepad',
+        payload: {
+            windowId: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1'
+        }
+    },
+
+    'command:notepad:open': {
+        namespace: 'command',
+        action: 'notepad:open',
+        description: 'Command to open a file in Notepad',
+        payload: {
+            windowId: 'string?',
+            path: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1',
+            path: 'C:/Users/User/readme.txt'
+        }
+    },
+
+    'command:notepad:save': {
+        namespace: 'command',
+        action: 'notepad:save',
+        description: 'Command to save current document in Notepad',
+        payload: {
+            windowId: 'string?',
+            path: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1',
+            path: 'C:/Users/User/saved.txt'
+        }
+    },
+
+    'command:notepad:setText': {
+        namespace: 'command',
+        action: 'notepad:setText',
+        description: 'Command to set text content in Notepad',
+        payload: {
+            windowId: 'string?',
+            text: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'notepad-1',
+            text: 'Hello from script!'
+        }
+    },
+
+    'query:notepad:getText': {
+        namespace: 'query',
+        action: 'notepad:getText',
+        description: 'Query to get current text from Notepad',
+        payload: {
+            windowId: 'string?',
+            requestId: 'string'
+        },
+        example: {
+            windowId: 'notepad-1',
+            requestId: 'query-notepad-1'
+        }
+    },
+
+    'query:notepad:getText:response': {
+        namespace: 'query',
+        action: 'notepad:getText:response',
+        description: 'Response with Notepad text content',
+        payload: {
+            requestId: 'string',
+            text: 'string',
+            windowId: 'string'
+        },
+        example: {
+            requestId: 'query-notepad-1',
+            windowId: 'notepad-1',
+            text: 'Document content'
+        }
+    },
+
+    'command:calculator:clear': {
+        namespace: 'command',
+        action: 'calculator:clear',
+        description: 'Command to clear Calculator',
+        payload: {
+            windowId: 'string?',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'calculator-1'
+        }
+    },
+
+    'command:calculator:input': {
+        namespace: 'command',
+        action: 'calculator:input',
+        description: 'Command to input value/operator to Calculator',
+        payload: {
+            windowId: 'string?',
+            value: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'calculator-1',
+            value: '5'
+        }
+    },
+
+    'query:calculator:getValue': {
+        namespace: 'query',
+        action: 'calculator:getValue',
+        description: 'Query Calculator display value',
+        payload: {
+            windowId: 'string?',
+            requestId: 'string'
+        },
+        example: {
+            windowId: 'calculator-1',
+            requestId: 'query-calc-1'
+        }
+    },
+
+    'command:terminal:execute': {
+        namespace: 'command',
+        action: 'terminal:execute',
+        description: 'Command to execute a terminal command',
+        payload: {
+            windowId: 'string?',
+            command: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'terminal-1',
+            command: 'dir'
+        }
+    },
+
+    'command:browser:navigate': {
+        namespace: 'command',
+        action: 'browser:navigate',
+        description: 'Command to navigate Browser to URL',
+        payload: {
+            windowId: 'string?',
+            url: 'string',
+            requestId: 'string?'
+        },
+        example: {
+            windowId: 'browser-1',
+            url: 'https://example.com'
+        }
+    },
+
+    // ==========================================
+    // TIMER/SCHEDULE EVENTS (for scripting)
+    // ==========================================
+    'timer:set': {
+        namespace: 'timer',
+        action: 'set',
+        description: 'Set a timer to fire an event',
+        payload: {
+            timerId: 'string',
+            delay: 'number',
+            event: 'string',
+            payload: 'object?',
+            repeat: 'boolean?'
+        },
+        example: {
+            timerId: 'my-timer',
+            delay: 5000,
+            event: 'custom:timer-fired',
+            repeat: false
+        }
+    },
+
+    'timer:clear': {
+        namespace: 'timer',
+        action: 'clear',
+        description: 'Clear a timer',
+        payload: {
+            timerId: 'string'
+        },
+        example: {
+            timerId: 'my-timer'
+        }
+    },
+
+    'timer:fired': {
+        namespace: 'timer',
+        action: 'fired',
+        description: 'Timer has fired',
+        payload: {
+            timerId: 'string'
+        },
+        example: {
+            timerId: 'my-timer'
+        }
     }
 };
 

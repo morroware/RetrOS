@@ -12,6 +12,8 @@ import StateManager from './core/StateManager.js';
 import EventBus, { Events } from './core/EventBus.js';
 import WindowManager from './core/WindowManager.js';
 import FileSystemManager from './core/FileSystemManager.js';
+import CommandBus from './core/CommandBus.js';
+import ScriptEngine from './core/ScriptEngine.js';
 
 // === UI RENDERERS ===
 import TaskbarRenderer from './ui/TaskbarRenderer.js';
@@ -150,6 +152,10 @@ async function initializeOS(onProgress = () => {}) {
     await initComponent('StorageManager', () => StorageManager.initialize());
     await initComponent('StateManager', () => StateManager.initialize());
     await initComponent('WindowManager', () => WindowManager.initialize());
+
+    // Initialize scripting infrastructure
+    await initComponent('CommandBus', () => CommandBus.initialize());
+    await initComponent('ScriptEngine', () => ScriptEngine.initialize());
 
     // === Phase 1.5: Sync Filesystem with Apps and Desktop ===
     console.log('[IlluminatOS!] Phase 1.5: Filesystem Sync');

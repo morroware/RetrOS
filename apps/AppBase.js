@@ -497,6 +497,130 @@ class AppBase {
         StateManager.unlockAchievement(id);
     }
 
+    // ===== SCRIPTING SUPPORT =====
+    // Methods for making apps scriptable via semantic events
+
+    /**
+     * Register a command handler for this app
+     * Scripts can call: command:appId:action
+     * @param {string} action - Action name (e.g., 'setText', 'save')
+     * @param {Function} handler - Handler function (payload, windowId) => result
+     */
+    registerCommand(action, handler) {
+        const commandName = `command:${this.id}:${action}`;
+        const capturedWindowId = this._currentWindowId;
+
+        const unsub = EventBus.on(commandName, (payload) => {
+            // Check if this command targets a specific window
+            const targetWindowId = payload.windowId;
+            if (targetWindowId && targetWindowId !== capturedWindowId) {
+                // Not for this instance
+                return;
+            }
+
+            // Set context and execute
+            this._currentWindowId = capturedWindowId;
+            try {
+                const result = handler.call(this, payload);
+                if (payload.requestId) {
+                    EventBus.emit('action:result', {
+                        requestId: payload.requestId,
+                        success: true,
+                        data: result
+                    });
+                }
+            } catch (error) {
+                if (payload.requestId) {
+                    EventBus.emit('action:result', {
+                        requestId: payload.requestId,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+        });
+
+        const instanceData = this.openWindows.get(capturedWindowId);
+        if (instanceData) {
+            instanceData.eventUnsubscribers.push(unsub);
+        }
+    }
+
+    /**
+     * Register a query handler for this app
+     * Scripts can query: query:appId:property
+     * @param {string} property - Property name (e.g., 'getText', 'getValue')
+     * @param {Function} handler - Handler function (payload, windowId) => value
+     */
+    registerQuery(property, handler) {
+        const queryName = `query:${this.id}:${property}`;
+        const responseName = `query:${this.id}:${property}:response`;
+        const capturedWindowId = this._currentWindowId;
+
+        const unsub = EventBus.on(queryName, (payload) => {
+            const targetWindowId = payload.windowId;
+            if (targetWindowId && targetWindowId !== capturedWindowId) {
+                return;
+            }
+
+            this._currentWindowId = capturedWindowId;
+            try {
+                const value = handler.call(this, payload);
+                EventBus.emit(responseName, {
+                    requestId: payload.requestId,
+                    windowId: capturedWindowId,
+                    value
+                });
+            } catch (error) {
+                EventBus.emit(responseName, {
+                    requestId: payload.requestId,
+                    windowId: capturedWindowId,
+                    value: null,
+                    error: error.message
+                });
+            }
+        });
+
+        const instanceData = this.openWindows.get(capturedWindowId);
+        if (instanceData) {
+            instanceData.eventUnsubscribers.push(unsub);
+        }
+    }
+
+    /**
+     * Emit an app-specific event
+     * @param {string} action - Action name (e.g., 'textChanged', 'saved')
+     * @param {object} payload - Event payload
+     */
+    emitAppEvent(action, payload = {}) {
+        const eventName = `app:${this.id}:${action}`;
+        EventBus.emit(eventName, {
+            appId: this.id,
+            windowId: this._currentWindowId,
+            ...payload
+        });
+    }
+
+    /**
+     * Respond to a request event (for request/response pattern)
+     * @param {string} eventName - Response event name
+     * @param {string} requestId - Request ID from the original request
+     * @param {object} data - Response data
+     */
+    respond(eventName, requestId, data = {}) {
+        EventBus.respond(eventName, requestId, data);
+    }
+
+    /**
+     * Subscribe to events with auto-cleanup (alias for onEvent)
+     * @param {string} event - Event name (supports wildcards)
+     * @param {Function} handler - Event handler
+     * @returns {Function} Unsubscribe function
+     */
+    subscribe(event, handler) {
+        return this.onEvent(event, handler);
+    }
+
     // ===== PRIVATE METHODS =====
 
     /**
