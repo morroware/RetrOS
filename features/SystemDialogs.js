@@ -806,10 +806,13 @@ class SystemDialogs extends FeatureBase {
 
     /**
      * Show alert dialog (replaces browser alert)
-     * @param {Object} options - { message, title, icon }
+     * @param {Object} options - { message, title, icon, requestId }
      * @returns {Promise} Resolves when OK is clicked
      */
     showAlert(options = {}) {
+        // Store requestId for response
+        this.alertRequestId = options.requestId || null;
+
         return new Promise((resolve) => {
             this.alertResolver = resolve;
 
@@ -849,6 +852,16 @@ class SystemDialogs extends FeatureBase {
         if (dialog) {
             dialog.classList.remove('active');
         }
+
+        // Emit response event if this was a request
+        if (this.alertRequestId) {
+            EventBus.emit('dialog:alert:response', {
+                requestId: this.alertRequestId,
+                acknowledged: true
+            });
+            this.alertRequestId = null;
+        }
+
         if (this.alertResolver) {
             this.alertResolver();
             this.alertResolver = null;
@@ -870,10 +883,13 @@ class SystemDialogs extends FeatureBase {
 
     /**
      * Show confirm dialog (replaces browser confirm)
-     * @param {Object} options - { message, title }
+     * @param {Object} options - { message, title, requestId }
      * @returns {Promise<boolean>} Resolves to true/false
      */
     showConfirm(options = {}) {
+        // Store requestId for response
+        this.confirmRequestId = options.requestId || null;
+
         return new Promise((resolve) => {
             this.confirmResolver = resolve;
 
@@ -900,6 +916,17 @@ class SystemDialogs extends FeatureBase {
         if (dialog) {
             dialog.classList.remove('active');
         }
+
+        // Emit response event if this was a request
+        if (this.confirmRequestId) {
+            EventBus.emit('dialog:confirm:response', {
+                requestId: this.confirmRequestId,
+                result: result,
+                confirmed: result
+            });
+            this.confirmRequestId = null;
+        }
+
         if (this.confirmResolver) {
             this.confirmResolver(result);
             this.confirmResolver = null;
@@ -920,10 +947,13 @@ class SystemDialogs extends FeatureBase {
 
     /**
      * Show prompt dialog (replaces browser prompt)
-     * @param {Object} options - { message, title, defaultValue }
+     * @param {Object} options - { message, title, defaultValue, requestId }
      * @returns {Promise<string|null>} Resolves to input value or null
      */
     showPrompt(options = {}) {
+        // Store requestId for response
+        this.promptRequestId = options.requestId || null;
+
         return new Promise((resolve) => {
             this.promptResolver = resolve;
 
@@ -955,6 +985,17 @@ class SystemDialogs extends FeatureBase {
         if (dialog) {
             dialog.classList.remove('active');
         }
+
+        // Emit response event if this was a request
+        if (this.promptRequestId) {
+            EventBus.emit('dialog:prompt:response', {
+                requestId: this.promptRequestId,
+                value: value,
+                cancelled: value === null
+            });
+            this.promptRequestId = null;
+        }
+
         if (this.promptResolver) {
             this.promptResolver(value);
             this.promptResolver = null;
@@ -994,10 +1035,13 @@ class SystemDialogs extends FeatureBase {
 
     /**
      * Show file dialog (internal)
-     * @param {Object} options - Dialog options
+     * @param {Object} options - Dialog options including requestId
      * @returns {Promise}
      */
     showFileDialog(options = {}) {
+        // Store requestId for response
+        this.fileDialogRequestId = options.requestId || null;
+
         return new Promise((resolve) => {
             this.fileDialogResolver = resolve;
             this.fileDialogMode = options.mode || 'open';
@@ -1202,12 +1246,27 @@ class SystemDialogs extends FeatureBase {
             dialog.classList.remove('active');
         }
 
-        if (this.fileDialogResolver) {
-            this.fileDialogResolver({
-                path: [...this.currentFilePath],
-                filename: filename,
-                fullPath: [...this.currentFilePath, filename]
+        const result = {
+            path: [...this.currentFilePath],
+            filename: filename,
+            fullPath: [...this.currentFilePath, filename]
+        };
+
+        // Emit response event if this was a request
+        if (this.fileDialogRequestId) {
+            const responseEvent = this.fileDialogMode === 'save'
+                ? 'dialog:file-save:response'
+                : 'dialog:file-open:response';
+            EventBus.emit(responseEvent, {
+                requestId: this.fileDialogRequestId,
+                ...result,
+                cancelled: false
             });
+            this.fileDialogRequestId = null;
+        }
+
+        if (this.fileDialogResolver) {
+            this.fileDialogResolver(result);
             this.fileDialogResolver = null;
         }
     }
@@ -1220,6 +1279,22 @@ class SystemDialogs extends FeatureBase {
         if (dialog) {
             dialog.classList.remove('active');
         }
+
+        // Emit response event if this was a request
+        if (this.fileDialogRequestId) {
+            const responseEvent = this.fileDialogMode === 'save'
+                ? 'dialog:file-save:response'
+                : 'dialog:file-open:response';
+            EventBus.emit(responseEvent, {
+                requestId: this.fileDialogRequestId,
+                cancelled: true,
+                path: null,
+                filename: null,
+                fullPath: null
+            });
+            this.fileDialogRequestId = null;
+        }
+
         if (this.fileDialogResolver) {
             this.fileDialogResolver(null);
             this.fileDialogResolver = null;

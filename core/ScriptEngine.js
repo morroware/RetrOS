@@ -281,6 +281,10 @@ class ScriptEngineClass {
                 return { type: 'break' };
             case 'alert':
                 return { type: 'alert', message: parts.slice(1).join(' ') };
+            case 'confirm':
+                return this._parseConfirm(parts);
+            case 'prompt':
+                return this._parsePrompt(parts);
             case 'notify':
                 return { type: 'notify', message: parts.slice(1).join(' ') };
             case 'focus':
@@ -523,6 +527,44 @@ class ScriptEngineClass {
         return { type: 'read', path: this._parseValue(path), varName };
     }
 
+    _parseConfirm(parts) {
+        // confirm "message" into $variable
+        // confirm "message" (stores in $confirmed)
+        const message = parts.slice(1).join(' ').replace(/\s+into\s+\$\w+$/, '');
+        const intoIdx = parts.indexOf('into');
+        const varName = intoIdx > 0 ? parts[intoIdx + 1].replace('$', '') : 'confirmed';
+        return { type: 'confirm', message: this._parseValue(message), varName };
+    }
+
+    _parsePrompt(parts) {
+        // prompt "message" into $variable
+        // prompt "message" default "value" into $variable
+        const defaultIdx = parts.indexOf('default');
+        const intoIdx = parts.indexOf('into');
+
+        let message, defaultValue = '';
+        if (defaultIdx > 0) {
+            message = parts.slice(1, defaultIdx).join(' ');
+            if (intoIdx > 0) {
+                defaultValue = parts.slice(defaultIdx + 1, intoIdx).join(' ');
+            } else {
+                defaultValue = parts.slice(defaultIdx + 1).join(' ');
+            }
+        } else if (intoIdx > 0) {
+            message = parts.slice(1, intoIdx).join(' ');
+        } else {
+            message = parts.slice(1).join(' ');
+        }
+
+        const varName = intoIdx > 0 ? parts[intoIdx + 1].replace('$', '') : 'input';
+        return {
+            type: 'prompt',
+            message: this._parseValue(message),
+            defaultValue: this._parseValue(defaultValue),
+            varName
+        };
+    }
+
     _parseAssignment(line) {
         const eqIdx = line.indexOf('=');
         const varName = line.substring(0, eqIdx).trim().replace(/^\$/, '');
@@ -705,6 +747,37 @@ class ScriptEngineClass {
                 });
                 return null;
 
+            case 'confirm':
+                // Use request/response pattern to wait for user response
+                try {
+                    const confirmResult = await EventBus.request('dialog:confirm', {
+                        message: this._resolveValue(statement.message)
+                    }, { timeout: 60000 }); // 60 second timeout for user input
+                    const confirmed = confirmResult.confirmed || confirmResult.result || false;
+                    this.variables.set(statement.varName, confirmed);
+                    return confirmed;
+                } catch (e) {
+                    // Timeout or error - treat as cancelled
+                    this.variables.set(statement.varName, false);
+                    return false;
+                }
+
+            case 'prompt':
+                // Use request/response pattern to wait for user input
+                try {
+                    const promptResult = await EventBus.request('dialog:prompt', {
+                        message: this._resolveValue(statement.message),
+                        defaultValue: this._resolveValue(statement.defaultValue) || ''
+                    }, { timeout: 120000 }); // 2 minute timeout for user input
+                    const value = promptResult.cancelled ? null : (promptResult.value || '');
+                    this.variables.set(statement.varName, value);
+                    return value;
+                } catch (e) {
+                    // Timeout or error - treat as cancelled
+                    this.variables.set(statement.varName, null);
+                    return null;
+                }
+
             case 'notify':
                 EventBus.emit('notification:show', {
                     message: this._resolveValue(statement.message)
@@ -877,9 +950,22 @@ class ScriptEngineClass {
         this.defineFunction('upper', (s) => String(s).toUpperCase());
         this.defineFunction('lower', (s) => String(s).toLowerCase());
         this.defineFunction('length', (s) => String(s).length);
+        this.defineFunction('trim', (s) => String(s).trim());
+        this.defineFunction('split', (s, sep = ' ') => String(s).split(sep));
+        this.defineFunction('join', (arr, sep = '') => Array.isArray(arr) ? arr.join(sep) : String(arr));
+        this.defineFunction('substr', (s, start, len) => String(s).substring(start, len !== undefined ? start + len : undefined));
+        this.defineFunction('replace', (s, search, replace) => String(s).replace(search, replace));
+        this.defineFunction('contains', (s, search) => String(s).includes(search));
+        this.defineFunction('startsWith', (s, search) => String(s).startsWith(search));
+        this.defineFunction('endsWith', (s, search) => String(s).endsWith(search));
 
         // Array functions
         this.defineFunction('count', (arr) => Array.isArray(arr) ? arr.length : 0);
+        this.defineFunction('first', (arr) => Array.isArray(arr) ? arr[0] : null);
+        this.defineFunction('last', (arr) => Array.isArray(arr) ? arr[arr.length - 1] : null);
+        this.defineFunction('push', (arr, item) => { if (Array.isArray(arr)) arr.push(item); return arr; });
+        this.defineFunction('pop', (arr) => Array.isArray(arr) ? arr.pop() : null);
+        this.defineFunction('includes', (arr, item) => Array.isArray(arr) ? arr.includes(item) : false);
 
         // System functions
         this.defineFunction('getWindows', () => StateManager.getState('windows') || []);
@@ -902,6 +988,39 @@ class ScriptEngineClass {
         this.defineFunction('exec', async (command, payload = {}) => {
             return await CommandBus.execute(command, payload);
         });
+
+        // Dialog helpers (async - use with await in scripts)
+        this.defineFunction('alert', async (message, title = 'Alert', icon = 'info') => {
+            EventBus.emit('dialog:alert', { message, title, icon });
+            return true;
+        });
+
+        this.defineFunction('confirm', async (message, title = 'Confirm') => {
+            try {
+                const result = await EventBus.request('dialog:confirm', { message, title }, { timeout: 60000 });
+                return result.confirmed || result.result || false;
+            } catch (e) {
+                return false;
+            }
+        });
+
+        this.defineFunction('prompt', async (message, defaultValue = '', title = 'Input') => {
+            try {
+                const result = await EventBus.request('dialog:prompt', { message, title, defaultValue }, { timeout: 120000 });
+                return result.cancelled ? null : (result.value || '');
+            } catch (e) {
+                return null;
+            }
+        });
+
+        // Utility functions
+        this.defineFunction('typeof', (val) => typeof val);
+        this.defineFunction('isNumber', (val) => typeof val === 'number' && !isNaN(val));
+        this.defineFunction('isString', (val) => typeof val === 'string');
+        this.defineFunction('isArray', (val) => Array.isArray(val));
+        this.defineFunction('isNull', (val) => val === null || val === undefined);
+        this.defineFunction('toNumber', (val) => parseFloat(val) || 0);
+        this.defineFunction('toString', (val) => String(val));
     }
 
     /**

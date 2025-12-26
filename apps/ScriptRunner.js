@@ -29,32 +29,309 @@ class ScriptRunner extends AppBase {
     }
 
     onOpen(params) {
-        const sampleScript = `# RetrOS Script Demo
-# Launch an app and interact with it
+        const sampleScript = `# ============================================
+# RetroScript Comprehensive Test Suite
+# Tests all scripting features and functions
+# ============================================
 
-# Launch Notepad
-launch notepad
+print ========================================
+print   RETROSCRIPT COMPREHENSIVE TEST
+print ========================================
 
-# Wait for it to open
-wait 500
+# ==========================================
+# TEST 1: Variables & Basic Types
+# ==========================================
+print
+print [TEST 1] Variables & Types
+print ----------------------------------------
 
-# Show a notification
-notify Script is running!
+set $string = "Hello World"
+set $number = 42
+set $decimal = 3.14
+set $boolean = true
 
-# Set a variable
-set $count = 0
+print String variable: $string
+print Number variable: $number
+print Decimal variable: $decimal
+print Boolean variable: $boolean
 
-# Loop and log
-loop 3 {
-    set $count = $count + 1
-    print Loop iteration: $count
+# ==========================================
+# TEST 2: Arithmetic Operations
+# ==========================================
+print
+print [TEST 2] Arithmetic Operations
+print ----------------------------------------
+
+set $a = 20
+set $b = 6
+set $sum = $a + $b
+set $diff = $a - $b
+set $prod = $a * $b
+set $quot = $a / $b
+
+print $a + $b = $sum (expected: 26)
+print $a - $b = $diff (expected: 14)
+print $a * $b = $prod (expected: 120)
+print $a / $b = $quot (expected: ~3.33)
+
+# ==========================================
+# TEST 3: String Functions
+# ==========================================
+print
+print [TEST 3] String Functions
+print ----------------------------------------
+
+set $text = "  Hello World  "
+set $upper = call upper $text
+set $lower = call lower $text
+set $trimmed = call trim $text
+set $len = call length $trimmed
+set $concat = call concat "A" "B" "C"
+set $sub = call substr "Hello" 0 3
+
+print upper(): $upper
+print lower(): $lower
+print trim(): [$trimmed]
+print length(): $len
+print concat(A,B,C): $concat
+print substr(Hello,0,3): $sub
+
+set $hasHello = call contains "Hello World" "Hello"
+set $starts = call startsWith "Hello" "He"
+set $ends = call endsWith "Hello" "lo"
+print contains(Hello World, Hello): $hasHello
+print startsWith(Hello, He): $starts
+print endsWith(Hello, lo): $ends
+
+# ==========================================
+# TEST 4: Math Functions
+# ==========================================
+print
+print [TEST 4] Math Functions
+print ----------------------------------------
+
+set $rand = call random 1 100
+set $absVal = call abs -42
+set $rounded = call round 3.7
+set $floored = call floor 3.9
+set $ceiled = call ceil 3.1
+
+print random(1,100): $rand
+print abs(-42): $absVal
+print round(3.7): $rounded
+print floor(3.9): $floored
+print ceil(3.1): $ceiled
+
+# ==========================================
+# TEST 5: Time Functions
+# ==========================================
+print
+print [TEST 5] Time Functions
+print ----------------------------------------
+
+set $timestamp = call now
+set $timeStr = call time
+set $dateStr = call date
+
+print now(): $timestamp
+print time(): $timeStr
+print date(): $dateStr
+
+# ==========================================
+# TEST 6: Type Check Functions
+# ==========================================
+print
+print [TEST 6] Type Check Functions
+print ----------------------------------------
+
+set $numCheck = call isNumber 42
+set $strCheck = call isString "hello"
+set $nullCheck = call isNull null
+set $typeOf = call typeof "test"
+set $toNum = call toNumber "123"
+set $toStr = call toString 456
+
+print isNumber(42): $numCheck
+print isString(hello): $strCheck
+print isNull(null): $nullCheck
+print typeof(test): $typeOf
+print toNumber(123): $toNum
+print toString(456): $toStr
+
+# ==========================================
+# TEST 7: Control Flow - If/Then/Else
+# ==========================================
+print
+print [TEST 7] Control Flow - Conditionals
+print ----------------------------------------
+
+set $x = 10
+
+if $x > 5 then {
+    print $x > 5: PASS (10 > 5)
 }
 
-# Play a sound
-play notify
+if $x < 5 then {
+    print $x < 5: FAIL
+} else {
+    print $x < 5 else: PASS
+}
 
-# Final message
-alert Script completed successfully!`;
+set $y = 10
+if $x == $y then {
+    print $x == $y: PASS
+}
+
+if $x != 5 then {
+    print $x != 5: PASS
+}
+
+# ==========================================
+# TEST 8: Control Flow - Loops
+# ==========================================
+print
+print [TEST 8] Control Flow - Loops
+print ----------------------------------------
+
+print Count loop (0 to 2):
+loop 3 {
+    print   iteration $i
+}
+
+print Loop with break at 2:
+loop 5 {
+    print   iteration $i
+    if $i == 2 then {
+        print   breaking!
+        break
+    }
+}
+
+# ==========================================
+# TEST 9: Sound System
+# ==========================================
+print
+print [TEST 9] Sound System
+print ----------------------------------------
+
+print Playing notify sound...
+play notify
+wait 300
+print Sound test complete
+
+# ==========================================
+# TEST 10: Notifications
+# ==========================================
+print
+print [TEST 10] Notifications
+print ----------------------------------------
+
+notify Test notification from script!
+print Notification sent
+wait 500
+
+# ==========================================
+# TEST 11: Alert Dialog (non-blocking)
+# ==========================================
+print
+print [TEST 11] Alert Dialog
+print ----------------------------------------
+
+print Showing alert...
+alert Script test alert!
+print Alert shown (non-blocking)
+
+# ==========================================
+# TEST 12: Event Emission
+# ==========================================
+print
+print [TEST 12] Event Emission
+print ----------------------------------------
+
+print Emitting test event...
+emit script:test message="Hello from script"
+print Event emitted
+
+# ==========================================
+# TEST 13: File System Operations
+# ==========================================
+print
+print [TEST 13] File System Operations
+print ----------------------------------------
+
+set $testPath = "C:/Users/User/Documents/script_test.txt"
+set $testContent = "Test file created by RetroScript"
+
+print Writing file...
+write $testContent to $testPath
+print File written to $testPath
+
+print Reading file...
+read $testPath into $readContent
+print File content: $readContent
+
+print Cleaning up test file...
+delete $testPath
+print Test file deleted
+
+# ==========================================
+# TEST 14: System Functions
+# ==========================================
+print
+print [TEST 14] System Functions
+print ----------------------------------------
+
+set $windows = call getWindows
+set $winCount = call count $windows
+print Open windows: $winCount
+
+# ==========================================
+# TEST 15: App Launch & Close
+# ==========================================
+print
+print [TEST 15] App Launch & Close
+print ----------------------------------------
+
+print Launching Calculator...
+launch calculator
+wait 600
+print Calculator launched
+
+print Closing Calculator...
+close
+wait 300
+print Calculator closed
+
+# ==========================================
+# INTERACTIVE TESTS (Optional)
+# Uncomment to test interactive dialogs
+# ==========================================
+
+# print
+# print [TEST 16] Confirm Dialog (Interactive)
+# print ----------------------------------------
+# confirm "Click Yes or No to test confirm" into $confirmed
+# print User confirmed: $confirmed
+
+# print
+# print [TEST 17] Prompt Dialog (Interactive)
+# print ----------------------------------------
+# prompt "Type something:" into $userInput
+# print User entered: $userInput
+
+# ==========================================
+# TEST SUMMARY
+# ==========================================
+print
+print ========================================
+print   ALL TESTS COMPLETED!
+print ========================================
+print
+print Check the output above for any FAIL messages.
+print If all show PASS or expected values, scripting works!
+
+notify All script tests completed!
+play notify`;
 
         return `
             <div class="script-runner">
@@ -463,25 +740,39 @@ alert Script completed successfully!`;
 RetroScript Language Reference
 ==============================
 
+See SCRIPTING_GUIDE.md for complete documentation.
+
 COMMANDS:
   launch <app>              Launch an application
   launch <app> with k=v     Launch with parameters
   close [windowId]          Close a window
   wait <ms>                 Wait for milliseconds
   print <message>           Print to output
-  alert <message>           Show alert dialog
+  alert <message>           Show alert dialog (non-blocking)
+  confirm <msg> into $var   Show confirm dialog (waits for response)
+  prompt <msg> into $var    Show input dialog (waits for response)
   notify <message>          Show notification
-  play <sound>              Play a sound
+  play <sound>              Play a sound (notify, error, open, close)
 
 VARIABLES:
   set $name = value         Set a variable
   $name                     Use a variable in expressions
+  $i                        Loop counter (inside loops)
+
+ARITHMETIC:
+  set $x = $a + $b          Addition
+  set $x = $a - $b          Subtraction
+  set $x = $a * $b          Multiplication
+  set $x = $a / $b          Division
 
 CONTROL FLOW:
-  if condition then { }     Conditional
+  if cond then { } else { } Conditional
   loop N { }                Repeat N times
-  while condition { }       While loop
+  loop while cond { }       While loop
   break                     Exit loop
+  return value              Return from script
+
+COMPARISONS: ==, !=, <, >, <=, >=, &&, ||
 
 EVENTS:
   emit event key=value      Emit an event
@@ -493,28 +784,74 @@ FILESYSTEM:
   mkdir "path"              Create directory
   delete "path"             Delete file/directory
 
-BUILT-IN FUNCTIONS:
-  call random min max       Random number
+WINDOW MANAGEMENT:
+  focus <windowId>          Bring window to front
+  minimize <windowId>       Minimize window
+  maximize <windowId>       Maximize window
+
+STRING FUNCTIONS:
+  call upper text           Uppercase
+  call lower text           Lowercase
+  call trim text            Remove whitespace
+  call length text          String length
   call concat a b c         Concatenate strings
-  call upper "text"         Uppercase
-  call lower "text"         Lowercase
-  call now                  Current timestamp
+  call substr text 0 3      Substring
+  call replace t old new    Replace first occurrence
+  call contains text srch   Check if contains
+  call startsWith text pre  Check prefix
+  call endsWith text suf    Check suffix
+  call split text sep       Split into array
+  call join arr sep         Join array to string
+
+MATH FUNCTIONS:
+  call random min max       Random integer
+  call abs value            Absolute value
+  call round value          Round to nearest
+  call floor value          Round down
+  call ceil value           Round up
+
+ARRAY FUNCTIONS:
+  call count arr            Array length
+  call first arr            First element
+  call last arr             Last element
+  call push arr item        Add to end
+  call pop arr              Remove from end
+  call includes arr item    Check if contains
+
+TIME FUNCTIONS:
+  call now                  Unix timestamp (ms)
   call time                 Current time string
   call date                 Current date string
 
-EXAMPLES:
-  # Open calculator, compute, close
-  launch calculator
-  wait 500
-  close
+TYPE FUNCTIONS:
+  call typeof val           Get type as string
+  call isNumber val         Is number?
+  call isString val         Is string?
+  call isArray val          Is array?
+  call isNull val           Is null/undefined?
+  call toNumber val         Convert to number
+  call toString val         Convert to string
 
-  # Create a file
-  write "Hello World!" to "C:/test.txt"
+SYSTEM FUNCTIONS:
+  call getWindows           List open windows
+  call getApps              List available apps
+  call exec cmd payload     Execute CommandBus command
+
+QUICK EXAMPLES:
+
+  # Interactive prompt
+  prompt "Your name?" into $name
+  alert Hello, $name!
 
   # Loop with counter
-  loop 5 {
-      print Iteration: $i
-  }
+  loop 5 { print Iteration: $i }
+
+  # Conditional
+  if $x > 5 then { print Big }
+
+  # File operations
+  write "Hello" to "C:/test.txt"
+  read "C:/test.txt" into $content
 `;
 
         this.appendOutput(helpText, 'info');

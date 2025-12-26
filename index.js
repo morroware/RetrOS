@@ -386,10 +386,9 @@ function applySettings() {
  * Setup global event handlers
  */
 function setupGlobalHandlers() {
-    // Handle dialog alerts
-    EventBus.on('dialog:alert', ({ message, icon }) => {
-        showDialog(message, icon);
-    });
+    // NOTE: dialog:alert is now handled exclusively by SystemDialogs feature
+    // The legacy showDialog() function below is kept for fallback but not subscribed
+    // to avoid duplicate dialogs appearing when scripts emit dialog:alert events.
 
     // Handle BSOD (Blue Screen of Death)
     EventBus.on('bsod:trigger', () => {
