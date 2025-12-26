@@ -969,6 +969,7 @@ const SemanticEventBus = new SemanticEventBusClass();
 // Export event constants for backward compatibility
 export const Events = {
     // Window events
+    WINDOW_CREATE: 'window:create',
     WINDOW_OPEN: 'window:open',
     WINDOW_CLOSE: 'window:close',
     WINDOW_FOCUS: 'window:focus',
@@ -976,6 +977,15 @@ export const Events = {
     WINDOW_MAXIMIZE: 'window:maximize',
     WINDOW_RESTORE: 'window:restore',
     WINDOW_RESIZE: 'window:resize',
+    WINDOW_MOVE: 'window:move',
+    WINDOW_MOVE_START: 'window:move:start',
+    WINDOW_MOVE_END: 'window:move:end',
+    WINDOW_RESIZE_START: 'window:resize:start',
+    WINDOW_RESIZE_END: 'window:resize:end',
+    WINDOW_SNAP: 'window:snap',
+    WINDOW_TITLEBAR_CLICK: 'window:titlebar:click',
+    WINDOW_SHAKE: 'window:shake',
+    WINDOW_FLASH: 'window:flash',
 
     // Taskbar events
     TASKBAR_UPDATE: 'ui:taskbar:update',
@@ -990,20 +1000,55 @@ export const Events = {
     APP_LAUNCH: 'app:launch',
     APP_OPEN: 'app:open',
     APP_CLOSE: 'app:close',
+    APP_FOCUS: 'app:focus',
+    APP_BLUR: 'app:blur',
+    APP_READY: 'app:ready',
+    APP_BUSY: 'app:busy',
+    APP_IDLE: 'app:idle',
+    APP_ERROR: 'app:error',
+    APP_STATE_CHANGE: 'app:state:change',
+    APP_MESSAGE: 'app:message',
+    APP_BROADCAST: 'app:broadcast',
+    APP_REGISTERED: 'app:registered',
 
     // Menu events
     START_MENU_TOGGLE: 'ui:menu:start:toggle',
+    START_MENU_OPEN: 'ui:menu:start:open',
+    START_MENU_CLOSE: 'ui:menu:start:close',
     CONTEXT_MENU_SHOW: 'ui:menu:context:show',
     CONTEXT_MENU_HIDE: 'ui:menu:context:hide',
+    MENU_ACTION: 'ui:menu:action',
 
     // System events
+    SYSTEM_BOOT: 'system:boot',
+    SYSTEM_BOOT_PHASE: 'system:boot:phase',
     BOOT_COMPLETE: 'system:ready',
+    SYSTEM_READY: 'system:ready',
     SHUTDOWN: 'system:shutdown',
+    SYSTEM_IDLE: 'system:idle',
+    SYSTEM_ACTIVE: 'system:active',
+    SYSTEM_SLEEP: 'system:sleep',
+    SYSTEM_WAKE: 'system:wake',
+    SYSTEM_ERROR: 'system:error',
+    SYSTEM_WARNING: 'system:warning',
+    SYSTEM_FOCUS: 'system:focus',
+    SYSTEM_BLUR: 'system:blur',
+    SYSTEM_VISIBILITY_CHANGE: 'system:visibility:change',
+    SYSTEM_ONLINE: 'system:online',
+    SYSTEM_OFFLINE: 'system:offline',
+    SYSTEM_RESIZE: 'system:resize',
+    SYSTEM_FULLSCREEN_ENTER: 'system:fullscreen:enter',
+    SYSTEM_FULLSCREEN_EXIT: 'system:fullscreen:exit',
+    SYSTEM_MEMORY_WARNING: 'system:memory:warning',
+    SYSTEM_STORAGE_WARNING: 'system:storage:warning',
+    SYSTEM_STORAGE_FULL: 'system:storage:full',
     SCREENSAVER_START: 'system:screensaver:start',
     SCREENSAVER_END: 'system:screensaver:end',
 
     // Achievement events
     ACHIEVEMENT_UNLOCK: 'achievement:unlock',
+    ACHIEVEMENT_PROGRESS: 'achievement:progress',
+    ACHIEVEMENT_CHECK: 'achievement:check',
 
     // Sound events
     SOUND_PLAY: 'sound:play',
@@ -1027,12 +1072,6 @@ export const Events = {
     DRAG_START: 'drag:start',
     DRAG_MOVE: 'drag:move',
     DRAG_END: 'drag:end',
-
-    // Menu action events
-    MENU_ACTION: 'ui:menu:action',
-
-    // App registration
-    APP_REGISTERED: 'app:registered',
 
     // Pet events
     PET_TOGGLE: 'feature:pet:toggle',
@@ -1059,9 +1098,19 @@ export const Events = {
     // Filesystem events
     FILESYSTEM_CHANGED: 'filesystem:changed',
     FS_FILE_CREATE: 'fs:file:create',
+    FS_FILE_READ: 'fs:file:read',
     FS_FILE_UPDATE: 'fs:file:update',
     FS_FILE_DELETE: 'fs:file:delete',
+    FS_FILE_RENAME: 'fs:file:rename',
+    FS_FILE_MOVE: 'fs:file:move',
+    FS_FILE_COPY: 'fs:file:copy',
     FS_DIRECTORY_CREATE: 'fs:directory:create',
+    FS_DIRECTORY_DELETE: 'fs:directory:delete',
+    FS_DIRECTORY_RENAME: 'fs:directory:rename',
+    FS_DIRECTORY_OPEN: 'fs:directory:open',
+    FS_ERROR: 'fs:error',
+    FS_PERMISSION_DENIED: 'fs:permission:denied',
+    FS_WATCH_CHANGE: 'fs:watch:change',
 
     // Recycle bin events
     RECYCLEBIN_UPDATE: 'recyclebin:update',
@@ -1079,16 +1128,143 @@ export const Events = {
 
     // Keyboard events
     KEYBOARD_SHORTCUT: 'keyboard:shortcut',
+    KEYBOARD_KEYDOWN: 'keyboard:keydown',
+    KEYBOARD_KEYUP: 'keyboard:keyup',
+    KEYBOARD_INPUT: 'keyboard:input',
+    KEYBOARD_COMBO: 'keyboard:combo',
+
+    // Mouse events
+    MOUSE_MOVE: 'mouse:move',
+    MOUSE_CLICK: 'mouse:click',
+    MOUSE_DBLCLICK: 'mouse:dblclick',
+    MOUSE_DOWN: 'mouse:down',
+    MOUSE_UP: 'mouse:up',
+    MOUSE_CONTEXTMENU: 'mouse:contextmenu',
+    MOUSE_SCROLL: 'mouse:scroll',
+    MOUSE_ENTER: 'mouse:enter',
+    MOUSE_LEAVE: 'mouse:leave',
+
+    // Touch events
+    TOUCH_START: 'touch:start',
+    TOUCH_MOVE: 'touch:move',
+    TOUCH_END: 'touch:end',
+    TOUCH_CANCEL: 'touch:cancel',
+
+    // Gesture events
+    GESTURE_TAP: 'gesture:tap',
+    GESTURE_DOUBLETAP: 'gesture:doubletap',
+    GESTURE_LONGPRESS: 'gesture:longpress',
+    GESTURE_SWIPE: 'gesture:swipe',
+    GESTURE_PINCH: 'gesture:pinch',
+    GESTURE_ROTATE: 'gesture:rotate',
 
     // Script/automation events
+    SCRIPT_START: 'script:start',
     SCRIPT_EXECUTE: 'script:execute',
+    SCRIPT_STATEMENT: 'script:statement',
     SCRIPT_COMPLETE: 'script:complete',
     SCRIPT_ERROR: 'script:error',
+    SCRIPT_OUTPUT: 'script:output',
+    SCRIPT_VARIABLE_SET: 'script:variable:set',
+    SCRIPT_FUNCTION_CALL: 'script:function:call',
+    SCRIPT_EVENT_SUBSCRIBE: 'script:event:subscribe',
+    SCRIPT_EVENT_EMIT: 'script:event:emit',
 
     // Channel events
     CHANNEL_MESSAGE: 'channel:message',
     CHANNEL_SUBSCRIBE: 'channel:subscribe',
-    CHANNEL_UNSUBSCRIBE: 'channel:unsubscribe'
+    CHANNEL_UNSUBSCRIBE: 'channel:unsubscribe',
+
+    // Feature events
+    FEATURE_ENABLE: 'feature:enable',
+    FEATURE_DISABLE: 'feature:disable',
+    FEATURE_INITIALIZE: 'feature:initialize',
+    FEATURE_READY: 'feature:ready',
+    FEATURE_ERROR: 'feature:error',
+    FEATURE_CONFIG_CHANGE: 'feature:config:change',
+
+    // Plugin events
+    PLUGIN_LOAD: 'plugin:load',
+    PLUGIN_LOADED: 'plugin:loaded',
+    PLUGIN_ERROR: 'plugin:error',
+    PLUGIN_UNLOAD: 'plugin:unload',
+
+    // Performance events
+    PERF_FPS: 'perf:fps',
+    PERF_FPS_LOW: 'perf:fps:low',
+    PERF_MEMORY: 'perf:memory',
+    PERF_LONGTASK: 'perf:longtask',
+    PERF_MEASURE: 'perf:measure',
+
+    // Debug events
+    DEBUG_LOG: 'debug:log',
+    DEBUG_BREAKPOINT: 'debug:breakpoint',
+    DEBUG_STEP: 'debug:step',
+    DEBUG_VARIABLE_CHANGE: 'debug:variable:change',
+
+    // Feedback events
+    FEEDBACK_TOAST: 'feedback:toast',
+    FEEDBACK_FLASH: 'feedback:flash',
+    FEEDBACK_SHAKE: 'feedback:shake',
+    FEEDBACK_VIBRATE: 'feedback:vibrate',
+    FEEDBACK_PROGRESS_START: 'feedback:progress:start',
+    FEEDBACK_PROGRESS_UPDATE: 'feedback:progress:update',
+    FEEDBACK_PROGRESS_END: 'feedback:progress:end',
+
+    // Animation events
+    ANIMATION_START: 'animation:start',
+    ANIMATION_END: 'animation:end',
+    ANIMATION_CANCEL: 'animation:cancel',
+
+    // Theme events
+    THEME_CHANGE: 'theme:change',
+    THEME_COLOR_CHANGE: 'theme:color:change',
+
+    // Accessibility events
+    A11Y_ANNOUNCE: 'a11y:announce',
+    A11Y_FOCUS_CHANGE: 'a11y:focus:change',
+    A11Y_MODE_CHANGE: 'a11y:mode:change',
+
+    // History/Undo events
+    HISTORY_PUSH: 'history:push',
+    HISTORY_UNDO: 'history:undo',
+    HISTORY_REDO: 'history:redo',
+    HISTORY_CLEAR: 'history:clear',
+
+    // Selection events
+    SELECTION_CHANGE: 'selection:change',
+    SELECTION_CLEAR: 'selection:clear',
+    SELECTION_ALL: 'selection:all',
+
+    // Search events
+    SEARCH_QUERY: 'search:query',
+    SEARCH_RESULTS: 'search:results',
+    SEARCH_CLEAR: 'search:clear',
+
+    // Network events
+    NETWORK_REQUEST: 'network:request',
+    NETWORK_RESPONSE: 'network:response',
+    NETWORK_ERROR: 'network:error',
+
+    // User events
+    USER_ACTION: 'user:action',
+    USER_PREFERENCE_CHANGE: 'user:preference:change',
+
+    // Session events
+    SESSION_START: 'session:start',
+    SESSION_END: 'session:end',
+    SESSION_ACTIVITY: 'session:activity',
+
+    // Timer events
+    TIMER_SET: 'timer:set',
+    TIMER_CLEAR: 'timer:clear',
+    TIMER_FIRED: 'timer:fired',
+
+    // Macro events
+    MACRO_RECORD_START: 'macro:record:start',
+    MACRO_RECORD_STOP: 'macro:record:stop',
+    MACRO_PLAY: 'macro:play',
+    MACRO_SAVE: 'macro:save'
 };
 
 // Export priority levels

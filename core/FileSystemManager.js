@@ -1,10 +1,17 @@
 /**
  * FileSystemManager - Shared virtual file system for IlluminatOS!
  * Provides a unified file system accessible by all applications
+ *
+ * Emits events for all file operations:
+ * - fs:file:create, fs:file:read, fs:file:update, fs:file:delete
+ * - fs:file:rename, fs:file:move, fs:file:copy
+ * - fs:directory:create, fs:directory:delete, fs:directory:open
+ * - fs:error, fs:permission:denied
+ * - filesystem:changed (general change notification)
  */
 
 import StorageManager from './StorageManager.js';
-import EventBus from './EventBus.js';
+import EventBus, { Events } from './SemanticEventBus.js';
 import { PATHS } from './Constants.js';
 
 class FileSystemManager {
@@ -278,7 +285,7 @@ class FileSystemManager {
    */
   saveFileSystem() {
     StorageManager.set('fileSystem', this.fileSystem);
-    EventBus.emit('filesystem:changed');
+    EventBus.emit(Events.FILESYSTEM_CHANGED, {});
   }
 
   /**
@@ -352,18 +359,32 @@ class FileSystemManager {
   /**
    * List contents of a directory
    * @param {string|string[]} path - Directory path
+   * @param {boolean} emitEvent - Whether to emit directory open event (default: true)
    * @returns {object[]} Array of items with name and metadata
    */
-  listDirectory(path) {
+  listDirectory(path, emitEvent = true) {
+    const parts = this.parsePath(path);
     const node = this.getNode(path);
 
     if (!node) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'list',
+        path: parts.join('/'),
+        error: 'Path not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Path not found: ${path}`);
     }
 
     const children = node.children || node;
 
     if (typeof children !== 'object') {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'list',
+        path: parts.join('/'),
+        error: 'Not a directory',
+        code: 'ENOTDIR'
+      });
       throw new Error(`Not a directory: ${path}`);
     }
 
@@ -383,6 +404,14 @@ class FileSystemManager {
       }
     }
 
+    // Emit directory open event
+    if (emitEvent) {
+      EventBus.emit(Events.FS_DIRECTORY_OPEN, {
+        path: parts.join('/'),
+        itemCount: items.length
+      });
+    }
+
     return items;
   }
 
@@ -392,17 +421,39 @@ class FileSystemManager {
    * @returns {string} File content
    */
   readFile(path) {
+    const parts = this.parsePath(path);
+    const pathStr = parts.join('/');
     const node = this.getNode(path);
 
     if (!node) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'read',
+        path: pathStr,
+        error: 'File not found',
+        code: 'ENOENT'
+      });
       throw new Error(`File not found: ${path}`);
     }
 
     if (node.type !== 'file') {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'read',
+        path: pathStr,
+        error: 'Not a file',
+        code: 'EISDIR'
+      });
       throw new Error(`Not a file: ${path}`);
     }
 
-    return node.content || '';
+    const content = node.content || '';
+
+    // Emit file read event
+    EventBus.emit(Events.FS_FILE_READ, {
+      path: pathStr,
+      size: content.length
+    });
+
+    return content;
   }
 
   /**
@@ -413,12 +464,19 @@ class FileSystemManager {
    */
   writeFile(path, content, extension = 'txt') {
     const parts = this.parsePath(path);
+    const pathStr = parts.join('/');
     const fileName = parts[parts.length - 1];
     const parentPath = parts.slice(0, -1);
 
     const parent = this.getNode(parentPath);
 
     if (!parent) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'write',
+        path: pathStr,
+        error: 'Parent directory not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Parent directory not found: ${parentPath.join('/')}`);
     }
 
@@ -431,12 +489,18 @@ class FileSystemManager {
     }
 
     const now = new Date().toISOString();
+    const isUpdate = children[fileName] && children[fileName].type === 'file';
 
-    if (children[fileName] && children[fileName].type === 'file') {
+    if (isUpdate) {
       // Update existing file
       children[fileName].content = content;
       children[fileName].size = content.length;
       children[fileName].modified = now;
+
+      EventBus.emit(Events.FS_FILE_UPDATE, {
+        path: pathStr,
+        content: content
+      });
     } else {
       // Create new file
       children[fileName] = {
@@ -447,10 +511,15 @@ class FileSystemManager {
         created: now,
         modified: now
       };
+
+      EventBus.emit(Events.FS_FILE_CREATE, {
+        path: pathStr,
+        type: 'file',
+        content: content
+      });
     }
 
     this.saveFileSystem();
-    EventBus.emit('filesystem:file:changed', { path: parts.join('/'), action: 'write' });
   }
 
   /**
@@ -459,28 +528,50 @@ class FileSystemManager {
    */
   deleteFile(path) {
     const parts = this.parsePath(path);
+    const pathStr = parts.join('/');
     const fileName = parts[parts.length - 1];
     const parentPath = parts.slice(0, -1);
 
     const parent = this.getNode(parentPath);
 
     if (!parent) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'delete',
+        path: pathStr,
+        error: 'Parent directory not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Parent directory not found: ${parentPath.join('/')}`);
     }
 
     const children = parent.children || parent;
 
     if (!children[fileName]) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'delete',
+        path: pathStr,
+        error: 'File not found',
+        code: 'ENOENT'
+      });
       throw new Error(`File not found: ${path}`);
     }
 
     if (children[fileName].type !== 'file') {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'delete',
+        path: pathStr,
+        error: 'Not a file',
+        code: 'EISDIR'
+      });
       throw new Error(`Not a file: ${path}`);
     }
 
     delete children[fileName];
     this.saveFileSystem();
-    EventBus.emit('filesystem:file:changed', { path: parts.join('/'), action: 'delete' });
+
+    EventBus.emit(Events.FS_FILE_DELETE, {
+      path: pathStr
+    });
   }
 
   /**
@@ -489,18 +580,31 @@ class FileSystemManager {
    */
   createDirectory(path) {
     const parts = this.parsePath(path);
+    const pathStr = parts.join('/');
     const dirName = parts[parts.length - 1];
     const parentPath = parts.slice(0, -1);
 
     const parent = this.getNode(parentPath);
 
     if (!parent) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'mkdir',
+        path: pathStr,
+        error: 'Parent directory not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Parent directory not found: ${parentPath.join('/')}`);
     }
 
     const children = parent.children || parent;
 
     if (children[dirName]) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'mkdir',
+        path: pathStr,
+        error: 'Directory already exists',
+        code: 'EEXIST'
+      });
       throw new Error(`Directory already exists: ${path}`);
     }
 
@@ -510,7 +614,10 @@ class FileSystemManager {
     };
 
     this.saveFileSystem();
-    EventBus.emit('filesystem:directory:changed', { path: parts.join('/'), action: 'create' });
+
+    EventBus.emit(Events.FS_DIRECTORY_CREATE, {
+      path: pathStr
+    });
   }
 
   /**
@@ -520,29 +627,54 @@ class FileSystemManager {
    */
   deleteDirectory(path, recursive = false) {
     const parts = this.parsePath(path);
+    const pathStr = parts.join('/');
     const dirName = parts[parts.length - 1];
     const parentPath = parts.slice(0, -1);
 
     const parent = this.getNode(parentPath);
 
     if (!parent) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'rmdir',
+        path: pathStr,
+        error: 'Parent directory not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Parent directory not found: ${parentPath.join('/')}`);
     }
 
     const children = parent.children || parent;
 
     if (!children[dirName]) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'rmdir',
+        path: pathStr,
+        error: 'Directory not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Directory not found: ${path}`);
     }
 
     const dir = children[dirName];
 
     if (dir.type !== 'directory') {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'rmdir',
+        path: pathStr,
+        error: 'Not a directory',
+        code: 'ENOTDIR'
+      });
       throw new Error(`Not a directory: ${path}`);
     }
 
     if (dir.children && Object.keys(dir.children).length > 0) {
       if (!recursive) {
+        EventBus.emit(Events.FS_ERROR, {
+          operation: 'rmdir',
+          path: pathStr,
+          error: 'Directory not empty',
+          code: 'ENOTEMPTY'
+        });
         throw new Error(`Directory not empty: ${path}`);
       }
       // Recursively delete contents
@@ -551,7 +683,11 @@ class FileSystemManager {
 
     delete children[dirName];
     this.saveFileSystem();
-    EventBus.emit('filesystem:directory:changed', { path: parts.join('/'), action: 'delete' });
+
+    EventBus.emit(Events.FS_DIRECTORY_DELETE, {
+      path: pathStr,
+      recursive
+    });
   }
 
   /**
@@ -648,6 +784,8 @@ class FileSystemManager {
   moveItem(sourcePath, destPath) {
     const srcParts = this.parsePath(sourcePath);
     const destParts = this.parsePath(destPath);
+    const srcPathStr = srcParts.join('/');
+    const destPathStr = destParts.join('/');
 
     const srcName = srcParts[srcParts.length - 1];
     const srcParentPath = srcParts.slice(0, -1);
@@ -655,28 +793,58 @@ class FileSystemManager {
     // Get source node info
     const srcParent = this.getNode(srcParentPath);
     if (!srcParent) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'move',
+        path: srcPathStr,
+        error: 'Source parent not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Source parent not found: ${srcParentPath.join('/')}`);
     }
 
     const srcChildren = srcParent.children || srcParent;
     const srcNode = srcChildren[srcName];
     if (!srcNode) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'move',
+        path: srcPathStr,
+        error: 'Source not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Source not found: ${sourcePath}`);
     }
 
     // Get destination node
     const destNode = this.getNode(destParts);
     if (!destNode) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'move',
+        path: destPathStr,
+        error: 'Destination not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Destination not found: ${destPath}`);
     }
 
     const destChildren = destNode.children || destNode;
     if (typeof destChildren !== 'object') {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'move',
+        path: destPathStr,
+        error: 'Destination is not a directory',
+        code: 'ENOTDIR'
+      });
       throw new Error(`Destination is not a directory: ${destPath}`);
     }
 
     // Check if file already exists at destination
     if (destChildren[srcName]) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'move',
+        path: destPathStr + '/' + srcName,
+        error: 'Item already exists at destination',
+        code: 'EEXIST'
+      });
       throw new Error(`Item already exists at destination: ${srcName}`);
     }
 
@@ -687,10 +855,11 @@ class FileSystemManager {
     delete srcChildren[srcName];
 
     this.saveFileSystem();
-    EventBus.emit('filesystem:file:changed', {
-      path: srcParts.join('/'),
+
+    EventBus.emit(Events.FS_FILE_MOVE, {
+      sourcePath: srcPathStr,
       destPath: [...destParts, srcName].join('/'),
-      action: 'move'
+      fileName: srcName
     });
 
     return true;
@@ -705,23 +874,43 @@ class FileSystemManager {
   copyItem(sourcePath, destPath) {
     const srcParts = this.parsePath(sourcePath);
     const destParts = this.parsePath(destPath);
+    const srcPathStr = srcParts.join('/');
+    const destPathStr = destParts.join('/');
 
     const srcName = srcParts[srcParts.length - 1];
 
     // Get source node info
     const srcNode = this.getNode(srcParts);
     if (!srcNode) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'copy',
+        path: srcPathStr,
+        error: 'Source not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Source not found: ${sourcePath}`);
     }
 
     // Get destination node
     const destNode = this.getNode(destParts);
     if (!destNode) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'copy',
+        path: destPathStr,
+        error: 'Destination not found',
+        code: 'ENOENT'
+      });
       throw new Error(`Destination not found: ${destPath}`);
     }
 
     const destChildren = destNode.children || destNode;
     if (typeof destChildren !== 'object') {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'copy',
+        path: destPathStr,
+        error: 'Destination is not a directory',
+        code: 'ENOTDIR'
+      });
       throw new Error(`Destination is not a directory: ${destPath}`);
     }
 
@@ -744,9 +933,75 @@ class FileSystemManager {
     destChildren[newName].modified = new Date().toISOString();
 
     this.saveFileSystem();
-    EventBus.emit('filesystem:file:changed', {
-      path: [...destParts, newName].join('/'),
-      action: 'copy'
+
+    EventBus.emit(Events.FS_FILE_COPY, {
+      sourcePath: srcPathStr,
+      destPath: [...destParts, newName].join('/'),
+      fileName: newName
+    });
+
+    return true;
+  }
+
+  /**
+   * Rename a file or directory
+   * @param {string|string[]} path - Path to rename
+   * @param {string} newName - New name for the item
+   * @returns {boolean} True if successful
+   */
+  renameItem(path, newName) {
+    const parts = this.parsePath(path);
+    const pathStr = parts.join('/');
+    const oldName = parts[parts.length - 1];
+    const parentPath = parts.slice(0, -1);
+
+    const parent = this.getNode(parentPath);
+    if (!parent) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'rename',
+        path: pathStr,
+        error: 'Parent directory not found',
+        code: 'ENOENT'
+      });
+      throw new Error(`Parent directory not found: ${parentPath.join('/')}`);
+    }
+
+    const children = parent.children || parent;
+    if (!children[oldName]) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'rename',
+        path: pathStr,
+        error: 'Item not found',
+        code: 'ENOENT'
+      });
+      throw new Error(`Item not found: ${path}`);
+    }
+
+    if (children[newName]) {
+      EventBus.emit(Events.FS_ERROR, {
+        operation: 'rename',
+        path: [...parentPath, newName].join('/'),
+        error: 'Name already exists',
+        code: 'EEXIST'
+      });
+      throw new Error(`Name already exists: ${newName}`);
+    }
+
+    // Rename the item
+    children[newName] = children[oldName];
+    children[newName].modified = new Date().toISOString();
+    delete children[oldName];
+
+    this.saveFileSystem();
+
+    const isDirectory = children[newName].type === 'directory';
+    const eventName = isDirectory ? Events.FS_DIRECTORY_RENAME : Events.FS_FILE_RENAME;
+
+    EventBus.emit(eventName, {
+      oldPath: pathStr,
+      newPath: [...parentPath, newName].join('/'),
+      oldName,
+      newName
     });
 
     return true;
