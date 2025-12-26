@@ -19,7 +19,7 @@ import EventSchema from './EventSchema.js';
 
 class SemanticEventBusClass {
     constructor() {
-        // Map of event names to Sets of listener functions
+        // Map of event names to arrays of listener objects { callback, priority, once }
         this.listeners = new Map();
 
         // Pattern listeners (for wildcard subscriptions)
@@ -49,7 +49,32 @@ class SemanticEventBusClass {
             emitted: 0,
             validated: 0,
             validationErrors: 0,
-            middlewareErrors: 0
+            validationWarnings: 0,
+            middlewareErrors: 0,
+            requestsTotal: 0,
+            requestsResolved: 0,
+            requestsTimedOut: 0,
+            eventsCancelled: 0
+        };
+
+        // Request/Response pending requests
+        this.pendingRequests = new Map();
+        this.requestIdCounter = 0;
+
+        // Channels for scoped communication
+        this.channels = new Map(); // channelName -> Set of subscribers
+
+        // Throttle/debounce timers
+        this.throttleTimers = new Map();
+        this.debounceTimers = new Map();
+
+        // Event priority levels
+        this.PRIORITY = {
+            SYSTEM: 1000,    // System-level handlers (run first)
+            HIGH: 100,       // High priority
+            NORMAL: 0,       // Default priority
+            LOW: -100,       // Low priority
+            SCRIPT: -500     // User scripts (run last)
         };
     }
 
@@ -69,19 +94,30 @@ class SemanticEventBusClass {
      * Subscribe to an event
      * @param {string} eventName - Event name (can include wildcards like 'window:*')
      * @param {Function} callback - Handler function
+     * @param {object} options - Subscription options
+     * @param {number} options.priority - Handler priority (higher runs first, default: 0)
+     * @param {boolean} options.once - Remove after first call
      * @returns {Function} Unsubscribe function
      */
-    on(eventName, callback) {
+    on(eventName, callback, options = {}) {
+        const { priority = this.PRIORITY.NORMAL, once = false } = options;
+
         // Check for pattern (wildcard)
         if (eventName.includes('*')) {
-            return this._onPattern(eventName, callback);
+            return this._onPattern(eventName, callback, { priority, once });
         }
 
-        // Regular subscription
+        // Regular subscription with priority
         if (!this.listeners.has(eventName)) {
-            this.listeners.set(eventName, new Set());
+            this.listeners.set(eventName, []);
         }
-        this.listeners.get(eventName).add(callback);
+
+        const listener = { callback, priority, once };
+        const listeners = this.listeners.get(eventName);
+        listeners.push(listener);
+
+        // Sort by priority (descending - higher priority first)
+        listeners.sort((a, b) => b.priority - a.priority);
 
         // Return unsubscribe function
         return () => this.off(eventName, callback);
@@ -91,13 +127,10 @@ class SemanticEventBusClass {
      * Subscribe to an event only once
      * @param {string} eventName - Event name
      * @param {Function} callback - Handler function
+     * @param {object} options - Subscription options
      */
-    once(eventName, callback) {
-        const wrapper = (...args) => {
-            this.off(eventName, wrapper);
-            callback(...args);
-        };
-        this.on(eventName, wrapper);
+    once(eventName, callback, options = {}) {
+        return this.on(eventName, callback, { ...options, once: true });
     }
 
     /**
@@ -107,12 +140,20 @@ class SemanticEventBusClass {
      */
     off(eventName, callback) {
         if (this.listeners.has(eventName)) {
-            this.listeners.get(eventName).delete(callback);
+            const listeners = this.listeners.get(eventName);
+            const index = listeners.findIndex(l => l.callback === callback);
+            if (index > -1) {
+                listeners.splice(index, 1);
+            }
         }
 
         // Also check pattern listeners
         if (this.patternListeners.has(eventName)) {
-            this.patternListeners.get(eventName).delete(callback);
+            const patternListeners = this.patternListeners.get(eventName);
+            const index = patternListeners.findIndex(l => l.callback === callback);
+            if (index > -1) {
+                patternListeners.splice(index, 1);
+            }
         }
     }
 
@@ -120,8 +161,8 @@ class SemanticEventBusClass {
      * Emit an event with validation and middleware
      * @param {string} eventName - Event name from EventSchema
      * @param {object} payload - Event payload
-     * @param {object} options - Emit options (validate, metadata, etc.)
-     * @returns {object} Event object that was emitted
+     * @param {object} options - Emit options (validate, metadata, cancellable, etc.)
+     * @returns {object} Event object that was emitted (includes cancelled state)
      */
     emit(eventName, payload = {}, options = {}) {
         this.stats.emitted++;
@@ -135,6 +176,7 @@ class SemanticEventBusClass {
         const emitOptions = {
             validate: this.config.validation,
             log: this.config.logging || this.debug,
+            cancellable: false,  // Whether event can be cancelled
             metadata: {},
             ...options
         };
@@ -155,16 +197,27 @@ class SemanticEventBusClass {
             }
         }
 
-        // Create event object with metadata
+        // Create event object with metadata and cancellation support
         const event = {
             name: eventName,
             payload: payload,
+            cancelled: false,
+            cancellable: emitOptions.cancellable,
             metadata: {
                 timestamp: this.config.timestamps ? Date.now() : undefined,
                 source: emitOptions.metadata.source || 'unknown',
-                validated: emitOptions.validate && EventSchema[eventName],
+                validated: emitOptions.validate && !!EventSchema[eventName],
                 ...emitOptions.metadata
-            }
+            },
+            // Cancel method for cancellable events
+            cancel: () => {
+                if (emitOptions.cancellable) {
+                    event.cancelled = true;
+                    this.stats.eventsCancelled++;
+                }
+            },
+            // Prevent default (alias for cancel)
+            preventDefault: () => event.cancel()
         };
 
         // Log event
@@ -179,10 +232,136 @@ class SemanticEventBusClass {
 
         // Run through middleware chain, then emit to listeners
         this._runMiddleware(event, () => {
-            this._emitToListeners(event);
+            if (!event.cancelled) {
+                this._emitToListeners(event);
+            }
         });
 
         return event;
+    }
+
+    /**
+     * Emit an event with throttling (max once per interval)
+     * @param {string} eventName - Event name
+     * @param {object} payload - Event payload
+     * @param {number} interval - Throttle interval in ms (default: 16ms ~60fps)
+     * @param {object} options - Emit options
+     */
+    emitThrottled(eventName, payload = {}, interval = 16, options = {}) {
+        const key = eventName;
+
+        if (this.throttleTimers.has(key)) {
+            // Update payload for next emission
+            this.throttleTimers.get(key).payload = payload;
+            return null;
+        }
+
+        // Emit immediately
+        const event = this.emit(eventName, payload, options);
+
+        // Set throttle timer
+        const timer = {
+            payload: null,
+            timeout: setTimeout(() => {
+                const lastPayload = this.throttleTimers.get(key)?.payload;
+                this.throttleTimers.delete(key);
+                // Emit final payload if there was one
+                if (lastPayload !== null) {
+                    this.emit(eventName, lastPayload, options);
+                }
+            }, interval)
+        };
+        this.throttleTimers.set(key, timer);
+
+        return event;
+    }
+
+    /**
+     * Emit an event with debouncing (wait until quiet period)
+     * @param {string} eventName - Event name
+     * @param {object} payload - Event payload
+     * @param {number} delay - Debounce delay in ms
+     * @param {object} options - Emit options
+     */
+    emitDebounced(eventName, payload = {}, delay = 100, options = {}) {
+        const key = eventName;
+
+        // Clear existing timer
+        if (this.debounceTimers.has(key)) {
+            clearTimeout(this.debounceTimers.get(key));
+        }
+
+        // Set new timer
+        const timer = setTimeout(() => {
+            this.debounceTimers.delete(key);
+            this.emit(eventName, payload, options);
+        }, delay);
+        this.debounceTimers.set(key, timer);
+    }
+
+    /**
+     * Request/Response pattern - emit an event and wait for a response
+     * @param {string} eventName - Event name (should have corresponding :response event)
+     * @param {object} payload - Event payload
+     * @param {object} options - Options including timeout
+     * @returns {Promise} Promise that resolves with the response
+     */
+    request(eventName, payload = {}, options = {}) {
+        const { timeout = 30000 } = options;
+
+        return new Promise((resolve, reject) => {
+            this.stats.requestsTotal++;
+
+            // Generate unique request ID
+            const requestId = `req_${++this.requestIdCounter}_${Date.now()}`;
+
+            // Determine response event name
+            const responseEvent = options.responseEvent || `${eventName}:response`;
+
+            // Store pending request
+            const pendingRequest = {
+                requestId,
+                resolve,
+                reject,
+                timeout: null,
+                eventName,
+                responseEvent
+            };
+
+            // Set timeout
+            pendingRequest.timeout = setTimeout(() => {
+                this.pendingRequests.delete(requestId);
+                this.stats.requestsTimedOut++;
+                reject(new Error(`Request timeout for "${eventName}" after ${timeout}ms`));
+            }, timeout);
+
+            this.pendingRequests.set(requestId, pendingRequest);
+
+            // Listen for response (one time)
+            const unsubscribe = this.on(responseEvent, (response) => {
+                if (response.requestId === requestId) {
+                    // Found our response
+                    clearTimeout(pendingRequest.timeout);
+                    this.pendingRequests.delete(requestId);
+                    this.stats.requestsResolved++;
+                    unsubscribe();
+                    resolve(response);
+                }
+            });
+
+            // Emit the request with requestId in payload
+            this.emit(eventName, { ...payload, requestId });
+        });
+    }
+
+    /**
+     * Respond to a request
+     * @param {string} responseEvent - Response event name
+     * @param {string} requestId - Request ID from the original request
+     * @param {object} responsePayload - Response data
+     */
+    respond(responseEvent, requestId, responsePayload = {}) {
+        this.emit(responseEvent, { requestId, ...responsePayload });
     }
 
     /**
@@ -191,32 +370,81 @@ class SemanticEventBusClass {
      */
     _emitToListeners(event) {
         const { name, payload, metadata } = event;
+        const listenersToRemove = [];
+
+        // Collect all matching listeners with their priorities
+        const allListeners = [];
 
         // Direct listeners
         if (this.listeners.has(name)) {
-            const callbacks = [...this.listeners.get(name)];
-            callbacks.forEach(callback => {
-                try {
-                    callback(payload, metadata);
-                } catch (error) {
-                    console.error(`[SemanticEventBus] Error in listener for "${name}":`, error);
-                }
+            const listeners = this.listeners.get(name);
+            listeners.forEach((listener, index) => {
+                allListeners.push({
+                    ...listener,
+                    source: 'direct',
+                    eventName: name,
+                    index
+                });
             });
         }
 
         // Pattern listeners (e.g., 'window:*' matches 'window:open')
-        this.patternListeners.forEach((callbacks, pattern) => {
+        this.patternListeners.forEach((listeners, pattern) => {
             const regex = this._patternToRegex(pattern);
             if (regex.test(name)) {
-                callbacks.forEach(callback => {
-                    try {
-                        callback(payload, metadata);
-                    } catch (error) {
-                        console.error(`[SemanticEventBus] Error in pattern listener "${pattern}" for "${name}":`, error);
-                    }
+                listeners.forEach((listener, index) => {
+                    allListeners.push({
+                        ...listener,
+                        source: 'pattern',
+                        pattern,
+                        index
+                    });
                 });
             }
         });
+
+        // Sort all listeners by priority (already sorted within each list, but need to merge)
+        allListeners.sort((a, b) => b.priority - a.priority);
+
+        // Execute listeners in priority order
+        for (const listener of allListeners) {
+            // Check if event was cancelled mid-execution
+            if (event.cancelled) {
+                break;
+            }
+
+            try {
+                // Pass event object as third param for cancellation support
+                listener.callback(payload, metadata, event);
+
+                // Track once listeners for removal
+                if (listener.once) {
+                    listenersToRemove.push(listener);
+                }
+            } catch (error) {
+                const source = listener.source === 'pattern'
+                    ? `pattern listener "${listener.pattern}"`
+                    : `listener`;
+                console.error(`[SemanticEventBus] Error in ${source} for "${name}":`, error);
+            }
+        }
+
+        // Remove once listeners
+        for (const listener of listenersToRemove) {
+            if (listener.source === 'direct') {
+                const listeners = this.listeners.get(listener.eventName);
+                if (listeners) {
+                    const index = listeners.findIndex(l => l.callback === listener.callback);
+                    if (index > -1) listeners.splice(index, 1);
+                }
+            } else {
+                const listeners = this.patternListeners.get(listener.pattern);
+                if (listeners) {
+                    const index = listeners.findIndex(l => l.callback === listener.callback);
+                    if (index > -1) listeners.splice(index, 1);
+                }
+            }
+        }
     }
 
     /**
@@ -269,16 +497,28 @@ class SemanticEventBusClass {
      * Subscribe to events matching a pattern
      * @private
      */
-    _onPattern(pattern, callback) {
+    _onPattern(pattern, callback, options = {}) {
+        const { priority = this.PRIORITY.NORMAL, once = false } = options;
+
         if (!this.patternListeners.has(pattern)) {
-            this.patternListeners.set(pattern, new Set());
+            this.patternListeners.set(pattern, []);
         }
-        this.patternListeners.get(pattern).add(callback);
+
+        const listener = { callback, priority, once };
+        const listeners = this.patternListeners.get(pattern);
+        listeners.push(listener);
+
+        // Sort by priority (descending)
+        listeners.sort((a, b) => b.priority - a.priority);
 
         // Return unsubscribe function
         return () => {
             if (this.patternListeners.has(pattern)) {
-                this.patternListeners.get(pattern).delete(callback);
+                const patternListeners = this.patternListeners.get(pattern);
+                const index = patternListeners.findIndex(l => l.callback === callback);
+                if (index > -1) {
+                    patternListeners.splice(index, 1);
+                }
             }
         };
     }
@@ -371,8 +611,8 @@ class SemanticEventBusClass {
      * @returns {number} Listener count
      */
     listenerCount(event) {
-        const direct = this.listeners.has(event) ? this.listeners.get(event).size : 0;
-        const pattern = this.patternListeners.has(event) ? this.patternListeners.get(event).size : 0;
+        const direct = this.listeners.has(event) ? this.listeners.get(event).length : 0;
+        const pattern = this.patternListeners.has(event) ? this.patternListeners.get(event).length : 0;
         return direct + pattern;
     }
 
@@ -444,6 +684,255 @@ class SemanticEventBusClass {
         };
     }
 
+    // ==========================================
+    // CHANNEL METHODS (Scoped Communication)
+    // ==========================================
+
+    /**
+     * Create or join a channel for scoped communication
+     * @param {string} channelName - Channel name
+     * @param {string} subscriberId - Subscriber identifier
+     * @returns {object} Channel interface with send/receive methods
+     */
+    channel(channelName, subscriberId) {
+        // Initialize channel if not exists
+        if (!this.channels.has(channelName)) {
+            this.channels.set(channelName, new Set());
+        }
+
+        const channel = this.channels.get(channelName);
+        channel.add(subscriberId);
+
+        // Emit subscription event
+        this.emit('channel:subscribe', { channel: channelName, subscriber: subscriberId });
+
+        // Return channel interface
+        return {
+            name: channelName,
+            subscriberId,
+
+            /**
+             * Send a message to the channel
+             */
+            send: (message) => {
+                this.emit('channel:message', {
+                    channel: channelName,
+                    message,
+                    sender: subscriberId
+                });
+            },
+
+            /**
+             * Listen to messages on this channel
+             */
+            receive: (handler, options = {}) => {
+                return this.on('channel:message', (payload) => {
+                    if (payload.channel === channelName && payload.sender !== subscriberId) {
+                        handler(payload.message, payload.sender);
+                    }
+                }, options);
+            },
+
+            /**
+             * Leave the channel
+             */
+            leave: () => {
+                if (this.channels.has(channelName)) {
+                    this.channels.get(channelName).delete(subscriberId);
+                    this.emit('channel:unsubscribe', { channel: channelName, subscriber: subscriberId });
+
+                    // Clean up empty channels
+                    if (this.channels.get(channelName).size === 0) {
+                        this.channels.delete(channelName);
+                    }
+                }
+            },
+
+            /**
+             * Get all subscribers in the channel
+             */
+            getSubscribers: () => {
+                return [...(this.channels.get(channelName) || [])];
+            }
+        };
+    }
+
+    /**
+     * Broadcast to all subscribers in a channel
+     * @param {string} channelName - Channel name
+     * @param {any} message - Message to broadcast
+     * @param {string} sender - Sender identifier
+     */
+    broadcast(channelName, message, sender = 'system') {
+        this.emit('channel:message', {
+            channel: channelName,
+            message,
+            sender
+        });
+    }
+
+    /**
+     * Get list of active channels
+     * @returns {string[]} Array of channel names
+     */
+    getChannels() {
+        return [...this.channels.keys()];
+    }
+
+    /**
+     * Get subscribers for a channel
+     * @param {string} channelName - Channel name
+     * @returns {string[]} Array of subscriber IDs
+     */
+    getChannelSubscribers(channelName) {
+        return [...(this.channels.get(channelName) || [])];
+    }
+
+    // ==========================================
+    // CONVENIENCE METHODS FOR SCRIPTING
+    // ==========================================
+
+    /**
+     * Wait for an event to occur (Promise-based)
+     * @param {string} eventName - Event to wait for
+     * @param {object} options - Options including timeout and filter
+     * @returns {Promise} Resolves with event payload
+     */
+    waitFor(eventName, options = {}) {
+        const { timeout = 30000, filter = null } = options;
+
+        return new Promise((resolve, reject) => {
+            let timeoutId;
+
+            const unsubscribe = this.on(eventName, (payload, metadata) => {
+                // Apply filter if provided
+                if (filter && !filter(payload)) {
+                    return;
+                }
+
+                clearTimeout(timeoutId);
+                unsubscribe();
+                resolve({ payload, metadata });
+            });
+
+            if (timeout > 0) {
+                timeoutId = setTimeout(() => {
+                    unsubscribe();
+                    reject(new Error(`Timeout waiting for event "${eventName}" after ${timeout}ms`));
+                }, timeout);
+            }
+        });
+    }
+
+    /**
+     * Create an event stream (async iterator)
+     * @param {string} eventName - Event to stream
+     * @param {object} options - Options including filter
+     * @returns {AsyncGenerator} Async iterator of events
+     */
+    stream(eventName, options = {}) {
+        const { filter = null } = options;
+        const eventBus = this;
+
+        return {
+            [Symbol.asyncIterator]() {
+                const queue = [];
+                let resolve = null;
+                let closed = false;
+
+                const unsubscribe = eventBus.on(eventName, (payload, metadata) => {
+                    if (filter && !filter(payload)) return;
+
+                    const event = { payload, metadata };
+                    if (resolve) {
+                        resolve({ value: event, done: false });
+                        resolve = null;
+                    } else {
+                        queue.push(event);
+                    }
+                });
+
+                return {
+                    next() {
+                        if (closed) {
+                            return Promise.resolve({ done: true });
+                        }
+                        if (queue.length > 0) {
+                            return Promise.resolve({ value: queue.shift(), done: false });
+                        }
+                        return new Promise(r => { resolve = r; });
+                    },
+                    return() {
+                        closed = true;
+                        unsubscribe();
+                        return Promise.resolve({ done: true });
+                    }
+                };
+            }
+        };
+    }
+
+    /**
+     * Pipe events from one event to another with optional transformation
+     * @param {string} sourceEvent - Source event name
+     * @param {string} targetEvent - Target event name
+     * @param {Function} transform - Optional transform function
+     * @returns {Function} Unsubscribe function
+     */
+    pipe(sourceEvent, targetEvent, transform = null) {
+        return this.on(sourceEvent, (payload, metadata) => {
+            const transformedPayload = transform ? transform(payload) : payload;
+            if (transformedPayload !== null && transformedPayload !== undefined) {
+                this.emit(targetEvent, transformedPayload, {
+                    metadata: { ...metadata, pipedFrom: sourceEvent }
+                });
+            }
+        });
+    }
+
+    /**
+     * Create a filtered view of events
+     * @param {string} eventName - Event to filter
+     * @param {Function} predicate - Filter predicate
+     * @param {string} newEventName - New event name for filtered events
+     * @returns {Function} Unsubscribe function
+     */
+    filter(eventName, predicate, newEventName) {
+        return this.pipe(eventName, newEventName, (payload) => {
+            return predicate(payload) ? payload : null;
+        });
+    }
+
+    /**
+     * Combine multiple events into one
+     * @param {string[]} eventNames - Events to combine
+     * @param {string} combinedEventName - Combined event name
+     * @param {Function} reducer - Function to combine payloads
+     * @returns {Function} Unsubscribe function
+     */
+    combine(eventNames, combinedEventName, reducer = null) {
+        const latestPayloads = {};
+        const unsubscribers = [];
+
+        eventNames.forEach(eventName => {
+            const unsub = this.on(eventName, (payload) => {
+                latestPayloads[eventName] = payload;
+
+                // Check if we have all payloads
+                const allPresent = eventNames.every(e => e in latestPayloads);
+                if (allPresent) {
+                    const combined = reducer
+                        ? reducer(latestPayloads)
+                        : { ...latestPayloads };
+                    this.emit(combinedEventName, combined);
+                }
+            });
+            unsubscribers.push(unsub);
+        });
+
+        return () => unsubscribers.forEach(unsub => unsub());
+    }
+
     /**
      * Get all active listeners (for debugging)
      * @returns {object} Map of event names to listener counts
@@ -451,18 +940,18 @@ class SemanticEventBusClass {
     getActiveListeners() {
         const result = {};
 
-        // Direct listeners
-        this.listeners.forEach((callbacks, event) => {
-            if (callbacks.size > 0) {
-                result[event] = callbacks.size;
+        // Direct listeners (now arrays)
+        this.listeners.forEach((listeners, event) => {
+            if (listeners.length > 0) {
+                result[event] = listeners.length;
             }
         });
 
-        // Pattern listeners
+        // Pattern listeners (now arrays)
         const patterns = {};
-        this.patternListeners.forEach((callbacks, pattern) => {
-            if (callbacks.size > 0) {
-                patterns[pattern] = callbacks.size;
+        this.patternListeners.forEach((listeners, pattern) => {
+            if (listeners.length > 0) {
+                patterns[pattern] = listeners.length;
             }
         });
 
@@ -554,13 +1043,62 @@ export const Events = {
 
     // Desktop events
     DESKTOP_RENDER: 'desktop:render',
-    DESKTOP_REFRESH: 'desktop:refresh'
+    DESKTOP_REFRESH: 'desktop:refresh',
+
+    // Dialog events
+    DIALOG_ALERT: 'dialog:alert',
+    DIALOG_CONFIRM: 'dialog:confirm',
+    DIALOG_CONFIRM_RESPONSE: 'dialog:confirm:response',
+    DIALOG_PROMPT: 'dialog:prompt',
+    DIALOG_PROMPT_RESPONSE: 'dialog:prompt:response',
+    DIALOG_FILE_OPEN: 'dialog:file-open',
+    DIALOG_FILE_OPEN_RESPONSE: 'dialog:file-open:response',
+    DIALOG_FILE_SAVE: 'dialog:file-save',
+    DIALOG_FILE_SAVE_RESPONSE: 'dialog:file-save:response',
+
+    // Filesystem events
+    FILESYSTEM_CHANGED: 'filesystem:changed',
+    FS_FILE_CREATE: 'fs:file:create',
+    FS_FILE_UPDATE: 'fs:file:update',
+    FS_FILE_DELETE: 'fs:file:delete',
+    FS_DIRECTORY_CREATE: 'fs:directory:create',
+
+    // Recycle bin events
+    RECYCLEBIN_UPDATE: 'recyclebin:update',
+    RECYCLEBIN_RECYCLE_FILE: 'recyclebin:recycle-file',
+    RECYCLEBIN_RESTORE: 'recyclebin:restore',
+    RECYCLEBIN_EMPTY: 'recyclebin:empty',
+
+    // Notification events
+    NOTIFICATION_SHOW: 'notification:show',
+    NOTIFICATION_DISMISS: 'notification:dismiss',
+
+    // Clipboard events
+    CLIPBOARD_COPY: 'clipboard:copy',
+    CLIPBOARD_PASTE: 'clipboard:paste',
+
+    // Keyboard events
+    KEYBOARD_SHORTCUT: 'keyboard:shortcut',
+
+    // Script/automation events
+    SCRIPT_EXECUTE: 'script:execute',
+    SCRIPT_COMPLETE: 'script:complete',
+    SCRIPT_ERROR: 'script:error',
+
+    // Channel events
+    CHANNEL_MESSAGE: 'channel:message',
+    CHANNEL_SUBSCRIBE: 'channel:subscribe',
+    CHANNEL_UNSUBSCRIBE: 'channel:unsubscribe'
 };
+
+// Export priority levels
+export const Priority = SemanticEventBus.PRIORITY;
 
 // Add global debug helpers (in development)
 if (typeof window !== 'undefined') {
-    window.__ILLUMINATOS_DEBUG = {
+    window.__RETROS_DEBUG = window.__ILLUMINATOS_DEBUG = {
         eventBus: SemanticEventBus,
+        Priority: SemanticEventBus.PRIORITY,
 
         // Enable/disable event logging
         enableLog: () => SemanticEventBus.configure({ logging: true }),
@@ -573,12 +1111,21 @@ if (typeof window !== 'undefined') {
 
         // List all registered events
         listEvents: () => {
-            console.log('Registered Events:', SemanticEventBus.getRegisteredEvents());
+            const events = SemanticEventBus.getRegisteredEvents();
+            console.log(`Registered Events (${events.length} total):`, events);
         },
 
         // List events by namespace
         listNamespace: (namespace) => {
-            console.log(`Events in "${namespace}":`, SemanticEventBus.getEventsByNamespace(namespace));
+            const events = SemanticEventBus.getEventsByNamespace(namespace);
+            console.log(`Events in "${namespace}" (${events.length}):`, events);
+        },
+
+        // List all namespaces
+        listNamespaces: () => {
+            const events = SemanticEventBus.getRegisteredEvents();
+            const namespaces = [...new Set(events.map(e => e.split(':')[0]))];
+            console.log('Available Namespaces:', namespaces);
         },
 
         // Show event schema
@@ -586,6 +1133,8 @@ if (typeof window !== 'undefined') {
             const schema = SemanticEventBus.getEventSchema(eventName);
             if (schema) {
                 console.log(`Event: ${eventName}`);
+                console.log('Namespace:', schema.namespace);
+                console.log('Action:', schema.action);
                 console.log('Description:', schema.description);
                 console.log('Payload:', schema.payload);
                 console.log('Example:', schema.example);
@@ -604,8 +1153,27 @@ if (typeof window !== 'undefined') {
             console.log('Active Listeners:', SemanticEventBus.getActiveListeners());
         },
 
+        // Show active channels
+        showChannels: () => {
+            const channels = SemanticEventBus.getChannels();
+            console.log(`Active Channels (${channels.length}):`, channels);
+            channels.forEach(ch => {
+                console.log(`  ${ch}:`, SemanticEventBus.getChannelSubscribers(ch));
+            });
+        },
+
+        // Show pending requests
+        showPendingRequests: () => {
+            console.log('Pending Requests:', [...SemanticEventBus.pendingRequests.keys()]);
+        },
+
         // Reset stats
-        resetStats: () => SemanticEventBus.resetStats()
+        resetStats: () => SemanticEventBus.resetStats(),
+
+        // Interactive helpers for testing
+        emit: (event, payload) => SemanticEventBus.emit(event, payload),
+        request: (event, payload) => SemanticEventBus.request(event, payload),
+        waitFor: (event, opts) => SemanticEventBus.waitFor(event, opts)
     };
 }
 
