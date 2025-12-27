@@ -39,6 +39,7 @@ class ScriptEngineClass {
         this.currentScript = null;
         this.scriptStack = [];
         this.breakRequested = false;
+        this.loopBreakRequested = false;
         this.lastResult = null;
 
         // Built-in functions
@@ -381,24 +382,44 @@ class ScriptEngineClass {
     _parseSet(parts) {
         // set $varName = value
         // set $varName = $other + 1
+        // set $varName = call funcName args...
         const varName = parts[1].replace(/^\$/, '');
         const eqIdx = parts.indexOf('=');
-        const valueStr = parts.slice(eqIdx + 1).join(' ').trim();
+        const valueParts = parts.slice(eqIdx + 1);
+        const valueStr = valueParts.join(' ').trim();
 
-        // Check for arithmetic expression
-        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/])\s*(.+)$/);
-        if (mathMatch) {
-            const [, left, op, right] = mathMatch;
+        // Check for function call: set $var = call funcName args...
+        if (valueParts[0] === 'call') {
+            const funcName = valueParts[1];
+            const args = valueParts.slice(2).map(a => this._parseValue(a));
             return {
                 type: 'set',
                 varName,
-                value: {
-                    type: 'expression',
-                    operator: op,
-                    left: this._parseValue(left.trim()),
-                    right: this._parseValue(right.trim())
-                }
+                value: { type: 'call', funcName, args }
             };
+        }
+
+        // Check for arithmetic expression, but NOT just a negative number
+        // Only match if there's an operator with operands on both sides
+        // and the left side contains a variable or number (not just text like "call abs")
+        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/])\s*(.+)$/);
+        if (mathMatch) {
+            const [, left, op, right] = mathMatch;
+            const leftTrimmed = left.trim();
+            // Only treat as arithmetic if left side is a variable or ends with a number
+            // This prevents "call abs -42" from being parsed as "call abs" - "42"
+            if (leftTrimmed.startsWith('$') || /\d$/.test(leftTrimmed)) {
+                return {
+                    type: 'set',
+                    varName,
+                    value: {
+                        type: 'expression',
+                        operator: op,
+                        left: this._parseValue(leftTrimmed),
+                        right: this._parseValue(right.trim())
+                    }
+                };
+            }
         }
 
         return { type: 'set', varName, value: this._parseValue(valueStr) };
@@ -633,7 +654,7 @@ class ScriptEngineClass {
         let result = null;
 
         for (const statement of statements) {
-            if (this.breakRequested) break;
+            if (this.breakRequested || this.loopBreakRequested) break;
 
             result = await this._executeStatement(statement);
 
@@ -683,12 +704,12 @@ class ScriptEngineClass {
                 return statement.duration;
 
             case 'set':
-                const value = this._resolveValue(statement.value);
+                const value = await this._resolveValue(statement.value);
                 this.variables.set(statement.varName, value);
                 return value;
 
             case 'print':
-                const message = this._resolveValue(statement.message);
+                const message = await this._resolveValue(statement.message);
                 console.log('[Script]', message);
                 EventBus.emit('script:output', { message });
                 return message;
@@ -696,7 +717,7 @@ class ScriptEngineClass {
             case 'emit':
                 const payload = {};
                 for (const [key, val] of Object.entries(statement.payload)) {
-                    payload[key] = this._resolveValue(val);
+                    payload[key] = await this._resolveValue(val);
                 }
                 EventBus.emit(statement.eventName, payload);
                 return { event: statement.eventName, payload };
@@ -710,7 +731,7 @@ class ScriptEngineClass {
                 return { subscribed: statement.eventName };
 
             case 'if':
-                const condition = this._evaluateCondition(statement.condition);
+                const condition = await this._evaluateCondition(statement.condition);
                 if (condition) {
                     return await this._execute(statement.thenBody);
                 } else if (statement.elseBody.length > 0) {
@@ -720,30 +741,39 @@ class ScriptEngineClass {
 
             case 'loop':
                 let loopResult = null;
-                for (let i = 0; i < statement.count && !this.breakRequested; i++) {
+                this.loopBreakRequested = false;
+                for (let i = 0; i < statement.count && !this.breakRequested && !this.loopBreakRequested; i++) {
                     this.variables.set('i', i);
                     loopResult = await this._execute(statement.body);
+                    if (this.loopBreakRequested) break;
                 }
+                this.loopBreakRequested = false;
                 return loopResult;
 
             case 'while':
                 let whileResult = null;
-                while (this._evaluateCondition(statement.condition) && !this.breakRequested) {
+                this.loopBreakRequested = false;
+                while (await this._evaluateCondition(statement.condition) && !this.breakRequested && !this.loopBreakRequested) {
                     whileResult = await this._execute(statement.body);
+                    if (this.loopBreakRequested) break;
                 }
+                this.loopBreakRequested = false;
                 return whileResult;
 
             case 'call':
                 const func = this.functions.get(statement.funcName);
                 if (func) {
-                    const args = statement.args.map(a => this._resolveValue(a));
+                    const args = [];
+                    for (const arg of statement.args) {
+                        args.push(await this._resolveValue(arg));
+                    }
                     return await func(...args);
                 }
                 throw new Error(`Unknown function: ${statement.funcName}`);
 
             case 'alert':
                 EventBus.emit('dialog:alert', {
-                    message: this._resolveValue(statement.message)
+                    message: await this._resolveValue(statement.message)
                 });
                 return null;
 
@@ -751,7 +781,7 @@ class ScriptEngineClass {
                 // Use request/response pattern to wait for user response
                 try {
                     const confirmResult = await EventBus.request('dialog:confirm', {
-                        message: this._resolveValue(statement.message)
+                        message: await this._resolveValue(statement.message)
                     }, { timeout: 60000 }); // 60 second timeout for user input
                     const confirmed = confirmResult.confirmed || confirmResult.result || false;
                     this.variables.set(statement.varName, confirmed);
@@ -766,12 +796,12 @@ class ScriptEngineClass {
                 // Use request/response pattern to wait for user input
                 try {
                     const promptResult = await EventBus.request('dialog:prompt', {
-                        message: this._resolveValue(statement.message),
-                        defaultValue: this._resolveValue(statement.defaultValue) || ''
+                        message: await this._resolveValue(statement.message),
+                        defaultValue: (await this._resolveValue(statement.defaultValue)) || ''
                     }, { timeout: 120000 }); // 2 minute timeout for user input
-                    const value = promptResult.cancelled ? null : (promptResult.value || '');
-                    this.variables.set(statement.varName, value);
-                    return value;
+                    const promptValue = promptResult.cancelled ? null : (promptResult.value || '');
+                    this.variables.set(statement.varName, promptValue);
+                    return promptValue;
                 } catch (e) {
                     // Timeout or error - treat as cancelled
                     this.variables.set(statement.varName, null);
@@ -780,7 +810,7 @@ class ScriptEngineClass {
 
             case 'notify':
                 EventBus.emit('notification:show', {
-                    message: this._resolveValue(statement.message)
+                    message: await this._resolveValue(statement.message)
                 });
                 return null;
 
@@ -804,16 +834,15 @@ class ScriptEngineClass {
                 return null;
 
             case 'write':
-                const content = this._resolveValue(statement.content);
-                const path = this._resolveValue(statement.path);
-                FileSystemManager.writeFile(path, content);
-                return { written: path };
+                const content = await this._resolveValue(statement.content);
+                const writePath = await this._resolveValue(statement.path);
+                FileSystemManager.writeFile(writePath, content);
+                return { written: writePath };
 
             case 'read':
                 try {
-                    const fileContent = FileSystemManager.readFile(
-                        this._resolveValue(statement.path)
-                    );
+                    const readPath = await this._resolveValue(statement.path);
+                    const fileContent = FileSystemManager.readFile(readPath);
                     this.variables.set(statement.varName, fileContent);
                     return fileContent;
                 } catch (e) {
@@ -822,12 +851,12 @@ class ScriptEngineClass {
                 }
 
             case 'mkdir':
-                FileSystemManager.createDirectory(this._resolveValue(statement.path));
+                FileSystemManager.createDirectory(await this._resolveValue(statement.path));
                 return { created: statement.path };
 
             case 'delete':
                 try {
-                    const deletePath = this._resolveValue(statement.path);
+                    const deletePath = await this._resolveValue(statement.path);
                     const node = FileSystemManager.getNode(deletePath);
                     if (node?.type === 'directory') {
                         FileSystemManager.deleteDirectory(deletePath);
@@ -841,14 +870,17 @@ class ScriptEngineClass {
 
             case 'command':
                 // Generic command execution
-                return await CommandBus.execute(statement.command, {
-                    args: statement.args.map(a => this._resolveValue(a))
-                });
+                const cmdArgs = [];
+                for (const arg of statement.args) {
+                    cmdArgs.push(await this._resolveValue(arg));
+                }
+                return await CommandBus.execute(statement.command, { args: cmdArgs });
 
             case 'return':
-                return this._resolveValue(statement.value);
+                return await this._resolveValue(statement.value);
 
             case 'break':
+                this.loopBreakRequested = true;
                 return null;
 
             default:
@@ -858,10 +890,10 @@ class ScriptEngineClass {
     }
 
     /**
-     * Resolve a value (handle variables and expressions)
+     * Resolve a value (handle variables, expressions, and function calls)
      * @private
      */
-    _resolveValue(value) {
+    async _resolveValue(value) {
         if (value === null || value === undefined) return null;
 
         if (typeof value === 'object') {
@@ -869,9 +901,22 @@ class ScriptEngineClass {
                 return this.variables.get(value.name);
             }
 
+            if (value.type === 'call') {
+                // Execute function call and return result
+                const func = this.functions.get(value.funcName);
+                if (func) {
+                    const args = [];
+                    for (const arg of value.args) {
+                        args.push(await this._resolveValue(arg));
+                    }
+                    return await func(...args);
+                }
+                throw new Error(`Unknown function: ${value.funcName}`);
+            }
+
             if (value.type === 'expression') {
-                const left = this._resolveValue(value.left);
-                const right = this._resolveValue(value.right);
+                const left = await this._resolveValue(value.left);
+                const right = await this._resolveValue(value.right);
                 const numLeft = typeof left === 'number' ? left : parseFloat(left) || 0;
                 const numRight = typeof right === 'number' ? right : parseFloat(right) || 0;
 
@@ -900,7 +945,7 @@ class ScriptEngineClass {
      * Evaluate a condition
      * @private
      */
-    _evaluateCondition(condition) {
+    async _evaluateCondition(condition) {
         if (condition === null || condition === undefined) return false;
 
         if (typeof condition === 'boolean') return condition;
@@ -911,8 +956,8 @@ class ScriptEngineClass {
             }
 
             if (condition.type === 'comparison') {
-                const left = this._resolveValue(condition.left);
-                const right = this._resolveValue(condition.right);
+                const left = await this._resolveValue(condition.left);
+                const right = await this._resolveValue(condition.right);
 
                 switch (condition.operator) {
                     case '==': return left == right;
@@ -927,7 +972,7 @@ class ScriptEngineClass {
             }
         }
 
-        return !!this._resolveValue(condition);
+        return !!(await this._resolveValue(condition));
     }
 
     // ==========================================
