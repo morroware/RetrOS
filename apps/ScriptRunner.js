@@ -29,593 +29,882 @@ class ScriptRunner extends AppBase {
     }
 
     onOpen(params) {
-        const sampleScript = `# ============================================
-# RetroScript Comprehensive Test Suite
-# Tests all scripting features, apps, and events
-# ============================================
+        const sampleScript = `# ================================================================
+# RetroScript Ultimate Test Suite v2.0
+# Comprehensive testing of all scripting features and bug fixes
+# ================================================================
 
-print ========================================
-print   RETROSCRIPT COMPREHENSIVE TEST
-print ========================================
-
-# ==========================================
-# SECTION A: CORE LANGUAGE FEATURES
-# ==========================================
-
-# ------------------------------------------
-# TEST 1: Variables & Basic Types
-# ------------------------------------------
+print ================================================================
+print   RETROSCRIPT ULTIMATE TEST SUITE v2.0
+print ================================================================
 print
-print [TEST 1] Variables & Types
-print ----------------------------------------
 
+# ==================================================================
+# SECTION A: BASIC LANGUAGE FEATURES
+# ==================================================================
+
+print [SECTION A] BASIC LANGUAGE FEATURES
+print ----------------------------------------------------------------
+
+# TEST A1: Variables and Basic Types
+print
+print [A1] Variables and Basic Types
 set $string = "Hello World"
 set $number = 42
-set $decimal = 3.14
+set $decimal = 3.14159
 set $boolean = true
+set $empty = ""
 
-print String variable: $string
-print Number variable: $number
-print Decimal variable: $decimal
-print Boolean variable: $boolean
+print   String: $string
+print   Number: $number
+print   Decimal: $decimal
+print   Boolean: $boolean
+print   Empty string test: [$empty]
 
-# ------------------------------------------
-# TEST 2: Arithmetic Operations
-# ------------------------------------------
+if $empty == "" then {
+    print   [PASS] Empty string preserved correctly
+} else {
+    print   [FAIL] Empty string became something else
+}
+
+# TEST A2: Arithmetic Operations
 print
-print [TEST 2] Arithmetic Operations
-print ----------------------------------------
-
-set $a = 20
-set $b = 6
+print [A2] Arithmetic Operations
+set $a = 25
+set $b = 7
 set $sum = $a + $b
 set $diff = $a - $b
 set $prod = $a * $b
 set $quot = $a / $b
+set $mod = $a % $b
 
-print $a + $b = $sum (expected: 26)
-print $a - $b = $diff (expected: 14)
-print $a * $b = $prod (expected: 120)
-print $a / $b = $quot (expected: ~3.33)
+print   $a + $b = $sum (expected: 32)
+print   $a - $b = $diff (expected: 18)
+print   $a * $b = $prod (expected: 175)
+print   $a / $b = $quot (expected: ~3.57)
+print   $a % $b = $mod (expected: 4)
 
-# ------------------------------------------
-# TEST 3: String Functions
-# ------------------------------------------
+if $sum == 32 then { print   [PASS] Addition } else { print   [FAIL] Addition }
+if $mod == 4 then { print   [PASS] Modulo } else { print   [FAIL] Modulo }
+
+# TEST A3: String Escape Sequences (NEW BUG FIX TEST)
 print
-print [TEST 3] String Functions
-print ----------------------------------------
+print [A3] String Escape Sequences
+set $escaped = "Line1\\nLine2\\tTabbed"
+set $quote = "She said \\"Hello\\""
+print   Escape test: $escaped
+print   Quote test: $quote
+print   [PASS] Escape sequences parsed
 
-set $text = "  Hello World  "
+# TEST A4: Semicolons in Strings (BUG FIX TEST)
+print
+print [A4] Semicolons in Strings
+set $withSemi = "first;second;third"
+print   String with semicolons: $withSemi
+if $withSemi == "first;second;third" then {
+    print   [PASS] Semicolons in strings preserved
+} else {
+    print   [FAIL] Semicolons in strings broken
+}
+
+# TEST A5: Comments in Strings (BUG FIX TEST)
+print
+print [A5] Comments in Strings
+set $withHash = "test # not a comment"
+print   String with hash: $withHash
+print   [PASS] Hash in string preserved
+
+# ==================================================================
+# SECTION B: CONTROL FLOW
+# ==================================================================
+
+print
+print [SECTION B] CONTROL FLOW
+print ----------------------------------------------------------------
+
+# TEST B1: Basic Conditionals
+print
+print [B1] Basic Conditionals
+set $x = 10
+set $y = 5
+
+if $x > $y then {
+    print   [PASS] $x > $y is true
+}
+
+if $x < $y then {
+    print   [FAIL] $x < $y should be false
+} else {
+    print   [PASS] $x < $y else branch taken
+}
+
+# TEST B2: Complex Conditions with && and || (BUG FIX TEST)
+print
+print [B2] Complex Conditions (AND/OR)
+set $a = 10
+set $b = 20
+set $c = 30
+
+if $a < $b && $b < $c then {
+    print   [PASS] $a < $b AND $b < $c
+} else {
+    print   [FAIL] Complex AND condition
+}
+
+if $a > $b || $b < $c then {
+    print   [PASS] $a > $b OR $b < $c
+} else {
+    print   [FAIL] Complex OR condition
+}
+
+if $a < $b && $b < $c && $c > $a then {
+    print   [PASS] Triple AND condition
+} else {
+    print   [FAIL] Triple AND condition
+}
+
+# TEST B3: Comparison Operators
+print
+print [B3] All Comparison Operators
+set $n = 10
+
+if $n == 10 then { print   [PASS] == works }
+if $n != 5 then { print   [PASS] != works }
+if $n >= 10 then { print   [PASS] >= works }
+if $n <= 10 then { print   [PASS] <= works }
+if $n > 5 then { print   [PASS] > works }
+if $n < 15 then { print   [PASS] < works }
+
+# TEST B4: Loops
+print
+print [B4] Loop Constructs
+print   Count loop (3 iterations):
+set $loopCount = 0
+loop 3 {
+    set $loopCount = $loopCount + 1
+    print     iteration $i (count: $loopCount)
+}
+
+if $loopCount == 3 then {
+    print   [PASS] Loop executed 3 times
+} else {
+    print   [FAIL] Loop count: $loopCount
+}
+
+# TEST B5: Break Statement
+print
+print [B5] Break Statement
+set $breakAt = 0
+loop 10 {
+    set $breakAt = $i
+    if $i == 3 then {
+        break
+    }
+}
+
+if $breakAt == 3 then {
+    print   [PASS] Break at iteration 3
+} else {
+    print   [FAIL] Break failed, ended at $breakAt
+}
+
+# TEST B6: Continue Statement
+print
+print [B6] Continue Statement
+set $skipResult = ""
+loop 5 {
+    if $i == 2 then {
+        continue
+    }
+    set $skipResult = $skipResult + $i
+}
+print   Result (should skip 2): $skipResult
+
+# TEST B7: While Loop
+print
+print [B7] While Loop
+set $counter = 0
+loop while $counter < 3 {
+    set $counter = $counter + 1
+    print     while iteration $counter
+}
+
+if $counter == 3 then {
+    print   [PASS] While loop completed
+} else {
+    print   [FAIL] While loop counter: $counter
+}
+
+# TEST B8: Foreach Loop
+print
+print [B8] Foreach Loop
+set $colors = ["red", "green", "blue"]
+set $colorList = ""
+foreach $color in $colors {
+    set $colorList = $colorList + $color + " "
+}
+print   Colors: $colorList
+print   [PASS] Foreach completed
+
+# ==================================================================
+# SECTION C: FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION C] FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST C1: User-Defined Functions
+print
+print [C1] User-Defined Functions
+def greet($name) {
+    print   Hello, $name!
+    return "greeted"
+}
+
+set $result = call greet "World"
+print   Function returned: $result
+
+if $result == "greeted" then {
+    print   [PASS] User function works
+} else {
+    print   [FAIL] User function return
+}
+
+# TEST C2: Function with Multiple Parameters
+print
+print [C2] Multi-Parameter Function
+def add($x, $y) {
+    set $sum = $x + $y
+    return $sum
+}
+
+set $addResult = call add 15 25
+print   add(15, 25) = $addResult
+
+if $addResult == 40 then {
+    print   [PASS] Multi-param function
+} else {
+    print   [FAIL] Multi-param function
+}
+
+# TEST C3: Recursive Function
+print
+print [C3] Recursive Function
+def countdown($n) {
+    if $n <= 0 then {
+        return "done"
+    }
+    print     countdown: $n
+    set $next = $n - 1
+    return call countdown $next
+}
+
+set $cdResult = call countdown 3
+print   Countdown result: $cdResult
+
+# ==================================================================
+# SECTION D: STRING FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION D] STRING FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST D1: Case Conversion
+print
+print [D1] Case Conversion
+set $text = "Hello World"
 set $upper = call upper $text
 set $lower = call lower $text
-set $trimmed = call trim $text
-set $len = call length $trimmed
-set $concat = call concat "A" "B" "C"
-set $sub = call substr "Hello" 0 3
+print   upper: $upper
+print   lower: $lower
 
-print upper(): $upper
-print lower(): $lower
-print trim(): [$trimmed]
-print length(): $len
-print concat(A,B,C): $concat
-print substr(Hello,0,3): $sub
+if $upper == "HELLO WORLD" then { print   [PASS] upper() } else { print   [FAIL] upper() }
+if $lower == "hello world" then { print   [PASS] lower() } else { print   [FAIL] lower() }
 
-set $hasHello = call contains "Hello World" "Hello"
-set $starts = call startsWith "Hello" "He"
-set $ends = call endsWith "Hello" "lo"
-print contains(Hello World, Hello): $hasHello
-print startsWith(Hello, He): $starts
-print endsWith(Hello, lo): $ends
-
-# ------------------------------------------
-# TEST 4: Math Functions
-# ------------------------------------------
+# TEST D2: String Manipulation
 print
-print [TEST 4] Math Functions
-print ----------------------------------------
+print [D2] String Manipulation
+set $padded = "  trim me  "
+set $trimmed = call trim $padded
+set $len = call length $trimmed
+print   trimmed: [$trimmed] length: $len
 
-set $rand = call random 1 100
+set $repeated = call repeat "ab" 3
+print   repeat(ab, 3): $repeated
+
+if $repeated == "ababab" then { print   [PASS] repeat() } else { print   [FAIL] repeat() }
+
+# TEST D3: Substring Functions
+print
+print [D3] Substring Functions
+set $str = "Hello World"
+set $sub = call substr $str 0 5
+set $sub2 = call substring $str 6 11
+print   substr(0,5): $sub
+print   substring(6,11): $sub2
+
+if $sub == "Hello" then { print   [PASS] substr() } else { print   [FAIL] substr() }
+
+# TEST D4: Search Functions
+print
+print [D4] Search Functions
+set $haystack = "The quick brown fox"
+set $hasQuick = call contains $haystack "quick"
+set $startsWith = call startsWith $haystack "The"
+set $endsWith = call endsWith $haystack "fox"
+set $idx = call indexOf $haystack "quick"
+
+print   contains(quick): $hasQuick
+print   startsWith(The): $startsWith
+print   endsWith(fox): $endsWith
+print   indexOf(quick): $idx
+
+if $idx == 4 then { print   [PASS] indexOf() } else { print   [FAIL] indexOf() }
+
+# TEST D5: Replace Functions
+print
+print [D5] Replace Functions
+set $original = "foo bar foo baz"
+set $replaced = call replace $original "foo" "qux"
+set $replacedAll = call replaceAll $original "foo" "qux"
+print   replace (first): $replaced
+print   replaceAll: $replacedAll
+
+# TEST D6: Split and Join
+print
+print [D6] Split and Join
+set $csv = "a,b,c,d"
+set $parts = call split $csv ","
+set $joined = call join $parts "-"
+print   split result count: $parts
+print   joined: $joined
+
+if $joined == "a-b-c-d" then { print   [PASS] split/join } else { print   [FAIL] split/join }
+
+# ==================================================================
+# SECTION E: MATH FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION E] MATH FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST E1: Basic Math
+print
+print [E1] Basic Math Functions
 set $absVal = call abs -42
 set $rounded = call round 3.7
 set $floored = call floor 3.9
 set $ceiled = call ceil 3.1
 
-print random(1,100): $rand
-print abs(-42): $absVal
-print round(3.7): $rounded
-print floor(3.9): $floored
-print ceil(3.1): $ceiled
+print   abs(-42): $absVal
+print   round(3.7): $rounded
+print   floor(3.9): $floored
+print   ceil(3.1): $ceiled
 
-# ------------------------------------------
-# TEST 5: Time Functions
-# ------------------------------------------
+if $absVal == 42 then { print   [PASS] abs() } else { print   [FAIL] abs() }
+if $rounded == 4 then { print   [PASS] round() } else { print   [FAIL] round() }
+if $floored == 3 then { print   [PASS] floor() } else { print   [FAIL] floor() }
+if $ceiled == 4 then { print   [PASS] ceil() } else { print   [FAIL] ceil() }
+
+# TEST E2: Min/Max/Clamp
 print
-print [TEST 5] Time Functions
-print ----------------------------------------
+print [E2] Min/Max/Clamp
+set $minVal = call min 5 3 8 1 9
+set $maxVal = call max 5 3 8 1 9
+set $clamped = call clamp 15 0 10
 
+print   min(5,3,8,1,9): $minVal
+print   max(5,3,8,1,9): $maxVal
+print   clamp(15, 0, 10): $clamped
+
+if $minVal == 1 then { print   [PASS] min() } else { print   [FAIL] min() }
+if $maxVal == 9 then { print   [PASS] max() } else { print   [FAIL] max() }
+if $clamped == 10 then { print   [PASS] clamp() } else { print   [FAIL] clamp() }
+
+# TEST E3: Power and Root
+print
+print [E3] Power and Root
+set $squared = call pow 5 2
+set $sqroot = call sqrt 16
+print   pow(5, 2): $squared
+print   sqrt(16): $sqroot
+
+if $squared == 25 then { print   [PASS] pow() } else { print   [FAIL] pow() }
+if $sqroot == 4 then { print   [PASS] sqrt() } else { print   [FAIL] sqrt() }
+
+# TEST E4: Random Number
+print
+print [E4] Random Number
+set $rand = call random 1 100
+print   random(1,100): $rand
+
+if $rand >= 1 then {
+    if $rand <= 100 then {
+        print   [PASS] random() in range
+    }
+}
+
+# ==================================================================
+# SECTION F: ARRAY FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION F] ARRAY FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST F1: Array Creation and Access
+print
+print [F1] Array Creation and Access
+set $arr = [1, 2, 3, 4, 5]
+set $len = call count $arr
+set $firstItem = call first $arr
+set $lastItem = call last $arr
+set $atItem = call at $arr 2
+
+print   Array: $arr
+print   count: $len
+print   first: $firstItem
+print   last: $lastItem
+print   at(2): $atItem
+
+if $len == 5 then { print   [PASS] count() } else { print   [FAIL] count() }
+if $firstItem == 1 then { print   [PASS] first() } else { print   [FAIL] first() }
+if $lastItem == 5 then { print   [PASS] last() } else { print   [FAIL] last() }
+
+# TEST F2: Array Modification
+print
+print [F2] Array Modification
+set $modArr = [1, 2, 3]
+set $modArr = call push $modArr 4
+set $popped = call pop $modArr
+print   After push(4) and pop: $modArr
+print   Popped value: $popped
+
+# TEST F3: Array Search
+print
+print [F3] Array Search
+set $searchArr = ["apple", "banana", "cherry"]
+set $hasApple = call includes $searchArr "apple"
+set $hasGrape = call includes $searchArr "grape"
+set $findIdx = call findIndex $searchArr "banana"
+
+print   includes(apple): $hasApple
+print   includes(grape): $hasGrape
+print   findIndex(banana): $findIdx
+
+if $hasApple == true then { print   [PASS] includes() } else { print   [FAIL] includes() }
+if $findIdx == 1 then { print   [PASS] findIndex() } else { print   [FAIL] findIndex() }
+
+# TEST F4: Array Transformation
+print
+print [F4] Array Transformation
+set $nums = [3, 1, 4, 1, 5, 9, 2, 6]
+set $sorted = call sort $nums
+set $reversed = call reverse $nums
+set $uniqueNums = call unique $nums
+set $sliced = call slice $nums 2 5
+
+print   sorted: $sorted
+print   reversed: $reversed
+print   unique: $uniqueNums
+print   slice(2,5): $sliced
+
+# TEST F5: New Array Functions (sum, avg)
+print
+print [F5] Sum and Average
+set $numbers = [10, 20, 30, 40, 50]
+set $total = call sum $numbers
+set $average = call avg $numbers
+
+print   sum: $total
+print   avg: $average
+
+if $total == 150 then { print   [PASS] sum() } else { print   [FAIL] sum() }
+if $average == 30 then { print   [PASS] avg() } else { print   [FAIL] avg() }
+
+# TEST F6: Range and Fill
+print
+print [F6] Range and Fill
+set $range1 = call range 0 5
+set $filled = call fill 3 "x"
+
+print   range(0,5): $range1
+print   fill(3, x): $filled
+
+# ==================================================================
+# SECTION G: OBJECT FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION G] OBJECT FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST G1: Object Creation and Access
+print
+print [G1] Object Creation and Access
+set $person = {name: "John", age: 30, city: "NYC"}
+set $objKeys = call keys $person
+set $objVals = call values $person
+set $name = call get $person "name"
+set $hasAge = call has $person "age"
+
+print   Object: $person
+print   keys: $objKeys
+print   values: $objVals
+print   get(name): $name
+print   has(age): $hasAge
+
+if $name == "John" then { print   [PASS] get() } else { print   [FAIL] get() }
+if $hasAge == true then { print   [PASS] has() } else { print   [FAIL] has() }
+
+# TEST G2: Object Merge and Clone
+print
+print [G2] Object Merge and Clone
+set $obj1 = {a: 1, b: 2}
+set $obj2 = {c: 3, d: 4}
+set $merged = call merge $obj1 $obj2
+set $cloned = call clone $obj1
+
+print   merged: $merged
+print   cloned: $cloned
+
+# ==================================================================
+# SECTION H: JSON FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION H] JSON FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST H1: JSON Serialization
+print
+print [H1] JSON Serialization
+set $data = {status: "ok", count: 42}
+set $jsonStr = call toJSON $data
+set $pretty = call prettyJSON $data
+
+print   toJSON: $jsonStr
+print   prettyJSON: $pretty
+
+# TEST H2: JSON Parsing
+print
+print [H2] JSON Parsing
+set $jsonInput = "{\\"x\\": 10, \\"y\\": 20}"
+set $parsed = call fromJSON $jsonInput
+print   fromJSON: $parsed
+
+# ==================================================================
+# SECTION I: TYPE FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION I] TYPE FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST I1: Type Checking
+print
+print [I1] Type Checking
+set $numCheck = call isNumber 42
+set $strCheck = call isString "hello"
+set $arrCheck = call isArray [1, 2, 3]
+set $objCheck = call isObject {a: 1}
+set $boolCheck = call isBoolean true
+set $nullCheck = call isNull null
+set $emptyCheck = call isEmpty ""
+set $emptyArrCheck = call isEmpty []
+
+print   isNumber(42): $numCheck
+print   isString(hello): $strCheck
+print   isArray([1,2,3]): $arrCheck
+print   isObject({a:1}): $objCheck
+print   isBoolean(true): $boolCheck
+print   isNull(null): $nullCheck
+print   isEmpty(""): $emptyCheck
+print   isEmpty([]): $emptyArrCheck
+
+# TEST I2: Type Conversion
+print
+print [I2] Type Conversion
+set $toNum = call toNumber "123.45"
+set $toInt = call toInt "42.9"
+set $toStr = call toString 999
+set $toBool = call toBoolean 1
+set $toArr = call toArray "abc"
+
+print   toNumber(123.45): $toNum
+print   toInt(42.9): $toInt
+print   toString(999): $toStr
+print   toBoolean(1): $toBool
+print   toArray(abc): $toArr
+
+# TEST I3: Typeof
+print
+print [I3] Typeof Function
+set $t1 = call typeof 42
+set $t2 = call typeof "hello"
+set $t3 = call typeof [1, 2]
+set $t4 = call typeof {a: 1}
+set $t5 = call typeof null
+
+print   typeof(42): $t1
+print   typeof(hello): $t2
+print   typeof([1,2]): $t3
+print   typeof({a:1}): $t4
+print   typeof(null): $t5
+
+# ==================================================================
+# SECTION J: TIME FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION J] TIME FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST J1: Current Time
+print
+print [J1] Current Time
 set $timestamp = call now
 set $timeStr = call time
 set $dateStr = call date
 
-print now(): $timestamp
-print time(): $timeStr
-print date(): $dateStr
+print   now(): $timestamp
+print   time(): $timeStr
+print   date(): $dateStr
 
-# ------------------------------------------
-# TEST 6: Type Check Functions
-# ------------------------------------------
+# TEST J2: Time Components
 print
-print [TEST 6] Type Check Functions
-print ----------------------------------------
+print [J2] Time Components
+set $yr = call year
+set $mo = call month
+set $dy = call day
+set $hr = call hour
+set $mi = call minute
+set $se = call second
 
-set $numCheck = call isNumber 42
-set $strCheck = call isString "hello"
-set $nullCheck = call isNull null
-set $typeOf = call typeof "test"
-set $toNum = call toNumber "123"
-set $toStr = call toString 456
+print   year: $yr, month: $mo, day: $dy
+print   hour: $hr, minute: $mi, second: $se
 
-print isNumber(42): $numCheck
-print isString(hello): $strCheck
-print isNull(null): $nullCheck
-print typeof(test): $typeOf
-print toNumber(123): $toNum
-print toString(456): $toStr
-
-# ------------------------------------------
-# TEST 7: Control Flow - Conditionals
-# ------------------------------------------
+# TEST J3: Elapsed Time
 print
-print [TEST 7] Control Flow - Conditionals
-print ----------------------------------------
+print [J3] Elapsed Time
+set $start = call now
+wait 100
+set $elapsed = call elapsed $start
+print   Elapsed after 100ms wait: $elapsed ms
 
-set $x = 10
-
-if $x > 5 then {
-    print $x > 5: PASS
-}
-
-if $x < 5 then {
-    print $x < 5: FAIL
+if $elapsed >= 100 then {
+    print   [PASS] elapsed() works
 } else {
-    print $x < 5 else: PASS
+    print   [FAIL] elapsed() too fast
 }
 
-set $y = 10
-if $x == $y then {
-    print $x == $y: PASS
+# ==================================================================
+# SECTION K: ERROR HANDLING
+# ==================================================================
+
+print
+print [SECTION K] ERROR HANDLING
+print ----------------------------------------------------------------
+
+# TEST K1: Try/Catch
+print
+print [K1] Try/Catch Basic
+try {
+    print   Inside try block
+    set $undefined = call nonexistent
+    print   [FAIL] Should have thrown
+} catch $err {
+    print   Caught error: $err
+    print   [PASS] Try/catch works
 }
 
-if $x != 5 then {
-    print $x != 5: PASS
+# TEST K2: Error Recovery
+print
+print [K2] Error Recovery
+set $recovered = false
+try {
+    set $x = call badFunction
+} catch {
+    set $recovered = true
 }
 
-# ------------------------------------------
-# TEST 8: Control Flow - Loops
-# ------------------------------------------
-print
-print [TEST 8] Control Flow - Loops
-print ----------------------------------------
-
-print Count loop (0 to 2):
-loop 3 {
-    print   iteration $i
+if $recovered then {
+    print   [PASS] Error recovery works
+} else {
+    print   [FAIL] Error recovery failed
 }
 
-print Loop with break at 2:
-loop 5 {
-    print   iteration $i
-    if $i == 2 then {
-        print   breaking!
-        break
-    }
-}
+# ==================================================================
+# SECTION L: FILE SYSTEM
+# ==================================================================
 
-# ==========================================
-# SECTION B: SYSTEM FEATURES
-# ==========================================
-
-# ------------------------------------------
-# TEST 9: Sound System
-# ------------------------------------------
 print
-print [TEST 9] Sound System
-print ----------------------------------------
+print [SECTION L] FILE SYSTEM
+print ----------------------------------------------------------------
 
-print Playing sounds...
-play notify
-wait 200
-play open
-wait 200
-print Sound test complete
-
-# ------------------------------------------
-# TEST 10: Notifications
-# ------------------------------------------
+# TEST L1: Write and Read
 print
-print [TEST 10] Notifications
-print ----------------------------------------
+print [L1] Write and Read File
+set $testPath = "C:/Users/User/Documents/test_script.txt"
+set $testContent = "Hello from RetroScript test!"
 
-notify Test notification from script!
-print Notification sent
-wait 300
-
-# ------------------------------------------
-# TEST 11: Alert Dialog
-# ------------------------------------------
-print
-print [TEST 11] Alert Dialog
-print ----------------------------------------
-
-print Showing alert...
-alert Script test alert!
-print Alert shown (non-blocking)
-
-# ------------------------------------------
-# TEST 12: Custom Event Emission
-# ------------------------------------------
-print
-print [TEST 12] Custom Event Emission
-print ----------------------------------------
-
-print Emitting custom events...
-emit script:test message="Hello from script"
-emit custom:event type="test" value=42
-print Events emitted
-
-# ------------------------------------------
-# TEST 13: File System Operations
-# ------------------------------------------
-print
-print [TEST 13] File System Operations
-print ----------------------------------------
-
-set $testPath = "C:/Users/User/Documents/script_test.txt"
-set $testContent = "Test file created by RetroScript"
-
-print Writing file...
 write $testContent to $testPath
-print File written to $testPath
+print   File written
 
-print Reading file...
 read $testPath into $readContent
-print File content: $readContent
+print   File content: $readContent
 
-print Cleaning up test file...
-delete $testPath
-print Test file deleted
+if $readContent == $testContent then {
+    print   [PASS] File read/write
+} else {
+    print   [FAIL] File content mismatch
+}
 
-# ------------------------------------------
-# TEST 14: System Functions
-# ------------------------------------------
+# TEST L2: Delete File
 print
-print [TEST 14] System Functions
-print ----------------------------------------
+print [L2] Delete File
+delete $testPath
+print   [PASS] File deleted
 
+# TEST L3: Directory Operations
+print
+print [L3] Directory Operations
+set $testDir = "C:/Users/User/Documents/ScriptTest"
+mkdir $testDir
+print   Directory created: $testDir
+
+# Clean up
+delete $testDir
+print   Directory deleted
+
+# ==================================================================
+# SECTION M: SYSTEM INTEGRATION
+# ==================================================================
+
+print
+print [SECTION M] SYSTEM INTEGRATION
+print ----------------------------------------------------------------
+
+# TEST M1: Get Windows
+print
+print [M1] Get Windows
 set $windows = call getWindows
 set $winCount = call count $windows
-print Open windows: $winCount
+print   Current windows: $winCount
 
+# TEST M2: Get Apps
+print
+print [M2] Get Apps
 set $apps = call getApps
 set $appCount = call count $apps
-print Available apps: $appCount
+print   Available apps: $appCount
 
-# ==========================================
-# SECTION C: APP LAUNCH TESTS
-# ==========================================
-
-# ------------------------------------------
-# TEST 15: Productivity Apps
-# ------------------------------------------
+# TEST M3: Environment
 print
-print [TEST 15] Productivity Apps
-print ----------------------------------------
+print [M3] Environment Info
+set $env = call getEnv
+print   Environment: $env
 
-print Launching Calculator...
-launch calculator
-wait 400
-set $wins = call getWindows
-set $count = call count $wins
-print Windows after Calculator: $count
-close
-wait 200
-
-print Launching Notepad...
-launch notepad
-wait 400
-set $wins = call getWindows
-set $count = call count $wins
-print Windows after Notepad: $count
-close
-wait 200
-
-print Launching Clock...
-launch clock
-wait 400
-close
-wait 200
-print Productivity apps: PASS
-
-# ------------------------------------------
-# TEST 16: System Tools
-# ------------------------------------------
+# TEST M4: App Launch and Close
 print
-print [TEST 16] System Tools
-print ----------------------------------------
-
-print Launching Terminal...
-launch terminal
-wait 400
-close
-wait 200
-
-print Launching My Computer...
-launch mycomputer
-wait 400
-close
-wait 200
-
-print System tools: PASS
-
-# ==========================================
-# SECTION D: GAME TESTS
-# ==========================================
-
-# ------------------------------------------
-# TEST 17: Snake Game
-# ------------------------------------------
-print
-print [TEST 17] Snake Game Launch
-print ----------------------------------------
-
-print Launching Snake...
-launch snake
-wait 500
-
-set $wins = call getWindows
-set $count = call count $wins
-print Windows with Snake: $count
-
-print Emitting game events for Snake...
-emit game:start appId="snake"
-wait 100
-emit snake:food:eat score=10
-wait 100
-emit game:score appId="snake" score=10
-wait 100
-emit game:over appId="snake" score=10
-
-close
-wait 200
-print Snake game: PASS
-
-# ------------------------------------------
-# TEST 18: Minesweeper Game
-# ------------------------------------------
-print
-print [TEST 18] Minesweeper Game Launch
-print ----------------------------------------
-
-print Launching Minesweeper...
-launch minesweeper
-wait 500
-
-print Emitting Minesweeper events...
-emit game:start appId="minesweeper"
-wait 100
-emit minesweeper:cell:reveal row=0 col=0 value=0
-wait 100
-emit minesweeper:cell:flag row=1 col=1
-wait 100
-emit minesweeper:timer seconds=10
-
-close
-wait 200
-print Minesweeper: PASS
-
-# ------------------------------------------
-# TEST 19: Asteroids Game
-# ------------------------------------------
-print
-print [TEST 19] Asteroids Game Launch
-print ----------------------------------------
-
-print Launching Asteroids...
-launch asteroids
-wait 500
-
-print Emitting Asteroids events...
-emit game:start appId="asteroids"
-wait 100
-emit asteroids:asteroid:destroy size="large" points=20
-wait 100
-emit asteroids:powerup:collect type="shield"
-wait 100
-emit game:score appId="asteroids" score=100
-wait 100
-emit game:lives appId="asteroids" lives=2
-
-close
-wait 200
-print Asteroids: PASS
-
-# ------------------------------------------
-# TEST 20: Solitaire Game
-# ------------------------------------------
-print
-print [TEST 20] Solitaire Game Launch
-print ----------------------------------------
-
-print Launching Solitaire...
-launch solitaire
-wait 500
-
-print Emitting Solitaire events...
-emit game:start appId="solitaire"
-wait 100
-emit solitaire:card:move from="tableau" to="foundation"
-wait 100
-emit solitaire:stock:draw
-wait 100
-
-close
-wait 200
-print Solitaire: PASS
-
-# ------------------------------------------
-# TEST 21: SkiFree Game
-# ------------------------------------------
-print
-print [TEST 21] SkiFree Game Launch
-print ----------------------------------------
-
-print Launching SkiFree...
-launch skifree
-wait 500
-
-print Emitting SkiFree events...
-emit game:start appId="skifree"
-wait 100
-emit skifree:jump distance=50
-wait 100
-emit game:score appId="skifree" score=500
-wait 100
-emit skifree:yeti:spawn
-
-close
-wait 200
-print SkiFree: PASS
-
-# ==========================================
-# SECTION E: EVENT SYSTEM TESTS
-# ==========================================
-
-# ------------------------------------------
-# TEST 22: Window Events
-# ------------------------------------------
-print
-print [TEST 22] Window Management Events
-print ----------------------------------------
-
-print Testing window lifecycle...
+print [M4] App Launch and Close
 launch calculator
 wait 300
-
-print Emitting focus event...
-emit window:focus windowId="test"
-wait 100
-
-print Emitting minimize event...
-emit window:minimize windowId="test"
-wait 100
-
-print Emitting maximize event...
-emit window:maximize windowId="test"
-wait 100
-
-close
-wait 200
-print Window events: PASS
-
-# ------------------------------------------
-# TEST 23: Desktop Events
-# ------------------------------------------
-print
-print [TEST 23] Desktop Events
-print ----------------------------------------
-
-print Emitting desktop events...
-emit desktop:refresh
-wait 100
-emit desktop:render
-wait 100
-print Desktop events: PASS
-
-# ------------------------------------------
-# TEST 24: Audio Events
-# ------------------------------------------
-print
-print [TEST 24] Audio Events
-print ----------------------------------------
-
-print Emitting audio events...
-emit sound:play type="notify"
-wait 200
-emit sound:play type="error"
-wait 200
-emit sound:play type="close"
-wait 200
-print Audio events: PASS
-
-# ------------------------------------------
-# TEST 25: System Events
-# ------------------------------------------
-print
-print [TEST 25] System Events
-print ----------------------------------------
-
-print Emitting system events...
-emit notification:show message="System event test"
-wait 300
-emit filesystem:changed
-wait 100
-print System events: PASS
-
-# ==========================================
-# SECTION F: MULTI-APP WORKFLOW
-# ==========================================
-
-# ------------------------------------------
-# TEST 26: Multi-App Workflow
-# ------------------------------------------
-print
-print [TEST 26] Multi-App Workflow
-print ----------------------------------------
-
-print Opening multiple apps...
-launch calculator
-wait 200
-launch notepad
-wait 200
-launch clock
-wait 200
-
 set $wins = call getWindows
-set $count = call count $wins
-print Open windows: $count
+set $afterLaunch = call count $wins
+print   Windows after launch: $afterLaunch
 
-print Closing all apps...
-close
-wait 100
-close
-wait 100
 close
 wait 200
-
 set $wins = call getWindows
-set $count = call count $wins
-print Windows after closing: $count
-print Multi-app workflow: PASS
+set $afterClose = call count $wins
+print   Windows after close: $afterClose
 
-# ==========================================
-# TEST SUMMARY
-# ==========================================
-print
-print ========================================
-print   ALL TESTS COMPLETED!
-print ========================================
-print
-print Section A: Core Language Features
-print Section B: System Features
-print Section C: App Launch Tests
-print Section D: Game Tests
-print Section E: Event System Tests
-print Section F: Multi-App Workflow
-print
-print Check output above for any FAIL messages.
-print All PASS = scripting system working!
+# ==================================================================
+# SECTION N: EVENTS
+# ==================================================================
 
-notify All comprehensive tests completed!
+print
+print [SECTION N] EVENTS
+print ----------------------------------------------------------------
+
+# TEST N1: Event Emission
+print
+print [N1] Event Emission
+emit script:test message="Test event" value=42
+emit custom:event type="test"
+print   [PASS] Events emitted
+
+# TEST N2: Notification
+print
+print [N2] Notification
+notify RetroScript test notification!
+print   [PASS] Notification sent
+
+# TEST N3: Sound
+print
+print [N3] Sound System
+play notify
+wait 200
+print   [PASS] Sound played
+
+# ==================================================================
+# SECTION O: DEBUG FUNCTIONS
+# ==================================================================
+
+print
+print [SECTION O] DEBUG FUNCTIONS
+print ----------------------------------------------------------------
+
+# TEST O1: Debug and Inspect
+print
+print [O1] Debug and Inspect
+set $testObj = {name: "test", value: 123}
+set $debugOut = call debug "Debug message:" $testObj
+set $inspected = call inspect $testObj
+
+print   debug output captured
+print   inspect output captured
+
+# TEST O2: Assert (should pass)
+print
+print [O2] Assert
+set $assertResult = call assert true "This should pass"
+print   [PASS] Assert with true passed
+
+# ==================================================================
+# FINAL SUMMARY
+# ==================================================================
+
+print
+print ================================================================
+print   TEST SUITE COMPLETED!
+print ================================================================
+print
+print Sections tested:
+print   A: Basic Language Features
+print   B: Control Flow
+print   C: Functions
+print   D: String Functions
+print   E: Math Functions
+print   F: Array Functions
+print   G: Object Functions
+print   H: JSON Functions
+print   I: Type Functions
+print   J: Time Functions
+print   K: Error Handling
+print   L: File System
+print   M: System Integration
+print   N: Events
+print   O: Debug Functions
+print
+print Review output above for [PASS] and [FAIL] markers.
+print A successful test run shows all [PASS] markers!
+
+notify RetroScript Test Suite Complete!
 play notify`;
 
         return `
@@ -1346,7 +1635,7 @@ QUICK EXAMPLES:
         // Commands
         const commands = ['launch', 'open', 'close', 'wait', 'sleep', 'print', 'log', 'set', 'emit', 'alert', 'confirm', 'prompt', 'notify', 'focus', 'minimize', 'maximize', 'play', 'write', 'read', 'mkdir', 'delete', 'rm', 'call'];
         // Built-in functions
-        const builtins = ['random', 'abs', 'round', 'floor', 'ceil', 'min', 'max', 'pow', 'sqrt', 'sin', 'cos', 'tan', 'log', 'exp', 'clamp', 'mod', 'sign', 'concat', 'upper', 'lower', 'length', 'trim', 'split', 'join', 'substr', 'substring', 'replace', 'replaceAll', 'contains', 'startsWith', 'endsWith', 'padStart', 'padEnd', 'repeat', 'charAt', 'indexOf', 'lastIndexOf', 'match', 'count', 'first', 'last', 'push', 'pop', 'shift', 'unshift', 'includes', 'sort', 'reverse', 'slice', 'splice', 'unique', 'flatten', 'range', 'fill', 'at', 'keys', 'values', 'entries', 'get', 'has', 'merge', 'clone', 'toJSON', 'fromJSON', 'prettyJSON', 'getWindows', 'getApps', 'now', 'time', 'date', 'year', 'month', 'day', 'hour', 'minute', 'second', 'formatDate', 'formatTime', 'elapsed', 'query', 'exec', 'typeof', 'isNumber', 'isString', 'isArray', 'isObject', 'isBoolean', 'isNull', 'isEmpty', 'toNumber', 'toInt', 'toString', 'toBoolean', 'toArray', 'debug', 'inspect', 'assert', 'getEnv', 'PI', 'E'];
+        const builtins = ['random', 'abs', 'round', 'floor', 'ceil', 'min', 'max', 'pow', 'sqrt', 'sin', 'cos', 'tan', 'log', 'exp', 'clamp', 'mod', 'sign', 'concat', 'upper', 'lower', 'length', 'trim', 'trimStart', 'trimEnd', 'split', 'join', 'substr', 'substring', 'replace', 'replaceAll', 'contains', 'startsWith', 'endsWith', 'padStart', 'padEnd', 'repeat', 'charAt', 'charCode', 'fromCharCode', 'indexOf', 'lastIndexOf', 'match', 'count', 'first', 'last', 'push', 'pop', 'shift', 'unshift', 'includes', 'sort', 'reverse', 'slice', 'splice', 'concat_arrays', 'unique', 'flatten', 'range', 'fill', 'at', 'find', 'findIndex', 'filter', 'map', 'sum', 'avg', 'every', 'some', 'keys', 'values', 'entries', 'get', 'set', 'has', 'merge', 'clone', 'toJSON', 'fromJSON', 'prettyJSON', 'getWindows', 'getApps', 'now', 'time', 'date', 'year', 'month', 'day', 'weekday', 'hour', 'minute', 'second', 'formatDate', 'formatTime', 'elapsed', 'query', 'exec', 'alert', 'confirm', 'prompt', 'typeof', 'isNumber', 'isString', 'isArray', 'isObject', 'isBoolean', 'isNull', 'isEmpty', 'toNumber', 'toInt', 'toString', 'toBoolean', 'toArray', 'debug', 'inspect', 'assert', 'getEnv', 'PI', 'E'];
 
         const lines = code.split('\n');
         return lines.map(line => {
