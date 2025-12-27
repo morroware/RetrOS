@@ -9,14 +9,17 @@ RetroScript is the scripting language for RetrOS (IlluminatOS!). It allows you t
 3. [Variables](#variables)
 4. [Commands](#commands)
 5. [Control Flow](#control-flow)
-6. [Events](#events)
-7. [Dialogs](#dialogs)
-8. [File System](#file-system)
-9. [Built-in Functions](#built-in-functions)
-10. [Window Management](#window-management)
-11. [Sound](#sound)
-12. [Examples](#examples)
-13. [Tips & Best Practices](#tips--best-practices)
+6. [User-Defined Functions](#user-defined-functions)
+7. [Error Handling](#error-handling)
+8. [Events](#events)
+9. [Dialogs](#dialogs)
+10. [File System](#file-system)
+11. [Built-in Functions](#built-in-functions)
+12. [Window Management](#window-management)
+13. [Sound](#sound)
+14. [Advanced Features](#advanced-features)
+15. [Examples](#examples)
+16. [Tips & Best Practices](#tips--best-practices)
 
 ---
 
@@ -102,6 +105,26 @@ set $sum = $a + $b      # 15
 set $diff = $a - $b     # 5
 set $product = $a * $b  # 50
 set $quotient = $a / $b # 2
+set $remainder = $a % $b # 0 (modulo)
+```
+
+### Arrays
+
+Create arrays using array literals:
+
+```retroscript
+set $numbers = [1, 2, 3, 4, 5]
+set $names = ["Alice", "Bob", "Charlie"]
+set $mixed = [1, "hello", true]
+```
+
+### Objects
+
+Create objects using object literals:
+
+```retroscript
+set $person = {name: "John", age: 30, active: true}
+set $config = {timeout: 5000, retries: 3}
 ```
 
 ### Built-in Constants
@@ -202,9 +225,23 @@ loop while $count < 5 {
 }
 ```
 
-### Break
+**For-Each Loop:**
+```retroscript
+set $names = ["Alice", "Bob", "Charlie"]
+foreach $name in $names {
+    print Hello, $name!
+}
 
-Exit a loop early:
+# With index
+set $items = ["apple", "banana", "cherry"]
+foreach $item in $items {
+    print Item $i: $item
+}
+```
+
+### Break and Continue
+
+Exit a loop early with `break`:
 
 ```retroscript
 loop 100 {
@@ -216,6 +253,18 @@ loop 100 {
 # Only prints 0-5
 ```
 
+Skip to the next iteration with `continue`:
+
+```retroscript
+loop 10 {
+    if $i % 2 == 0 then {
+        continue  # Skip even numbers
+    }
+    print Odd: $i
+}
+# Prints: 1, 3, 5, 7, 9
+```
+
 ### Return
 
 Return a value from a script:
@@ -223,6 +272,114 @@ Return a value from a script:
 ```retroscript
 set $result = 42
 return $result
+```
+
+---
+
+## User-Defined Functions
+
+Create your own reusable functions with `def` or `func`:
+
+### Defining Functions
+
+```retroscript
+# Simple function
+def greet($name) {
+    print Hello, $name!
+}
+
+# Function with return value
+def add($a, $b) {
+    return $a + $b
+}
+
+# Function with multiple parameters
+func calculateArea($width, $height) {
+    set $area = $width * $height
+    return $area
+}
+```
+
+### Calling User Functions
+
+```retroscript
+# Define the function
+def double($x) {
+    return $x * 2
+}
+
+# Call it
+set $result = call double 5
+print Result: $result  # Prints: 10
+
+# Use in expressions
+set $value = call double 10
+set $final = $value + 5  # 25
+```
+
+### Example: Factorial Function
+
+```retroscript
+def factorial($n) {
+    if $n <= 1 then {
+        return 1
+    }
+    set $prev = call factorial $n - 1
+    return $n * $prev
+}
+
+set $result = call factorial 5
+print 5! = $result  # 120
+```
+
+---
+
+## Error Handling
+
+Handle errors gracefully with `try/catch`:
+
+### Basic Try/Catch
+
+```retroscript
+try {
+    # Code that might fail
+    read "nonexistent.txt" into $content
+    print File content: $content
+} catch {
+    print File could not be read
+}
+```
+
+### Accessing Error Message
+
+```retroscript
+try {
+    # Intentionally cause an error
+    set $result = call unknownFunction
+} catch $err {
+    print Error occurred: $err
+}
+```
+
+### Example: Safe File Operations
+
+```retroscript
+def safeRead($path) {
+    try {
+        read $path into $content
+        return $content
+    } catch $err {
+        print Warning: Could not read $path - $err
+        return null
+    }
+}
+
+set $data = call safeRead "config.txt"
+if $data then {
+    print Config loaded successfully
+} else {
+    print Using default configuration
+}
 ```
 
 ---
@@ -354,6 +511,20 @@ set $result = call functionName arg1 arg2
 | `round value` | Round to nearest | `call round 3.7` → 4 |
 | `floor value` | Round down | `call floor 3.9` → 3 |
 | `ceil value` | Round up | `call ceil 3.1` → 4 |
+| `min a b ...` | Minimum value | `call min 5 3 8` → 3 |
+| `max a b ...` | Maximum value | `call max 5 3 8` → 8 |
+| `pow base exp` | Power | `call pow 2 3` → 8 |
+| `sqrt value` | Square root | `call sqrt 16` → 4 |
+| `sin value` | Sine | `call sin 0` → 0 |
+| `cos value` | Cosine | `call cos 0` → 1 |
+| `tan value` | Tangent | `call tan 0` → 0 |
+| `log value` | Natural log | `call log 2.718` → ~1 |
+| `exp value` | e^value | `call exp 1` → ~2.718 |
+| `clamp val min max` | Clamp to range | `call clamp 15 0 10` → 10 |
+| `mod a b` | Modulo | `call mod 10 3` → 1 |
+| `sign value` | Sign (-1, 0, 1) | `call sign -5` → -1 |
+| `PI` | Pi constant | `call PI` → 3.14159... |
+| `E` | Euler's number | `call E` → 2.71828... |
 
 ### String Functions
 
@@ -362,26 +533,70 @@ set $result = call functionName arg1 arg2
 | `concat a b c` | Concatenate strings | `call concat "Hello" " " "World"` |
 | `upper text` | Uppercase | `call upper "hello"` → "HELLO" |
 | `lower text` | Lowercase | `call lower "HELLO"` → "hello" |
-| `length text` | String length | `call length "hello"` → 5 |
+| `length text` | String/array length | `call length "hello"` → 5 |
 | `trim text` | Remove whitespace | `call trim "  hi  "` → "hi" |
+| `trimStart text` | Remove leading space | `call trimStart "  hi"` → "hi" |
+| `trimEnd text` | Remove trailing space | `call trimEnd "hi  "` → "hi" |
 | `split text sep` | Split into array | `call split "a,b,c" ","` |
 | `join arr sep` | Join array | `call join $arr ","` |
 | `substr text start len` | Substring | `call substr "hello" 0 3` → "hel" |
+| `substring text start end` | Substring by indices | `call substring "hello" 1 4` → "ell" |
 | `replace text old new` | Replace first | `call replace "hello" "l" "L"` |
+| `replaceAll text old new` | Replace all | `call replaceAll "hello" "l" "L"` → "heLLo" |
 | `contains text search` | Contains check | `call contains "hello" "ell"` → true |
 | `startsWith text prefix` | Starts with | `call startsWith "hello" "hel"` → true |
 | `endsWith text suffix` | Ends with | `call endsWith "hello" "lo"` → true |
+| `padStart str len char` | Pad start | `call padStart "5" 3 "0"` → "005" |
+| `padEnd str len char` | Pad end | `call padEnd "5" 3 "0"` → "500" |
+| `repeat str count` | Repeat string | `call repeat "ab" 3` → "ababab" |
+| `charAt str idx` | Character at index | `call charAt "hello" 1` → "e" |
+| `indexOf str search` | Find index | `call indexOf "hello" "l"` → 2 |
+| `lastIndexOf str search` | Find last index | `call lastIndexOf "hello" "l"` → 3 |
+| `match str pattern` | Regex match | `call match "hello" "[aeiou]"` |
 
 ### Array Functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `count arr` | Array length | `call count $myArray` |
+| `count arr` | Array/object length | `call count $myArray` |
 | `first arr` | First element | `call first $arr` |
 | `last arr` | Last element | `call last $arr` |
 | `push arr item` | Add to end | `call push $arr "new"` |
 | `pop arr` | Remove from end | `call pop $arr` |
+| `shift arr` | Remove from start | `call shift $arr` |
+| `unshift arr item` | Add to start | `call unshift $arr "first"` |
 | `includes arr item` | Contains check | `call includes $arr "find"` |
+| `sort arr desc` | Sort array | `call sort $arr` or `call sort $arr true` |
+| `reverse arr` | Reverse array | `call reverse $arr` |
+| `slice arr start end` | Extract portion | `call slice $arr 1 3` |
+| `splice arr start n items` | Modify array | `call splice $arr 1 2 "x"` |
+| `concat_arrays a b` | Merge arrays | `call concat_arrays $a $b` |
+| `unique arr` | Remove duplicates | `call unique $arr` |
+| `flatten arr depth` | Flatten nested | `call flatten $arr 2` |
+| `range start end step` | Generate range | `call range 0 10 2` → [0,2,4,6,8] |
+| `fill length value` | Create filled array | `call fill 5 0` → [0,0,0,0,0] |
+| `at arr idx` | Get by index (neg ok) | `call at $arr -1` → last element |
+
+### Object Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `keys obj` | Get object keys | `call keys $person` |
+| `values obj` | Get object values | `call values $person` |
+| `entries obj` | Get key-value pairs | `call entries $person` |
+| `get obj key default` | Get property | `call get $obj "name" "unknown"` |
+| `set obj key value` | Set property | `call set $obj "age" 30` |
+| `has obj key` | Check property exists | `call has $obj "name"` |
+| `merge obj1 obj2` | Merge objects | `call merge $defaults $config` |
+| `clone obj` | Deep clone | `call clone $original` |
+
+### JSON Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `toJSON obj` | Convert to JSON | `call toJSON $data` |
+| `fromJSON str` | Parse JSON | `call fromJSON $jsonStr` |
+| `prettyJSON obj indent` | Pretty print | `call prettyJSON $data 2` |
 
 ### Time Functions
 
@@ -390,18 +605,43 @@ set $result = call functionName arg1 arg2
 | `now` | Unix timestamp (ms) | `call now` |
 | `time` | Current time string | `call time` → "10:30:45 AM" |
 | `date` | Current date string | `call date` → "1/15/2024" |
+| `year` | Current year | `call year` → 2024 |
+| `month` | Current month (1-12) | `call month` → 12 |
+| `day` | Current day (1-31) | `call day` → 25 |
+| `weekday` | Day of week (0-6) | `call weekday` → 3 (Wed) |
+| `hour` | Current hour (0-23) | `call hour` → 14 |
+| `minute` | Current minute (0-59) | `call minute` → 30 |
+| `second` | Current second (0-59) | `call second` → 45 |
+| `formatDate ts format` | Format date | `call formatDate $ts "iso"` |
+| `formatTime ts format` | Format time | `call formatTime $ts "long"` |
+| `elapsed startMs` | Time since start | `call elapsed $startTime` |
 
 ### Type Functions
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `typeof value` | Get type | `call typeof $var` |
+| `typeof value` | Get type | `call typeof $var` → "string", "number", "array", "object" |
 | `isNumber value` | Is number? | `call isNumber 42` → true |
 | `isString value` | Is string? | `call isString "hi"` → true |
 | `isArray value` | Is array? | `call isArray $arr` → true |
-| `isNull value` | Is null? | `call isNull $var` |
+| `isObject value` | Is object? | `call isObject $obj` → true |
+| `isBoolean value` | Is boolean? | `call isBoolean true` → true |
+| `isNull value` | Is null/undefined? | `call isNull $var` |
+| `isEmpty value` | Is empty? | `call isEmpty ""` → true |
 | `toNumber value` | Convert to number | `call toNumber "42"` → 42 |
+| `toInt value` | Convert to integer | `call toInt "42.7"` → 42 |
 | `toString value` | Convert to string | `call toString 42` → "42" |
+| `toBoolean value` | Convert to boolean | `call toBoolean 1` → true |
+| `toArray value` | Convert to array | `call toArray "abc"` → ["a","b","c"] |
+
+### Debug Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `debug args...` | Print debug message | `call debug "Value:" $x` |
+| `inspect value` | Pretty-print value | `call inspect $object` |
+| `assert cond msg` | Assert condition | `call assert $x > 0 "x must be positive"` |
+| `getEnv key` | Get environment info | `call getEnv "version"` |
 
 ### System Functions
 
@@ -459,6 +699,137 @@ play startup
 play shutdown
 play open
 play close
+```
+
+---
+
+## Advanced Features
+
+### Script Timeout
+
+Scripts have a default 30-second timeout to prevent infinite loops. The script engine will automatically stop execution if it runs too long.
+
+```retroscript
+# This will be stopped after 30 seconds
+loop while true {
+    print Still running...
+    wait 100
+}
+```
+
+While loops also have a maximum iteration count (100,000) to prevent runaway scripts.
+
+### Array Iteration Patterns
+
+```retroscript
+# Using foreach with arrays
+set $fruits = ["apple", "banana", "cherry"]
+
+# Basic iteration
+foreach $fruit in $fruits {
+    print Fruit: $fruit
+}
+
+# With index ($i is available)
+foreach $fruit in $fruits {
+    print $i: $fruit
+}
+
+# Processing with accumulator
+set $total = 0
+set $prices = [10, 20, 30]
+foreach $price in $prices {
+    set $total = $total + $price
+}
+print Total: $total
+```
+
+### Working with Objects
+
+```retroscript
+# Create an object
+set $user = {name: "John", age: 30, role: "admin"}
+
+# Access properties
+set $name = call get $user "name"
+print User: $name
+
+# Get all keys
+set $props = call keys $user
+foreach $prop in $props {
+    set $val = call get $user $prop
+    print $prop: $val
+}
+
+# Merge objects
+set $defaults = {theme: "dark", language: "en"}
+set $settings = {theme: "light"}
+set $config = call merge $defaults $settings
+# Result: {theme: "light", language: "en"}
+```
+
+### Timing and Performance
+
+```retroscript
+# Measure execution time
+set $start = call now
+
+# ... do some work ...
+loop 1000 {
+    set $x = call sqrt $i
+}
+
+set $elapsed = call elapsed $start
+print Execution took $elapsed ms
+```
+
+### Debugging Scripts
+
+```retroscript
+# Use debug to output diagnostic info
+set $data = [1, 2, 3]
+call debug "Data array:" $data
+
+# Use inspect for detailed view
+set $obj = {a: 1, b: {c: 2}}
+call inspect $obj
+
+# Use assert for validation
+set $count = call count $data
+call assert $count > 0 "Data should not be empty"
+```
+
+### String Interpolation in Print
+
+Variables are automatically interpolated in print statements:
+
+```retroscript
+set $name = "Alice"
+set $score = 95
+
+print Hello, $name! Your score is $score.
+# Output: Hello, Alice! Your score is 95.
+```
+
+### Modular Scripts with Functions
+
+```retroscript
+# Define utility functions
+def log_info($msg) {
+    set $ts = call time
+    print [$ts] INFO: $msg
+}
+
+def log_error($msg) {
+    set $ts = call time
+    print [$ts] ERROR: $msg
+    play error
+}
+
+# Use them throughout your script
+call log_info "Script started"
+# ... do work ...
+call log_info "Processing complete"
 ```
 
 ---
