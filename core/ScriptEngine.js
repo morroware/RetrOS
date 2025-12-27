@@ -204,12 +204,7 @@ class ScriptEngineClass {
             if (braceDepth === 0 && (!trimmedLine || trimmedLine.startsWith('#'))) continue;
 
             // Remove inline comments (but not inside strings)
-            if (!trimmedLine.includes('"') && !trimmedLine.includes("'")) {
-                const commentIdx = trimmedLine.indexOf('#');
-                if (commentIdx > 0) {
-                    trimmedLine = trimmedLine.substring(0, commentIdx).trim();
-                }
-            }
+            trimmedLine = this._removeInlineComment(trimmedLine);
 
             // Track if we were already in a block before counting this line's braces
             // This ensures closing braces on their own line are included in the block
@@ -260,15 +255,15 @@ class ScriptEngineClass {
      * @private
      */
     _parseLine(line, lineNum) {
-        // Split by semicolons for multiple statements per line
-        if (line.includes(';') && !line.includes('"')) {
-            const subStatements = line.split(';').map(s => s.trim()).filter(s => s);
-            if (subStatements.length > 1) {
-                return {
-                    type: 'block',
-                    statements: subStatements.map(s => this._parseLine(s, lineNum))
-                };
-            }
+        // Split by semicolons for multiple statements per line (respecting quoted strings)
+        const subStatements = this._splitBySemicolon(line);
+        if (subStatements.length > 1) {
+            return {
+                type: 'block',
+                statements: subStatements.map(s => this._parseLine(s, lineNum))
+            };
+        }
+        if (subStatements.length === 1) {
             line = subStatements[0];
         }
 
@@ -348,13 +343,34 @@ class ScriptEngineClass {
             case 'try':
                 return this._parseTry(parts, line);
             default:
-                // Check if it's a function call or variable assignment
-                if (line.includes('=')) {
+                // Check if it's a variable assignment (but not comparison operators)
+                // Look for a single '=' that's not part of '==', '!=', '<=', '>='
+                if (this._isAssignment(line)) {
                     return this._parseAssignment(line);
                 }
                 // Treat as a command
                 return { type: 'command', command, args: parts.slice(1) };
         }
+    }
+
+    /**
+     * Check if a line is an assignment (not a comparison)
+     * @private
+     */
+    _isAssignment(line) {
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            const prevChar = i > 0 ? line[i - 1] : '';
+            const nextChar = i < line.length - 1 ? line[i + 1] : '';
+
+            if (char === '=') {
+                // Skip if part of ==, !=, <=, >=
+                if (prevChar === '=' || prevChar === '!' || prevChar === '<' || prevChar === '>') continue;
+                if (nextChar === '=') continue;
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -380,11 +396,7 @@ class ScriptEngineClass {
         let body = [];
         if (braceStart > 0 && braceEnd > braceStart) {
             const bodyText = line.substring(braceStart + 1, braceEnd).trim();
-            const bodyLines = bodyText.split(/[\n;]/).map(l => l.trim()).filter(l => l && l !== '}');
-            for (const bodyLine of bodyLines) {
-                const stmt = this._parseLine(bodyLine, 0);
-                if (stmt) body.push(stmt);
-            }
+            body = this._parseBody(bodyText);
         }
 
         return {
@@ -393,6 +405,27 @@ class ScriptEngineClass {
             array: this._parseValue(arrayExpr),
             body
         };
+    }
+
+    /**
+     * Parse a body of statements (respects strings and nested blocks)
+     * @private
+     */
+    _parseBody(bodyText) {
+        const statements = [];
+        // First split by newlines, then by semicolons (respecting quotes)
+        const lines = bodyText.split('\n').map(l => l.trim()).filter(l => l && l !== '}');
+
+        for (const bodyLine of lines) {
+            // Split each line by semicolons (respecting quotes)
+            const subStatements = this._splitBySemicolon(bodyLine);
+            for (const subStmt of subStatements) {
+                const stmt = this._parseLine(subStmt, 0);
+                if (stmt) statements.push(stmt);
+            }
+        }
+
+        return statements;
     }
 
     /**
@@ -474,6 +507,74 @@ class ScriptEngineClass {
             catchBody,
             errorVar
         };
+    }
+
+    /**
+     * Remove inline comment from a line (respecting quoted strings)
+     * @private
+     */
+    _removeInlineComment(line) {
+        let inQuotes = false;
+        let quoteChar = '';
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+            } else if (char === quoteChar && inQuotes && line[i - 1] !== '\\') {
+                inQuotes = false;
+                quoteChar = '';
+            } else if (char === '#' && !inQuotes) {
+                return line.substring(0, i).trim();
+            }
+        }
+
+        return line;
+    }
+
+    /**
+     * Split line by semicolons (respecting quoted strings)
+     * @private
+     */
+    _splitBySemicolon(line) {
+        const parts = [];
+        let current = '';
+        let inQuotes = false;
+        let quoteChar = '';
+        let braceDepth = 0;
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+                current += char;
+            } else if (char === quoteChar && inQuotes && line[i - 1] !== '\\') {
+                inQuotes = false;
+                quoteChar = '';
+                current += char;
+            } else if (char === '{' && !inQuotes) {
+                braceDepth++;
+                current += char;
+            } else if (char === '}' && !inQuotes) {
+                braceDepth--;
+                current += char;
+            } else if (char === ';' && !inQuotes && braceDepth === 0) {
+                const trimmed = current.trim();
+                if (trimmed) parts.push(trimmed);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+
+        const trimmed = current.trim();
+        if (trimmed) parts.push(trimmed);
+
+        return parts;
     }
 
     /**
@@ -688,12 +789,7 @@ class ScriptEngineClass {
         let body = [];
         if (braceStart > 0 && braceEnd > braceStart) {
             const bodyText = line.substring(braceStart + 1, braceEnd).trim();
-            // Split body by newlines or semicolons
-            const bodyLines = bodyText.split(/[\n;]/).map(l => l.trim()).filter(l => l && l !== '}');
-            for (const bodyLine of bodyLines) {
-                const stmt = this._parseLine(bodyLine, 0);
-                if (stmt) body.push(stmt);
-            }
+            body = this._parseBody(bodyText);
         }
 
         if (isNaN(count)) {
@@ -778,10 +874,18 @@ class ScriptEngineClass {
 
         value = String(value).trim();
 
-        // Remove quotes
+        // Empty string stays as empty string
+        if (value === '' || value === '""' || value === "''") return '';
+
+        // Remove quotes and handle escape sequences
         if ((value.startsWith('"') && value.endsWith('"')) ||
             (value.startsWith("'") && value.endsWith("'"))) {
-            return value.slice(1, -1);
+            return value.slice(1, -1)
+                .replace(/\\n/g, '\n')
+                .replace(/\\t/g, '\t')
+                .replace(/\\"/g, '"')
+                .replace(/\\'/g, "'")
+                .replace(/\\\\/g, '\\');
         }
 
         // Variables
@@ -789,8 +893,8 @@ class ScriptEngineClass {
             return { type: 'variable', name: value.slice(1) };
         }
 
-        // Numbers
-        if (!isNaN(value)) {
+        // Numbers (but not empty strings - they would falsely match)
+        if (value !== '' && !isNaN(value) && value.trim() !== '') {
             return parseFloat(value);
         }
 
@@ -805,11 +909,29 @@ class ScriptEngineClass {
     _parseCondition(condition) {
         condition = condition.trim();
 
+        // Handle logical operators first (lowest precedence) - parse right to left for left associativity
+        // Check for || first, then &&
+        for (const logicalOp of ['||', '&&']) {
+            const idx = this._findOperatorOutsideParens(condition, logicalOp);
+            if (idx !== -1) {
+                const left = condition.substring(0, idx).trim();
+                const right = condition.substring(idx + logicalOp.length).trim();
+                return {
+                    type: 'logical',
+                    operator: logicalOp,
+                    left: this._parseCondition(left),
+                    right: this._parseCondition(right)
+                };
+            }
+        }
+
         // Handle comparison operators
-        const operators = ['==', '!=', '>=', '<=', '>', '<', '&&', '||'];
-        for (const op of operators) {
-            if (condition.includes(op)) {
-                const [left, right] = condition.split(op).map(s => s.trim());
+        const comparisonOps = ['==', '!=', '>=', '<=', '>', '<'];
+        for (const op of comparisonOps) {
+            const idx = this._findOperatorOutsideParens(condition, op);
+            if (idx !== -1) {
+                const left = condition.substring(0, idx).trim();
+                const right = condition.substring(idx + op.length).trim();
                 return {
                     type: 'comparison',
                     operator: op,
@@ -819,7 +941,62 @@ class ScriptEngineClass {
             }
         }
 
+        // Handle parenthesized conditions
+        if (condition.startsWith('(') && condition.endsWith(')')) {
+            return this._parseCondition(condition.slice(1, -1));
+        }
+
+        // Handle negation
+        if (condition.startsWith('!')) {
+            return {
+                type: 'negation',
+                value: this._parseCondition(condition.slice(1).trim())
+            };
+        }
+
         return this._parseValue(condition);
+    }
+
+    /**
+     * Find an operator in a string, but not inside parentheses or quotes
+     * @private
+     */
+    _findOperatorOutsideParens(str, op) {
+        let parenDepth = 0;
+        let inQuotes = false;
+        let quoteChar = '';
+
+        // Search from right to left for left-associative parsing
+        for (let i = str.length - op.length; i >= 0; i--) {
+            const char = str[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+            } else if (char === quoteChar && inQuotes) {
+                inQuotes = false;
+                quoteChar = '';
+            } else if (!inQuotes) {
+                if (char === ')') parenDepth++;
+                else if (char === '(') parenDepth--;
+            }
+
+            if (parenDepth === 0 && !inQuotes && str.substring(i, i + op.length) === op) {
+                // Make sure we're not matching part of a longer operator
+                // e.g., don't match '=' in '==' or '<' in '<='
+                const before = i > 0 ? str[i - 1] : '';
+                const after = i + op.length < str.length ? str[i + op.length] : '';
+
+                // For single-char operators, check they're not part of multi-char ones
+                if (op === '>' && (before === '>' || after === '=' || before === '-')) continue;
+                if (op === '<' && (after === '=' || after === '<')) continue;
+                if (op === '=' && (before === '=' || before === '!' || before === '<' || before === '>' || after === '=')) continue;
+
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     // ==========================================
@@ -1369,6 +1546,19 @@ class ScriptEngineClass {
                 return !!this.variables.get(condition.name);
             }
 
+            if (condition.type === 'logical') {
+                const left = await this._evaluateCondition(condition.left);
+                // Short-circuit evaluation
+                if (condition.operator === '||' && left) return true;
+                if (condition.operator === '&&' && !left) return false;
+                const right = await this._evaluateCondition(condition.right);
+                return condition.operator === '||' ? (left || right) : (left && right);
+            }
+
+            if (condition.type === 'negation') {
+                return !(await this._evaluateCondition(condition.value));
+            }
+
             if (condition.type === 'comparison') {
                 const left = await this._resolveValue(condition.left);
                 const right = await this._resolveValue(condition.right);
@@ -1380,8 +1570,6 @@ class ScriptEngineClass {
                     case '<': return left < right;
                     case '>=': return left >= right;
                     case '<=': return left <= right;
-                    case '&&': return left && right;
-                    case '||': return left || right;
                 }
             }
         }
@@ -1503,6 +1691,52 @@ class ScriptEngineClass {
         this.defineFunction('at', (arr, idx) => {
             if (Array.isArray(arr)) return arr.at(idx);
             return String(arr).at(idx);
+        });
+        this.defineFunction('find', (arr, value) => {
+            if (Array.isArray(arr)) return arr.find(item => item === value) ?? null;
+            return null;
+        });
+        this.defineFunction('findIndex', (arr, value) => {
+            if (Array.isArray(arr)) return arr.findIndex(item => item === value);
+            return -1;
+        });
+        this.defineFunction('filter', (arr, key, value) => {
+            // Simple filter: filter items where item[key] == value, or if no value, where item == key
+            if (!Array.isArray(arr)) return [];
+            if (value === undefined) {
+                // Filter by truthy value or equality
+                return arr.filter(item => item === key || (typeof item === 'object' && item && item[key]));
+            }
+            return arr.filter(item => typeof item === 'object' && item && item[key] === value);
+        });
+        this.defineFunction('map', (arr, key) => {
+            // Extract a key from each object, or return array as-is if no key
+            if (!Array.isArray(arr)) return [];
+            if (key === undefined) return arr;
+            return arr.map(item => typeof item === 'object' && item ? item[key] : item);
+        });
+        this.defineFunction('sum', (arr) => {
+            if (!Array.isArray(arr)) return 0;
+            return arr.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+        });
+        this.defineFunction('avg', (arr) => {
+            if (!Array.isArray(arr) || arr.length === 0) return 0;
+            const sum = arr.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+            return sum / arr.length;
+        });
+        this.defineFunction('every', (arr, key, value) => {
+            if (!Array.isArray(arr)) return false;
+            if (value === undefined) {
+                return arr.every(item => item === key || !!item);
+            }
+            return arr.every(item => typeof item === 'object' && item && item[key] === value);
+        });
+        this.defineFunction('some', (arr, key, value) => {
+            if (!Array.isArray(arr)) return false;
+            if (value === undefined) {
+                return arr.some(item => item === key || !!item);
+            }
+            return arr.some(item => typeof item === 'object' && item && item[key] === value);
         });
 
         // Object functions
