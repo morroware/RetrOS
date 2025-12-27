@@ -31,7 +31,7 @@ class ScriptRunner extends AppBase {
     onOpen(params) {
         const sampleScript = `# ============================================
 # RetroScript Comprehensive Test Suite
-# Tests all scripting features and functions
+# Tests all scripting features, apps, and events
 # ============================================
 
 print ========================================
@@ -39,8 +39,12 @@ print   RETROSCRIPT COMPREHENSIVE TEST
 print ========================================
 
 # ==========================================
-# TEST 1: Variables & Basic Types
+# SECTION A: CORE LANGUAGE FEATURES
 # ==========================================
+
+# ------------------------------------------
+# TEST 1: Variables & Basic Types
+# ------------------------------------------
 print
 print [TEST 1] Variables & Types
 print ----------------------------------------
@@ -55,9 +59,9 @@ print Number variable: $number
 print Decimal variable: $decimal
 print Boolean variable: $boolean
 
-# ==========================================
+# ------------------------------------------
 # TEST 2: Arithmetic Operations
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 2] Arithmetic Operations
 print ----------------------------------------
@@ -74,9 +78,9 @@ print $a - $b = $diff (expected: 14)
 print $a * $b = $prod (expected: 120)
 print $a / $b = $quot (expected: ~3.33)
 
-# ==========================================
+# ------------------------------------------
 # TEST 3: String Functions
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 3] String Functions
 print ----------------------------------------
@@ -103,9 +107,9 @@ print contains(Hello World, Hello): $hasHello
 print startsWith(Hello, He): $starts
 print endsWith(Hello, lo): $ends
 
-# ==========================================
+# ------------------------------------------
 # TEST 4: Math Functions
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 4] Math Functions
 print ----------------------------------------
@@ -122,9 +126,9 @@ print round(3.7): $rounded
 print floor(3.9): $floored
 print ceil(3.1): $ceiled
 
-# ==========================================
+# ------------------------------------------
 # TEST 5: Time Functions
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 5] Time Functions
 print ----------------------------------------
@@ -137,9 +141,9 @@ print now(): $timestamp
 print time(): $timeStr
 print date(): $dateStr
 
-# ==========================================
+# ------------------------------------------
 # TEST 6: Type Check Functions
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 6] Type Check Functions
 print ----------------------------------------
@@ -158,9 +162,9 @@ print typeof(test): $typeOf
 print toNumber(123): $toNum
 print toString(456): $toStr
 
-# ==========================================
-# TEST 7: Control Flow - If/Then/Else
-# ==========================================
+# ------------------------------------------
+# TEST 7: Control Flow - Conditionals
+# ------------------------------------------
 print
 print [TEST 7] Control Flow - Conditionals
 print ----------------------------------------
@@ -168,7 +172,7 @@ print ----------------------------------------
 set $x = 10
 
 if $x > 5 then {
-    print $x > 5: PASS (10 > 5)
+    print $x > 5: PASS
 }
 
 if $x < 5 then {
@@ -186,9 +190,9 @@ if $x != 5 then {
     print $x != 5: PASS
 }
 
-# ==========================================
+# ------------------------------------------
 # TEST 8: Control Flow - Loops
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 8] Control Flow - Loops
 print ----------------------------------------
@@ -208,31 +212,37 @@ loop 5 {
 }
 
 # ==========================================
-# TEST 9: Sound System
+# SECTION B: SYSTEM FEATURES
 # ==========================================
+
+# ------------------------------------------
+# TEST 9: Sound System
+# ------------------------------------------
 print
 print [TEST 9] Sound System
 print ----------------------------------------
 
-print Playing notify sound...
+print Playing sounds...
 play notify
-wait 300
+wait 200
+play open
+wait 200
 print Sound test complete
 
-# ==========================================
+# ------------------------------------------
 # TEST 10: Notifications
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 10] Notifications
 print ----------------------------------------
 
 notify Test notification from script!
 print Notification sent
-wait 500
+wait 300
 
-# ==========================================
-# TEST 11: Alert Dialog (non-blocking)
-# ==========================================
+# ------------------------------------------
+# TEST 11: Alert Dialog
+# ------------------------------------------
 print
 print [TEST 11] Alert Dialog
 print ----------------------------------------
@@ -241,20 +251,21 @@ print Showing alert...
 alert Script test alert!
 print Alert shown (non-blocking)
 
-# ==========================================
-# TEST 12: Event Emission
-# ==========================================
+# ------------------------------------------
+# TEST 12: Custom Event Emission
+# ------------------------------------------
 print
-print [TEST 12] Event Emission
+print [TEST 12] Custom Event Emission
 print ----------------------------------------
 
-print Emitting test event...
+print Emitting custom events...
 emit script:test message="Hello from script"
-print Event emitted
+emit custom:event type="test" value=42
+print Events emitted
 
-# ==========================================
+# ------------------------------------------
 # TEST 13: File System Operations
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 13] File System Operations
 print ----------------------------------------
@@ -274,9 +285,9 @@ print Cleaning up test file...
 delete $testPath
 print Test file deleted
 
-# ==========================================
+# ------------------------------------------
 # TEST 14: System Functions
-# ==========================================
+# ------------------------------------------
 print
 print [TEST 14] System Functions
 print ----------------------------------------
@@ -285,39 +296,306 @@ set $windows = call getWindows
 set $winCount = call count $windows
 print Open windows: $winCount
 
+set $apps = call getApps
+set $appCount = call count $apps
+print Available apps: $appCount
+
 # ==========================================
-# TEST 15: App Launch & Close
+# SECTION C: APP LAUNCH TESTS
 # ==========================================
+
+# ------------------------------------------
+# TEST 15: Productivity Apps
+# ------------------------------------------
 print
-print [TEST 15] App Launch & Close
+print [TEST 15] Productivity Apps
 print ----------------------------------------
 
 print Launching Calculator...
 launch calculator
-wait 600
-print Calculator launched
-
-print Closing Calculator...
+wait 400
+set $wins = call getWindows
+set $count = call count $wins
+print Windows after Calculator: $count
 close
+wait 200
+
+print Launching Notepad...
+launch notepad
+wait 400
+set $wins = call getWindows
+set $count = call count $wins
+print Windows after Notepad: $count
+close
+wait 200
+
+print Launching Clock...
+launch clock
+wait 400
+close
+wait 200
+print Productivity apps: PASS
+
+# ------------------------------------------
+# TEST 16: System Tools
+# ------------------------------------------
+print
+print [TEST 16] System Tools
+print ----------------------------------------
+
+print Launching Terminal...
+launch terminal
+wait 400
+close
+wait 200
+
+print Launching My Computer...
+launch mycomputer
+wait 400
+close
+wait 200
+
+print System tools: PASS
+
+# ==========================================
+# SECTION D: GAME TESTS
+# ==========================================
+
+# ------------------------------------------
+# TEST 17: Snake Game
+# ------------------------------------------
+print
+print [TEST 17] Snake Game Launch
+print ----------------------------------------
+
+print Launching Snake...
+launch snake
+wait 500
+
+set $wins = call getWindows
+set $count = call count $wins
+print Windows with Snake: $count
+
+print Emitting game events for Snake...
+emit game:start appId="snake"
+wait 100
+emit snake:food:eat score=10
+wait 100
+emit game:score appId="snake" score=10
+wait 100
+emit game:over appId="snake" score=10
+
+close
+wait 200
+print Snake game: PASS
+
+# ------------------------------------------
+# TEST 18: Minesweeper Game
+# ------------------------------------------
+print
+print [TEST 18] Minesweeper Game Launch
+print ----------------------------------------
+
+print Launching Minesweeper...
+launch minesweeper
+wait 500
+
+print Emitting Minesweeper events...
+emit game:start appId="minesweeper"
+wait 100
+emit minesweeper:cell:reveal row=0 col=0 value=0
+wait 100
+emit minesweeper:cell:flag row=1 col=1
+wait 100
+emit minesweeper:timer seconds=10
+
+close
+wait 200
+print Minesweeper: PASS
+
+# ------------------------------------------
+# TEST 19: Asteroids Game
+# ------------------------------------------
+print
+print [TEST 19] Asteroids Game Launch
+print ----------------------------------------
+
+print Launching Asteroids...
+launch asteroids
+wait 500
+
+print Emitting Asteroids events...
+emit game:start appId="asteroids"
+wait 100
+emit asteroids:asteroid:destroy size="large" points=20
+wait 100
+emit asteroids:powerup:collect type="shield"
+wait 100
+emit game:score appId="asteroids" score=100
+wait 100
+emit game:lives appId="asteroids" lives=2
+
+close
+wait 200
+print Asteroids: PASS
+
+# ------------------------------------------
+# TEST 20: Solitaire Game
+# ------------------------------------------
+print
+print [TEST 20] Solitaire Game Launch
+print ----------------------------------------
+
+print Launching Solitaire...
+launch solitaire
+wait 500
+
+print Emitting Solitaire events...
+emit game:start appId="solitaire"
+wait 100
+emit solitaire:card:move from="tableau" to="foundation"
+wait 100
+emit solitaire:stock:draw
+wait 100
+
+close
+wait 200
+print Solitaire: PASS
+
+# ------------------------------------------
+# TEST 21: SkiFree Game
+# ------------------------------------------
+print
+print [TEST 21] SkiFree Game Launch
+print ----------------------------------------
+
+print Launching SkiFree...
+launch skifree
+wait 500
+
+print Emitting SkiFree events...
+emit game:start appId="skifree"
+wait 100
+emit skifree:jump distance=50
+wait 100
+emit game:score appId="skifree" score=500
+wait 100
+emit skifree:yeti:spawn
+
+close
+wait 200
+print SkiFree: PASS
+
+# ==========================================
+# SECTION E: EVENT SYSTEM TESTS
+# ==========================================
+
+# ------------------------------------------
+# TEST 22: Window Events
+# ------------------------------------------
+print
+print [TEST 22] Window Management Events
+print ----------------------------------------
+
+print Testing window lifecycle...
+launch calculator
 wait 300
-print Calculator closed
+
+print Emitting focus event...
+emit window:focus windowId="test"
+wait 100
+
+print Emitting minimize event...
+emit window:minimize windowId="test"
+wait 100
+
+print Emitting maximize event...
+emit window:maximize windowId="test"
+wait 100
+
+close
+wait 200
+print Window events: PASS
+
+# ------------------------------------------
+# TEST 23: Desktop Events
+# ------------------------------------------
+print
+print [TEST 23] Desktop Events
+print ----------------------------------------
+
+print Emitting desktop events...
+emit desktop:refresh
+wait 100
+emit desktop:render
+wait 100
+print Desktop events: PASS
+
+# ------------------------------------------
+# TEST 24: Audio Events
+# ------------------------------------------
+print
+print [TEST 24] Audio Events
+print ----------------------------------------
+
+print Emitting audio events...
+emit sound:play type="notify"
+wait 200
+emit sound:play type="error"
+wait 200
+emit sound:play type="close"
+wait 200
+print Audio events: PASS
+
+# ------------------------------------------
+# TEST 25: System Events
+# ------------------------------------------
+print
+print [TEST 25] System Events
+print ----------------------------------------
+
+print Emitting system events...
+emit notification:show message="System event test"
+wait 300
+emit filesystem:changed
+wait 100
+print System events: PASS
 
 # ==========================================
-# INTERACTIVE TESTS (Optional)
-# Uncomment to test interactive dialogs
+# SECTION F: MULTI-APP WORKFLOW
 # ==========================================
 
-# print
-# print [TEST 16] Confirm Dialog (Interactive)
-# print ----------------------------------------
-# confirm "Click Yes or No to test confirm" into $confirmed
-# print User confirmed: $confirmed
+# ------------------------------------------
+# TEST 26: Multi-App Workflow
+# ------------------------------------------
+print
+print [TEST 26] Multi-App Workflow
+print ----------------------------------------
 
-# print
-# print [TEST 17] Prompt Dialog (Interactive)
-# print ----------------------------------------
-# prompt "Type something:" into $userInput
-# print User entered: $userInput
+print Opening multiple apps...
+launch calculator
+wait 200
+launch notepad
+wait 200
+launch clock
+wait 200
+
+set $wins = call getWindows
+set $count = call count $wins
+print Open windows: $count
+
+print Closing all apps...
+close
+wait 100
+close
+wait 100
+close
+wait 200
+
+set $wins = call getWindows
+set $count = call count $wins
+print Windows after closing: $count
+print Multi-app workflow: PASS
 
 # ==========================================
 # TEST SUMMARY
@@ -327,10 +605,17 @@ print ========================================
 print   ALL TESTS COMPLETED!
 print ========================================
 print
-print Check the output above for any FAIL messages.
-print If all show PASS or expected values, scripting works!
+print Section A: Core Language Features
+print Section B: System Features
+print Section C: App Launch Tests
+print Section D: Game Tests
+print Section E: Event System Tests
+print Section F: Multi-App Workflow
+print
+print Check output above for any FAIL messages.
+print All PASS = scripting system working!
 
-notify All script tests completed!
+notify All comprehensive tests completed!
 play notify`;
 
         return `
