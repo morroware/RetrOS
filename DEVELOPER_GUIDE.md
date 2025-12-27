@@ -831,8 +831,8 @@ plugins/
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | `PluginLoader` | `/core/PluginLoader.js` | Loads and manages plugins |
-| `FeatureRegistry` | `/core/FeatureRegistry.js` | Registers and initializes features |
-| `FeatureBase` | `/core/FeatureBase.js` | Base class for all features |
+| `FeatureRegistry` | `/core/FeatureRegistry.js` | Feature registration and lifecycle management |
+| `FeatureBase` | `/core/FeatureBase.js` | Base class for system features |
 
 ### Creating a Plugin
 
@@ -1510,7 +1510,7 @@ RetrOS/
 ├── index.html              # Main entry point with boot screen and UI
 ├── index.js                # Boot sequence & system initialization
 │
-├── styles/                 # Modular CSS architecture (~4800 lines)
+├── styles/                 # Modular CSS architecture (~4800 lines, 36 files)
 │   ├── main.css            # Entry point that imports all modules
 │   ├── core/               # Base styles and CSS variables
 │   ├── apps/               # App-specific styles (calculator, paint, etc.)
@@ -1520,7 +1520,7 @@ RetrOS/
 │   ├── effects/            # Animations and color schemes
 │   └── utilities/          # Helper utilities
 │
-├── apps/                   # Application implementations (32 apps)
+├── apps/                   # Application implementations (31 apps)
 │   ├── AppBase.js          # Base class - extend this (with messaging)
 │   ├── AppRegistry.js      # Register apps here
 │   ├── Calculator.js       # Calculator with keyboard support
@@ -1533,7 +1533,7 @@ RetrOS/
 │   ├── FeaturesSettings.js # Features and plugin configuration
 │   └── [YourApp.js]        # Your new app
 │
-├── core/                   # Core systems (16 modules)
+├── core/                   # Core systems (15 modules)
 │   ├── SemanticEventBus.js # Event system with validation, priorities
 │   ├── EventSchema.js      # 200+ event definitions
 │   ├── SystemMonitor.js    # System monitoring (input, performance)
