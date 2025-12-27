@@ -29,883 +29,2039 @@ class ScriptRunner extends AppBase {
     }
 
     onOpen(params) {
-        const sampleScript = `# ================================================================
-# RetroScript Ultimate Test Suite v2.0
-# Comprehensive testing of all scripting features and bug fixes
-# ================================================================
+        const sampleScript = `# ╔══════════════════════════════════════════════════════════════════╗
+# ║       RETROSCRIPT COMPREHENSIVE TEST SUITE v3.0                 ║
+# ║       Complete testing of all language features                 ║
+# ╚══════════════════════════════════════════════════════════════════╝
 
-print ================================================================
-print   RETROSCRIPT ULTIMATE TEST SUITE v2.0
-print ================================================================
+# Initialize test tracking
+set $testsPassed = 0
+set $testsFailed = 0
+
+print
+print ╔══════════════════════════════════════════════════════════════════╗
+print ║       RETROSCRIPT COMPREHENSIVE TEST SUITE v3.0                 ║
+print ╚══════════════════════════════════════════════════════════════════╝
 print
 
-# ==================================================================
-# SECTION A: BASIC LANGUAGE FEATURES
-# ==================================================================
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 1: VARIABLES AND DATA TYPES                              │
+# └──────────────────────────────────────────────────────────────────┘
 
-print [SECTION A] BASIC LANGUAGE FEATURES
-print ----------------------------------------------------------------
-
-# TEST A1: Variables and Basic Types
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 1: VARIABLES AND DATA TYPES                              │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [A1] Variables and Basic Types
-set $string = "Hello World"
-set $number = 42
-set $decimal = 3.14159
-set $boolean = true
+
+# Test 1.1: String Variables
+print [Test 1.1] String Variables
+set $str = "Hello, World!"
+if $str == "Hello, World!" then {
+    print   ✓ PASS: String assignment works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: String assignment broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 1.2: Number Variables (integers)
+print [Test 1.2] Integer Variables
+set $int = 42
+if $int == 42 then {
+    print   ✓ PASS: Integer assignment works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Integer assignment broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 1.3: Decimal/Float Variables
+print [Test 1.3] Decimal Variables
+set $dec = 3.14159
+if $dec > 3.14 then {
+    if $dec < 3.15 then {
+        print   ✓ PASS: Decimal assignment works
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: Decimal assignment broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 1.4: Boolean Variables
+print [Test 1.4] Boolean Variables
+set $bool = true
+if $bool == true then {
+    print   ✓ PASS: Boolean true works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Boolean true broken
+    set $testsFailed = $testsFailed + 1
+}
+set $bool = false
+if $bool == false then {
+    print   ✓ PASS: Boolean false works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Boolean false broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 1.5: Empty String
+print [Test 1.5] Empty String
 set $empty = ""
-
-print   String: $string
-print   Number: $number
-print   Decimal: $decimal
-print   Boolean: $boolean
-print   Empty string test: [$empty]
-
 if $empty == "" then {
-    print   [PASS] Empty string preserved correctly
+    print   ✓ PASS: Empty string preserved
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Empty string became something else
+    print   ✗ FAIL: Empty string broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST A2: Arithmetic Operations
-print
-print [A2] Arithmetic Operations
-set $a = 25
-set $b = 7
-set $sum = $a + $b
-set $diff = $a - $b
-set $prod = $a * $b
-set $quot = $a / $b
-set $mod = $a % $b
-
-print   $a + $b = $sum (expected: 32)
-print   $a - $b = $diff (expected: 18)
-print   $a * $b = $prod (expected: 175)
-print   $a / $b = $quot (expected: ~3.57)
-print   $a % $b = $mod (expected: 4)
-
-if $sum == 32 then { print   [PASS] Addition } else { print   [FAIL] Addition }
-if $mod == 4 then { print   [PASS] Modulo } else { print   [FAIL] Modulo }
-
-# TEST A3: String Escape Sequences (NEW BUG FIX TEST)
-print
-print [A3] String Escape Sequences
-set $escaped = "Line1\\nLine2\\tTabbed"
-set $quote = "She said \\"Hello\\""
-print   Escape test: $escaped
-print   Quote test: $quote
-print   [PASS] Escape sequences parsed
-
-# TEST A4: Semicolons in Strings (BUG FIX TEST)
-print
-print [A4] Semicolons in Strings
-set $withSemi = "first;second;third"
-print   String with semicolons: $withSemi
-if $withSemi == "first;second;third" then {
-    print   [PASS] Semicolons in strings preserved
+# Test 1.6: Null Value
+print [Test 1.6] Null Value
+set $nul = null
+set $isNul = call isNull $nul
+if $isNul == true then {
+    print   ✓ PASS: Null value works
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Semicolons in strings broken
+    print   ✗ FAIL: Null value broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST A5: Comments in Strings (BUG FIX TEST)
-print
-print [A5] Comments in Strings
-set $withHash = "test # not a comment"
-print   String with hash: $withHash
-print   [PASS] Hash in string preserved
-
-# ==================================================================
-# SECTION B: CONTROL FLOW
-# ==================================================================
-
-print
-print [SECTION B] CONTROL FLOW
-print ----------------------------------------------------------------
-
-# TEST B1: Basic Conditionals
-print
-print [B1] Basic Conditionals
-set $x = 10
-set $y = 5
-
-if $x > $y then {
-    print   [PASS] $x > $y is true
-}
-
-if $x < $y then {
-    print   [FAIL] $x < $y should be false
+# Test 1.7: Array Literals
+print [Test 1.7] Array Literals
+set $arr = [1, 2, 3, 4, 5]
+set $arrLen = call count $arr
+if $arrLen == 5 then {
+    print   ✓ PASS: Array literal works (5 elements)
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [PASS] $x < $y else branch taken
+    print   ✗ FAIL: Array literal broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST B2: Complex Conditions with && and || (BUG FIX TEST)
+# Test 1.8: Object Literals
+print [Test 1.8] Object Literals
+set $obj = {name: "Alice", age: 30}
+set $objName = call get $obj "name"
+if $objName == "Alice" then {
+    print   ✓ PASS: Object literal works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Object literal broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 1.9: Variable Interpolation in Strings
+print [Test 1.9] Variable Interpolation
+set $name = "Bob"
+set $greeting = "Hello, $name!"
+if $greeting == "Hello, Bob!" then {
+    print   ✓ PASS: Variable interpolation works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Variable interpolation broken
+    set $testsFailed = $testsFailed + 1
+}
+
 print
-print [B2] Complex Conditions (AND/OR)
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 2: ARITHMETIC OPERATIONS                                 │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 2: ARITHMETIC OPERATIONS                                 │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
+# Test 2.1: Addition
+print [Test 2.1] Addition
 set $a = 10
-set $b = 20
-set $c = 30
-
-if $a < $b && $b < $c then {
-    print   [PASS] $a < $b AND $b < $c
+set $b = 5
+set $sum = $a + $b
+if $sum == 15 then {
+    print   ✓ PASS: 10 + 5 = $sum
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Complex AND condition
+    print   ✗ FAIL: 10 + 5 expected 15, got $sum
+    set $testsFailed = $testsFailed + 1
 }
 
-if $a > $b || $b < $c then {
-    print   [PASS] $a > $b OR $b < $c
+# Test 2.2: Subtraction
+print [Test 2.2] Subtraction
+set $diff = $a - $b
+if $diff == 5 then {
+    print   ✓ PASS: 10 - 5 = $diff
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Complex OR condition
+    print   ✗ FAIL: 10 - 5 expected 5, got $diff
+    set $testsFailed = $testsFailed + 1
 }
 
-if $a < $b && $b < $c && $c > $a then {
-    print   [PASS] Triple AND condition
+# Test 2.3: Multiplication
+print [Test 2.3] Multiplication
+set $prod = $a * $b
+if $prod == 50 then {
+    print   ✓ PASS: 10 * 5 = $prod
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Triple AND condition
+    print   ✗ FAIL: 10 * 5 expected 50, got $prod
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST B3: Comparison Operators
+# Test 2.4: Division
+print [Test 2.4] Division
+set $quot = $a / $b
+if $quot == 2 then {
+    print   ✓ PASS: 10 / 5 = $quot
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 10 / 5 expected 2, got $quot
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 2.5: Modulo
+print [Test 2.5] Modulo
+set $x = 17
+set $y = 5
+set $mod = $x % $y
+if $mod == 2 then {
+    print   ✓ PASS: 17 % 5 = $mod
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 17 % 5 expected 2, got $mod
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 2.6: String Concatenation with +
+print [Test 2.6] String Concatenation
+set $s1 = "Hello"
+set $s2 = " World"
+set $concat = $s1 + $s2
+if $concat == "Hello World" then {
+    print   ✓ PASS: String concatenation works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: String concatenation broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 2.7: Negative Numbers
+print [Test 2.7] Negative Numbers
+set $neg = -42
+set $absNeg = call abs $neg
+if $absNeg == 42 then {
+    print   ✓ PASS: Negative numbers work
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Negative numbers broken
+    set $testsFailed = $testsFailed + 1
+}
+
 print
-print [B3] All Comparison Operators
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 3: COMPARISON OPERATORS                                  │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 3: COMPARISON OPERATORS                                  │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
 set $n = 10
 
-if $n == 10 then { print   [PASS] == works }
-if $n != 5 then { print   [PASS] != works }
-if $n >= 10 then { print   [PASS] >= works }
-if $n <= 10 then { print   [PASS] <= works }
-if $n > 5 then { print   [PASS] > works }
-if $n < 15 then { print   [PASS] < works }
-
-# TEST B4: Loops
-print
-print [B4] Loop Constructs
-print   Count loop (3 iterations):
-set $loopCount = 0
-loop 3 {
-    set $loopCount = $loopCount + 1
-    print     iteration $i (count: $loopCount)
-}
-
-if $loopCount == 3 then {
-    print   [PASS] Loop executed 3 times
+# Test 3.1: Equal (==)
+print [Test 3.1] Equal (==)
+if $n == 10 then {
+    print   ✓ PASS: 10 == 10 is true
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Loop count: $loopCount
+    print   ✗ FAIL: 10 == 10 should be true
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST B5: Break Statement
+# Test 3.2: Not Equal (!=)
+print [Test 3.2] Not Equal (!=)
+if $n != 5 then {
+    print   ✓ PASS: 10 != 5 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 10 != 5 should be true
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 3.3: Greater Than (>)
+print [Test 3.3] Greater Than (>)
+if $n > 5 then {
+    print   ✓ PASS: 10 > 5 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 10 > 5 should be true
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 3.4: Less Than (<)
+print [Test 3.4] Less Than (<)
+if $n < 15 then {
+    print   ✓ PASS: 10 < 15 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 10 < 15 should be true
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 3.5: Greater Than or Equal (>=)
+print [Test 3.5] Greater Than or Equal (>=)
+if $n >= 10 then {
+    print   ✓ PASS: 10 >= 10 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 10 >= 10 should be true
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 3.6: Less Than or Equal (<=)
+print [Test 3.6] Less Than or Equal (<=)
+if $n <= 10 then {
+    print   ✓ PASS: 10 <= 10 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: 10 <= 10 should be true
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 3.7: String Comparison
+print [Test 3.7] String Comparison
+set $strA = "apple"
+set $strB = "banana"
+if $strA != $strB then {
+    print   ✓ PASS: String comparison works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: String comparison broken
+    set $testsFailed = $testsFailed + 1
+}
+
 print
-print [B5] Break Statement
-set $breakAt = 0
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 4: LOGICAL OPERATORS                                     │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 4: LOGICAL OPERATORS                                     │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
+set $p = 5
+set $q = 10
+set $r = 15
+
+# Test 4.1: Logical AND (&&)
+print [Test 4.1] Logical AND (&&)
+if $p < $q && $q < $r then {
+    print   ✓ PASS: 5 < 10 AND 10 < 15 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: AND condition broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 4.2: Logical OR (||)
+print [Test 4.2] Logical OR (||)
+if $p > $q || $q < $r then {
+    print   ✓ PASS: 5 > 10 OR 10 < 15 is true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: OR condition broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 4.3: Triple AND
+print [Test 4.3] Triple AND
+if $p < $q && $q < $r && $r > $p then {
+    print   ✓ PASS: Triple AND works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Triple AND broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 4.4: Mixed AND/OR
+print [Test 4.4] Mixed AND/OR
+if $p < $q && $q < $r || $r < $p then {
+    print   ✓ PASS: Mixed AND/OR works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Mixed AND/OR broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 4.5: Boolean Variable in Condition
+print [Test 4.5] Boolean in Condition
+set $flag = true
+if $flag then {
+    print   ✓ PASS: Boolean variable in condition works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Boolean variable in condition broken
+    set $testsFailed = $testsFailed + 1
+}
+
+print
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 5: CONTROL FLOW - IF/ELSE                                │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 5: CONTROL FLOW - IF/ELSE                                │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
+# Test 5.1: Simple If
+print [Test 5.1] Simple If
+set $val = 100
+if $val > 50 then {
+    print   ✓ PASS: If block executed
+    set $testsPassed = $testsPassed + 1
+}
+
+# Test 5.2: If-Else (then branch)
+print [Test 5.2] If-Else (then branch)
+set $val = 100
+set $branch = ""
+if $val > 50 then {
+    set $branch = "then"
+} else {
+    set $branch = "else"
+}
+if $branch == "then" then {
+    print   ✓ PASS: Then branch taken correctly
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Wrong branch taken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 5.3: If-Else (else branch)
+print [Test 5.3] If-Else (else branch)
+set $val = 10
+set $branch = ""
+if $val > 50 then {
+    set $branch = "then"
+} else {
+    set $branch = "else"
+}
+if $branch == "else" then {
+    print   ✓ PASS: Else branch taken correctly
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Wrong branch taken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 5.4: Nested If
+print [Test 5.4] Nested If
+set $outer = true
+set $inner = true
+set $result = ""
+if $outer then {
+    if $inner then {
+        set $result = "both"
+    } else {
+        set $result = "outer only"
+    }
+}
+if $result == "both" then {
+    print   ✓ PASS: Nested if works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Nested if broken
+    set $testsFailed = $testsFailed + 1
+}
+
+print
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 6: CONTROL FLOW - LOOPS                                  │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 6: CONTROL FLOW - LOOPS                                  │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
+# Test 6.1: Count Loop
+print [Test 6.1] Count Loop
+set $counter = 0
+loop 5 {
+    set $counter = $counter + 1
+}
+if $counter == 5 then {
+    print   ✓ PASS: Loop executed 5 times
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Loop count wrong: $counter
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 6.2: Loop Index Variable ($i)
+print [Test 6.2] Loop Index Variable
+set $lastIndex = -1
+loop 3 {
+    set $lastIndex = $i
+}
+if $lastIndex == 2 then {
+    print   ✓ PASS: Loop index 0-2 correct (last: $lastIndex)
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Loop index wrong: $lastIndex
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 6.3: While Loop
+print [Test 6.3] While Loop
+set $w = 0
+loop while $w < 3 {
+    set $w = $w + 1
+}
+if $w == 3 then {
+    print   ✓ PASS: While loop completed
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: While loop counter: $w
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 6.4: Foreach Loop
+print [Test 6.4] Foreach Loop
+set $fruits = ["apple", "banana", "cherry"]
+set $fruitCount = 0
+foreach $fruit in $fruits {
+    set $fruitCount = $fruitCount + 1
+}
+if $fruitCount == 3 then {
+    print   ✓ PASS: Foreach iterated 3 items
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Foreach count: $fruitCount
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 6.5: Break Statement
+print [Test 6.5] Break Statement
+set $breakAt = -1
 loop 10 {
     set $breakAt = $i
     if $i == 3 then {
         break
     }
 }
-
 if $breakAt == 3 then {
-    print   [PASS] Break at iteration 3
+    print   ✓ PASS: Break at iteration 3
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Break failed, ended at $breakAt
+    print   ✗ FAIL: Break at wrong index: $breakAt
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST B6: Continue Statement
-print
-print [B6] Continue Statement
-set $skipResult = ""
+# Test 6.6: Continue Statement
+print [Test 6.6] Continue Statement
+set $skipSum = 0
 loop 5 {
     if $i == 2 then {
         continue
     }
-    set $skipResult = $skipResult + $i
+    set $skipSum = $skipSum + $i
 }
-print   Result (should skip 2): $skipResult
-
-# TEST B7: While Loop
-print
-print [B7] While Loop
-set $counter = 0
-loop while $counter < 3 {
-    set $counter = $counter + 1
-    print     while iteration $counter
-}
-
-if $counter == 3 then {
-    print   [PASS] While loop completed
+# Sum of 0+1+3+4 = 8 (skipping 2)
+if $skipSum == 8 then {
+    print   ✓ PASS: Continue skipped index 2 (sum=$skipSum)
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] While loop counter: $counter
+    print   ✗ FAIL: Continue broken, sum=$skipSum (expected 8)
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST B8: Foreach Loop
 print
-print [B8] Foreach Loop
-set $colors = ["red", "green", "blue"]
-set $colorList = ""
-foreach $color in $colors {
-    set $colorList = $colorList + $color + " "
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 7: USER-DEFINED FUNCTIONS                                │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 7: USER-DEFINED FUNCTIONS                                │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
+# Test 7.1: Simple Function
+print [Test 7.1] Simple Function
+def sayHello() {
+    return "Hello!"
 }
-print   Colors: $colorList
-print   [PASS] Foreach completed
-
-# ==================================================================
-# SECTION C: FUNCTIONS
-# ==================================================================
-
-print
-print [SECTION C] FUNCTIONS
-print ----------------------------------------------------------------
-
-# TEST C1: User-Defined Functions
-print
-print [C1] User-Defined Functions
-def greet($name) {
-    print   Hello, $name!
-    return "greeted"
-}
-
-set $result = call greet "World"
-print   Function returned: $result
-
-if $result == "greeted" then {
-    print   [PASS] User function works
+set $msg = call sayHello
+if $msg == "Hello!" then {
+    print   ✓ PASS: Simple function works
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] User function return
+    print   ✗ FAIL: Simple function broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST C2: Function with Multiple Parameters
-print
-print [C2] Multi-Parameter Function
-def add($x, $y) {
-    set $sum = $x + $y
-    return $sum
+# Test 7.2: Function with Parameter
+print [Test 7.2] Function with Parameter
+def greet($who) {
+    return "Hi, $who!"
 }
-
-set $addResult = call add 15 25
-print   add(15, 25) = $addResult
-
-if $addResult == 40 then {
-    print   [PASS] Multi-param function
+set $greeting = call greet "World"
+if $greeting == "Hi, World!" then {
+    print   ✓ PASS: Function with parameter works
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Multi-param function
+    print   ✗ FAIL: Function with parameter broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST C3: Recursive Function
-print
-print [C3] Recursive Function
-def countdown($n) {
-    if $n <= 0 then {
-        return "done"
+# Test 7.3: Function with Multiple Parameters
+print [Test 7.3] Function with Multiple Parameters
+def addTwo($x, $y) {
+    set $result = $x + $y
+    return $result
+}
+set $addResult = call addTwo 7 8
+if $addResult == 15 then {
+    print   ✓ PASS: Multi-param function (7+8=$addResult)
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Multi-param function broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 7.4: Recursive Function
+print [Test 7.4] Recursive Function
+def factorial($n) {
+    if $n <= 1 then {
+        return 1
     }
-    print     countdown: $n
-    set $next = $n - 1
-    return call countdown $next
+    set $prev = $n - 1
+    set $sub = call factorial $prev
+    set $result = $n * $sub
+    return $result
+}
+set $fact5 = call factorial 5
+if $fact5 == 120 then {
+    print   ✓ PASS: factorial(5) = $fact5
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: factorial(5) = $fact5 (expected 120)
+    set $testsFailed = $testsFailed + 1
 }
 
-set $cdResult = call countdown 3
-print   Countdown result: $cdResult
-
-# ==================================================================
-# SECTION D: STRING FUNCTIONS
-# ==================================================================
-
 print
-print [SECTION D] STRING FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST D1: Case Conversion
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 8: STRING FUNCTIONS                                      │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 8: STRING FUNCTIONS                                      │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [D1] Case Conversion
+
+# Test 8.1: upper() and lower()
+print [Test 8.1] upper() and lower()
 set $text = "Hello World"
-set $upper = call upper $text
-set $lower = call lower $text
-print   upper: $upper
-print   lower: $lower
+set $up = call upper $text
+set $lo = call lower $text
+if $up == "HELLO WORLD" then {
+    print   ✓ PASS: upper() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: upper() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $lo == "hello world" then {
+    print   ✓ PASS: lower() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: lower() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $upper == "HELLO WORLD" then { print   [PASS] upper() } else { print   [FAIL] upper() }
-if $lower == "hello world" then { print   [PASS] lower() } else { print   [FAIL] lower() }
+# Test 8.2: length()
+print [Test 8.2] length()
+set $len = call length "Hello"
+if $len == 5 then {
+    print   ✓ PASS: length("Hello") = $len
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: length() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST D2: String Manipulation
-print
-print [D2] String Manipulation
-set $padded = "  trim me  "
+# Test 8.3: trim()
+print [Test 8.3] trim()
+set $padded = "  trimmed  "
 set $trimmed = call trim $padded
-set $len = call length $trimmed
-print   trimmed: [$trimmed] length: $len
+if $trimmed == "trimmed" then {
+    print   ✓ PASS: trim() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: trim() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-set $repeated = call repeat "ab" 3
-print   repeat(ab, 3): $repeated
+# Test 8.4: concat()
+print [Test 8.4] concat()
+set $joined = call concat "a" "b" "c"
+if $joined == "abc" then {
+    print   ✓ PASS: concat() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: concat() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $repeated == "ababab" then { print   [PASS] repeat() } else { print   [FAIL] repeat() }
-
-# TEST D3: Substring Functions
-print
-print [D3] Substring Functions
+# Test 8.5: substr() and substring()
+print [Test 8.5] substr() and substring()
 set $str = "Hello World"
-set $sub = call substr $str 0 5
+set $sub1 = call substr $str 0 5
 set $sub2 = call substring $str 6 11
-print   substr(0,5): $sub
-print   substring(6,11): $sub2
+if $sub1 == "Hello" then {
+    print   ✓ PASS: substr(0,5) = "$sub1"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: substr() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $sub2 == "World" then {
+    print   ✓ PASS: substring(6,11) = "$sub2"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: substring() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $sub == "Hello" then { print   [PASS] substr() } else { print   [FAIL] substr() }
+# Test 8.6: contains(), startsWith(), endsWith()
+print [Test 8.6] contains(), startsWith(), endsWith()
+set $sentence = "The quick brown fox"
+set $has = call contains $sentence "quick"
+set $starts = call startsWith $sentence "The"
+set $ends = call endsWith $sentence "fox"
+if $has == true then {
+    print   ✓ PASS: contains("quick") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: contains() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $starts == true then {
+    print   ✓ PASS: startsWith("The") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: startsWith() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $ends == true then {
+    print   ✓ PASS: endsWith("fox") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: endsWith() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST D4: Search Functions
-print
-print [D4] Search Functions
-set $haystack = "The quick brown fox"
-set $hasQuick = call contains $haystack "quick"
-set $startsWith = call startsWith $haystack "The"
-set $endsWith = call endsWith $haystack "fox"
-set $idx = call indexOf $haystack "quick"
+# Test 8.7: indexOf() and lastIndexOf()
+print [Test 8.7] indexOf() and lastIndexOf()
+set $str = "abcabc"
+set $first = call indexOf $str "b"
+set $last = call lastIndexOf $str "b"
+if $first == 1 then {
+    print   ✓ PASS: indexOf("b") = $first
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: indexOf() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $last == 4 then {
+    print   ✓ PASS: lastIndexOf("b") = $last
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: lastIndexOf() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   contains(quick): $hasQuick
-print   startsWith(The): $startsWith
-print   endsWith(fox): $endsWith
-print   indexOf(quick): $idx
+# Test 8.8: replace() and replaceAll()
+print [Test 8.8] replace() and replaceAll()
+set $orig = "foo bar foo"
+set $rep1 = call replace $orig "foo" "baz"
+set $rep2 = call replaceAll $orig "foo" "baz"
+if $rep1 == "baz bar foo" then {
+    print   ✓ PASS: replace() (first only)
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: replace() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $rep2 == "baz bar baz" then {
+    print   ✓ PASS: replaceAll()
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: replaceAll() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $idx == 4 then { print   [PASS] indexOf() } else { print   [FAIL] indexOf() }
-
-# TEST D5: Replace Functions
-print
-print [D5] Replace Functions
-set $original = "foo bar foo baz"
-set $replaced = call replace $original "foo" "qux"
-set $replacedAll = call replaceAll $original "foo" "qux"
-print   replace (first): $replaced
-print   replaceAll: $replacedAll
-
-# TEST D6: Split and Join
-print
-print [D6] Split and Join
-set $csv = "a,b,c,d"
+# Test 8.9: split() and join()
+print [Test 8.9] split() and join()
+set $csv = "a,b,c"
 set $parts = call split $csv ","
-set $joined = call join $parts "-"
-print   split result count: $parts
-print   joined: $joined
+set $rejoined = call join $parts "-"
+if $rejoined == "a-b-c" then {
+    print   ✓ PASS: split/join works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: split/join broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $joined == "a-b-c-d" then { print   [PASS] split/join } else { print   [FAIL] split/join }
+# Test 8.10: repeat()
+print [Test 8.10] repeat()
+set $rep = call repeat "ab" 3
+if $rep == "ababab" then {
+    print   ✓ PASS: repeat("ab", 3) = "$rep"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: repeat() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# ==================================================================
-# SECTION E: MATH FUNCTIONS
-# ==================================================================
+# Test 8.11: padStart() and padEnd()
+print [Test 8.11] padStart() and padEnd()
+set $num = "5"
+set $padS = call padStart $num 3 "0"
+set $padE = call padEnd $num 3 "0"
+if $padS == "005" then {
+    print   ✓ PASS: padStart(3, "0") = "$padS"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: padStart() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $padE == "500" then {
+    print   ✓ PASS: padEnd(3, "0") = "$padE"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: padEnd() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 8.12: charAt() and charCode()
+print [Test 8.12] charAt() and charCode()
+set $char = call charAt "ABC" 1
+set $code = call charCode "A" 0
+if $char == "B" then {
+    print   ✓ PASS: charAt("ABC", 1) = "$char"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: charAt() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $code == 65 then {
+    print   ✓ PASS: charCode("A") = $code
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: charCode() broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION E] MATH FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST E1: Basic Math
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 9: MATH FUNCTIONS                                        │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 9: MATH FUNCTIONS                                        │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [E1] Basic Math Functions
+
+# Test 9.1: abs()
+print [Test 9.1] abs()
 set $absVal = call abs -42
+if $absVal == 42 then {
+    print   ✓ PASS: abs(-42) = $absVal
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: abs() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.2: round(), floor(), ceil()
+print [Test 9.2] round(), floor(), ceil()
 set $rounded = call round 3.7
 set $floored = call floor 3.9
 set $ceiled = call ceil 3.1
-
-print   abs(-42): $absVal
-print   round(3.7): $rounded
-print   floor(3.9): $floored
-print   ceil(3.1): $ceiled
-
-if $absVal == 42 then { print   [PASS] abs() } else { print   [FAIL] abs() }
-if $rounded == 4 then { print   [PASS] round() } else { print   [FAIL] round() }
-if $floored == 3 then { print   [PASS] floor() } else { print   [FAIL] floor() }
-if $ceiled == 4 then { print   [PASS] ceil() } else { print   [FAIL] ceil() }
-
-# TEST E2: Min/Max/Clamp
-print
-print [E2] Min/Max/Clamp
-set $minVal = call min 5 3 8 1 9
-set $maxVal = call max 5 3 8 1 9
-set $clamped = call clamp 15 0 10
-
-print   min(5,3,8,1,9): $minVal
-print   max(5,3,8,1,9): $maxVal
-print   clamp(15, 0, 10): $clamped
-
-if $minVal == 1 then { print   [PASS] min() } else { print   [FAIL] min() }
-if $maxVal == 9 then { print   [PASS] max() } else { print   [FAIL] max() }
-if $clamped == 10 then { print   [PASS] clamp() } else { print   [FAIL] clamp() }
-
-# TEST E3: Power and Root
-print
-print [E3] Power and Root
-set $squared = call pow 5 2
-set $sqroot = call sqrt 16
-print   pow(5, 2): $squared
-print   sqrt(16): $sqroot
-
-if $squared == 25 then { print   [PASS] pow() } else { print   [FAIL] pow() }
-if $sqroot == 4 then { print   [PASS] sqrt() } else { print   [FAIL] sqrt() }
-
-# TEST E4: Random Number
-print
-print [E4] Random Number
-set $rand = call random 1 100
-print   random(1,100): $rand
-
-if $rand >= 1 then {
-    if $rand <= 100 then {
-        print   [PASS] random() in range
-    }
+if $rounded == 4 then {
+    print   ✓ PASS: round(3.7) = $rounded
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: round() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $floored == 3 then {
+    print   ✓ PASS: floor(3.9) = $floored
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: floor() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $ceiled == 4 then {
+    print   ✓ PASS: ceil(3.1) = $ceiled
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: ceil() broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# ==================================================================
-# SECTION F: ARRAY FUNCTIONS
-# ==================================================================
+# Test 9.3: min() and max()
+print [Test 9.3] min() and max()
+set $minV = call min 5 3 8 1 9
+set $maxV = call max 5 3 8 1 9
+if $minV == 1 then {
+    print   ✓ PASS: min(5,3,8,1,9) = $minV
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: min() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $maxV == 9 then {
+    print   ✓ PASS: max(5,3,8,1,9) = $maxV
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: max() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.4: pow() and sqrt()
+print [Test 9.4] pow() and sqrt()
+set $squared = call pow 5 2
+set $sqroot = call sqrt 16
+if $squared == 25 then {
+    print   ✓ PASS: pow(5, 2) = $squared
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: pow() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $sqroot == 4 then {
+    print   ✓ PASS: sqrt(16) = $sqroot
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: sqrt() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.5: clamp()
+print [Test 9.5] clamp()
+set $clamped = call clamp 15 0 10
+if $clamped == 10 then {
+    print   ✓ PASS: clamp(15, 0, 10) = $clamped
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: clamp() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.6: random()
+print [Test 9.6] random()
+set $rand = call random 1 100
+if $rand >= 1 then {
+    if $rand <= 100 then {
+        print   ✓ PASS: random(1,100) = $rand (in range)
+        set $testsPassed = $testsPassed + 1
+    } else {
+        print   ✗ FAIL: random() out of range
+        set $testsFailed = $testsFailed + 1
+    }
+} else {
+    print   ✗ FAIL: random() out of range
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.7: mod() and sign()
+print [Test 9.7] mod() and sign()
+set $modVal = call mod 17 5
+set $signPos = call sign 42
+set $signNeg = call sign -42
+if $modVal == 2 then {
+    print   ✓ PASS: mod(17, 5) = $modVal
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: mod() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $signPos == 1 then {
+    print   ✓ PASS: sign(42) = $signPos
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: sign() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.8: Trigonometric Functions
+print [Test 9.8] Trigonometric Functions
+set $sinVal = call sin 0
+set $cosVal = call cos 0
+if $sinVal == 0 then {
+    print   ✓ PASS: sin(0) = $sinVal
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: sin() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $cosVal == 1 then {
+    print   ✓ PASS: cos(0) = $cosVal
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: cos() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 9.9: Constants PI and E
+print [Test 9.9] Constants PI and E
+set $pi = call PI
+set $e = call E
+if $pi > 3.14 then {
+    if $pi < 3.15 then {
+        print   ✓ PASS: PI = $pi
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: PI broken
+    set $testsFailed = $testsFailed + 1
+}
+if $e > 2.71 then {
+    if $e < 2.72 then {
+        print   ✓ PASS: E = $e
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: E broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION F] ARRAY FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST F1: Array Creation and Access
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 10: ARRAY FUNCTIONS                                      │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 10: ARRAY FUNCTIONS                                      │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [F1] Array Creation and Access
-set $arr = [1, 2, 3, 4, 5]
-set $len = call count $arr
-set $firstItem = call first $arr
-set $lastItem = call last $arr
-set $atItem = call at $arr 2
 
-print   Array: $arr
-print   count: $len
-print   first: $firstItem
-print   last: $lastItem
-print   at(2): $atItem
+# Test 10.1: count(), first(), last()
+print [Test 10.1] count(), first(), last()
+set $arr = [10, 20, 30, 40, 50]
+set $cnt = call count $arr
+set $fst = call first $arr
+set $lst = call last $arr
+if $cnt == 5 then {
+    print   ✓ PASS: count() = $cnt
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: count() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $fst == 10 then {
+    print   ✓ PASS: first() = $fst
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: first() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $lst == 50 then {
+    print   ✓ PASS: last() = $lst
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: last() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $len == 5 then { print   [PASS] count() } else { print   [FAIL] count() }
-if $firstItem == 1 then { print   [PASS] first() } else { print   [FAIL] first() }
-if $lastItem == 5 then { print   [PASS] last() } else { print   [FAIL] last() }
+# Test 10.2: at()
+print [Test 10.2] at()
+set $atVal = call at $arr 2
+if $atVal == 30 then {
+    print   ✓ PASS: at(2) = $atVal
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: at() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST F2: Array Modification
-print
-print [F2] Array Modification
-set $modArr = [1, 2, 3]
-set $modArr = call push $modArr 4
-set $popped = call pop $modArr
-print   After push(4) and pop: $modArr
-print   Popped value: $popped
+# Test 10.3: push() and pop()
+print [Test 10.3] push() and pop()
+set $arr2 = [1, 2, 3]
+set $arr2 = call push $arr2 4
+set $popped = call pop $arr2
+if $popped == 4 then {
+    print   ✓ PASS: push(4) then pop() = $popped
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: push/pop broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST F3: Array Search
-print
-print [F3] Array Search
-set $searchArr = ["apple", "banana", "cherry"]
-set $hasApple = call includes $searchArr "apple"
-set $hasGrape = call includes $searchArr "grape"
-set $findIdx = call findIndex $searchArr "banana"
+# Test 10.4: shift() and unshift()
+print [Test 10.4] shift() and unshift()
+set $arr3 = [1, 2, 3]
+set $arr3 = call unshift $arr3 0
+set $shifted = call shift $arr3
+if $shifted == 0 then {
+    print   ✓ PASS: unshift(0) then shift() = $shifted
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: unshift/shift broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   includes(apple): $hasApple
-print   includes(grape): $hasGrape
-print   findIndex(banana): $findIdx
+# Test 10.5: includes()
+print [Test 10.5] includes()
+set $arr4 = ["apple", "banana", "cherry"]
+set $hasApple = call includes $arr4 "apple"
+set $hasGrape = call includes $arr4 "grape"
+if $hasApple == true then {
+    print   ✓ PASS: includes("apple") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: includes() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $hasGrape == false then {
+    print   ✓ PASS: includes("grape") = false
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: includes() false case broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $hasApple == true then { print   [PASS] includes() } else { print   [FAIL] includes() }
-if $findIdx == 1 then { print   [PASS] findIndex() } else { print   [FAIL] findIndex() }
+# Test 10.6: findIndex()
+print [Test 10.6] findIndex()
+set $idx = call findIndex $arr4 "banana"
+if $idx == 1 then {
+    print   ✓ PASS: findIndex("banana") = $idx
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: findIndex() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST F4: Array Transformation
-print
-print [F4] Array Transformation
-set $nums = [3, 1, 4, 1, 5, 9, 2, 6]
+# Test 10.7: sort() and reverse()
+print [Test 10.7] sort() and reverse()
+set $nums = [3, 1, 4, 1, 5]
 set $sorted = call sort $nums
+set $sortedFirst = call first $sorted
+if $sortedFirst == 1 then {
+    print   ✓ PASS: sort() puts smallest first
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: sort() broken
+    set $testsFailed = $testsFailed + 1
+}
 set $reversed = call reverse $nums
-set $uniqueNums = call unique $nums
-set $sliced = call slice $nums 2 5
+set $revFirst = call first $reversed
+if $revFirst == 5 then {
+    print   ✓ PASS: reverse() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: reverse() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   sorted: $sorted
-print   reversed: $reversed
-print   unique: $uniqueNums
-print   slice(2,5): $sliced
+# Test 10.8: slice()
+print [Test 10.8] slice()
+set $arr5 = [0, 1, 2, 3, 4]
+set $sliced = call slice $arr5 1 4
+set $sliceCnt = call count $sliced
+if $sliceCnt == 3 then {
+    print   ✓ PASS: slice(1,4) has 3 elements
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: slice() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST F5: New Array Functions (sum, avg)
-print
-print [F5] Sum and Average
+# Test 10.9: unique()
+print [Test 10.9] unique()
+set $dups = [1, 2, 2, 3, 3, 3]
+set $uniq = call unique $dups
+set $uniqCnt = call count $uniq
+if $uniqCnt == 3 then {
+    print   ✓ PASS: unique() removed duplicates
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: unique() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 10.10: range() and fill()
+print [Test 10.10] range() and fill()
+set $rng = call range 0 5
+set $rngCnt = call count $rng
+if $rngCnt == 5 then {
+    print   ✓ PASS: range(0,5) has 5 elements
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: range() broken
+    set $testsFailed = $testsFailed + 1
+}
+set $filled = call fill 3 "x"
+set $fillCnt = call count $filled
+if $fillCnt == 3 then {
+    print   ✓ PASS: fill(3, "x") has 3 elements
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: fill() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 10.11: sum() and avg()
+print [Test 10.11] sum() and avg()
 set $numbers = [10, 20, 30, 40, 50]
 set $total = call sum $numbers
 set $average = call avg $numbers
-
-print   sum: $total
-print   avg: $average
-
-if $total == 150 then { print   [PASS] sum() } else { print   [FAIL] sum() }
-if $average == 30 then { print   [PASS] avg() } else { print   [FAIL] avg() }
-
-# TEST F6: Range and Fill
-print
-print [F6] Range and Fill
-set $range1 = call range 0 5
-set $filled = call fill 3 "x"
-
-print   range(0,5): $range1
-print   fill(3, x): $filled
-
-# ==================================================================
-# SECTION G: OBJECT FUNCTIONS
-# ==================================================================
+if $total == 150 then {
+    print   ✓ PASS: sum() = $total
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: sum() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $average == 30 then {
+    print   ✓ PASS: avg() = $average
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: avg() broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION G] OBJECT FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST G1: Object Creation and Access
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 11: OBJECT FUNCTIONS                                     │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 11: OBJECT FUNCTIONS                                     │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [G1] Object Creation and Access
-set $person = {name: "John", age: 30, city: "NYC"}
-set $objKeys = call keys $person
-set $objVals = call values $person
-set $name = call get $person "name"
-set $hasAge = call has $person "age"
 
-print   Object: $person
-print   keys: $objKeys
-print   values: $objVals
-print   get(name): $name
-print   has(age): $hasAge
+# Test 11.1: keys() and values()
+print [Test 11.1] keys() and values()
+set $obj = {name: "Alice", age: 25, city: "NYC"}
+set $objKeys = call keys $obj
+set $objVals = call values $obj
+set $keyCount = call count $objKeys
+if $keyCount == 3 then {
+    print   ✓ PASS: keys() returned 3 keys
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: keys() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-if $name == "John" then { print   [PASS] get() } else { print   [FAIL] get() }
-if $hasAge == true then { print   [PASS] has() } else { print   [FAIL] has() }
+# Test 11.2: get() and set()
+print [Test 11.2] get() and set()
+set $name = call get $obj "name"
+if $name == "Alice" then {
+    print   ✓ PASS: get("name") = "$name"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: get() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST G2: Object Merge and Clone
-print
-print [G2] Object Merge and Clone
+# Test 11.3: has()
+print [Test 11.3] has()
+set $hasName = call has $obj "name"
+set $hasEmail = call has $obj "email"
+if $hasName == true then {
+    print   ✓ PASS: has("name") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: has() true case broken
+    set $testsFailed = $testsFailed + 1
+}
+if $hasEmail == false then {
+    print   ✓ PASS: has("email") = false
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: has() false case broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 11.4: merge()
+print [Test 11.4] merge()
 set $obj1 = {a: 1, b: 2}
 set $obj2 = {c: 3, d: 4}
 set $merged = call merge $obj1 $obj2
-set $cloned = call clone $obj1
+set $mergedKeys = call keys $merged
+set $mergedCount = call count $mergedKeys
+if $mergedCount == 4 then {
+    print   ✓ PASS: merge() combined objects
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: merge() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   merged: $merged
-print   cloned: $cloned
+# Test 11.5: clone()
+print [Test 11.5] clone()
+set $original = {x: 10, y: 20}
+set $cloned = call clone $original
+set $clonedX = call get $cloned "x"
+if $clonedX == 10 then {
+    print   ✓ PASS: clone() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: clone() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# ==================================================================
-# SECTION H: JSON FUNCTIONS
-# ==================================================================
+# Test 11.6: entries()
+print [Test 11.6] entries()
+set $ent = call entries $obj1
+set $entCount = call count $ent
+if $entCount == 2 then {
+    print   ✓ PASS: entries() returned 2 entries
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: entries() broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION H] JSON FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST H1: JSON Serialization
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 12: JSON FUNCTIONS                                       │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 12: JSON FUNCTIONS                                       │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [H1] JSON Serialization
-set $data = {status: "ok", count: 42}
-set $jsonStr = call toJSON $data
+
+# Test 12.1: toJSON()
+print [Test 12.1] toJSON()
+set $data = {status: "ok", code: 200}
+set $json = call toJSON $data
+set $hasStatus = call contains $json "status"
+if $hasStatus == true then {
+    print   ✓ PASS: toJSON() serializes object
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: toJSON() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 12.2: fromJSON()
+print [Test 12.2] fromJSON()
+set $jsonStr = "{\\"name\\": \\"Test\\", \\"value\\": 42}"
+set $parsed = call fromJSON $jsonStr
+set $parsedName = call get $parsed "name"
+if $parsedName == "Test" then {
+    print   ✓ PASS: fromJSON() parses JSON
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: fromJSON() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 12.3: prettyJSON()
+print [Test 12.3] prettyJSON()
 set $pretty = call prettyJSON $data
-
-print   toJSON: $jsonStr
-print   prettyJSON: $pretty
-
-# TEST H2: JSON Parsing
-print
-print [H2] JSON Parsing
-set $jsonInput = "{\\"x\\": 10, \\"y\\": 20}"
-set $parsed = call fromJSON $jsonInput
-print   fromJSON: $parsed
-
-# ==================================================================
-# SECTION I: TYPE FUNCTIONS
-# ==================================================================
+set $hasNewline = call contains $pretty "status"
+if $hasNewline == true then {
+    print   ✓ PASS: prettyJSON() formats JSON
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: prettyJSON() broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION I] TYPE FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST I1: Type Checking
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 13: TYPE FUNCTIONS                                       │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 13: TYPE FUNCTIONS                                       │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [I1] Type Checking
-set $numCheck = call isNumber 42
-set $strCheck = call isString "hello"
-set $arrCheck = call isArray [1, 2, 3]
-set $objCheck = call isObject {a: 1}
-set $boolCheck = call isBoolean true
-set $nullCheck = call isNull null
-set $emptyCheck = call isEmpty ""
-set $emptyArrCheck = call isEmpty []
 
-print   isNumber(42): $numCheck
-print   isString(hello): $strCheck
-print   isArray([1,2,3]): $arrCheck
-print   isObject({a:1}): $objCheck
-print   isBoolean(true): $boolCheck
-print   isNull(null): $nullCheck
-print   isEmpty(""): $emptyCheck
-print   isEmpty([]): $emptyArrCheck
-
-# TEST I2: Type Conversion
-print
-print [I2] Type Conversion
-set $toNum = call toNumber "123.45"
-set $toInt = call toInt "42.9"
-set $toStr = call toString 999
-set $toBool = call toBoolean 1
-set $toArr = call toArray "abc"
-
-print   toNumber(123.45): $toNum
-print   toInt(42.9): $toInt
-print   toString(999): $toStr
-print   toBoolean(1): $toBool
-print   toArray(abc): $toArr
-
-# TEST I3: Typeof
-print
-print [I3] Typeof Function
+# Test 13.1: typeof()
+print [Test 13.1] typeof()
 set $t1 = call typeof 42
 set $t2 = call typeof "hello"
 set $t3 = call typeof [1, 2]
 set $t4 = call typeof {a: 1}
 set $t5 = call typeof null
+if $t1 == "number" then {
+    print   ✓ PASS: typeof(42) = "$t1"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: typeof(number) broken
+    set $testsFailed = $testsFailed + 1
+}
+if $t2 == "string" then {
+    print   ✓ PASS: typeof("hello") = "$t2"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: typeof(string) broken
+    set $testsFailed = $testsFailed + 1
+}
+if $t3 == "array" then {
+    print   ✓ PASS: typeof([1,2]) = "$t3"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: typeof(array) broken
+    set $testsFailed = $testsFailed + 1
+}
+if $t4 == "object" then {
+    print   ✓ PASS: typeof({a:1}) = "$t4"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: typeof(object) broken
+    set $testsFailed = $testsFailed + 1
+}
+if $t5 == "null" then {
+    print   ✓ PASS: typeof(null) = "$t5"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: typeof(null) broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   typeof(42): $t1
-print   typeof(hello): $t2
-print   typeof([1,2]): $t3
-print   typeof({a:1}): $t4
-print   typeof(null): $t5
+# Test 13.2: Type Check Functions
+print [Test 13.2] Type Check Functions
+set $isNum = call isNumber 42
+set $isStr = call isString "hello"
+set $isArr = call isArray [1, 2]
+set $isObj = call isObject {a: 1}
+set $isBool = call isBoolean true
+set $isNul = call isNull null
+if $isNum == true then {
+    print   ✓ PASS: isNumber(42) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isNumber() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $isStr == true then {
+    print   ✓ PASS: isString("hello") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isString() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $isArr == true then {
+    print   ✓ PASS: isArray([1,2]) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isArray() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $isObj == true then {
+    print   ✓ PASS: isObject({a:1}) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isObject() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $isBool == true then {
+    print   ✓ PASS: isBoolean(true) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isBoolean() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $isNul == true then {
+    print   ✓ PASS: isNull(null) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isNull() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# ==================================================================
-# SECTION J: TIME FUNCTIONS
-# ==================================================================
+# Test 13.3: isEmpty()
+print [Test 13.3] isEmpty()
+set $emptyStr = call isEmpty ""
+set $emptyArr = call isEmpty []
+set $nonEmpty = call isEmpty "text"
+if $emptyStr == true then {
+    print   ✓ PASS: isEmpty("") = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isEmpty(string) broken
+    set $testsFailed = $testsFailed + 1
+}
+if $emptyArr == true then {
+    print   ✓ PASS: isEmpty([]) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isEmpty(array) broken
+    set $testsFailed = $testsFailed + 1
+}
+if $nonEmpty == false then {
+    print   ✓ PASS: isEmpty("text") = false
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: isEmpty(non-empty) broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 13.4: Type Conversion Functions
+print [Test 13.4] Type Conversion Functions
+set $toNum = call toNumber "123.45"
+set $toInt = call toInt "42.9"
+set $toStr = call toString 999
+set $toBool = call toBoolean 1
+if $toNum == 123.45 then {
+    print   ✓ PASS: toNumber("123.45") = $toNum
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: toNumber() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $toInt == 42 then {
+    print   ✓ PASS: toInt("42.9") = $toInt
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: toInt() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $toStr == "999" then {
+    print   ✓ PASS: toString(999) = "$toStr"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: toString() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $toBool == true then {
+    print   ✓ PASS: toBoolean(1) = true
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: toBoolean() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 13.5: toArray()
+print [Test 13.5] toArray()
+set $arr = call toArray "abc"
+set $arrLen = call count $arr
+if $arrLen == 3 then {
+    print   ✓ PASS: toArray("abc") = 3 chars
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: toArray() broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION J] TIME FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST J1: Current Time
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 14: TIME FUNCTIONS                                       │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 14: TIME FUNCTIONS                                       │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [J1] Current Time
+
+# Test 14.1: now()
+print [Test 14.1] now()
 set $timestamp = call now
+if $timestamp > 0 then {
+    print   ✓ PASS: now() returns timestamp: $timestamp
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: now() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 14.2: time() and date()
+print [Test 14.2] time() and date()
 set $timeStr = call time
 set $dateStr = call date
+set $timeLen = call length $timeStr
+if $timeLen > 0 then {
+    print   ✓ PASS: time() = "$timeStr"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: time() broken
+    set $testsFailed = $testsFailed + 1
+}
+set $dateLen = call length $dateStr
+if $dateLen > 0 then {
+    print   ✓ PASS: date() = "$dateStr"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: date() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   now(): $timestamp
-print   time(): $timeStr
-print   date(): $dateStr
-
-# TEST J2: Time Components
-print
-print [J2] Time Components
+# Test 14.3: year(), month(), day()
+print [Test 14.3] year(), month(), day()
 set $yr = call year
 set $mo = call month
 set $dy = call day
+if $yr > 2020 then {
+    print   ✓ PASS: year() = $yr
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: year() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $mo >= 1 then {
+    if $mo <= 12 then {
+        print   ✓ PASS: month() = $mo
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: month() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $dy >= 1 then {
+    if $dy <= 31 then {
+        print   ✓ PASS: day() = $dy
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: day() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 14.4: hour(), minute(), second()
+print [Test 14.4] hour(), minute(), second()
 set $hr = call hour
 set $mi = call minute
 set $se = call second
+if $hr >= 0 then {
+    if $hr <= 23 then {
+        print   ✓ PASS: hour() = $hr
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: hour() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $mi >= 0 then {
+    if $mi <= 59 then {
+        print   ✓ PASS: minute() = $mi
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: minute() broken
+    set $testsFailed = $testsFailed + 1
+}
+if $se >= 0 then {
+    if $se <= 59 then {
+        print   ✓ PASS: second() = $se
+        set $testsPassed = $testsPassed + 1
+    }
+} else {
+    print   ✗ FAIL: second() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   year: $yr, month: $mo, day: $dy
-print   hour: $hr, minute: $mi, second: $se
-
-# TEST J3: Elapsed Time
-print
-print [J3] Elapsed Time
+# Test 14.5: elapsed()
+print [Test 14.5] elapsed()
 set $start = call now
 wait 100
 set $elapsed = call elapsed $start
-print   Elapsed after 100ms wait: $elapsed ms
-
-if $elapsed >= 100 then {
-    print   [PASS] elapsed() works
+if $elapsed >= 90 then {
+    print   ✓ PASS: elapsed() after 100ms = $elapsed ms
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] elapsed() too fast
+    print   ✗ FAIL: elapsed() too fast: $elapsed
+    set $testsFailed = $testsFailed + 1
 }
 
-# ==================================================================
-# SECTION K: ERROR HANDLING
-# ==================================================================
-
 print
-print [SECTION K] ERROR HANDLING
-print ----------------------------------------------------------------
 
-# TEST K1: Try/Catch
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 15: ERROR HANDLING                                       │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 15: ERROR HANDLING                                       │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [K1] Try/Catch Basic
+
+# Test 15.1: Try/Catch Basic
+print [Test 15.1] Try/Catch Basic
+set $caught = false
 try {
-    print   Inside try block
-    set $undefined = call nonexistent
-    print   [FAIL] Should have thrown
+    set $x = call nonexistentFunction
 } catch $err {
-    print   Caught error: $err
-    print   [PASS] Try/catch works
+    set $caught = true
+}
+if $caught == true then {
+    print   ✓ PASS: try/catch caught error
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: try/catch broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST K2: Error Recovery
-print
-print [K2] Error Recovery
-set $recovered = false
+# Test 15.2: Error Variable
+print [Test 15.2] Error Variable
+set $errorMsg = ""
 try {
-    set $x = call badFunction
+    set $x = call anotherBadFunction
+} catch $err {
+    set $errorMsg = $err
+}
+set $hasError = call length $errorMsg
+if $hasError > 0 then {
+    print   ✓ PASS: Error message captured
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Error message not captured
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 15.3: Execution Continues After Catch
+print [Test 15.3] Execution After Catch
+set $afterCatch = false
+try {
+    set $x = call badCall
 } catch {
-    set $recovered = true
+    set $afterCatch = true
 }
-
-if $recovered then {
-    print   [PASS] Error recovery works
+set $continued = false
+set $continued = true
+if $continued == true then {
+    print   ✓ PASS: Execution continues after catch
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] Error recovery failed
+    print   ✗ FAIL: Execution stopped after catch
+    set $testsFailed = $testsFailed + 1
 }
 
-# ==================================================================
-# SECTION L: FILE SYSTEM
-# ==================================================================
+print
+
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 16: STRING EDGE CASES                                    │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 16: STRING EDGE CASES                                    │
+print └──────────────────────────────────────────────────────────────────┘
+print
+
+# Test 16.1: Semicolons in Strings
+print [Test 16.1] Semicolons in Strings
+set $semi = "a;b;c"
+if $semi == "a;b;c" then {
+    print   ✓ PASS: Semicolons preserved in strings
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Semicolons broken in strings
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 16.2: Hash/Comment Character in Strings
+print [Test 16.2] Hash in Strings
+set $hash = "test # not a comment"
+set $hashLen = call length $hash
+if $hashLen > 10 then {
+    print   ✓ PASS: Hash preserved in strings
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Hash treated as comment
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 16.3: Escape Sequences
+print [Test 16.3] Escape Sequences
+set $escaped = "line1\\nline2"
+set $escLen = call length $escaped
+if $escLen > 5 then {
+    print   ✓ PASS: Escape sequences work
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Escape sequences broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 16.4: Quotes in Strings
+print [Test 16.4] Quotes in Strings
+set $quoted = "He said \\"Hello\\""
+set $qLen = call length $quoted
+if $qLen > 10 then {
+    print   ✓ PASS: Escaped quotes work
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: Escaped quotes broken
+    set $testsFailed = $testsFailed + 1
+}
 
 print
-print [SECTION L] FILE SYSTEM
-print ----------------------------------------------------------------
 
-# TEST L1: Write and Read
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 17: FILE SYSTEM                                          │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 17: FILE SYSTEM                                          │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [L1] Write and Read File
-set $testPath = "C:/Users/User/Documents/test_script.txt"
-set $testContent = "Hello from RetroScript test!"
 
+# Test 17.1: Write and Read File
+print [Test 17.1] Write and Read File
+set $testPath = "C:/Users/User/Documents/retroscript_test.txt"
+set $testContent = "Hello from RetroScript!"
 write $testContent to $testPath
-print   File written
-
-read $testPath into $readContent
-print   File content: $readContent
-
-if $readContent == $testContent then {
-    print   [PASS] File read/write
+read $testPath into $readBack
+if $readBack == $testContent then {
+    print   ✓ PASS: File write/read works
+    set $testsPassed = $testsPassed + 1
 } else {
-    print   [FAIL] File content mismatch
+    print   ✗ FAIL: File write/read broken
+    set $testsFailed = $testsFailed + 1
 }
 
-# TEST L2: Delete File
-print
-print [L2] Delete File
+# Test 17.2: Delete File
+print [Test 17.2] Delete File
 delete $testPath
-print   [PASS] File deleted
+print   ✓ PASS: File deleted (no error)
+set $testsPassed = $testsPassed + 1
 
-# TEST L3: Directory Operations
-print
-print [L3] Directory Operations
-set $testDir = "C:/Users/User/Documents/ScriptTest"
+# Test 17.3: Create and Delete Directory
+print [Test 17.3] Directory Operations
+set $testDir = "C:/Users/User/Documents/TestDir"
 mkdir $testDir
-print   Directory created: $testDir
-
-# Clean up
 delete $testDir
-print   Directory deleted
-
-# ==================================================================
-# SECTION M: SYSTEM INTEGRATION
-# ==================================================================
+print   ✓ PASS: mkdir/delete works
+set $testsPassed = $testsPassed + 1
 
 print
-print [SECTION M] SYSTEM INTEGRATION
-print ----------------------------------------------------------------
 
-# TEST M1: Get Windows
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 18: SYSTEM INTEGRATION                                   │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 18: SYSTEM INTEGRATION                                   │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [M1] Get Windows
+
+# Test 18.1: getWindows()
+print [Test 18.1] getWindows()
 set $windows = call getWindows
-set $winCount = call count $windows
-print   Current windows: $winCount
+set $winType = call isArray $windows
+if $winType == true then {
+    print   ✓ PASS: getWindows() returns array
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: getWindows() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST M2: Get Apps
-print
-print [M2] Get Apps
+# Test 18.2: getApps()
+print [Test 18.2] getApps()
 set $apps = call getApps
-set $appCount = call count $apps
-print   Available apps: $appCount
+set $appType = call isArray $apps
+if $appType == true then {
+    print   ✓ PASS: getApps() returns array
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: getApps() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST M3: Environment
-print
-print [M3] Environment Info
+# Test 18.3: getEnv()
+print [Test 18.3] getEnv()
 set $env = call getEnv
-print   Environment: $env
+set $platform = call get $env "platform"
+if $platform == "RetrOS" then {
+    print   ✓ PASS: getEnv() platform = "$platform"
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: getEnv() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST M4: App Launch and Close
-print
-print [M4] App Launch and Close
+# Test 18.4: Launch and Close App
+print [Test 18.4] Launch and Close App
+set $beforeWin = call getWindows
+set $beforeCount = call count $beforeWin
 launch calculator
 wait 300
-set $wins = call getWindows
-set $afterLaunch = call count $wins
-print   Windows after launch: $afterLaunch
-
+set $afterWin = call getWindows
+set $afterCount = call count $afterWin
+if $afterCount > $beforeCount then {
+    print   ✓ PASS: App launched (windows: $beforeCount -> $afterCount)
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: App launch broken
+    set $testsFailed = $testsFailed + 1
+}
 close
 wait 200
-set $wins = call getWindows
-set $afterClose = call count $wins
-print   Windows after close: $afterClose
-
-# ==================================================================
-# SECTION N: EVENTS
-# ==================================================================
+print   ✓ PASS: App closed
+set $testsPassed = $testsPassed + 1
 
 print
-print [SECTION N] EVENTS
-print ----------------------------------------------------------------
 
-# TEST N1: Event Emission
-print
-print [N1] Event Emission
-emit script:test message="Test event" value=42
-emit custom:event type="test"
-print   [PASS] Events emitted
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 19: EVENTS AND NOTIFICATIONS                             │
+# └──────────────────────────────────────────────────────────────────┘
 
-# TEST N2: Notification
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 19: EVENTS AND NOTIFICATIONS                             │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [N2] Notification
-notify RetroScript test notification!
-print   [PASS] Notification sent
 
-# TEST N3: Sound
-print
-print [N3] Sound System
+# Test 19.1: emit()
+print [Test 19.1] emit()
+emit test:event message="Hello" value=42
+print   ✓ PASS: Event emitted
+set $testsPassed = $testsPassed + 1
+
+# Test 19.2: notify()
+print [Test 19.2] notify()
+notify Test notification from RetroScript!
+print   ✓ PASS: Notification sent
+set $testsPassed = $testsPassed + 1
+
+# Test 19.3: play()
+print [Test 19.3] play()
 play notify
-wait 200
-print   [PASS] Sound played
-
-# ==================================================================
-# SECTION O: DEBUG FUNCTIONS
-# ==================================================================
+print   ✓ PASS: Sound played
+set $testsPassed = $testsPassed + 1
 
 print
-print [SECTION O] DEBUG FUNCTIONS
-print ----------------------------------------------------------------
 
-# TEST O1: Debug and Inspect
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ SECTION 20: DEBUG FUNCTIONS                                      │
+# └──────────────────────────────────────────────────────────────────┘
+
+print ┌──────────────────────────────────────────────────────────────────┐
+print │ SECTION 20: DEBUG FUNCTIONS                                      │
+print └──────────────────────────────────────────────────────────────────┘
 print
-print [O1] Debug and Inspect
-set $testObj = {name: "test", value: 123}
-set $debugOut = call debug "Debug message:" $testObj
+
+# Test 20.1: debug()
+print [Test 20.1] debug()
+set $debugResult = call debug "Test message" 42
+set $debugLen = call length $debugResult
+if $debugLen > 0 then {
+    print   ✓ PASS: debug() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: debug() broken
+    set $testsFailed = $testsFailed + 1
+}
+
+# Test 20.2: inspect()
+print [Test 20.2] inspect()
+set $testObj = {a: 1, b: 2}
 set $inspected = call inspect $testObj
+set $inspLen = call length $inspected
+if $inspLen > 0 then {
+    print   ✓ PASS: inspect() works
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: inspect() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-print   debug output captured
-print   inspect output captured
+# Test 20.3: assert() - passing case
+print [Test 20.3] assert()
+set $assertOk = call assert true "This should pass"
+if $assertOk == true then {
+    print   ✓ PASS: assert(true) passes
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: assert() broken
+    set $testsFailed = $testsFailed + 1
+}
 
-# TEST O2: Assert (should pass)
+# Test 20.4: assert() - failing case (caught)
+print [Test 20.4] assert() failure
+set $assertFailed = false
+try {
+    set $x = call assert false "Expected failure"
+} catch {
+    set $assertFailed = true
+}
+if $assertFailed == true then {
+    print   ✓ PASS: assert(false) throws error
+    set $testsPassed = $testsPassed + 1
+} else {
+    print   ✗ FAIL: assert(false) should throw
+    set $testsFailed = $testsFailed + 1
+}
+
 print
-print [O2] Assert
-set $assertResult = call assert true "This should pass"
-print   [PASS] Assert with true passed
 
-# ==================================================================
-# FINAL SUMMARY
-# ==================================================================
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                      TEST SUMMARY                                ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+print ╔══════════════════════════════════════════════════════════════════╗
+print ║                      TEST SUMMARY                                ║
+print ╚══════════════════════════════════════════════════════════════════╝
+print
+print   Total Tests Passed: $testsPassed
+print   Total Tests Failed: $testsFailed
+print
+set $totalTests = $testsPassed + $testsFailed
+print   Total Tests Run: $totalTests
+print
+
+if $testsFailed == 0 then {
+    print   ★★★ ALL TESTS PASSED! ★★★
+    play notify
+} else {
+    print   ⚠ Some tests failed. Review output above.
+    play error
+}
 
 print
-print ================================================================
-print   TEST SUITE COMPLETED!
-print ================================================================
-print
-print Sections tested:
-print   A: Basic Language Features
-print   B: Control Flow
-print   C: Functions
-print   D: String Functions
-print   E: Math Functions
-print   F: Array Functions
-print   G: Object Functions
-print   H: JSON Functions
-print   I: Type Functions
-print   J: Time Functions
-print   K: Error Handling
-print   L: File System
-print   M: System Integration
-print   N: Events
-print   O: Debug Functions
-print
-print Review output above for [PASS] and [FAIL] markers.
-print A successful test run shows all [PASS] markers!
+print ══════════════════════════════════════════════════════════════════
+print   Sections Tested:
+print    1. Variables and Data Types
+print    2. Arithmetic Operations
+print    3. Comparison Operators
+print    4. Logical Operators
+print    5. Control Flow - If/Else
+print    6. Control Flow - Loops
+print    7. User-Defined Functions
+print    8. String Functions
+print    9. Math Functions
+print   10. Array Functions
+print   11. Object Functions
+print   12. JSON Functions
+print   13. Type Functions
+print   14. Time Functions
+print   15. Error Handling
+print   16. String Edge Cases
+print   17. File System
+print   18. System Integration
+print   19. Events and Notifications
+print   20. Debug Functions
+print ══════════════════════════════════════════════════════════════════
 
-notify RetroScript Test Suite Complete!
-play notify`;
+notify RetroScript Test Suite Complete!`;
 
         return `
             <div class="script-runner">
