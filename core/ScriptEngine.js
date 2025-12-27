@@ -596,7 +596,7 @@ class ScriptEngineClass {
             } else if (char === quoteChar && inQuotes) {
                 inQuotes = false;
                 quoteChar = '';
-            } else if (char === ' ' && !inQuotes) {
+            } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
                 if (current) {
                     tokens.push(current);
                     current = '';
