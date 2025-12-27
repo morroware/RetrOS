@@ -1083,9 +1083,18 @@ export const Events = {
     // Desktop events
     DESKTOP_RENDER: 'desktop:render',
     DESKTOP_REFRESH: 'desktop:refresh',
+    DESKTOP_ARRANGE: 'desktop:arrange',
+    DESKTOP_BG_CHANGE: 'desktop:bg-change',
+    DESKTOP_SETTINGS_CHANGE: 'desktop:settings-change',
+
+    // Screensaver events (settings/control)
+    SCREENSAVER_START: 'screensaver:start',
+    SCREENSAVER_UPDATE_DELAY: 'screensaver:update-delay',
+    SCREENSAVER_UPDATE_TYPE: 'screensaver:update-type',
 
     // Dialog events
     DIALOG_ALERT: 'dialog:alert',
+    DIALOG_ALERT_RESPONSE: 'dialog:alert:response',
     DIALOG_CONFIRM: 'dialog:confirm',
     DIALOG_CONFIRM_RESPONSE: 'dialog:confirm:response',
     DIALOG_PROMPT: 'dialog:prompt',
@@ -1178,10 +1187,16 @@ export const Events = {
     // Feature events
     FEATURE_ENABLE: 'feature:enable',
     FEATURE_DISABLE: 'feature:disable',
+    FEATURE_ENABLED: 'feature:enabled',
+    FEATURE_DISABLED: 'feature:disabled',
     FEATURE_INITIALIZE: 'feature:initialize',
     FEATURE_READY: 'feature:ready',
     FEATURE_ERROR: 'feature:error',
+    FEATURE_REGISTERED: 'feature:registered',
     FEATURE_CONFIG_CHANGE: 'feature:config:change',
+    FEATURE_CONFIG_CHANGED: 'feature:config-changed',
+    FEATURE_CONFIG_RESET: 'feature:config-reset',
+    FEATURES_INITIALIZED: 'features:initialized',
 
     // Plugin events
     PLUGIN_LOAD: 'plugin:load',
@@ -1264,7 +1279,17 @@ export const Events = {
     MACRO_RECORD_START: 'macro:record:start',
     MACRO_RECORD_STOP: 'macro:record:stop',
     MACRO_PLAY: 'macro:play',
-    MACRO_SAVE: 'macro:save'
+    MACRO_SAVE: 'macro:save',
+
+    // Terminal events
+    TERMINAL_COMMAND: 'terminal:command',
+    TERMINAL_OUTPUT: 'terminal:output',
+    TERMINAL_ERROR: 'terminal:error',
+    TERMINAL_CWD_CHANGE: 'terminal:cwd:change',
+    TERMINAL_MATRIX: 'terminal:matrix',
+
+    // BSOD events
+    BSOD_SHOW: 'bsod:show'
 };
 
 // Export priority levels

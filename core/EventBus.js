@@ -121,9 +121,18 @@ export const Events = {
     // Desktop events
     DESKTOP_RENDER: 'desktop:render',
     DESKTOP_REFRESH: 'desktop:refresh',
+    DESKTOP_ARRANGE: 'desktop:arrange',
+    DESKTOP_BG_CHANGE: 'desktop:bg-change',
+    DESKTOP_SETTINGS_CHANGE: 'desktop:settings-change',
+
+    // Screensaver events (settings/control)
+    SCREENSAVER_START: 'screensaver:start',
+    SCREENSAVER_UPDATE_DELAY: 'screensaver:update-delay',
+    SCREENSAVER_UPDATE_TYPE: 'screensaver:update-type',
 
     // Dialog events
     DIALOG_ALERT: 'dialog:alert',
+    DIALOG_ALERT_RESPONSE: 'dialog:alert:response',
     DIALOG_CONFIRM: 'dialog:confirm',
     DIALOG_CONFIRM_RESPONSE: 'dialog:confirm:response',
     DIALOG_PROMPT: 'dialog:prompt',
@@ -167,7 +176,30 @@ export const Events = {
     // Channel events
     CHANNEL_MESSAGE: 'channel:message',
     CHANNEL_SUBSCRIBE: 'channel:subscribe',
-    CHANNEL_UNSUBSCRIBE: 'channel:unsubscribe'
+    CHANNEL_UNSUBSCRIBE: 'channel:unsubscribe',
+
+    // Feature lifecycle events
+    FEATURE_INITIALIZE: 'feature:initialize',
+    FEATURE_READY: 'feature:ready',
+    FEATURE_ENABLE: 'feature:enable',
+    FEATURE_DISABLE: 'feature:disable',
+    FEATURE_ENABLED: 'feature:enabled',
+    FEATURE_DISABLED: 'feature:disabled',
+    FEATURE_ERROR: 'feature:error',
+    FEATURE_REGISTERED: 'feature:registered',
+    FEATURE_CONFIG_CHANGE: 'feature:config:change',
+    FEATURE_CONFIG_CHANGED: 'feature:config-changed',
+    FEATURE_CONFIG_RESET: 'feature:config-reset',
+    FEATURES_INITIALIZED: 'features:initialized',
+
+    // Terminal events
+    TERMINAL_COMMAND: 'terminal:command',
+    TERMINAL_OUTPUT: 'terminal:output',
+    TERMINAL_ERROR: 'terminal:error',
+    TERMINAL_MATRIX: 'terminal:matrix',
+
+    // BSOD events
+    BSOD_SHOW: 'bsod:show'
 };
 
 // Also register legacy event names that might be used directly as strings
@@ -179,10 +211,12 @@ const LEGACY_EVENT_MAPPING = {
     'taskbar:update': 'ui:taskbar:update',
     'menu:action': 'ui:menu:action',
     'boot:complete': 'system:ready',
-    'screensaver:start': 'system:screensaver:start',
+    // Screensaver events - keep these separate (system vs user-config)
     'screensaver:end': 'system:screensaver:end',
+    // Pet events - map short form to full semantic form
     'pet:toggle': 'feature:pet:toggle',
     'pet:change': 'feature:pet:change',
+    // Settings events
     'setting:changed': 'setting:changed',
     'desktop:render': 'desktop:render'
 };
