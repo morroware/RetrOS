@@ -37,6 +37,8 @@ export const Events = {
     WINDOW_MAXIMIZE: 'window:maximize',
     WINDOW_RESTORE: 'window:restore',
     WINDOW_RESIZE: 'window:resize',
+    WINDOW_SNAP: 'window:snap',
+    WINDOW_SHAKE: 'window:shake',
 
     // Taskbar events
     TASKBAR_UPDATE: 'ui:taskbar:update',
@@ -52,18 +54,36 @@ export const Events = {
     APP_OPEN: 'app:open',
     APP_CLOSE: 'app:close',
     APP_REGISTERED: 'app:registered',
+    APP_READY: 'app:ready',
+    APP_FOCUS: 'app:focus',
+    APP_BLUR: 'app:blur',
+    APP_ERROR: 'app:error',
+    APP_STATE_CHANGE: 'app:state:change',
+    APP_BUSY: 'app:busy',
+    APP_IDLE: 'app:idle',
+    APP_MESSAGE: 'app:message',
+    APP_BROADCAST: 'app:broadcast',
 
     // Menu events
     START_MENU_TOGGLE: 'ui:menu:start:toggle',
+    START_MENU_CLOSE: 'ui:menu:start:close',
     CONTEXT_MENU_SHOW: 'ui:menu:context:show',
     CONTEXT_MENU_HIDE: 'ui:menu:context:hide',
     MENU_ACTION: 'ui:menu:action',
 
     // System events (note: boot:complete now maps to system:ready)
     BOOT_COMPLETE: 'system:ready',
+    SYSTEM_READY: 'system:ready',
     SHUTDOWN: 'system:shutdown',
     SCREENSAVER_START: 'system:screensaver:start',
     SCREENSAVER_END: 'system:screensaver:end',
+    SYSTEM_ERROR: 'system:error',
+    SYSTEM_ONLINE: 'system:online',
+    SYSTEM_OFFLINE: 'system:offline',
+    SYSTEM_FULLSCREEN_ENTER: 'system:fullscreen:enter',
+    SYSTEM_FULLSCREEN_EXIT: 'system:fullscreen:exit',
+    SYSTEM_MEMORY_WARNING: 'system:memory:warning',
+    SYSTEM_STORAGE_WARNING: 'system:storage:warning',
 
     // Achievement events
     ACHIEVEMENT_UNLOCK: 'achievement:unlock',
@@ -118,6 +138,8 @@ export const Events = {
     FS_FILE_CREATE: 'fs:file:create',
     FS_FILE_UPDATE: 'fs:file:update',
     FS_FILE_DELETE: 'fs:file:delete',
+    FS_FILE_RENAME: 'fs:file:rename',
+    FS_FILE_COPY: 'fs:file:copy',
     FS_DIRECTORY_CREATE: 'fs:directory:create',
 
     // Recycle bin events

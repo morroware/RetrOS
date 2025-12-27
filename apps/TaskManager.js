@@ -450,19 +450,22 @@ class TaskManager extends AppBase {
 
         // Get windows from StateManager (the source of truth)
         const windows = StateManager.getState('windows') || [];
-        const activeWindowId = StateManager.getState('ui.activeWindow');
 
         listBody.innerHTML = '';
 
-        if (windows.length === 0) {
+        // Filter out Task Manager itself
+        const filteredWindows = windows.filter(win => win.id !== 'taskmgr');
+
+        if (filteredWindows.length === 0) {
             listBody.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No running applications</div>';
             return;
         }
 
-        windows.forEach(win => {
-            // Skip Task Manager itself to avoid self-termination confusion
-            if (win.id === 'taskmgr') return;
+        // Get direct references to buttons (since we're in the right context during update)
+        const btnEndTask = this.getElement('#btn-end-task');
+        const btnSwitchTo = this.getElement('#btn-switch-to');
 
+        filteredWindows.forEach(win => {
             const isMinimized = win.minimized;
             const status = isMinimized ? 'Minimized' : 'Running';
             const statusClass = isMinimized ? 'status-minimized' : 'status-running';
@@ -482,15 +485,22 @@ class TaskManager extends AppBase {
                 <div>${memUsage.toLocaleString()} K</div>
             `;
 
+            // Use direct DOM references captured in this scope
             item.addEventListener('click', () => {
                 listBody.querySelectorAll('.taskmgr-list-item').forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
-                this.getElement('#btn-end-task').disabled = false;
-                this.getElement('#btn-switch-to').disabled = false;
+                if (btnEndTask) btnEndTask.disabled = false;
+                if (btnSwitchTo) btnSwitchTo.disabled = false;
             });
 
             item.addEventListener('dblclick', () => {
-                this.switchToWindow(win.id);
+                const winId = item.dataset.windowId;
+                const winData = StateManager.getWindow(winId);
+                if (winData && winData.minimized) {
+                    WindowManager.restore(winId);
+                } else {
+                    WindowManager.focus(winId);
+                }
             });
 
             listBody.appendChild(item);
@@ -538,6 +548,9 @@ class TaskManager extends AppBase {
 
         listBody.innerHTML = '';
 
+        // Get direct reference to button
+        const btnEndProcess = this.getElement('#btn-end-process');
+
         allProcesses.forEach(proc => {
             const item = document.createElement('div');
             item.className = 'taskmgr-list-item proc-list-item';
@@ -556,7 +569,7 @@ class TaskManager extends AppBase {
             item.addEventListener('click', () => {
                 listBody.querySelectorAll('.taskmgr-list-item').forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
-                this.getElement('#btn-end-process').disabled = false;
+                if (btnEndProcess) btnEndProcess.disabled = false;
             });
 
             listBody.appendChild(item);
