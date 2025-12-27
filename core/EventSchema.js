@@ -182,6 +182,22 @@ export const EventSchema = {
         }
     },
 
+    'app:launched': {
+        namespace: 'app',
+        action: 'launched',
+        description: 'Triggered after app launch completes (from scripting/automation)',
+        payload: {
+            appId: 'string',
+            windowId: 'string?',
+            success: 'boolean?'
+        },
+        example: {
+            appId: 'calculator',
+            windowId: 'window-calculator-1',
+            success: true
+        }
+    },
+
     'app:registered': {
         namespace: 'app',
         action: 'registered',
@@ -3080,6 +3096,36 @@ export const EventSchema = {
         }
     },
 
+    'feature:registered': {
+        namespace: 'feature',
+        action: 'registered',
+        description: 'Feature registered with the system',
+        payload: {
+            featureId: 'string',
+            name: 'string?',
+            category: 'string?'
+        },
+        example: {
+            featureId: 'clippy',
+            name: 'Clippy Assistant',
+            category: 'enhancement'
+        }
+    },
+
+    'features:initialized': {
+        namespace: 'features',
+        action: 'initialized',
+        description: 'All features have been initialized',
+        payload: {
+            count: 'number?',
+            features: 'array?'
+        },
+        example: {
+            count: 7,
+            features: ['soundsystem', 'achievements', 'clippy']
+        }
+    },
+
     'plugin:load': {
         namespace: 'plugin',
         action: 'load',
@@ -3133,6 +3179,20 @@ export const EventSchema = {
         },
         example: {
             pluginId: 'dvd-bouncer'
+        }
+    },
+
+    'plugins:loaded': {
+        namespace: 'plugins',
+        action: 'loaded',
+        description: 'All plugins have been loaded',
+        payload: {
+            count: 'number?',
+            plugins: 'array?'
+        },
+        example: {
+            count: 1,
+            plugins: ['dvd-bouncer']
         }
     },
 
