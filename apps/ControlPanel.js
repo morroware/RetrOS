@@ -146,20 +146,33 @@ class ControlPanel extends AppBase {
                 }
                 .pet-selector {
                     display: flex;
-                    gap: 10px;
-                    flex-wrap: wrap;
-                    margin-top: 10px;
+                    gap: 8px;
+                    align-items: center;
+                    margin-top: 8px;
                 }
-                .pet-option {
-                    font-size: 32px;
-                    padding: 10px;
-                    border: 2px outset #fff;
+                .pet-select {
+                    padding: 4px 8px;
+                    border: 2px inset #fff;
+                    background: #fff;
+                    font-size: 12px;
+                    font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
                     cursor: pointer;
-                    background: #c0c0c0;
+                    min-width: 140px;
                 }
-                .pet-option.selected {
-                    border-style: inset;
-                    background: #a0a0a0;
+                .pet-preview {
+                    width: 32px;
+                    height: 32px;
+                    border: 2px inset #fff;
+                    background: #000;
+                    image-rendering: pixelated;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .pet-preview canvas {
+                    image-rendering: pixelated;
+                    image-rendering: -moz-crisp-edges;
+                    image-rendering: crisp-edges;
                 }
             </style>
 
@@ -208,13 +221,13 @@ class ControlPanel extends AppBase {
                 </div>
 
                 <div class="control-section">
-                    <div class="control-section-title">🐾 Desktop Pet</div>
+                    <div class="control-section-title">Desktop Pet</div>
 
                     <div class="control-item">
-                        <div class="control-item-icon">🦮</div>
+                        <div class="control-item-icon" style="font-family: monospace; font-size: 16px;">:3</div>
                         <div class="control-item-info">
                             <div class="control-item-label">Enable Desktop Pet</div>
-                            <div class="control-item-desc">Show animated companion on desktop</div>
+                            <div class="control-item-desc">Your very own virtual companion! Just like 1997.</div>
                         </div>
                         <div class="control-toggle">
                             <input type="checkbox" id="pet-toggle" ${settings.pet.enabled ? 'checked' : ''}>
@@ -223,18 +236,26 @@ class ControlPanel extends AppBase {
                     </div>
 
                     <div class="control-item">
-                        <div class="control-item-icon">🎭</div>
                         <div class="control-item-info">
-                            <div class="control-item-label">Choose Pet</div>
-                            <div class="control-item-desc">Select your desktop companion</div>
+                            <div class="control-item-label">Select Pet Type</div>
+                            <div class="control-item-desc">Choose your desktop friend</div>
+                        </div>
+                        <div class="pet-selector">
+                            <div class="pet-preview" id="pet-preview"></div>
+                            <select class="pet-select" id="pet-type-select">
+                                <option value="neko" ${settings.pet.type === 'neko' ? 'selected' : ''}>Neko (Cat)</option>
+                                <option value="dog" ${settings.pet.type === 'dog' || !settings.pet.type ? 'selected' : ''}>Dogz</option>
+                                <option value="sheep" ${settings.pet.type === 'sheep' ? 'selected' : ''}>eSheep</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="pet-selector">
-                        ${['🐕', '🐈', '🐇', '🐹', '🦊', '🦝', '🐿️', '🦔'].map(pet => `
-                            <div class="pet-option ${settings.pet.type === pet ? 'selected' : ''}" data-pet="${pet}">
-                                ${pet}
+
+                    <div class="control-item">
+                        <div class="control-item-info">
+                            <div class="control-item-label" style="font-size: 10px; color: #666; font-style: italic;">
+                                Tip: Double-click your pet for a fortune! Drag to move.
                             </div>
-                        `).join('')}
+                        </div>
                     </div>
                 </div>
 
@@ -397,19 +418,18 @@ class ControlPanel extends AppBase {
             });
         }
 
-        // Pet selector
-        const petOptions = this.getElements('.pet-option');
-        petOptions.forEach(option => {
-            this.addHandler(option, 'click', (e) => {
-                const pet = e.currentTarget.dataset.pet;
-                StateManager.setState('settings.pet.type', pet, true);
-                EventBus.emit('pet:change', { type: pet });
-
-                // Update selection
-                petOptions.forEach(opt => opt.classList.remove('selected'));
-                e.currentTarget.classList.add('selected');
+        // Pet type selector dropdown
+        const petTypeSelect = this.getElement('#pet-type-select');
+        if (petTypeSelect) {
+            this.addHandler(petTypeSelect, 'change', (e) => {
+                const petType = e.target.value;
+                StateManager.setState('settings.pet.type', petType, true);
+                EventBus.emit('pet:change', { type: petType });
+                this.updatePetPreview(petType);
             });
-        });
+            // Initialize preview
+            this.updatePetPreview(petTypeSelect.value);
+        }
 
         // Screensaver delay
         const screensaverDelay = this.getElement('#screensaver-delay');
@@ -525,6 +545,65 @@ class ControlPanel extends AppBase {
 
         const sizeKB = (totalSize / 1024).toFixed(2);
         storageInfo.textContent = `${sizeKB} KB`;
+    }
+
+    updatePetPreview(petType) {
+        const preview = this.getElement('#pet-preview');
+        if (!preview) return;
+
+        // Create a small canvas for the preview
+        preview.innerHTML = '';
+        const canvas = document.createElement('canvas');
+        canvas.width = 24;
+        canvas.height = 24;
+        canvas.style.imageRendering = 'pixelated';
+        const ctx = canvas.getContext('2d');
+
+        // Draw a simple preview based on pet type
+        switch (petType) {
+            case 'neko':
+                // Draw cat face
+                ctx.fillStyle = '#F5F5DC'; // Beige
+                ctx.fillRect(6, 8, 12, 10); // Face
+                ctx.fillRect(4, 4, 4, 6); // Left ear
+                ctx.fillRect(16, 4, 4, 6); // Right ear
+                ctx.fillStyle = '#FFB6C1'; // Pink inner ear
+                ctx.fillRect(5, 5, 2, 3);
+                ctx.fillRect(17, 5, 2, 3);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(8, 11, 2, 2); // Left eye
+                ctx.fillRect(14, 11, 2, 2); // Right eye
+                ctx.fillStyle = '#FFB6C1';
+                ctx.fillRect(11, 14, 2, 2); // Nose
+                break;
+            case 'dog':
+                // Draw dog face
+                ctx.fillStyle = '#8B4513'; // Brown
+                ctx.fillRect(6, 8, 12, 12); // Face
+                ctx.fillRect(3, 6, 5, 8); // Left ear
+                ctx.fillRect(16, 6, 5, 8); // Right ear
+                ctx.fillStyle = '#A0522D';
+                ctx.fillRect(8, 10, 8, 6); // Muzzle lighter
+                ctx.fillStyle = '#000';
+                ctx.fillRect(9, 10, 2, 2); // Left eye
+                ctx.fillRect(13, 10, 2, 2); // Right eye
+                ctx.fillRect(11, 14, 2, 3); // Nose
+                break;
+            case 'sheep':
+                // Draw sheep face
+                ctx.fillStyle = '#F5F5F5'; // White wool
+                ctx.fillRect(4, 4, 16, 14); // Wool body
+                ctx.fillRect(2, 6, 4, 8);
+                ctx.fillRect(18, 6, 4, 8);
+                ctx.fillStyle = '#2F2F2F'; // Dark face
+                ctx.fillRect(7, 8, 10, 10); // Face
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(9, 11, 2, 2); // Left eye
+                ctx.fillRect(13, 11, 2, 2); // Right eye
+                break;
+        }
+
+        preview.appendChild(canvas);
     }
 }
 
