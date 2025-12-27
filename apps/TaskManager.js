@@ -1,12 +1,15 @@
 /**
  * Task Manager - Windows 95 Style Process Manager
  * Monitor running processes, system performance, and end tasks
+ *
+ * Uses semantic events and StateManager for accurate window tracking
  */
 
 import AppBase from './AppBase.js';
 import WindowManager from '../core/WindowManager.js';
 import StateManager from '../core/StateManager.js';
-import EventBus from '../core/EventBus.js';
+import EventBus, { Events } from '../core/EventBus.js';
+import AppRegistry from './AppRegistry.js';
 
 class TaskManager extends AppBase {
     constructor() {
@@ -26,6 +29,16 @@ class TaskManager extends AppBase {
         this.memHistory = [];
         this.maxHistoryPoints = 60;
         this.currentTab = 'applications';
+
+        // Store consistent memory values per window to avoid jitter
+        this.windowMemory = new Map();
+
+        // PID counter for processes
+        this.nextPid = 3000;
+        this.windowPids = new Map();
+
+        // Event unsubscribers
+        this.eventUnsubscribers = [];
     }
 
     onOpen() {
@@ -196,6 +209,12 @@ class TaskManager extends AppBase {
                 .proc-list-item {
                     grid-template-columns: 2fr 1fr 1fr 1fr;
                 }
+                .status-running {
+                    color: #008000;
+                }
+                .status-minimized {
+                    color: #808080;
+                }
             </style>
 
             <div class="taskmgr-container">
@@ -237,7 +256,7 @@ class TaskManager extends AppBase {
                         <div style="margin-top: 8px; display: flex; gap: 8px;">
                             <button class="taskmgr-btn" id="btn-end-process" disabled>End Process</button>
                             <label style="margin-left: auto; display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="show-all-proc"> Show processes from all users
+                                <input type="checkbox" id="show-all-proc" checked> Show processes from all users
                             </label>
                         </div>
                     </div>
@@ -325,16 +344,69 @@ class TaskManager extends AppBase {
         this.addHandler(this.getElement('#btn-new-task'), 'click', () => this.newTask());
         this.addHandler(this.getElement('#btn-end-process'), 'click', () => this.endSelectedProcess());
 
+        // Subscribe to window events for real-time updates
+        this.subscribeToEvents();
+
         // Start update loop
         this.updateInterval = setInterval(() => this.update(), 1000);
         this.update();
     }
 
+    subscribeToEvents() {
+        // Subscribe to window open/close events for immediate updates
+        const onWindowOpen = () => {
+            this.update();
+        };
+
+        const onWindowClose = () => {
+            // Clear selection when a window closes
+            const btnEndTask = this.getElement('#btn-end-task');
+            const btnSwitchTo = this.getElement('#btn-switch-to');
+            const btnEndProcess = this.getElement('#btn-end-process');
+            if (btnEndTask) btnEndTask.disabled = true;
+            if (btnSwitchTo) btnSwitchTo.disabled = true;
+            if (btnEndProcess) btnEndProcess.disabled = true;
+            this.update();
+        };
+
+        const onWindowFocus = () => {
+            this.update();
+        };
+
+        const onWindowMinimize = () => {
+            this.update();
+        };
+
+        const onWindowRestore = () => {
+            this.update();
+        };
+
+        EventBus.on(Events.WINDOW_OPEN, onWindowOpen);
+        EventBus.on(Events.WINDOW_CLOSE, onWindowClose);
+        EventBus.on(Events.WINDOW_FOCUS, onWindowFocus);
+        EventBus.on(Events.WINDOW_MINIMIZE, onWindowMinimize);
+        EventBus.on(Events.WINDOW_RESTORE, onWindowRestore);
+
+        // Store unsubscribers
+        this.eventUnsubscribers.push(
+            () => EventBus.off(Events.WINDOW_OPEN, onWindowOpen),
+            () => EventBus.off(Events.WINDOW_CLOSE, onWindowClose),
+            () => EventBus.off(Events.WINDOW_FOCUS, onWindowFocus),
+            () => EventBus.off(Events.WINDOW_MINIMIZE, onWindowMinimize),
+            () => EventBus.off(Events.WINDOW_RESTORE, onWindowRestore)
+        );
+    }
+
     onClose() {
+        // Clear update interval
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
         }
+
+        // Unsubscribe from events
+        this.eventUnsubscribers.forEach(unsub => unsub());
+        this.eventUnsubscribers = [];
     }
 
     update() {
@@ -344,31 +416,70 @@ class TaskManager extends AppBase {
         this.updateFooter();
     }
 
+    /**
+     * Get consistent memory value for a window
+     */
+    getWindowMemory(windowId) {
+        if (!this.windowMemory.has(windowId)) {
+            // Generate a stable memory value based on window ID hash
+            let hash = 0;
+            for (let i = 0; i < windowId.length; i++) {
+                hash = ((hash << 5) - hash) + windowId.charCodeAt(i);
+                hash = hash & hash;
+            }
+            // Base memory between 500K and 6000K
+            const baseMem = 500 + Math.abs(hash % 5500);
+            this.windowMemory.set(windowId, baseMem);
+        }
+        return this.windowMemory.get(windowId);
+    }
+
+    /**
+     * Get or create PID for a window
+     */
+    getWindowPid(windowId) {
+        if (!this.windowPids.has(windowId)) {
+            this.windowPids.set(windowId, this.nextPid++);
+        }
+        return this.windowPids.get(windowId);
+    }
+
     updateApplicationsList() {
         const listBody = this.getElement('#app-list-body');
         if (!listBody) return;
 
-        // Get all open windows from WindowManager
-        const windows = WindowManager.getOpenWindows ? WindowManager.getOpenWindows() : [];
-        const openWindowEls = document.querySelectorAll('.window.open:not(.minimized)');
+        // Get windows from StateManager (the source of truth)
+        const windows = StateManager.getState('windows') || [];
+        const activeWindowId = StateManager.getState('ui.activeWindow');
 
         listBody.innerHTML = '';
 
-        openWindowEls.forEach((windowEl, index) => {
-            const titleEl = windowEl.querySelector('.title-text');
-            const title = titleEl ? titleEl.textContent.trim() : 'Unknown';
-            const windowId = windowEl.id.replace('window-', '');
+        if (windows.length === 0) {
+            listBody.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No running applications</div>';
+            return;
+        }
 
-            // Simulate memory usage
-            const memUsage = Math.floor(Math.random() * 5000 + 500);
+        windows.forEach(win => {
+            // Skip Task Manager itself to avoid self-termination confusion
+            if (win.id === 'taskmgr') return;
+
+            const isMinimized = win.minimized;
+            const status = isMinimized ? 'Minimized' : 'Running';
+            const statusClass = isMinimized ? 'status-minimized' : 'status-running';
+            const memUsage = this.getWindowMemory(win.id);
+
+            // Extract title without icon
+            let displayTitle = win.title || win.id;
+            // Remove emoji prefix if present (icon is usually first character(s))
+            displayTitle = displayTitle.replace(/^[\p{Emoji}\s]+/u, '').trim() || displayTitle;
 
             const item = document.createElement('div');
             item.className = 'taskmgr-list-item';
-            item.dataset.windowId = windowId;
+            item.dataset.windowId = win.id;
             item.innerHTML = `
-                <div>📄 ${title}</div>
-                <div>Running</div>
-                <div>${memUsage} K</div>
+                <div>📄 ${displayTitle}</div>
+                <div class="${statusClass}">${status}</div>
+                <div>${memUsage.toLocaleString()} K</div>
             `;
 
             item.addEventListener('click', () => {
@@ -379,57 +490,67 @@ class TaskManager extends AppBase {
             });
 
             item.addEventListener('dblclick', () => {
-                WindowManager.focus(windowId);
+                this.switchToWindow(win.id);
             });
 
             listBody.appendChild(item);
         });
-
-        if (openWindowEls.length === 0) {
-            listBody.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No running applications</div>';
-        }
     }
 
     updateProcessesList() {
         const listBody = this.getElement('#proc-list-body');
         if (!listBody) return;
 
-        // Simulate system processes
-        const processes = [
-            { name: 'System', pid: 4, cpu: '0%', mem: '24 K' },
-            { name: 'smss.exe', pid: 156, cpu: '0%', mem: '160 K' },
-            { name: 'csrss.exe', pid: 184, cpu: '1%', mem: '1,240 K' },
-            { name: 'winlogon.exe', pid: 208, cpu: '0%', mem: '2,100 K' },
-            { name: 'services.exe', pid: 252, cpu: '0%', mem: '1,800 K' },
-            { name: 'lsass.exe', pid: 264, cpu: '0%', mem: '1,400 K' },
-            { name: 'explorer.exe', pid: 1024, cpu: `${Math.floor(Math.random() * 5)}%`, mem: '8,420 K' },
-            { name: 'taskmgr.exe', pid: 2048, cpu: `${Math.floor(Math.random() * 3)}%`, mem: '2,840 K' }
+        // System processes (always present)
+        const systemProcesses = [
+            { name: 'System', pid: 4, cpu: '0', mem: 24, isSystem: true },
+            { name: 'smss.exe', pid: 156, cpu: '0', mem: 160, isSystem: true },
+            { name: 'csrss.exe', pid: 184, cpu: '1', mem: 1240, isSystem: true },
+            { name: 'winlogon.exe', pid: 208, cpu: '0', mem: 2100, isSystem: true },
+            { name: 'services.exe', pid: 252, cpu: '0', mem: 1800, isSystem: true },
+            { name: 'lsass.exe', pid: 264, cpu: '0', mem: 1400, isSystem: true },
+            { name: 'explorer.exe', pid: 1024, cpu: String(Math.floor(Math.random() * 5)), mem: 8420, isSystem: true },
+            { name: 'taskmgr.exe', pid: 2048, cpu: String(Math.floor(Math.random() * 3)), mem: 2840, isSystem: true }
         ];
 
         // Add running windows as processes
-        const openWindowEls = document.querySelectorAll('.window.open');
-        openWindowEls.forEach((windowEl, index) => {
-            const titleEl = windowEl.querySelector('.title-text');
-            const title = titleEl ? titleEl.textContent.trim().split(' ')[0].toLowerCase() : 'app';
-            processes.push({
-                name: `${title}.exe`,
-                pid: 3000 + index,
-                cpu: `${Math.floor(Math.random() * 10)}%`,
-                mem: `${Math.floor(Math.random() * 5000 + 500)} K`
+        const windows = StateManager.getState('windows') || [];
+        const appProcesses = windows
+            .filter(win => win.id !== 'taskmgr') // Exclude task manager
+            .map(win => {
+                // Get app name from title or window ID
+                let appName = win.title || win.id;
+                // Clean up and create process name
+                appName = appName.replace(/^[\p{Emoji}\s]+/u, '').trim().split(' ')[0].toLowerCase();
+                if (!appName) appName = win.id;
+
+                return {
+                    name: `${appName}.exe`,
+                    pid: this.getWindowPid(win.id),
+                    cpu: String(Math.floor(Math.random() * 10)),
+                    mem: this.getWindowMemory(win.id),
+                    isSystem: false,
+                    windowId: win.id
+                };
             });
-        });
+
+        const allProcesses = [...systemProcesses, ...appProcesses];
 
         listBody.innerHTML = '';
 
-        processes.forEach(proc => {
+        allProcesses.forEach(proc => {
             const item = document.createElement('div');
             item.className = 'taskmgr-list-item proc-list-item';
             item.dataset.processName = proc.name;
+            item.dataset.isSystem = proc.isSystem;
+            if (proc.windowId) {
+                item.dataset.windowId = proc.windowId;
+            }
             item.innerHTML = `
                 <div>${proc.name}</div>
                 <div>${proc.pid}</div>
-                <div>${proc.cpu}</div>
-                <div>${proc.mem}</div>
+                <div>${proc.cpu}%</div>
+                <div>${proc.mem.toLocaleString()} K</div>
             `;
 
             item.addEventListener('click', () => {
@@ -443,13 +564,18 @@ class TaskManager extends AppBase {
 
         // Update stats
         const statProcesses = this.getElement('#stat-processes');
-        if (statProcesses) statProcesses.textContent = processes.length;
+        if (statProcesses) statProcesses.textContent = allProcesses.length;
     }
 
     updatePerformance() {
-        // Generate simulated CPU and memory usage
-        const cpuUsage = Math.floor(Math.random() * 30 + 5);
-        const memUsage = Math.floor(Math.random() * 40 + 20);
+        // Calculate CPU based on number of windows (simulated load)
+        const windows = StateManager.getState('windows') || [];
+        const baseLoad = 5 + windows.length * 3;
+        const cpuUsage = Math.min(95, baseLoad + Math.floor(Math.random() * 10));
+
+        // Calculate memory based on window count
+        const baseMemPercent = 20 + windows.length * 5;
+        const memUsage = Math.min(90, baseMemPercent + Math.floor(Math.random() * 5));
 
         // Update history
         this.cpuHistory.push(cpuUsage);
@@ -473,10 +599,13 @@ class TaskManager extends AppBase {
         const availMem = this.getElement('#stat-avail-mem');
         const cache = this.getElement('#stat-cache');
 
-        if (handles) handles.textContent = Math.floor(Math.random() * 1000 + 500);
-        if (threads) threads.textContent = Math.floor(Math.random() * 100 + 50);
+        const handleCount = 500 + windows.length * 50 + Math.floor(Math.random() * 100);
+        const threadCount = 50 + windows.length * 5 + Math.floor(Math.random() * 10);
+
+        if (handles) handles.textContent = handleCount;
+        if (threads) threads.textContent = threadCount;
         if (availMem) availMem.textContent = Math.floor(655360 * (100 - memUsage) / 100);
-        if (cache) cache.textContent = Math.floor(Math.random() * 100000 + 50000);
+        if (cache) cache.textContent = Math.floor(50000 + Math.random() * 50000);
 
         // Draw graphs if performance tab is active
         if (this.currentTab === 'performance') {
@@ -559,7 +688,8 @@ class TaskManager extends AppBase {
     }
 
     updateFooter() {
-        const processes = document.querySelectorAll('.window.open').length + 8; // +8 for system processes
+        const windows = StateManager.getState('windows') || [];
+        const processes = windows.length + 8; // +8 for system processes
         const cpu = this.cpuHistory.length > 0 ? this.cpuHistory[this.cpuHistory.length - 1] : 0;
         const mem = this.memHistory.length > 0 ? this.memHistory[this.memHistory.length - 1] : 0;
 
@@ -578,8 +708,14 @@ class TaskManager extends AppBase {
 
         const windowId = selected.dataset.windowId;
         if (windowId) {
+            // Use WindowManager to properly close the window
             WindowManager.close(windowId);
-            this.update();
+
+            // Clean up our tracking
+            this.windowMemory.delete(windowId);
+            this.windowPids.delete(windowId);
+
+            // Disable buttons
             this.getElement('#btn-end-task').disabled = true;
             this.getElement('#btn-switch-to').disabled = true;
         }
@@ -591,12 +727,38 @@ class TaskManager extends AppBase {
 
         const windowId = selected.dataset.windowId;
         if (windowId) {
+            this.switchToWindow(windowId);
+        }
+    }
+
+    switchToWindow(windowId) {
+        const win = StateManager.getWindow(windowId);
+        if (win && win.minimized) {
+            // Restore if minimized
+            WindowManager.restore(windowId);
+        } else {
+            // Just focus
             WindowManager.focus(windowId);
         }
     }
 
     newTask() {
-        EventBus.emit('app:open', { id: 'run' });
+        // Launch the Run dialog if available, otherwise show a file browser
+        const runApp = AppRegistry.get('run');
+        if (runApp) {
+            AppRegistry.launch('run');
+        } else {
+            // Fallback: show file browser
+            const myComputerApp = AppRegistry.get('mycomputer');
+            if (myComputerApp) {
+                AppRegistry.launch('mycomputer');
+            } else {
+                EventBus.emit(Events.DIALOG_ALERT, {
+                    message: 'Run dialog is not available.',
+                    title: 'Task Manager'
+                });
+            }
+        }
     }
 
     endSelectedProcess() {
@@ -604,26 +766,32 @@ class TaskManager extends AppBase {
         if (!selected) return;
 
         const processName = selected.dataset.processName;
+        const isSystem = selected.dataset.isSystem === 'true';
+        const windowId = selected.dataset.windowId;
 
         // Check for system processes
-        const systemProcesses = ['system', 'smss.exe', 'csrss.exe', 'winlogon.exe', 'services.exe', 'lsass.exe'];
-        if (systemProcesses.includes(processName.toLowerCase())) {
-            EventBus.emit('dialog:alert', {
-                message: 'Unable to terminate process. This is a critical system process.',
-                icon: 'error',
+        if (isSystem) {
+            EventBus.emit(Events.DIALOG_ALERT, {
+                message: `Unable to terminate process "${processName}".\n\nThis is a critical system process. Terminating this process would make the system unstable.`,
                 title: 'Task Manager Warning'
             });
             return;
         }
 
-        // For other processes, try to close related window
-        EventBus.emit('dialog:alert', {
-            message: `Process "${processName}" has been terminated.`,
-            icon: 'info',
-            title: 'Task Manager'
-        });
+        // For app processes, close the associated window
+        if (windowId) {
+            WindowManager.close(windowId);
 
-        this.update();
+            // Clean up tracking
+            this.windowMemory.delete(windowId);
+            this.windowPids.delete(windowId);
+
+            EventBus.emit(Events.DIALOG_ALERT, {
+                message: `Process "${processName}" has been terminated.`,
+                title: 'Task Manager'
+            });
+        }
+
         this.getElement('#btn-end-process').disabled = true;
     }
 }
