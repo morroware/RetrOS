@@ -278,6 +278,41 @@ export const EventSchema = {
     },
 
     // ==========================================
+    // SCREENSAVER EVENTS (Settings & Control)
+    // ==========================================
+    'screensaver:start': {
+        namespace: 'screensaver',
+        action: 'start',
+        description: 'Request to start screensaver (from settings)',
+        payload: {},
+        example: {}
+    },
+
+    'screensaver:update-delay': {
+        namespace: 'screensaver',
+        action: 'update-delay',
+        description: 'Screensaver delay/timeout changed',
+        payload: {
+            delay: 'number'
+        },
+        example: {
+            delay: 300000
+        }
+    },
+
+    'screensaver:update-type': {
+        namespace: 'screensaver',
+        action: 'update-type',
+        description: 'Screensaver type/mode changed',
+        payload: {
+            type: 'string'
+        },
+        example: {
+            type: 'flying-toasters'
+        }
+    },
+
+    // ==========================================
     // UI EVENTS
     // ==========================================
     'ui:menu:start:open': {
@@ -778,6 +813,49 @@ export const EventSchema = {
         example: {}
     },
 
+    'desktop:arrange': {
+        namespace: 'desktop',
+        action: 'arrange',
+        description: 'Arrange desktop icons',
+        payload: {
+            mode: 'string?'
+        },
+        example: {
+            mode: 'auto'
+        }
+    },
+
+    'desktop:bg-change': {
+        namespace: 'desktop',
+        action: 'bg-change',
+        description: 'Desktop background changed',
+        payload: {
+            color: 'string?',
+            wallpaper: 'string?'
+        },
+        example: {
+            color: '#008080',
+            wallpaper: 'clouds.jpg'
+        }
+    },
+
+    'desktop:settings-change': {
+        namespace: 'desktop',
+        action: 'settings-change',
+        description: 'Desktop settings changed',
+        payload: {
+            bgColor: 'string?',
+            wallpaper: 'string?',
+            iconSize: 'number?',
+            textColor: 'string?'
+        },
+        example: {
+            bgColor: '#008080',
+            wallpaper: 'clouds.jpg',
+            iconSize: 32
+        }
+    },
+
     // ==========================================
     // DIALOG EVENTS
     // ==========================================
@@ -788,12 +866,27 @@ export const EventSchema = {
         payload: {
             message: 'string',
             title: 'string?',
-            icon: 'string?'
+            icon: 'string?',
+            requestId: 'string?'
         },
         example: {
             message: 'File saved successfully',
             title: 'Success',
             icon: '✅'
+        }
+    },
+
+    'dialog:alert:response': {
+        namespace: 'dialog',
+        action: 'alert:response',
+        description: 'Response when alert dialog is dismissed',
+        payload: {
+            requestId: 'string',
+            acknowledged: 'boolean?'
+        },
+        example: {
+            requestId: 'alert-123',
+            acknowledged: true
         }
     },
 
@@ -3081,7 +3174,7 @@ export const EventSchema = {
     'feature:config:change': {
         namespace: 'feature',
         action: 'config:change',
-        description: 'Feature configuration changed',
+        description: 'Feature configuration changed (command)',
         payload: {
             featureId: 'string',
             key: 'string',
@@ -3093,6 +3186,58 @@ export const EventSchema = {
             key: 'type',
             value: 'cat',
             oldValue: 'dog'
+        }
+    },
+
+    'feature:config-changed': {
+        namespace: 'feature',
+        action: 'config-changed',
+        description: 'Feature configuration was changed (notification)',
+        payload: {
+            featureId: 'string',
+            key: 'string',
+            value: 'any'
+        },
+        example: {
+            featureId: 'pet',
+            key: 'type',
+            value: 'cat'
+        }
+    },
+
+    'feature:config-reset': {
+        namespace: 'feature',
+        action: 'config-reset',
+        description: 'Feature configuration was reset to defaults',
+        payload: {
+            featureId: 'string'
+        },
+        example: {
+            featureId: 'pet'
+        }
+    },
+
+    'feature:enabled': {
+        namespace: 'feature',
+        action: 'enabled',
+        description: 'Feature was enabled (notification)',
+        payload: {
+            featureId: 'string'
+        },
+        example: {
+            featureId: 'clippy'
+        }
+    },
+
+    'feature:disabled': {
+        namespace: 'feature',
+        action: 'disabled',
+        description: 'Feature was disabled (notification)',
+        payload: {
+            featureId: 'string'
+        },
+        example: {
+            featureId: 'clippy'
         }
     },
 
@@ -4774,6 +4919,31 @@ export const EventSchema = {
             previousCwd: 'string?'
         },
         example: { cwd: 'C:\\Users\\User\\Documents', previousCwd: 'C:\\Users\\User' }
+    },
+
+    'terminal:matrix': {
+        namespace: 'terminal',
+        action: 'matrix',
+        description: 'Trigger Matrix screen effect (easter egg)',
+        payload: {},
+        example: {}
+    },
+
+    // ==========================================
+    // BSOD EVENTS (Blue Screen of Death)
+    // ==========================================
+    'bsod:show': {
+        namespace: 'bsod',
+        action: 'show',
+        description: 'Show Blue Screen of Death effect',
+        payload: {
+            error: 'string?',
+            code: 'string?'
+        },
+        example: {
+            error: 'CRITICAL_PROCESS_DIED',
+            code: '0x0000007E'
+        }
     },
 
     // ==========================================
