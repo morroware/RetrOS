@@ -1,6 +1,6 @@
 # Semantic Event System
 
-RetrOS (IlluminatOS!) features a **comprehensive semantic event architecture** with 200+ events that enables typed, validated, and well-documented communication between all system components (32 apps, 7 features, 4 UI renderers, 16 core modules).
+RetrOS (IlluminatOS!) features a **comprehensive semantic event architecture** with 200+ events that enables typed, validated, and well-documented communication between all system components (31 apps, 7 features, 4 UI renderers, 15 core modules).
 
 ## Overview
 

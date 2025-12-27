@@ -23,11 +23,11 @@ IlluminatOS! is a fully-functional Windows 95 desktop environment simulator buil
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
 **Project Stats:**
-- **~45,000+ lines of JavaScript** across 64+ files
-- **~4,800+ lines of modular CSS** across 35+ files
-- **32 fully-functional applications**
+- **~45,000+ lines of JavaScript** across 65+ files
+- **~4,800+ lines of modular CSS** across 36 files
+- **31 fully-functional applications**
 - **200+ semantic events** for complete system observability
-- **16 core system modules** powering the OS
+- **15 core system modules** powering the OS
 - **Extensible plugin system** with example plugins (DVD Bouncer, Example Plugin)
 - **Full scripting support** via RetroScript, CommandBus and ScriptEngine
 - **Zero external dependencies** - pure vanilla JavaScript
@@ -184,7 +184,7 @@ When you first load IlluminatOS!, you'll experience an authentic boot sequence:
 
 ## Applications
 
-IlluminatOS! includes 32 fully-functional applications organized into categories:
+IlluminatOS! includes 31 fully-functional applications organized into categories:
 
 ### Productivity (6 apps)
 
@@ -559,7 +559,7 @@ IlluminatOS!/
 ├── index.html              # Main entry point with boot screen and UI placeholders
 ├── index.js                # Boot sequence & system initialization
 │
-├── styles/                 # Modular CSS architecture (~4800 lines)
+├── styles/                 # Modular CSS architecture (~4800 lines, 36 files)
 │   ├── main.css            # Entry point that imports all modules
 │   ├── core/               # Base styles and CSS variables
 │   ├── apps/               # App-specific styles (calculator, paint, etc.)
@@ -569,7 +569,7 @@ IlluminatOS!/
 │   ├── effects/            # Animations and color schemes
 │   └── utilities/          # Helper utilities
 │
-├── apps/                   # Application implementations (32 apps)
+├── apps/                   # Application implementations (31 apps)
 │   ├── AppBase.js          # Base class for all apps (multi-instance support)
 │   ├── AppRegistry.js      # Central app registry & launcher
 │   ├── Calculator.js       # Calculator with keyboard support
@@ -603,7 +603,7 @@ IlluminatOS!/
 │   ├── FeaturesSettings.js # Features and plugin configuration
 │   └── ScriptRunner.js     # Script execution and testing
 │
-├── core/                   # Core system modules (16 modules)
+├── core/                   # Core system modules (15 modules)
 │   ├── SemanticEventBus.js # Enhanced event bus with validation, priorities, channels
 │   ├── EventSchema.js      # Schema definitions for 200+ semantic events
 │   ├── SystemMonitor.js    # System monitoring (input, performance, activity)
@@ -618,8 +618,7 @@ IlluminatOS!/
 │   ├── FeatureBase.js      # Base class for features (lifecycle events)
 │   ├── ScriptEngine.js     # Scripting engine for automation
 │   ├── CommandBus.js       # Command execution layer for scripting
-│   ├── EventBus.js         # Backward compatibility wrapper
-│   └── EventBus.js.backup  # Original EventBus backup
+│   └── EventBus.js         # Backward compatibility wrapper
 │
 ├── features/               # Core system features (7 modules)
 │   ├── ClippyAssistant.js  # Clippy helper popup
