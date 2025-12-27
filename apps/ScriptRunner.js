@@ -649,7 +649,13 @@ play notify`;
                 <div class="script-main">
                     <div class="script-editor-pane">
                         <div class="pane-header">Script Editor</div>
-                        <textarea class="script-editor" id="scriptEditor" spellcheck="false">${sampleScript}</textarea>
+                        <div class="editor-container">
+                            <div class="line-numbers" id="lineNumbers"></div>
+                            <div class="editor-wrapper">
+                                <pre class="syntax-highlight" id="syntaxHighlight" aria-hidden="true"></pre>
+                                <textarea class="script-editor" id="scriptEditor" spellcheck="false">${sampleScript}</textarea>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="script-output-pane">
@@ -747,22 +753,84 @@ play notify`;
                     font-size: 12px;
                 }
 
-                .script-editor {
+                .editor-container {
                     flex: 1;
+                    display: flex;
+                    border: 2px inset var(--win95-light);
+                    background: #1e1e1e;
+                    overflow: hidden;
+                }
+
+                .line-numbers {
+                    padding: 8px 8px 8px 4px;
+                    background: #252526;
+                    color: #858585;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                    font-size: 13px;
+                    line-height: 1.4;
+                    text-align: right;
+                    user-select: none;
+                    border-right: 1px solid #3c3c3c;
+                    min-width: 35px;
+                    overflow: hidden;
+                }
+
+                .editor-wrapper {
+                    flex: 1;
+                    position: relative;
+                    overflow: auto;
+                }
+
+                .syntax-highlight {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    margin: 0;
+                    padding: 8px;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                    font-size: 13px;
+                    line-height: 1.4;
+                    color: #d4d4d4;
+                    background: transparent;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    pointer-events: none;
+                    tab-size: 4;
+                }
+
+                .script-editor {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
                     font-family: 'Consolas', 'Courier New', monospace;
                     font-size: 13px;
                     line-height: 1.4;
                     padding: 8px;
-                    border: 2px inset var(--win95-light);
+                    border: none;
                     resize: none;
-                    background: white;
-                    color: #000;
+                    background: transparent;
+                    color: transparent;
+                    caret-color: #fff;
                     tab-size: 4;
+                    z-index: 1;
                 }
 
                 .script-editor:focus {
                     outline: none;
                 }
+
+                /* Syntax highlighting colors */
+                .syntax-highlight .keyword { color: #569cd6; }
+                .syntax-highlight .command { color: #c586c0; }
+                .syntax-highlight .function { color: #dcdcaa; }
+                .syntax-highlight .variable { color: #9cdcfe; }
+                .syntax-highlight .string { color: #ce9178; }
+                .syntax-highlight .number { color: #b5cea8; }
+                .syntax-highlight .comment { color: #6a9955; font-style: italic; }
+                .syntax-highlight .operator { color: #d4d4d4; }
+                .syntax-highlight .builtin { color: #4ec9b0; }
+                .syntax-highlight .event { color: #dcdcaa; }
 
                 .output-tabs {
                     display: flex;
@@ -884,15 +952,32 @@ play notify`;
             }
         });
 
-        // Track cursor position
-        this.addHandler(editor, 'keyup', () => this.updateLineInfo());
+        // Track cursor position and update highlighting
+        this.addHandler(editor, 'keyup', () => {
+            this.updateLineInfo();
+            this.updateSyntaxHighlight();
+        });
         this.addHandler(editor, 'click', () => this.updateLineInfo());
+        this.addHandler(editor, 'input', () => this.updateSyntaxHighlight());
+        this.addHandler(editor, 'scroll', () => this.syncScroll());
 
-        // F5 to run
+        // Initial syntax highlight
+        this.updateSyntaxHighlight();
+
+        // F5 to run, Tab for indent
         this.addHandler(editor, 'keydown', (e) => {
             if (e.key === 'F5') {
                 e.preventDefault();
                 this.runScript();
+            }
+            // Handle Tab key for indentation
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                this.updateSyntaxHighlight();
             }
         });
 
@@ -1211,6 +1296,117 @@ QUICK EXAMPLES:
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Update syntax highlighting
+     */
+    updateSyntaxHighlight() {
+        const editor = this.getElement('#scriptEditor');
+        const highlight = this.getElement('#syntaxHighlight');
+        const lineNumbers = this.getElement('#lineNumbers');
+
+        if (!editor || !highlight) return;
+
+        const code = editor.value;
+        const highlighted = this.highlightSyntax(code);
+        highlight.innerHTML = highlighted + '\n'; // Extra newline for scrolling
+
+        // Update line numbers
+        if (lineNumbers) {
+            const lines = code.split('\n');
+            lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('\n');
+        }
+    }
+
+    /**
+     * Sync scroll between editor and highlight
+     */
+    syncScroll() {
+        const editor = this.getElement('#scriptEditor');
+        const highlight = this.getElement('#syntaxHighlight');
+        const lineNumbers = this.getElement('#lineNumbers');
+        const wrapper = this.getElement('.editor-wrapper');
+
+        if (editor && highlight) {
+            highlight.scrollTop = editor.scrollTop;
+            highlight.scrollLeft = editor.scrollLeft;
+        }
+        if (editor && lineNumbers) {
+            lineNumbers.scrollTop = editor.scrollTop;
+        }
+    }
+
+    /**
+     * Apply syntax highlighting to code
+     */
+    highlightSyntax(code) {
+        // Keywords
+        const keywords = ['if', 'then', 'else', 'loop', 'while', 'foreach', 'for', 'in', 'break', 'continue', 'return', 'def', 'func', 'function', 'try', 'catch', 'on', 'with', 'into', 'to', 'default'];
+        // Commands
+        const commands = ['launch', 'open', 'close', 'wait', 'sleep', 'print', 'log', 'set', 'emit', 'alert', 'confirm', 'prompt', 'notify', 'focus', 'minimize', 'maximize', 'play', 'write', 'read', 'mkdir', 'delete', 'rm', 'call'];
+        // Built-in functions
+        const builtins = ['random', 'abs', 'round', 'floor', 'ceil', 'min', 'max', 'pow', 'sqrt', 'sin', 'cos', 'tan', 'log', 'exp', 'clamp', 'mod', 'sign', 'concat', 'upper', 'lower', 'length', 'trim', 'split', 'join', 'substr', 'substring', 'replace', 'replaceAll', 'contains', 'startsWith', 'endsWith', 'padStart', 'padEnd', 'repeat', 'charAt', 'indexOf', 'lastIndexOf', 'match', 'count', 'first', 'last', 'push', 'pop', 'shift', 'unshift', 'includes', 'sort', 'reverse', 'slice', 'splice', 'unique', 'flatten', 'range', 'fill', 'at', 'keys', 'values', 'entries', 'get', 'has', 'merge', 'clone', 'toJSON', 'fromJSON', 'prettyJSON', 'getWindows', 'getApps', 'now', 'time', 'date', 'year', 'month', 'day', 'hour', 'minute', 'second', 'formatDate', 'formatTime', 'elapsed', 'query', 'exec', 'typeof', 'isNumber', 'isString', 'isArray', 'isObject', 'isBoolean', 'isNull', 'isEmpty', 'toNumber', 'toInt', 'toString', 'toBoolean', 'toArray', 'debug', 'inspect', 'assert', 'getEnv', 'PI', 'E'];
+
+        const lines = code.split('\n');
+        return lines.map(line => {
+            // Escape HTML first
+            let result = this.escapeHtml(line);
+
+            // Comments (must be first to avoid highlighting inside comments)
+            if (result.trim().startsWith('#')) {
+                return `<span class="comment">${result}</span>`;
+            }
+
+            // Handle inline comments (outside strings)
+            const commentMatch = result.match(/^([^#"']*)(#.*)$/);
+            if (commentMatch) {
+                const beforeComment = commentMatch[1];
+                const comment = commentMatch[2];
+                result = this.highlightLine(beforeComment, keywords, commands, builtins) +
+                         `<span class="comment">${comment}</span>`;
+                return result;
+            }
+
+            return this.highlightLine(result, keywords, commands, builtins);
+        }).join('\n');
+    }
+
+    /**
+     * Highlight a single line
+     */
+    highlightLine(line, keywords, commands, builtins) {
+        let result = line;
+
+        // Strings (handle first to avoid issues with keywords inside strings)
+        result = result.replace(/"([^"\\]|\\.)*"/g, '<span class="string">$&</span>');
+        result = result.replace(/'([^'\\]|\\.)*'/g, '<span class="string">$&</span>');
+
+        // Variables ($name)
+        result = result.replace(/\$\w+/g, '<span class="variable">$&</span>');
+
+        // Numbers
+        result = result.replace(/\b(\d+\.?\d*)\b/g, '<span class="number">$1</span>');
+
+        // Keywords (word boundary match)
+        const keywordPattern = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
+        result = result.replace(keywordPattern, '<span class="keyword">$1</span>');
+
+        // Commands (at start of line or after semicolon)
+        const commandPattern = new RegExp(`(^|;\\s*)(${commands.join('|')})\\b`, 'gi');
+        result = result.replace(commandPattern, '$1<span class="command">$2</span>');
+
+        // Built-in functions (after 'call')
+        const builtinPattern = new RegExp(`(call\\s+)(${builtins.join('|')})\\b`, 'gi');
+        result = result.replace(builtinPattern, '$1<span class="builtin">$2</span>');
+
+        // Operators
+        result = result.replace(/([+\-*/%=<>!&|]+)/g, '<span class="operator">$1</span>');
+
+        // Event names (word:word pattern)
+        result = result.replace(/\b(\w+:\w+)\b/g, '<span class="event">$1</span>');
+
+        return result;
     }
 
     onClose() {

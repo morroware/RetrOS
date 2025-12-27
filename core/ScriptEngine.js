@@ -34,13 +34,18 @@ class ScriptEngineClass {
     constructor() {
         this.variables = new Map();
         this.functions = new Map();
+        this.userFunctions = new Map(); // User-defined functions
         this.eventHandlers = [];
         this.running = false;
         this.currentScript = null;
         this.scriptStack = [];
         this.breakRequested = false;
         this.loopBreakRequested = false;
+        this.continueRequested = false; // For continue statement
         this.lastResult = null;
+        this.executionTimeout = 30000; // 30 second default timeout
+        this.executionStartTime = null;
+        this.callStack = []; // Track call stack for better errors
 
         // Built-in functions
         this._registerBuiltins();
@@ -62,6 +67,26 @@ class ScriptEngineClass {
     }
 
     /**
+     * Set execution timeout
+     * @param {number} ms - Timeout in milliseconds (0 = no timeout)
+     */
+    setTimeout(ms) {
+        this.executionTimeout = ms;
+    }
+
+    /**
+     * Check if execution has timed out
+     * @private
+     */
+    _checkTimeout() {
+        if (this.executionTimeout > 0 && this.executionStartTime) {
+            if (Date.now() - this.executionStartTime > this.executionTimeout) {
+                throw new Error(`Script execution timed out after ${this.executionTimeout}ms`);
+            }
+        }
+    }
+
+    /**
      * Run a script string
      * @param {string} scriptText - Script code
      * @param {object} context - Execution context (variables, etc.)
@@ -71,6 +96,9 @@ class ScriptEngineClass {
         const scriptId = `script_${Date.now()}`;
         this.running = true;
         this.breakRequested = false;
+        this.continueRequested = false;
+        this.executionStartTime = Date.now();
+        this.callStack = [];
 
         // Merge context variables
         for (const [key, value] of Object.entries(context)) {
@@ -88,14 +116,17 @@ class ScriptEngineClass {
             return { success: true, result };
         } catch (error) {
             console.error('[ScriptEngine] Execution error:', error);
-            EventBus.emit('script:error', {
+            const errorInfo = {
                 scriptId,
                 error: error.message,
-                line: error.line || 0
-            });
-            return { success: false, error: error.message };
+                line: error.line || 0,
+                stack: this.callStack.slice()
+            };
+            EventBus.emit('script:error', errorInfo);
+            return { success: false, error: error.message, line: error.line, stack: this.callStack.slice() };
         } finally {
             this.running = false;
+            this.executionStartTime = null;
         }
     }
 
@@ -305,6 +336,17 @@ class ScriptEngineClass {
             case 'delete':
             case 'rm':
                 return { type: 'delete', path: parts[1] };
+            case 'continue':
+                return { type: 'continue' };
+            case 'foreach':
+            case 'for':
+                return this._parseForEach(parts, line);
+            case 'def':
+            case 'func':
+            case 'function':
+                return this._parseFunction(parts, line);
+            case 'try':
+                return this._parseTry(parts, line);
             default:
                 // Check if it's a function call or variable assignment
                 if (line.includes('=')) {
@@ -313,6 +355,125 @@ class ScriptEngineClass {
                 // Treat as a command
                 return { type: 'command', command, args: parts.slice(1) };
         }
+    }
+
+    /**
+     * Parse for-each loop: foreach $item in $array { ... }
+     * @private
+     */
+    _parseForEach(parts, line) {
+        // foreach $item in $array { statements }
+        // for $item in $array { statements }
+        const varName = parts[1].replace(/^\$/, '');
+        const inIdx = parts.indexOf('in');
+
+        if (inIdx === -1) {
+            throw new Error('foreach requires "in" keyword: foreach $item in $array { }');
+        }
+
+        const arrayExpr = parts.slice(inIdx + 1).join(' ').replace(/\{.*/, '').trim();
+
+        // Find the body between { and }
+        const braceStart = line.indexOf('{');
+        const braceEnd = line.lastIndexOf('}');
+
+        let body = [];
+        if (braceStart > 0 && braceEnd > braceStart) {
+            const bodyText = line.substring(braceStart + 1, braceEnd).trim();
+            const bodyLines = bodyText.split(/[\n;]/).map(l => l.trim()).filter(l => l && l !== '}');
+            for (const bodyLine of bodyLines) {
+                const stmt = this._parseLine(bodyLine, 0);
+                if (stmt) body.push(stmt);
+            }
+        }
+
+        return {
+            type: 'foreach',
+            varName,
+            array: this._parseValue(arrayExpr),
+            body
+        };
+    }
+
+    /**
+     * Parse function definition: def funcName($arg1, $arg2) { ... }
+     * @private
+     */
+    _parseFunction(parts, line) {
+        // def funcName($arg1, $arg2) { statements }
+        const funcName = parts[1];
+
+        // Extract parameters from parentheses
+        const params = [];
+        const parenStart = line.indexOf('(');
+        const parenEnd = line.indexOf(')');
+
+        if (parenStart > 0 && parenEnd > parenStart) {
+            const paramStr = line.substring(parenStart + 1, parenEnd);
+            if (paramStr.trim()) {
+                const paramParts = paramStr.split(',').map(p => p.trim().replace(/^\$/, ''));
+                params.push(...paramParts);
+            }
+        }
+
+        // Find the body between { and }
+        const braceStart = line.indexOf('{');
+        const braceEnd = line.lastIndexOf('}');
+
+        let body = [];
+        if (braceStart > 0 && braceEnd > braceStart) {
+            body = this._parse(line.substring(braceStart + 1, braceEnd).trim());
+        }
+
+        return {
+            type: 'function_def',
+            funcName,
+            params,
+            body
+        };
+    }
+
+    /**
+     * Parse try/catch: try { ... } catch { ... }
+     * @private
+     */
+    _parseTry(parts, line) {
+        const catchIdx = line.indexOf('catch');
+
+        // Extract try block
+        const tryStart = line.indexOf('{');
+        const tryEnd = catchIdx > 0 ? line.lastIndexOf('}', catchIdx) : line.indexOf('}');
+
+        let tryBody = [];
+        if (tryStart > 0 && tryEnd > tryStart) {
+            tryBody = this._parse(line.substring(tryStart + 1, tryEnd).trim());
+        }
+
+        // Extract catch block
+        let catchBody = [];
+        let errorVar = 'error';
+
+        if (catchIdx > 0) {
+            // Check for error variable: catch $err { }
+            const catchParts = line.substring(catchIdx + 5).trim();
+            const catchVarMatch = catchParts.match(/^\$(\w+)/);
+            if (catchVarMatch) {
+                errorVar = catchVarMatch[1];
+            }
+
+            const catchStart = line.indexOf('{', catchIdx);
+            const catchEnd = line.lastIndexOf('}');
+            if (catchStart > 0 && catchEnd > catchStart) {
+                catchBody = this._parse(line.substring(catchStart + 1, catchEnd).trim());
+            }
+        }
+
+        return {
+            type: 'try',
+            tryBody,
+            catchBody,
+            errorVar
+        };
     }
 
     /**
@@ -402,7 +563,8 @@ class ScriptEngineClass {
         // Check for arithmetic expression, but NOT just a negative number
         // Only match if there's an operator with operands on both sides
         // and the left side contains a variable or number (not just text like "call abs")
-        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/])\s*(.+)$/);
+        // Now supports: + - * / % (modulo)
+        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/%])\s*(.+)$/);
         if (mathMatch) {
             const [, left, op, right] = mathMatch;
             const leftTrimmed = left.trim();
@@ -420,6 +582,24 @@ class ScriptEngineClass {
                     }
                 };
             }
+        }
+
+        // Check for array literal: [1, 2, 3]
+        if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
+            return {
+                type: 'set',
+                varName,
+                value: { type: 'array_literal', content: valueStr }
+            };
+        }
+
+        // Check for object literal: {key: value}
+        if (valueStr.startsWith('{') && valueStr.endsWith('}') && valueStr.includes(':')) {
+            return {
+                type: 'set',
+                varName,
+                value: { type: 'object_literal', content: valueStr }
+            };
         }
 
         return { type: 'set', varName, value: this._parseValue(valueStr) };
@@ -743,21 +923,42 @@ class ScriptEngineClass {
                 let loopResult = null;
                 this.loopBreakRequested = false;
                 for (let i = 0; i < statement.count && !this.breakRequested && !this.loopBreakRequested; i++) {
+                    this._checkTimeout();
                     this.variables.set('i', i);
-                    loopResult = await this._execute(statement.body);
-                    if (this.loopBreakRequested) break;
+                    this.continueRequested = false;
+
+                    for (const stmt of statement.body) {
+                        if (this.continueRequested) break;
+                        if (this.loopBreakRequested) break;
+                        loopResult = await this._executeStatement(stmt);
+                    }
                 }
                 this.loopBreakRequested = false;
+                this.continueRequested = false;
                 return loopResult;
 
             case 'while':
                 let whileResult = null;
                 this.loopBreakRequested = false;
+                let whileIterations = 0;
+                const maxIterations = 100000; // Prevent infinite loops
+
                 while (await this._evaluateCondition(statement.condition) && !this.breakRequested && !this.loopBreakRequested) {
-                    whileResult = await this._execute(statement.body);
-                    if (this.loopBreakRequested) break;
+                    this._checkTimeout();
+                    whileIterations++;
+                    if (whileIterations > maxIterations) {
+                        throw new Error(`While loop exceeded maximum iterations (${maxIterations})`);
+                    }
+
+                    this.continueRequested = false;
+                    for (const stmt of statement.body) {
+                        if (this.continueRequested) break;
+                        if (this.loopBreakRequested) break;
+                        whileResult = await this._executeStatement(stmt);
+                    }
                 }
                 this.loopBreakRequested = false;
+                this.continueRequested = false;
                 return whileResult;
 
             case 'call':
@@ -883,10 +1084,206 @@ class ScriptEngineClass {
                 this.loopBreakRequested = true;
                 return null;
 
+            case 'continue':
+                this.continueRequested = true;
+                return null;
+
+            case 'foreach':
+                // For-each loop over array
+                let foreachResult = null;
+                this.loopBreakRequested = false;
+                const arrayValue = await this._resolveValue(statement.array);
+
+                if (Array.isArray(arrayValue)) {
+                    for (let idx = 0; idx < arrayValue.length && !this.breakRequested && !this.loopBreakRequested; idx++) {
+                        this._checkTimeout();
+                        this.variables.set(statement.varName, arrayValue[idx]);
+                        this.variables.set('i', idx);
+                        this.continueRequested = false;
+
+                        for (const stmt of statement.body) {
+                            if (this.continueRequested) break;
+                            if (this.loopBreakRequested) break;
+                            foreachResult = await this._executeStatement(stmt);
+                        }
+                    }
+                }
+                this.loopBreakRequested = false;
+                this.continueRequested = false;
+                return foreachResult;
+
+            case 'function_def':
+                // Register user-defined function
+                this.userFunctions.set(statement.funcName, {
+                    params: statement.params,
+                    body: statement.body
+                });
+                // Also register as a callable function
+                this.functions.set(statement.funcName, async (...args) => {
+                    return await this._callUserFunction(statement.funcName, args);
+                });
+                return { defined: statement.funcName };
+
+            case 'try':
+                // Try/catch error handling
+                try {
+                    return await this._execute(statement.tryBody);
+                } catch (error) {
+                    this.variables.set(statement.errorVar, error.message);
+                    return await this._execute(statement.catchBody);
+                }
+
             default:
                 console.warn('[ScriptEngine] Unknown statement type:', statement.type);
                 return null;
         }
+    }
+
+    /**
+     * Call a user-defined function
+     * @private
+     */
+    async _callUserFunction(funcName, args) {
+        const func = this.userFunctions.get(funcName);
+        if (!func) {
+            throw new Error(`Unknown function: ${funcName}`);
+        }
+
+        // Save current variables (for scope)
+        const savedVars = new Map(this.variables);
+
+        // Set parameters as local variables
+        for (let i = 0; i < func.params.length; i++) {
+            this.variables.set(func.params[i], args[i] !== undefined ? args[i] : null);
+        }
+
+        // Track call stack
+        this.callStack.push(funcName);
+
+        try {
+            const result = await this._execute(func.body);
+            return result;
+        } finally {
+            // Restore variables (basic scoping)
+            this.variables = savedVars;
+            this.callStack.pop();
+        }
+    }
+
+    /**
+     * Parse array literal: [1, 2, 3] or ["a", "b", "c"]
+     * @private
+     */
+    _parseArrayLiteral(content) {
+        const inner = content.slice(1, -1).trim();
+        if (!inner) return [];
+
+        const items = [];
+        let current = '';
+        let inQuotes = false;
+        let quoteChar = '';
+        let depth = 0;
+
+        for (let i = 0; i < inner.length; i++) {
+            const char = inner[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+                current += char;
+            } else if (char === quoteChar && inQuotes) {
+                inQuotes = false;
+                current += char;
+            } else if (char === '[' || char === '{') {
+                depth++;
+                current += char;
+            } else if (char === ']' || char === '}') {
+                depth--;
+                current += char;
+            } else if (char === ',' && !inQuotes && depth === 0) {
+                const trimmed = current.trim();
+                if (trimmed) items.push(this._parseValue(trimmed));
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+
+        const trimmed = current.trim();
+        if (trimmed) items.push(this._parseValue(trimmed));
+
+        // Resolve any variable references
+        return items.map(item => {
+            if (typeof item === 'object' && item?.type === 'variable') {
+                return this.variables.get(item.name);
+            }
+            return item;
+        });
+    }
+
+    /**
+     * Parse object literal: {key: value, key2: value2}
+     * @private
+     */
+    _parseObjectLiteral(content) {
+        const inner = content.slice(1, -1).trim();
+        if (!inner) return {};
+
+        const obj = {};
+        let current = '';
+        let inQuotes = false;
+        let quoteChar = '';
+        let depth = 0;
+
+        const pairs = [];
+
+        for (let i = 0; i < inner.length; i++) {
+            const char = inner[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+                current += char;
+            } else if (char === quoteChar && inQuotes) {
+                inQuotes = false;
+                current += char;
+            } else if (char === '[' || char === '{') {
+                depth++;
+                current += char;
+            } else if (char === ']' || char === '}') {
+                depth--;
+                current += char;
+            } else if (char === ',' && !inQuotes && depth === 0) {
+                pairs.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+
+        if (current.trim()) pairs.push(current.trim());
+
+        for (const pair of pairs) {
+            const colonIdx = pair.indexOf(':');
+            if (colonIdx > 0) {
+                let key = pair.substring(0, colonIdx).trim();
+                const value = pair.substring(colonIdx + 1).trim();
+
+                // Remove quotes from key if present
+                if ((key.startsWith('"') && key.endsWith('"')) ||
+                    (key.startsWith("'") && key.endsWith("'"))) {
+                    key = key.slice(1, -1);
+                }
+
+                let parsedValue = this._parseValue(value);
+                if (typeof parsedValue === 'object' && parsedValue?.type === 'variable') {
+                    parsedValue = this.variables.get(parsedValue.name);
+                }
+                obj[key] = parsedValue;
+            }
+        }
+
+        return obj;
     }
 
     /**
@@ -917,6 +1314,12 @@ class ScriptEngineClass {
             if (value.type === 'expression') {
                 const left = await this._resolveValue(value.left);
                 const right = await this._resolveValue(value.right);
+
+                // Handle string concatenation with +
+                if (value.operator === '+' && (typeof left === 'string' || typeof right === 'string')) {
+                    return String(left) + String(right);
+                }
+
                 const numLeft = typeof left === 'number' ? left : parseFloat(left) || 0;
                 const numRight = typeof right === 'number' ? right : parseFloat(right) || 0;
 
@@ -925,8 +1328,19 @@ class ScriptEngineClass {
                     case '-': return numLeft - numRight;
                     case '*': return numLeft * numRight;
                     case '/': return numRight !== 0 ? numLeft / numRight : 0;
+                    case '%': return numRight !== 0 ? numLeft % numRight : 0;
                     default: return numLeft;
                 }
+            }
+
+            // Array literal: [1, 2, 3]
+            if (value.type === 'array_literal') {
+                return this._parseArrayLiteral(value.content);
+            }
+
+            // Object literal: {key: value}
+            if (value.type === 'object_literal') {
+                return this._parseObjectLiteral(value.content);
             }
         }
 
@@ -989,28 +1403,146 @@ class ScriptEngineClass {
         this.defineFunction('round', Math.round);
         this.defineFunction('floor', Math.floor);
         this.defineFunction('ceil', Math.ceil);
+        this.defineFunction('min', (...args) => Math.min(...args.flat()));
+        this.defineFunction('max', (...args) => Math.max(...args.flat()));
+        this.defineFunction('pow', (base, exp) => Math.pow(base, exp));
+        this.defineFunction('sqrt', Math.sqrt);
+        this.defineFunction('sin', Math.sin);
+        this.defineFunction('cos', Math.cos);
+        this.defineFunction('tan', Math.tan);
+        this.defineFunction('log', Math.log);
+        this.defineFunction('exp', Math.exp);
+        this.defineFunction('clamp', (val, min, max) => Math.min(Math.max(val, min), max));
+        this.defineFunction('mod', (a, b) => b !== 0 ? a % b : 0);
+        this.defineFunction('sign', Math.sign);
+        this.defineFunction('PI', () => Math.PI);
+        this.defineFunction('E', () => Math.E);
 
         // String functions
         this.defineFunction('concat', (...args) => args.join(''));
         this.defineFunction('upper', (s) => String(s).toUpperCase());
         this.defineFunction('lower', (s) => String(s).toLowerCase());
-        this.defineFunction('length', (s) => String(s).length);
+        this.defineFunction('length', (s) => {
+            if (Array.isArray(s)) return s.length;
+            return String(s).length;
+        });
         this.defineFunction('trim', (s) => String(s).trim());
+        this.defineFunction('trimStart', (s) => String(s).trimStart());
+        this.defineFunction('trimEnd', (s) => String(s).trimEnd());
         this.defineFunction('split', (s, sep = ' ') => String(s).split(sep));
         this.defineFunction('join', (arr, sep = '') => Array.isArray(arr) ? arr.join(sep) : String(arr));
         this.defineFunction('substr', (s, start, len) => String(s).substring(start, len !== undefined ? start + len : undefined));
+        this.defineFunction('substring', (s, start, end) => String(s).substring(start, end));
         this.defineFunction('replace', (s, search, replace) => String(s).replace(search, replace));
+        this.defineFunction('replaceAll', (s, search, replace) => String(s).split(search).join(replace));
         this.defineFunction('contains', (s, search) => String(s).includes(search));
         this.defineFunction('startsWith', (s, search) => String(s).startsWith(search));
         this.defineFunction('endsWith', (s, search) => String(s).endsWith(search));
+        this.defineFunction('padStart', (s, len, char = ' ') => String(s).padStart(len, char));
+        this.defineFunction('padEnd', (s, len, char = ' ') => String(s).padEnd(len, char));
+        this.defineFunction('repeat', (s, count) => String(s).repeat(count));
+        this.defineFunction('charAt', (s, idx) => String(s).charAt(idx));
+        this.defineFunction('charCode', (s, idx = 0) => String(s).charCodeAt(idx));
+        this.defineFunction('fromCharCode', (...codes) => String.fromCharCode(...codes));
+        this.defineFunction('indexOf', (s, search, start = 0) => {
+            if (Array.isArray(s)) return s.indexOf(search, start);
+            return String(s).indexOf(search, start);
+        });
+        this.defineFunction('lastIndexOf', (s, search) => {
+            if (Array.isArray(s)) return s.lastIndexOf(search);
+            return String(s).lastIndexOf(search);
+        });
+        this.defineFunction('match', (s, pattern) => {
+            const matches = String(s).match(new RegExp(pattern, 'g'));
+            return matches || [];
+        });
 
         // Array functions
-        this.defineFunction('count', (arr) => Array.isArray(arr) ? arr.length : 0);
+        this.defineFunction('count', (arr) => Array.isArray(arr) ? arr.length : (typeof arr === 'object' && arr ? Object.keys(arr).length : 0));
         this.defineFunction('first', (arr) => Array.isArray(arr) ? arr[0] : null);
         this.defineFunction('last', (arr) => Array.isArray(arr) ? arr[arr.length - 1] : null);
         this.defineFunction('push', (arr, item) => { if (Array.isArray(arr)) arr.push(item); return arr; });
         this.defineFunction('pop', (arr) => Array.isArray(arr) ? arr.pop() : null);
+        this.defineFunction('shift', (arr) => Array.isArray(arr) ? arr.shift() : null);
+        this.defineFunction('unshift', (arr, item) => { if (Array.isArray(arr)) arr.unshift(item); return arr; });
         this.defineFunction('includes', (arr, item) => Array.isArray(arr) ? arr.includes(item) : false);
+        this.defineFunction('sort', (arr, desc = false) => {
+            if (!Array.isArray(arr)) return arr;
+            const sorted = [...arr].sort((a, b) => {
+                if (typeof a === 'string') return a.localeCompare(b);
+                return a - b;
+            });
+            return desc ? sorted.reverse() : sorted;
+        });
+        this.defineFunction('reverse', (arr) => Array.isArray(arr) ? [...arr].reverse() : arr);
+        this.defineFunction('slice', (arr, start, end) => {
+            if (Array.isArray(arr)) return arr.slice(start, end);
+            return String(arr).slice(start, end);
+        });
+        this.defineFunction('splice', (arr, start, deleteCount, ...items) => {
+            if (!Array.isArray(arr)) return arr;
+            const result = [...arr];
+            result.splice(start, deleteCount, ...items);
+            return result;
+        });
+        this.defineFunction('concat_arrays', (...arrays) => {
+            return arrays.flat();
+        });
+        this.defineFunction('unique', (arr) => Array.isArray(arr) ? [...new Set(arr)] : arr);
+        this.defineFunction('flatten', (arr, depth = 1) => Array.isArray(arr) ? arr.flat(depth) : arr);
+        this.defineFunction('range', (start, end, step = 1) => {
+            const result = [];
+            if (step > 0) {
+                for (let i = start; i < end; i += step) result.push(i);
+            } else if (step < 0) {
+                for (let i = start; i > end; i += step) result.push(i);
+            }
+            return result;
+        });
+        this.defineFunction('fill', (length, value) => Array(length).fill(value));
+        this.defineFunction('at', (arr, idx) => {
+            if (Array.isArray(arr)) return arr.at(idx);
+            return String(arr).at(idx);
+        });
+
+        // Object functions
+        this.defineFunction('keys', (obj) => {
+            if (typeof obj === 'object' && obj) return Object.keys(obj);
+            return [];
+        });
+        this.defineFunction('values', (obj) => {
+            if (typeof obj === 'object' && obj) return Object.values(obj);
+            return [];
+        });
+        this.defineFunction('entries', (obj) => {
+            if (typeof obj === 'object' && obj) return Object.entries(obj);
+            return [];
+        });
+        this.defineFunction('get', (obj, key, defaultVal = null) => {
+            if (Array.isArray(obj)) return obj[key] !== undefined ? obj[key] : defaultVal;
+            if (typeof obj === 'object' && obj) return obj[key] !== undefined ? obj[key] : defaultVal;
+            return defaultVal;
+        });
+        this.defineFunction('set', (obj, key, value) => {
+            if (typeof obj === 'object' && obj) {
+                obj[key] = value;
+            }
+            return obj;
+        });
+        this.defineFunction('has', (obj, key) => {
+            if (Array.isArray(obj)) return key >= 0 && key < obj.length;
+            if (typeof obj === 'object' && obj) return key in obj;
+            return false;
+        });
+        this.defineFunction('merge', (...objs) => Object.assign({}, ...objs));
+        this.defineFunction('clone', (obj) => JSON.parse(JSON.stringify(obj)));
+
+        // JSON functions
+        this.defineFunction('toJSON', (obj) => JSON.stringify(obj));
+        this.defineFunction('fromJSON', (str) => {
+            try { return JSON.parse(str); } catch { return null; }
+        });
+        this.defineFunction('prettyJSON', (obj, indent = 2) => JSON.stringify(obj, null, indent));
 
         // System functions
         this.defineFunction('getWindows', () => StateManager.getState('windows') || []);
@@ -1059,13 +1591,85 @@ class ScriptEngineClass {
         });
 
         // Utility functions
-        this.defineFunction('typeof', (val) => typeof val);
+        this.defineFunction('typeof', (val) => {
+            if (val === null) return 'null';
+            if (Array.isArray(val)) return 'array';
+            return typeof val;
+        });
         this.defineFunction('isNumber', (val) => typeof val === 'number' && !isNaN(val));
         this.defineFunction('isString', (val) => typeof val === 'string');
         this.defineFunction('isArray', (val) => Array.isArray(val));
+        this.defineFunction('isObject', (val) => typeof val === 'object' && val !== null && !Array.isArray(val));
+        this.defineFunction('isBoolean', (val) => typeof val === 'boolean');
         this.defineFunction('isNull', (val) => val === null || val === undefined);
+        this.defineFunction('isEmpty', (val) => {
+            if (val === null || val === undefined) return true;
+            if (typeof val === 'string') return val.length === 0;
+            if (Array.isArray(val)) return val.length === 0;
+            if (typeof val === 'object') return Object.keys(val).length === 0;
+            return false;
+        });
         this.defineFunction('toNumber', (val) => parseFloat(val) || 0);
+        this.defineFunction('toInt', (val) => parseInt(val, 10) || 0);
         this.defineFunction('toString', (val) => String(val));
+        this.defineFunction('toBoolean', (val) => Boolean(val));
+        this.defineFunction('toArray', (val) => {
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string') return val.split('');
+            return [val];
+        });
+
+        // Date/Time functions (extended)
+        this.defineFunction('year', () => new Date().getFullYear());
+        this.defineFunction('month', () => new Date().getMonth() + 1);
+        this.defineFunction('day', () => new Date().getDate());
+        this.defineFunction('weekday', () => new Date().getDay());
+        this.defineFunction('hour', () => new Date().getHours());
+        this.defineFunction('minute', () => new Date().getMinutes());
+        this.defineFunction('second', () => new Date().getSeconds());
+        this.defineFunction('formatDate', (timestamp, format = 'short') => {
+            const d = new Date(timestamp);
+            if (format === 'iso') return d.toISOString();
+            if (format === 'long') return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            return d.toLocaleDateString();
+        });
+        this.defineFunction('formatTime', (timestamp, format = 'short') => {
+            const d = new Date(timestamp);
+            if (format === 'long') return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            return d.toLocaleTimeString();
+        });
+        this.defineFunction('elapsed', (startMs) => Date.now() - startMs);
+
+        // Debugging/output helpers
+        this.defineFunction('debug', (...args) => {
+            const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+            console.log('[Script Debug]', msg);
+            EventBus.emit('script:output', { message: `[DEBUG] ${msg}`, type: 'debug' });
+            return msg;
+        });
+        this.defineFunction('inspect', (val) => {
+            const result = JSON.stringify(val, null, 2);
+            console.log('[Script Inspect]', result);
+            EventBus.emit('script:output', { message: result, type: 'inspect' });
+            return result;
+        });
+        this.defineFunction('assert', (condition, message = 'Assertion failed') => {
+            if (!condition) {
+                throw new Error(message);
+            }
+            return true;
+        });
+
+        // Environment info
+        this.defineFunction('getEnv', (key) => {
+            const env = {
+                platform: 'RetrOS',
+                version: '1.0',
+                scriptEngine: 'RetroScript',
+                timeout: this.executionTimeout
+            };
+            return key ? env[key] : env;
+        });
     }
 
     /**
@@ -1077,7 +1681,36 @@ class ScriptEngineClass {
         }
         this.eventHandlers = [];
         this.variables.clear();
+        this.userFunctions.clear();
+        this.callStack = [];
+        this.breakRequested = false;
+        this.loopBreakRequested = false;
+        this.continueRequested = false;
         this._registerBuiltins();
+    }
+
+    /**
+     * Get script engine statistics
+     */
+    getStats() {
+        return {
+            variableCount: this.variables.size,
+            functionCount: this.functions.size,
+            userFunctionCount: this.userFunctions.size,
+            eventHandlerCount: this.eventHandlers.length,
+            running: this.running,
+            timeout: this.executionTimeout
+        };
+    }
+
+    /**
+     * List all available functions
+     */
+    listFunctions() {
+        return {
+            builtin: [...this.functions.keys()].filter(name => !this.userFunctions.has(name)),
+            userDefined: [...this.userFunctions.keys()]
+        };
     }
 }
 
