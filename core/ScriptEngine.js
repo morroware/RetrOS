@@ -389,9 +389,9 @@ class ScriptEngineClass {
 
         const arrayExpr = parts.slice(inIdx + 1).join(' ').replace(/\{.*/, '').trim();
 
-        // Find the body between { and }
+        // Find the body between { and } using proper brace matching
         const braceStart = line.indexOf('{');
-        const braceEnd = line.lastIndexOf('}');
+        const braceEnd = this._findMatchingBrace(line, braceStart);
 
         let body = [];
         if (braceStart > 0 && braceEnd > braceStart) {
@@ -412,20 +412,8 @@ class ScriptEngineClass {
      * @private
      */
     _parseBody(bodyText) {
-        const statements = [];
-        // First split by newlines, then by semicolons (respecting quotes)
-        const lines = bodyText.split('\n').map(l => l.trim()).filter(l => l && l !== '}');
-
-        for (const bodyLine of lines) {
-            // Split each line by semicolons (respecting quotes)
-            const subStatements = this._splitBySemicolon(bodyLine);
-            for (const subStmt of subStatements) {
-                const stmt = this._parseLine(subStmt, 0);
-                if (stmt) statements.push(stmt);
-            }
-        }
-
-        return statements;
+        // Use _parse which properly handles multi-line nested blocks
+        return this._parse(bodyText);
     }
 
     /**
@@ -434,7 +422,11 @@ class ScriptEngineClass {
      */
     _parseFunction(parts, line) {
         // def funcName($arg1, $arg2) { statements }
-        const funcName = parts[1];
+        // Function name may include parentheses like "sayHello()" - strip them
+        let funcName = parts[1];
+        if (funcName.includes('(')) {
+            funcName = funcName.substring(0, funcName.indexOf('('));
+        }
 
         // Extract parameters from parentheses
         const params = [];
@@ -449,9 +441,9 @@ class ScriptEngineClass {
             }
         }
 
-        // Find the body between { and }
+        // Find the body between { and } using proper brace matching
         const braceStart = line.indexOf('{');
-        const braceEnd = line.lastIndexOf('}');
+        const braceEnd = this._findMatchingBrace(line, braceStart);
 
         let body = [];
         if (braceStart > 0 && braceEnd > braceStart) {
@@ -471,11 +463,11 @@ class ScriptEngineClass {
      * @private
      */
     _parseTry(parts, line) {
-        const catchIdx = line.indexOf('catch');
+        const catchIdx = this._findKeywordOutsideQuotes(line, 'catch');
 
-        // Extract try block
+        // Extract try block using proper brace matching
         const tryStart = line.indexOf('{');
-        const tryEnd = catchIdx > 0 ? line.lastIndexOf('}', catchIdx) : line.indexOf('}');
+        const tryEnd = this._findMatchingBrace(line, tryStart);
 
         let tryBody = [];
         if (tryStart > 0 && tryEnd > tryStart) {
@@ -486,7 +478,7 @@ class ScriptEngineClass {
         let catchBody = [];
         let errorVar = 'error';
 
-        if (catchIdx > 0) {
+        if (catchIdx > 0 && catchIdx > tryEnd) {
             // Check for error variable: catch $err { }
             const catchParts = line.substring(catchIdx + 5).trim();
             const catchVarMatch = catchParts.match(/^\$(\w+)/);
@@ -495,7 +487,7 @@ class ScriptEngineClass {
             }
 
             const catchStart = line.indexOf('{', catchIdx);
-            const catchEnd = line.lastIndexOf('}');
+            const catchEnd = this._findMatchingBrace(line, catchStart);
             if (catchStart > 0 && catchEnd > catchStart) {
                 catchBody = this._parse(line.substring(catchStart + 1, catchEnd).trim());
             }
@@ -593,9 +585,11 @@ class ScriptEngineClass {
             if ((char === '"' || char === "'") && !inQuotes) {
                 inQuotes = true;
                 quoteChar = char;
+                current += char; // Preserve opening quote
             } else if (char === quoteChar && inQuotes) {
                 inQuotes = false;
                 quoteChar = '';
+                current += char; // Preserve closing quote
             } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
                 if (current) {
                     tokens.push(current);
@@ -730,7 +724,7 @@ class ScriptEngineClass {
         // on eventName { statements }
         const eventName = parts[1];
         const braceStart = line.indexOf('{');
-        const braceEnd = line.lastIndexOf('}');
+        const braceEnd = this._findMatchingBrace(line, braceStart);
 
         if (braceStart > 0 && braceEnd > braceStart) {
             const body = line.substring(braceStart + 1, braceEnd).trim();
@@ -744,33 +738,95 @@ class ScriptEngineClass {
         return { type: 'on', eventName, body: [] };
     }
 
+    /**
+     * Find a keyword in line that's outside quotes and is a standalone word
+     * @private
+     */
+    _findKeywordOutsideQuotes(line, keyword) {
+        let inQuotes = false;
+        let quoteChar = '';
+
+        for (let i = 0; i <= line.length - keyword.length; i++) {
+            const char = line[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+            } else if (char === quoteChar && inQuotes) {
+                inQuotes = false;
+                quoteChar = '';
+            } else if (!inQuotes) {
+                // Check if keyword matches at this position
+                if (line.substring(i, i + keyword.length) === keyword) {
+                    // Check word boundaries
+                    const before = i > 0 ? line[i - 1] : ' ';
+                    const after = i + keyword.length < line.length ? line[i + keyword.length] : ' ';
+                    const isWordBoundaryBefore = /[\s{}\[\]()]/.test(before);
+                    const isWordBoundaryAfter = /[\s{}\[\]()]/.test(after);
+
+                    if (isWordBoundaryBefore && isWordBoundaryAfter) {
+                        return i;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Find matching brace, accounting for nesting and quotes
+     * @private
+     */
+    _findMatchingBrace(line, startIdx) {
+        let depth = 0;
+        let inQuotes = false;
+        let quoteChar = '';
+
+        for (let i = startIdx; i < line.length; i++) {
+            const char = line[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+            } else if (char === quoteChar && inQuotes) {
+                inQuotes = false;
+                quoteChar = '';
+            } else if (!inQuotes) {
+                if (char === '{') depth++;
+                if (char === '}') {
+                    depth--;
+                    if (depth === 0) return i;
+                }
+            }
+        }
+        return -1;
+    }
+
     _parseIf(parts, line) {
         // if condition then { statements } else { statements }
-        const thenIdx = line.indexOf('then');
-        const elseIdx = line.indexOf('else');
+        const thenIdx = this._findKeywordOutsideQuotes(line, 'then');
+        const elseIdx = this._findKeywordOutsideQuotes(line, 'else');
 
         let condition = line.substring(2, thenIdx > 0 ? thenIdx : line.indexOf('{')).trim();
         condition = this._parseCondition(condition);
 
-        // Extract then block
-        const thenStart = line.indexOf('{');
-        const thenEnd = elseIdx > 0
-            ? line.lastIndexOf('}', elseIdx)
-            : line.lastIndexOf('}');
+        // Extract then block - find the opening brace after 'then' or after condition
+        const thenBraceStart = line.indexOf('{', thenIdx > 0 ? thenIdx : 0);
+        const thenBraceEnd = this._findMatchingBrace(line, thenBraceStart);
 
         let thenBody = [];
         let elseBody = [];
 
-        if (thenStart > 0 && thenEnd > thenStart) {
-            thenBody = this._parse(line.substring(thenStart + 1, thenEnd).trim());
+        if (thenBraceStart > 0 && thenBraceEnd > thenBraceStart) {
+            thenBody = this._parse(line.substring(thenBraceStart + 1, thenBraceEnd).trim());
         }
 
         // Extract else block
-        if (elseIdx > 0) {
-            const elseStart = line.indexOf('{', elseIdx);
-            const elseEnd = line.lastIndexOf('}');
-            if (elseStart > 0 && elseEnd > elseStart) {
-                elseBody = this._parse(line.substring(elseStart + 1, elseEnd).trim());
+        if (elseIdx > 0 && elseIdx > thenBraceEnd) {
+            const elseBraceStart = line.indexOf('{', elseIdx);
+            const elseBraceEnd = this._findMatchingBrace(line, elseBraceStart);
+            if (elseBraceStart > 0 && elseBraceEnd > elseBraceStart) {
+                elseBody = this._parse(line.substring(elseBraceStart + 1, elseBraceEnd).trim());
             }
         }
 
@@ -782,9 +838,9 @@ class ScriptEngineClass {
         // loop while condition { statements }
         const count = parseInt(parts[1]);
 
-        // Find the body between { and }
+        // Find the body between { and } using proper brace matching
         const braceStart = line.indexOf('{');
-        const braceEnd = line.lastIndexOf('}');
+        const braceEnd = this._findMatchingBrace(line, braceStart);
 
         let body = [];
         if (braceStart > 0 && braceEnd > braceStart) {
