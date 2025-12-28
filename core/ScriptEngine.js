@@ -589,12 +589,15 @@ class ScriptEngineClass {
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
+            const prevChar = i > 0 ? line[i - 1] : '';
 
             if ((char === '"' || char === "'") && !inQuotes) {
                 inQuotes = true;
                 quoteChar = char;
-            } else if (char === quoteChar && inQuotes) {
+                current += char;
+            } else if (char === quoteChar && inQuotes && prevChar !== '\\') {
                 inQuotes = false;
+                current += char;
                 quoteChar = '';
             } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
                 if (current) {

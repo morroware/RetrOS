@@ -2821,35 +2821,69 @@ QUICK EXAMPLES:
      * Highlight a single line
      */
     highlightLine(line, keywords, commands, builtins) {
+        // Use a placeholder-based approach to avoid nested HTML spans
+        const placeholders = [];
         let result = line;
 
-        // Strings (handle first to avoid issues with keywords inside strings)
-        result = result.replace(/"([^"\\]|\\.)*"/g, '<span class="string">$&</span>');
-        result = result.replace(/'([^'\\]|\\.)*'/g, '<span class="string">$&</span>');
+        // Helper function to create placeholder
+        const createPlaceholder = (text, className) => {
+            const id = placeholders.length;
+            placeholders.push({ className, text });
+            return `__PLACEHOLDER_${id}__`;
+        };
 
-        // Variables ($name)
-        result = result.replace(/\$\w+/g, '<span class="variable">$&</span>');
+        // 1. Strings (handle first to avoid issues with keywords inside strings)
+        result = result.replace(/"([^"\\]|\\.)*"/g, (match) => {
+            return createPlaceholder(match, 'string');
+        });
+        result = result.replace(/'([^'\\]|\\.)*'/g, (match) => {
+            return createPlaceholder(match, 'string');
+        });
 
-        // Numbers
-        result = result.replace(/\b(\d+\.?\d*)\b/g, '<span class="number">$1</span>');
+        // 2. Variables ($name)
+        result = result.replace(/\$\w+/g, (match) => {
+            return createPlaceholder(match, 'variable');
+        });
 
-        // Keywords (word boundary match)
+        // 3. Numbers
+        result = result.replace(/\b(\d+\.?\d*)\b/g, (match) => {
+            return createPlaceholder(match, 'number');
+        });
+
+        // 4. Keywords (word boundary match)
         const keywordPattern = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
-        result = result.replace(keywordPattern, '<span class="keyword">$1</span>');
+        result = result.replace(keywordPattern, (match) => {
+            return createPlaceholder(match, 'keyword');
+        });
 
-        // Commands (at start of line or after semicolon)
+        // 5. Commands (at start of line or after semicolon)
         const commandPattern = new RegExp(`(^|;\\s*)(${commands.join('|')})\\b`, 'gi');
-        result = result.replace(commandPattern, '$1<span class="command">$2</span>');
+        result = result.replace(commandPattern, (match, prefix, command) => {
+            return prefix + createPlaceholder(command, 'command');
+        });
 
-        // Built-in functions (after 'call')
+        // 6. Built-in functions (after 'call')
         const builtinPattern = new RegExp(`(call\\s+)(${builtins.join('|')})\\b`, 'gi');
-        result = result.replace(builtinPattern, '$1<span class="builtin">$2</span>');
+        result = result.replace(builtinPattern, (match, prefix, builtin) => {
+            return prefix + createPlaceholder(builtin, 'builtin');
+        });
 
-        // Operators
-        result = result.replace(/([+\-*/%=<>!&|]+)/g, '<span class="operator">$1</span>');
+        // 7. Operators
+        result = result.replace(/([+\-*/%=<>!&|]+)/g, (match) => {
+            return createPlaceholder(match, 'operator');
+        });
 
-        // Event names (word:word pattern)
-        result = result.replace(/\b(\w+:\w+)\b/g, '<span class="event">$1</span>');
+        // 8. Event names (word:word pattern)
+        result = result.replace(/\b(\w+:\w+)\b/g, (match) => {
+            return createPlaceholder(match, 'event');
+        });
+
+        // Replace all placeholders with actual HTML spans
+        for (let i = 0; i < placeholders.length; i++) {
+            const { className, text } = placeholders[i];
+            // Note: text is already HTML-escaped by highlightSyntax before calling this function
+            result = result.replace(`__PLACEHOLDER_${i}__`, `<span class="${className}">${text}</span>`);
+        }
 
         return result;
     }
