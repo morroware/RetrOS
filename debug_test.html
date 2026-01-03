@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ScriptEngine Debug Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        textarea { width: 100%; height: 200px; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        #output { background: #000; color: #0f0; padding: 10px; min-height: 200px; white-space: pre; }
+        #debug { background: #333; color: #ff0; padding: 10px; min-height: 100px; white-space: pre; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>ScriptEngine Debug Test</h1>
+    <p>This tests the ScriptEngine in isolation, without the full RetrOS system.</p>
+
+    <h3>Script:</h3>
+    <textarea id="script">print Hello World</textarea>
+
+    <br>
+    <button onclick="runTest()">Run Script</button>
+    <button onclick="document.getElementById('output').textContent = ''; document.getElementById('debug').textContent = '';">Clear</button>
+
+    <h3>Output:</h3>
+    <div id="output"></div>
+
+    <h3>Debug Log:</h3>
+    <div id="debug"></div>
+
+    <script>
+        // Debug logger
+        const debugLog = (msg) => {
+            document.getElementById('debug').textContent += msg + '\n';
+            console.log('[DEBUG]', msg);
+        };
+
+        // Override console.log to capture script output
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            if (args[0] === '[Script]') {
+                document.getElementById('output').textContent += args.slice(1).join(' ') + '\n';
+            }
+        };
+    </script>
+
+    <script type="module">
+        // Minimal stubs for dependencies
+        window.EventBus = {
+            emit: (name, payload) => {
+                window.debugLog('EventBus.emit: ' + name);
+            },
+            on: (name, handler) => {
+                window.debugLog('EventBus.on: ' + name);
+                return () => {};
+            },
+            off: () => {}
+        };
+
+        window.CommandBus = {
+            execute: async (cmd, params) => {
+                window.debugLog('CommandBus.execute: ' + cmd);
+                return {};
+            }
+        };
+
+        window.FileSystemManager = {
+            readFile: () => '',
+            writeFile: () => true,
+            exists: () => false
+        };
+
+        window.StateManager = {
+            getState: () => ({}),
+            query: () => []
+        };
+
+        // Import ScriptEngine
+        window.debugLog('Importing ScriptEngine...');
+
+        try {
+            const module = await import('./core/ScriptEngine.js');
+            window.ScriptEngine = module.default;
+            window.debugLog('ScriptEngine imported successfully');
+            window.debugLog('ScriptEngine type: ' + typeof window.ScriptEngine);
+            window.debugLog('ScriptEngine.run type: ' + typeof window.ScriptEngine?.run);
+        } catch(e) {
+            window.debugLog('Import error: ' + e.message);
+            console.error(e);
+        }
+
+        window.runTest = async function() {
+            const script = document.getElementById('script').value;
+            const output = document.getElementById('output');
+            output.textContent = '';
+
+            window.debugLog('Starting script execution...');
+            window.debugLog('Script: ' + script.substring(0, 50) + '...');
+
+            try {
+                window.debugLog('Calling ScriptEngine.run...');
+                const result = await window.ScriptEngine.run(script);
+                window.debugLog('Execution complete');
+                window.debugLog('Result: ' + JSON.stringify(result));
+            } catch(e) {
+                window.debugLog('Error: ' + e.message);
+                console.error(e);
+            }
+        };
+
+        window.debugLog = (msg) => {
+            document.getElementById('debug').textContent += msg + '\n';
+            console.log('[DEBUG]', msg);
+        };
+    </script>
+</body>
+</html>
