@@ -29,7 +29,32 @@ class ScriptRunner extends AppBase {
     }
 
     onOpen(params) {
-        const sampleScript = `# ╔══════════════════════════════════════════════════════════════════╗
+        // Simple initial script for quick testing
+        // The full test suite can be loaded via Help -> Load Test Suite
+        const sampleScript = `# Simple RetroScript Demo
+# Click Run (or press F5) to execute
+
+print Hello, RetroScript!
+print
+
+# Variables
+set $name = "World"
+set $count = 5
+
+print Welcome to RetroScript, $name!
+print
+
+# Loop example
+print Counting to $count:
+loop $count {
+    print   Number: $i
+}
+
+print
+print Done! Try the Help button for more examples.`;
+
+        // Full comprehensive test suite (available via Help menu)
+        const fullTestSuite = `# ╔══════════════════════════════════════════════════════════════════╗
 # ║       RETROSCRIPT COMPREHENSIVE TEST SUITE v3.0                 ║
 # ║       Complete testing of all language features                 ║
 # ╚══════════════════════════════════════════════════════════════════╝
@@ -2063,6 +2088,9 @@ print ════════════════════════�
 
 notify RetroScript Test Suite Complete!`;
 
+        // Store test suite for later loading
+        this.fullTestSuite = fullTestSuite;
+
         return `
             <div class="script-runner">
                 <div class="script-toolbar">
@@ -2088,6 +2116,9 @@ notify RetroScript Test Suite Complete!`;
                     <span class="toolbar-divider"></span>
                     <button class="script-btn" id="helpBtn" title="Script Help">
                         <span class="btn-icon">❓</span> Help
+                    </button>
+                    <button class="script-btn" id="testSuiteBtn" title="Load Comprehensive Test Suite">
+                        <span class="btn-icon">🧪</span> Tests
                     </button>
                 </div>
 
@@ -2390,6 +2421,10 @@ notify RetroScript Test Suite Complete!`;
         // Help
         this.addHandler(helpBtn, 'click', () => this.showHelp());
 
+        // Load test suite
+        const testSuiteBtn = this.getElement('#testSuiteBtn');
+        this.addHandler(testSuiteBtn, 'click', () => this.loadTestSuite());
+
         // Tab switching
         this.addHandler(tabs, 'click', (e) => {
             if (e.target.classList.contains('output-tab')) {
@@ -2449,24 +2484,41 @@ notify RetroScript Test Suite Complete!`;
     }
 
     async runScript() {
-        const editor = this.getElement('#scriptEditor');
-        const script = editor.value;
+        console.log('[ScriptRunner] runScript called');
 
-        this.setStatus('Running...');
-        this.appendOutput('\n--- Script Started ---', 'info');
-
-        const result = await ScriptEngine.run(script);
-
-        if (result.success) {
-            this.appendOutput('--- Script Completed ---', 'success');
-            if (result.result !== undefined && result.result !== null) {
-                this.appendOutput(`Result: ${JSON.stringify(result.result)}`, 'info');
+        try {
+            const editor = this.getElement('#scriptEditor');
+            if (!editor) {
+                console.error('[ScriptRunner] Editor element not found!');
+                return;
             }
-        } else {
-            this.appendOutput(`--- Script Failed: ${result.error} ---`, 'error');
-        }
+            console.log('[ScriptRunner] Got editor element');
 
-        this.setStatus('Ready');
+            const script = editor.value;
+            console.log('[ScriptRunner] Script length:', script.length, 'chars');
+
+            this.setStatus('Running...');
+            this.appendOutput('\n--- Script Started ---', 'info');
+
+            console.log('[ScriptRunner] Calling ScriptEngine.run...');
+            const result = await ScriptEngine.run(script);
+            console.log('[ScriptRunner] ScriptEngine.run completed');
+
+            if (result.success) {
+                this.appendOutput('--- Script Completed ---', 'success');
+                if (result.result !== undefined && result.result !== null) {
+                    this.appendOutput(`Result: ${JSON.stringify(result.result)}`, 'info');
+                }
+            } else {
+                this.appendOutput(`--- Script Failed: ${result.error} ---`, 'error');
+            }
+
+            this.setStatus('Ready');
+        } catch (error) {
+            console.error('[ScriptRunner] Error in runScript:', error);
+            this.appendOutput(`--- Script Error: ${error.message} ---`, 'error');
+            this.setStatus('Error');
+        }
     }
 
     stopScript() {
@@ -2670,6 +2722,15 @@ QUICK EXAMPLES:
 `;
 
         this.appendOutput(helpText, 'info');
+    }
+
+    loadTestSuite() {
+        const editor = this.getElement('#scriptEditor');
+        if (editor && this.fullTestSuite) {
+            editor.value = this.fullTestSuite;
+            this.updateSyntaxHighlight();
+            this.appendOutput('Loaded comprehensive test suite (2000+ lines). Click Run to execute all tests.', 'info');
+        }
     }
 
     switchTab(tabName) {
