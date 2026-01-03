@@ -589,12 +589,15 @@ class ScriptEngineClass {
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
+            const prevChar = i > 0 ? line[i - 1] : '';
 
             if ((char === '"' || char === "'") && !inQuotes) {
                 inQuotes = true;
                 quoteChar = char;
-            } else if (char === quoteChar && inQuotes) {
+                current += char;
+            } else if (char === quoteChar && inQuotes && prevChar !== '\\') {
                 inQuotes = false;
+                current += char;
                 quoteChar = '';
             } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
                 if (current) {
@@ -650,60 +653,8 @@ class ScriptEngineClass {
         const valueParts = parts.slice(eqIdx + 1);
         const valueStr = valueParts.join(' ').trim();
 
-        // Check for function call: set $var = call funcName args...
-        if (valueParts[0] === 'call') {
-            const funcName = valueParts[1];
-            const args = valueParts.slice(2).map(a => this._parseValue(a));
-            return {
-                type: 'set',
-                varName,
-                value: { type: 'call', funcName, args }
-            };
-        }
-
-        // Check for arithmetic expression, but NOT just a negative number
-        // Only match if there's an operator with operands on both sides
-        // and the left side contains a variable or number (not just text like "call abs")
-        // Now supports: + - * / % (modulo)
-        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/%])\s*(.+)$/);
-        if (mathMatch) {
-            const [, left, op, right] = mathMatch;
-            const leftTrimmed = left.trim();
-            // Only treat as arithmetic if left side is a variable or ends with a number
-            // This prevents "call abs -42" from being parsed as "call abs" - "42"
-            if (leftTrimmed.startsWith('$') || /\d$/.test(leftTrimmed)) {
-                return {
-                    type: 'set',
-                    varName,
-                    value: {
-                        type: 'expression',
-                        operator: op,
-                        left: this._parseValue(leftTrimmed),
-                        right: this._parseValue(right.trim())
-                    }
-                };
-            }
-        }
-
-        // Check for array literal: [1, 2, 3]
-        if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
-            return {
-                type: 'set',
-                varName,
-                value: { type: 'array_literal', content: valueStr }
-            };
-        }
-
-        // Check for object literal: {key: value}
-        if (valueStr.startsWith('{') && valueStr.endsWith('}') && valueStr.includes(':')) {
-            return {
-                type: 'set',
-                varName,
-                value: { type: 'object_literal', content: valueStr }
-            };
-        }
-
-        return { type: 'set', varName, value: this._parseValue(valueStr) };
+        // Use the new expression parser which handles all cases properly
+        return { type: 'set', varName, value: this._parseArithmeticExpression(valueStr) };
     }
 
     _parsePrint(parts) {
@@ -866,7 +817,79 @@ class ScriptEngineClass {
         const eqIdx = line.indexOf('=');
         const varName = line.substring(0, eqIdx).trim().replace(/^\$/, '');
         const value = line.substring(eqIdx + 1).trim();
-        return { type: 'set', varName, value: this._parseValue(value) };
+        return { type: 'set', varName, value: this._parseArithmeticExpression(value) };
+    }
+
+    /**
+     * Parse arithmetic expression with proper operator precedence
+     * @private
+     */
+    _parseArithmeticExpression(expr) {
+        if (!expr || typeof expr !== 'string') {
+            return this._parseValue(expr);
+        }
+
+        expr = expr.trim();
+
+        // Check for array or object literals first
+        if ((expr.startsWith('[') && expr.endsWith(']')) ||
+            (expr.startsWith('{') && expr.endsWith('}') && expr.includes(':'))) {
+            return this._parseValue(expr);
+        }
+
+        // Check for function call: call funcName args...
+        if (expr.startsWith('call ')) {
+            const parts = this._tokenize(expr);
+            const funcName = parts[1];
+            const args = parts.slice(2).map(a => this._parseValue(a));
+            return { type: 'call', funcName, args };
+        }
+
+        // Parse addition and subtraction (lowest precedence)
+        for (const op of ['+', '-']) {
+            const idx = this._findOperatorOutsideParens(expr, op);
+            if (idx !== -1) {
+                const left = expr.substring(0, idx).trim();
+                const right = expr.substring(idx + op.length).trim();
+
+                // Skip if this is a negative number at the start
+                if (op === '-' && idx === 0) continue;
+
+                // Skip if left side is empty (negative number)
+                if (!left && op === '-') continue;
+
+                return {
+                    type: 'expression',
+                    operator: op,
+                    left: this._parseArithmeticExpression(left),
+                    right: this._parseArithmeticExpression(right)
+                };
+            }
+        }
+
+        // Parse multiplication, division, modulo (higher precedence)
+        for (const op of ['*', '/', '%']) {
+            const idx = this._findOperatorOutsideParens(expr, op);
+            if (idx !== -1) {
+                const left = expr.substring(0, idx).trim();
+                const right = expr.substring(idx + op.length).trim();
+
+                return {
+                    type: 'expression',
+                    operator: op,
+                    left: this._parseArithmeticExpression(left),
+                    right: this._parseArithmeticExpression(right)
+                };
+            }
+        }
+
+        // Handle parenthesized expressions
+        if (expr.startsWith('(') && expr.endsWith(')')) {
+            return this._parseArithmeticExpression(expr.slice(1, -1));
+        }
+
+        // Base case: parse as value
+        return this._parseValue(expr);
     }
 
     _parseValue(value) {
