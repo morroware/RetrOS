@@ -30,9 +30,82 @@ import CommandBus from './CommandBus.js';
 import FileSystemManager from './FileSystemManager.js';
 import StateManager from './StateManager.js';
 
+/**
+ * Environment - Lexical scope chain for variables
+ * Proper scoping instead of Map copy/restore hack
+ */
+class Environment {
+    constructor(parent = null) {
+        this.parent = parent;
+        this.vars = new Map();
+    }
+
+    /**
+     * Get variable value from current or parent scope
+     */
+    get(name) {
+        if (this.vars.has(name)) {
+            return this.vars.get(name);
+        }
+        if (this.parent) {
+            return this.parent.get(name);
+        }
+        return undefined; // Return undefined instead of throwing for compatibility
+    }
+
+    /**
+     * Set variable in current scope
+     */
+    set(name, value) {
+        this.vars.set(name, value);
+    }
+
+    /**
+     * Update variable in nearest scope that has it, or create in current scope
+     */
+    update(name, value) {
+        if (this.vars.has(name)) {
+            this.vars.set(name, value);
+        } else if (this.parent && this.parent.has(name)) {
+            this.parent.update(name, value);
+        } else {
+            // Variable doesn't exist anywhere, create in current scope
+            this.vars.set(name, value);
+        }
+    }
+
+    /**
+     * Check if variable exists in current or parent scope
+     */
+    has(name) {
+        return this.vars.has(name) || (this.parent ? this.parent.has(name) : false);
+    }
+
+    /**
+     * Create child environment
+     */
+    extend() {
+        return new Environment(this);
+    }
+
+    /**
+     * Get all variables in current scope (for debugging)
+     */
+    getAllVars() {
+        const vars = {};
+        for (const [key, value] of this.vars) {
+            vars[key] = value;
+        }
+        if (this.parent) {
+            Object.assign(vars, this.parent.getAllVars());
+        }
+        return vars;
+    }
+}
+
 class ScriptEngineClass {
     constructor() {
-        this.variables = new Map();
+        this.globalEnv = new Environment(); // Use Environment instead of Map
         this.functions = new Map();
         this.userFunctions = new Map(); // User-defined functions
         this.eventHandlers = [];
@@ -59,11 +132,24 @@ class ScriptEngineClass {
         CommandBus.initialize();
 
         // Set up global variables
-        this.variables.set('TRUE', true);
-        this.variables.set('FALSE', false);
-        this.variables.set('NULL', null);
+        this.globalEnv.set('TRUE', true);
+        this.globalEnv.set('FALSE', false);
+        this.globalEnv.set('NULL', null);
 
         console.log('[ScriptEngine] Initialized');
+    }
+
+    /**
+     * Legacy compatibility - keep variables property for backward compatibility
+     */
+    get variables() {
+        // Return a Map-like object that delegates to globalEnv
+        return {
+            get: (name) => this.globalEnv.get(name),
+            set: (name, value) => this.globalEnv.set(name, value),
+            has: (name) => this.globalEnv.has(name),
+            clear: () => { this.globalEnv = new Environment(); }
+        };
     }
 
     /**
@@ -100,16 +186,16 @@ class ScriptEngineClass {
         this.executionStartTime = Date.now();
         this.callStack = [];
 
-        // Merge context variables
+        // Merge context variables into global environment
         for (const [key, value] of Object.entries(context)) {
-            this.variables.set(key, value);
+            this.globalEnv.set(key, value);
         }
 
         EventBus.emit('script:execute', { scriptId, source: 'inline' });
 
         try {
             const statements = this._parse(scriptText);
-            const result = await this._execute(statements);
+            const result = await this._execute(statements, this.globalEnv);
 
             EventBus.emit('script:complete', { scriptId, result });
             this.lastResult = result;
@@ -589,12 +675,15 @@ class ScriptEngineClass {
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
+            const prevChar = i > 0 ? line[i - 1] : '';
 
             if ((char === '"' || char === "'") && !inQuotes) {
                 inQuotes = true;
                 quoteChar = char;
-            } else if (char === quoteChar && inQuotes) {
+                current += char;
+            } else if (char === quoteChar && inQuotes && prevChar !== '\\') {
                 inQuotes = false;
+                current += char;
                 quoteChar = '';
             } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
                 if (current) {
@@ -650,60 +739,8 @@ class ScriptEngineClass {
         const valueParts = parts.slice(eqIdx + 1);
         const valueStr = valueParts.join(' ').trim();
 
-        // Check for function call: set $var = call funcName args...
-        if (valueParts[0] === 'call') {
-            const funcName = valueParts[1];
-            const args = valueParts.slice(2).map(a => this._parseValue(a));
-            return {
-                type: 'set',
-                varName,
-                value: { type: 'call', funcName, args }
-            };
-        }
-
-        // Check for arithmetic expression, but NOT just a negative number
-        // Only match if there's an operator with operands on both sides
-        // and the left side contains a variable or number (not just text like "call abs")
-        // Now supports: + - * / % (modulo)
-        const mathMatch = valueStr.match(/^(.+?)\s*([+\-*/%])\s*(.+)$/);
-        if (mathMatch) {
-            const [, left, op, right] = mathMatch;
-            const leftTrimmed = left.trim();
-            // Only treat as arithmetic if left side is a variable or ends with a number
-            // This prevents "call abs -42" from being parsed as "call abs" - "42"
-            if (leftTrimmed.startsWith('$') || /\d$/.test(leftTrimmed)) {
-                return {
-                    type: 'set',
-                    varName,
-                    value: {
-                        type: 'expression',
-                        operator: op,
-                        left: this._parseValue(leftTrimmed),
-                        right: this._parseValue(right.trim())
-                    }
-                };
-            }
-        }
-
-        // Check for array literal: [1, 2, 3]
-        if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
-            return {
-                type: 'set',
-                varName,
-                value: { type: 'array_literal', content: valueStr }
-            };
-        }
-
-        // Check for object literal: {key: value}
-        if (valueStr.startsWith('{') && valueStr.endsWith('}') && valueStr.includes(':')) {
-            return {
-                type: 'set',
-                varName,
-                value: { type: 'object_literal', content: valueStr }
-            };
-        }
-
-        return { type: 'set', varName, value: this._parseValue(valueStr) };
+        // Use the new expression parser which handles all cases properly
+        return { type: 'set', varName, value: this._parseArithmeticExpression(valueStr) };
     }
 
     _parsePrint(parts) {
@@ -866,7 +903,79 @@ class ScriptEngineClass {
         const eqIdx = line.indexOf('=');
         const varName = line.substring(0, eqIdx).trim().replace(/^\$/, '');
         const value = line.substring(eqIdx + 1).trim();
-        return { type: 'set', varName, value: this._parseValue(value) };
+        return { type: 'set', varName, value: this._parseArithmeticExpression(value) };
+    }
+
+    /**
+     * Parse arithmetic expression with proper operator precedence
+     * @private
+     */
+    _parseArithmeticExpression(expr) {
+        if (!expr || typeof expr !== 'string') {
+            return this._parseValue(expr);
+        }
+
+        expr = expr.trim();
+
+        // Check for array or object literals first
+        if ((expr.startsWith('[') && expr.endsWith(']')) ||
+            (expr.startsWith('{') && expr.endsWith('}') && expr.includes(':'))) {
+            return this._parseValue(expr);
+        }
+
+        // Check for function call: call funcName args...
+        if (expr.startsWith('call ')) {
+            const parts = this._tokenize(expr);
+            const funcName = parts[1];
+            const args = parts.slice(2).map(a => this._parseValue(a));
+            return { type: 'call', funcName, args };
+        }
+
+        // Parse addition and subtraction (lowest precedence)
+        for (const op of ['+', '-']) {
+            const idx = this._findOperatorOutsideParens(expr, op);
+            if (idx !== -1) {
+                const left = expr.substring(0, idx).trim();
+                const right = expr.substring(idx + op.length).trim();
+
+                // Skip if this is a negative number at the start
+                if (op === '-' && idx === 0) continue;
+
+                // Skip if left side is empty (negative number)
+                if (!left && op === '-') continue;
+
+                return {
+                    type: 'expression',
+                    operator: op,
+                    left: this._parseArithmeticExpression(left),
+                    right: this._parseArithmeticExpression(right)
+                };
+            }
+        }
+
+        // Parse multiplication, division, modulo (higher precedence)
+        for (const op of ['*', '/', '%']) {
+            const idx = this._findOperatorOutsideParens(expr, op);
+            if (idx !== -1) {
+                const left = expr.substring(0, idx).trim();
+                const right = expr.substring(idx + op.length).trim();
+
+                return {
+                    type: 'expression',
+                    operator: op,
+                    left: this._parseArithmeticExpression(left),
+                    right: this._parseArithmeticExpression(right)
+                };
+            }
+        }
+
+        // Handle parenthesized expressions
+        if (expr.startsWith('(') && expr.endsWith(')')) {
+            return this._parseArithmeticExpression(expr.slice(1, -1));
+        }
+
+        // Base case: parse as value
+        return this._parseValue(expr);
     }
 
     _parseValue(value) {
@@ -1007,13 +1116,13 @@ class ScriptEngineClass {
      * Execute a list of statements
      * @private
      */
-    async _execute(statements) {
+    async _execute(statements, env = this.globalEnv) {
         let result = null;
 
         for (const statement of statements) {
             if (this.breakRequested || this.loopBreakRequested) break;
 
-            result = await this._executeStatement(statement);
+            result = await this._executeStatement(statement, env);
 
             if (statement.type === 'return') {
                 return result;
@@ -1030,12 +1139,12 @@ class ScriptEngineClass {
      * Execute a single statement
      * @private
      */
-    async _executeStatement(statement) {
+    async _executeStatement(statement, env = this.globalEnv) {
         if (!statement) return null;
 
         switch (statement.type) {
             case 'block':
-                return await this._execute(statement.statements);
+                return await this._execute(statement.statements, env);
 
             case 'launch':
                 return await CommandBus.execute('app:launch', {
@@ -1061,12 +1170,12 @@ class ScriptEngineClass {
                 return statement.duration;
 
             case 'set':
-                const value = await this._resolveValue(statement.value);
-                this.variables.set(statement.varName, value);
+                const value = await this._resolveValue(statement.value, env);
+                env.set(statement.varName, value);
                 return value;
 
             case 'print':
-                const message = await this._resolveValue(statement.message);
+                const message = await this._resolveValue(statement.message, env);
                 console.log('[Script]', message);
                 EventBus.emit('script:output', { message });
                 return message;
@@ -1074,40 +1183,42 @@ class ScriptEngineClass {
             case 'emit':
                 const payload = {};
                 for (const [key, val] of Object.entries(statement.payload)) {
-                    payload[key] = await this._resolveValue(val);
+                    payload[key] = await this._resolveValue(val, env);
                 }
                 EventBus.emit(statement.eventName, payload);
                 return { event: statement.eventName, payload };
 
             case 'on':
                 const unsubscribe = EventBus.on(statement.eventName, async (eventPayload) => {
-                    this.variables.set('event', eventPayload);
-                    await this._execute(statement.body);
+                    env.set('event', eventPayload);
+                    await this._execute(statement.body, env);
                 });
                 this.eventHandlers.push(unsubscribe);
                 return { subscribed: statement.eventName };
 
             case 'if':
-                const condition = await this._evaluateCondition(statement.condition);
+                const condition = await this._evaluateCondition(statement.condition, env);
                 if (condition) {
-                    return await this._execute(statement.thenBody);
+                    return await this._execute(statement.thenBody, env);
                 } else if (statement.elseBody.length > 0) {
-                    return await this._execute(statement.elseBody);
+                    return await this._execute(statement.elseBody, env);
                 }
                 return null;
 
             case 'loop':
                 let loopResult = null;
                 this.loopBreakRequested = false;
+                // Create loop scope to prevent $i collision with user variables
+                const loopEnv = env.extend();
                 for (let i = 0; i < statement.count && !this.breakRequested && !this.loopBreakRequested; i++) {
                     this._checkTimeout();
-                    this.variables.set('i', i);
+                    loopEnv.set('i', i);
                     this.continueRequested = false;
 
                     for (const stmt of statement.body) {
                         if (this.continueRequested) break;
                         if (this.loopBreakRequested) break;
-                        loopResult = await this._executeStatement(stmt);
+                        loopResult = await this._executeStatement(stmt, loopEnv);
                     }
                 }
                 this.loopBreakRequested = false;
@@ -1119,8 +1230,10 @@ class ScriptEngineClass {
                 this.loopBreakRequested = false;
                 let whileIterations = 0;
                 const maxIterations = 100000; // Prevent infinite loops
+                // Create loop scope for while loops too
+                const whileEnv = env.extend();
 
-                while (await this._evaluateCondition(statement.condition) && !this.breakRequested && !this.loopBreakRequested) {
+                while (await this._evaluateCondition(statement.condition, whileEnv) && !this.breakRequested && !this.loopBreakRequested) {
                     this._checkTimeout();
                     whileIterations++;
                     if (whileIterations > maxIterations) {
@@ -1131,7 +1244,7 @@ class ScriptEngineClass {
                     for (const stmt of statement.body) {
                         if (this.continueRequested) break;
                         if (this.loopBreakRequested) break;
-                        whileResult = await this._executeStatement(stmt);
+                        whileResult = await this._executeStatement(stmt, whileEnv);
                     }
                 }
                 this.loopBreakRequested = false;
@@ -1143,7 +1256,7 @@ class ScriptEngineClass {
                 if (func) {
                     const args = [];
                     for (const arg of statement.args) {
-                        args.push(await this._resolveValue(arg));
+                        args.push(await this._resolveValue(arg, env));
                     }
                     return await func(...args);
                 }
@@ -1151,7 +1264,7 @@ class ScriptEngineClass {
 
             case 'alert':
                 EventBus.emit('dialog:alert', {
-                    message: await this._resolveValue(statement.message)
+                    message: await this._resolveValue(statement.message, env)
                 });
                 return null;
 
@@ -1159,14 +1272,14 @@ class ScriptEngineClass {
                 // Use request/response pattern to wait for user response
                 try {
                     const confirmResult = await EventBus.request('dialog:confirm', {
-                        message: await this._resolveValue(statement.message)
+                        message: await this._resolveValue(statement.message, env)
                     }, { timeout: 60000 }); // 60 second timeout for user input
                     const confirmed = confirmResult.confirmed || confirmResult.result || false;
-                    this.variables.set(statement.varName, confirmed);
+                    env.set(statement.varName, confirmed);
                     return confirmed;
                 } catch (e) {
                     // Timeout or error - treat as cancelled
-                    this.variables.set(statement.varName, false);
+                    env.set(statement.varName, false);
                     return false;
                 }
 
@@ -1174,21 +1287,21 @@ class ScriptEngineClass {
                 // Use request/response pattern to wait for user input
                 try {
                     const promptResult = await EventBus.request('dialog:prompt', {
-                        message: await this._resolveValue(statement.message),
-                        defaultValue: (await this._resolveValue(statement.defaultValue)) || ''
+                        message: await this._resolveValue(statement.message, env),
+                        defaultValue: (await this._resolveValue(statement.defaultValue, env)) || ''
                     }, { timeout: 120000 }); // 2 minute timeout for user input
                     const promptValue = promptResult.cancelled ? null : (promptResult.value || '');
-                    this.variables.set(statement.varName, promptValue);
+                    env.set(statement.varName, promptValue);
                     return promptValue;
                 } catch (e) {
                     // Timeout or error - treat as cancelled
-                    this.variables.set(statement.varName, null);
+                    env.set(statement.varName, null);
                     return null;
                 }
 
             case 'notify':
                 EventBus.emit('notification:show', {
-                    message: await this._resolveValue(statement.message)
+                    message: await this._resolveValue(statement.message, env)
                 });
                 return null;
 
@@ -1212,29 +1325,29 @@ class ScriptEngineClass {
                 return null;
 
             case 'write':
-                const content = await this._resolveValue(statement.content);
-                const writePath = await this._resolveValue(statement.path);
+                const content = await this._resolveValue(statement.content, env);
+                const writePath = await this._resolveValue(statement.path, env);
                 FileSystemManager.writeFile(writePath, content);
                 return { written: writePath };
 
             case 'read':
                 try {
-                    const readPath = await this._resolveValue(statement.path);
+                    const readPath = await this._resolveValue(statement.path, env);
                     const fileContent = FileSystemManager.readFile(readPath);
-                    this.variables.set(statement.varName, fileContent);
+                    env.set(statement.varName, fileContent);
                     return fileContent;
                 } catch (e) {
-                    this.variables.set(statement.varName, null);
+                    env.set(statement.varName, null);
                     return null;
                 }
 
             case 'mkdir':
-                FileSystemManager.createDirectory(await this._resolveValue(statement.path));
+                FileSystemManager.createDirectory(await this._resolveValue(statement.path, env));
                 return { created: statement.path };
 
             case 'delete':
                 try {
-                    const deletePath = await this._resolveValue(statement.path);
+                    const deletePath = await this._resolveValue(statement.path, env);
                     const node = FileSystemManager.getNode(deletePath);
                     if (node?.type === 'directory') {
                         FileSystemManager.deleteDirectory(deletePath);
@@ -1250,12 +1363,12 @@ class ScriptEngineClass {
                 // Generic command execution
                 const cmdArgs = [];
                 for (const arg of statement.args) {
-                    cmdArgs.push(await this._resolveValue(arg));
+                    cmdArgs.push(await this._resolveValue(arg, env));
                 }
                 return await CommandBus.execute(statement.command, { args: cmdArgs });
 
             case 'return':
-                return await this._resolveValue(statement.value);
+                return await this._resolveValue(statement.value, env);
 
             case 'break':
                 this.loopBreakRequested = true;
@@ -1269,19 +1382,21 @@ class ScriptEngineClass {
                 // For-each loop over array
                 let foreachResult = null;
                 this.loopBreakRequested = false;
-                const arrayValue = await this._resolveValue(statement.array);
+                const arrayValue = await this._resolveValue(statement.array, env);
+                // Create foreach scope to prevent variable collision
+                const foreachEnv = env.extend();
 
                 if (Array.isArray(arrayValue)) {
                     for (let idx = 0; idx < arrayValue.length && !this.breakRequested && !this.loopBreakRequested; idx++) {
                         this._checkTimeout();
-                        this.variables.set(statement.varName, arrayValue[idx]);
-                        this.variables.set('i', idx);
+                        foreachEnv.set(statement.varName, arrayValue[idx]);
+                        foreachEnv.set('i', idx);
                         this.continueRequested = false;
 
                         for (const stmt of statement.body) {
                             if (this.continueRequested) break;
                             if (this.loopBreakRequested) break;
-                            foreachResult = await this._executeStatement(stmt);
+                            foreachResult = await this._executeStatement(stmt, foreachEnv);
                         }
                     }
                 }
@@ -1297,17 +1412,17 @@ class ScriptEngineClass {
                 });
                 // Also register as a callable function
                 this.functions.set(statement.funcName, async (...args) => {
-                    return await this._callUserFunction(statement.funcName, args);
+                    return await this._callUserFunction(statement.funcName, args, env);
                 });
                 return { defined: statement.funcName };
 
             case 'try':
                 // Try/catch error handling
                 try {
-                    return await this._execute(statement.tryBody);
+                    return await this._execute(statement.tryBody, env);
                 } catch (error) {
-                    this.variables.set(statement.errorVar, error.message);
-                    return await this._execute(statement.catchBody);
+                    env.set(statement.errorVar, error.message);
+                    return await this._execute(statement.catchBody, env);
                 }
 
             default:
@@ -1320,30 +1435,29 @@ class ScriptEngineClass {
      * Call a user-defined function
      * @private
      */
-    async _callUserFunction(funcName, args) {
+    async _callUserFunction(funcName, args, env = this.globalEnv) {
         const func = this.userFunctions.get(funcName);
         if (!func) {
             throw new Error(`Unknown function: ${funcName}`);
         }
 
-        // Save current variables (for scope)
-        const savedVars = new Map(this.variables);
+        // Create child environment for function scope (proper lexical scoping!)
+        const funcEnv = env.extend();
 
-        // Set parameters as local variables
+        // Set parameters as local variables in function scope
         for (let i = 0; i < func.params.length; i++) {
-            this.variables.set(func.params[i], args[i] !== undefined ? args[i] : null);
+            funcEnv.set(func.params[i], args[i] !== undefined ? args[i] : null);
         }
 
         // Track call stack
         this.callStack.push(funcName);
 
         try {
-            const result = await this._execute(func.body);
+            const result = await this._execute(func.body, funcEnv);
             return result;
         } finally {
-            // Restore variables (basic scoping)
-            this.variables = savedVars;
             this.callStack.pop();
+            // No need to restore - child environment is automatically discarded!
         }
     }
 
@@ -1351,7 +1465,7 @@ class ScriptEngineClass {
      * Parse array literal: [1, 2, 3] or ["a", "b", "c"]
      * @private
      */
-    _parseArrayLiteral(content) {
+    _parseArrayLiteral(content, env = this.globalEnv) {
         const inner = content.slice(1, -1).trim();
         if (!inner) return [];
 
@@ -1392,7 +1506,7 @@ class ScriptEngineClass {
         // Resolve any variable references
         return items.map(item => {
             if (typeof item === 'object' && item?.type === 'variable') {
-                return this.variables.get(item.name);
+                return env.get(item.name);
             }
             return item;
         });
@@ -1402,7 +1516,7 @@ class ScriptEngineClass {
      * Parse object literal: {key: value, key2: value2}
      * @private
      */
-    _parseObjectLiteral(content) {
+    _parseObjectLiteral(content, env = this.globalEnv) {
         const inner = content.slice(1, -1).trim();
         if (!inner) return {};
 
@@ -1454,7 +1568,7 @@ class ScriptEngineClass {
 
                 let parsedValue = this._parseValue(value);
                 if (typeof parsedValue === 'object' && parsedValue?.type === 'variable') {
-                    parsedValue = this.variables.get(parsedValue.name);
+                    parsedValue = env.get(parsedValue.name);
                 }
                 obj[key] = parsedValue;
             }
@@ -1467,12 +1581,12 @@ class ScriptEngineClass {
      * Resolve a value (handle variables, expressions, and function calls)
      * @private
      */
-    async _resolveValue(value) {
+    async _resolveValue(value, env = this.globalEnv) {
         if (value === null || value === undefined) return null;
 
         if (typeof value === 'object') {
             if (value.type === 'variable') {
-                return this.variables.get(value.name);
+                return env.get(value.name);
             }
 
             if (value.type === 'call') {
@@ -1481,7 +1595,7 @@ class ScriptEngineClass {
                 if (func) {
                     const args = [];
                     for (const arg of value.args) {
-                        args.push(await this._resolveValue(arg));
+                        args.push(await this._resolveValue(arg, env));
                     }
                     return await func(...args);
                 }
@@ -1489,16 +1603,19 @@ class ScriptEngineClass {
             }
 
             if (value.type === 'expression') {
-                const left = await this._resolveValue(value.left);
-                const right = await this._resolveValue(value.right);
+                const left = await this._resolveValue(value.left, env);
+                const right = await this._resolveValue(value.right, env);
 
                 // Handle string concatenation with +
                 if (value.operator === '+' && (typeof left === 'string' || typeof right === 'string')) {
                     return String(left) + String(right);
                 }
 
-                const numLeft = typeof left === 'number' ? left : parseFloat(left) || 0;
-                const numRight = typeof right === 'number' ? right : parseFloat(right) || 0;
+                // Fix type coercion: be more explicit about empty strings
+                const numLeft = typeof left === 'number' ? left :
+                    (left === '' ? 0 : parseFloat(left) || 0);
+                const numRight = typeof right === 'number' ? right :
+                    (right === '' ? 0 : parseFloat(right) || 0);
 
                 switch (value.operator) {
                     case '+': return numLeft + numRight;
@@ -1512,19 +1629,19 @@ class ScriptEngineClass {
 
             // Array literal: [1, 2, 3]
             if (value.type === 'array_literal') {
-                return this._parseArrayLiteral(value.content);
+                return this._parseArrayLiteral(value.content, env);
             }
 
             // Object literal: {key: value}
             if (value.type === 'object_literal') {
-                return this._parseObjectLiteral(value.content);
+                return this._parseObjectLiteral(value.content, env);
             }
         }
 
         if (typeof value === 'string') {
             // Replace $variables in strings
             return value.replace(/\$(\w+)/g, (match, varName) => {
-                const v = this.variables.get(varName);
+                const v = env.get(varName);
                 return v !== undefined ? String(v) : match;
             });
         }
@@ -1536,32 +1653,32 @@ class ScriptEngineClass {
      * Evaluate a condition
      * @private
      */
-    async _evaluateCondition(condition) {
+    async _evaluateCondition(condition, env = this.globalEnv) {
         if (condition === null || condition === undefined) return false;
 
         if (typeof condition === 'boolean') return condition;
 
         if (typeof condition === 'object') {
             if (condition.type === 'variable') {
-                return !!this.variables.get(condition.name);
+                return !!env.get(condition.name);
             }
 
             if (condition.type === 'logical') {
-                const left = await this._evaluateCondition(condition.left);
+                const left = await this._evaluateCondition(condition.left, env);
                 // Short-circuit evaluation
                 if (condition.operator === '||' && left) return true;
                 if (condition.operator === '&&' && !left) return false;
-                const right = await this._evaluateCondition(condition.right);
+                const right = await this._evaluateCondition(condition.right, env);
                 return condition.operator === '||' ? (left || right) : (left && right);
             }
 
             if (condition.type === 'negation') {
-                return !(await this._evaluateCondition(condition.value));
+                return !(await this._evaluateCondition(condition.value, env));
             }
 
             if (condition.type === 'comparison') {
-                const left = await this._resolveValue(condition.left);
-                const right = await this._resolveValue(condition.right);
+                const left = await this._resolveValue(condition.left, env);
+                const right = await this._resolveValue(condition.right, env);
 
                 switch (condition.operator) {
                     case '==': return left == right;
@@ -1574,7 +1691,7 @@ class ScriptEngineClass {
             }
         }
 
-        return !!(await this._resolveValue(condition));
+        return !!(await this._resolveValue(condition, env));
     }
 
     // ==========================================
