@@ -520,7 +520,14 @@ class ScriptEngineClass {
      */
     _parseFunction(parts, line) {
         // def funcName($arg1, $arg2) { statements }
-        const funcName = parts[1];
+        // Handle case where funcName() has no space before parentheses
+        let funcName = parts[1];
+
+        // Strip parentheses and anything after from function name
+        const parenIdx = funcName.indexOf('(');
+        if (parenIdx !== -1) {
+            funcName = funcName.substring(0, parenIdx);
+        }
 
         // Extract parameters from parentheses
         const params = [];
@@ -784,16 +791,36 @@ class ScriptEngineClass {
     _parseIf(parts, line) {
         // if condition then { statements } else { statements }
         const thenIdx = line.indexOf('then');
-        const elseIdx = line.indexOf('else');
 
         let condition = line.substring(2, thenIdx > 0 ? thenIdx : line.indexOf('{')).trim();
         condition = this._parseCondition(condition);
 
-        // Extract then block
+        // Find the matching braces for then block
         const thenStart = line.indexOf('{');
-        const thenEnd = elseIdx > 0
-            ? line.lastIndexOf('}', elseIdx)
-            : line.lastIndexOf('}');
+        let braceCount = 0;
+        let thenEnd = -1;
+        let inQuotes = false;
+        let quoteChar = '';
+
+        for (let i = thenStart; i < line.length; i++) {
+            const char = line[i];
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+            } else if (char === quoteChar && inQuotes && line[i - 1] !== '\\') {
+                inQuotes = false;
+                quoteChar = '';
+            } else if (!inQuotes) {
+                if (char === '{') braceCount++;
+                else if (char === '}') {
+                    braceCount--;
+                    if (braceCount === 0) {
+                        thenEnd = i;
+                        break;
+                    }
+                }
+            }
+        }
 
         let thenBody = [];
         let elseBody = [];
@@ -802,10 +829,36 @@ class ScriptEngineClass {
             thenBody = this._parse(line.substring(thenStart + 1, thenEnd).trim());
         }
 
-        // Extract else block
-        if (elseIdx > 0) {
-            const elseStart = line.indexOf('{', elseIdx);
-            const elseEnd = line.lastIndexOf('}');
+        // Look for 'else' after the then block's closing brace
+        const afterThen = thenEnd > 0 ? line.substring(thenEnd + 1).trim() : '';
+        if (afterThen.startsWith('else')) {
+            const elseStart = line.indexOf('{', thenEnd);
+            // Find matching brace for else block
+            braceCount = 0;
+            let elseEnd = -1;
+            inQuotes = false;
+            quoteChar = '';
+
+            for (let i = elseStart; i < line.length; i++) {
+                const char = line[i];
+                if ((char === '"' || char === "'") && !inQuotes) {
+                    inQuotes = true;
+                    quoteChar = char;
+                } else if (char === quoteChar && inQuotes && line[i - 1] !== '\\') {
+                    inQuotes = false;
+                    quoteChar = '';
+                } else if (!inQuotes) {
+                    if (char === '{') braceCount++;
+                    else if (char === '}') {
+                        braceCount--;
+                        if (braceCount === 0) {
+                            elseEnd = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
             if (elseStart > 0 && elseEnd > elseStart) {
                 elseBody = this._parse(line.substring(elseStart + 1, elseEnd).trim());
             }
@@ -917,10 +970,12 @@ class ScriptEngineClass {
 
         expr = expr.trim();
 
-        // Check for array or object literals first
-        if ((expr.startsWith('[') && expr.endsWith(']')) ||
-            (expr.startsWith('{') && expr.endsWith('}') && expr.includes(':'))) {
-            return this._parseValue(expr);
+        // Check for array or object literals first - return proper type objects
+        if (expr.startsWith('[') && expr.endsWith(']')) {
+            return { type: 'array_literal', content: expr };
+        }
+        if (expr.startsWith('{') && expr.endsWith('}') && expr.includes(':')) {
+            return { type: 'object_literal', content: expr };
         }
 
         // Check for function call: call funcName args...
@@ -1171,7 +1226,8 @@ class ScriptEngineClass {
 
             case 'set':
                 const value = await this._resolveValue(statement.value, env);
-                env.set(statement.varName, value);
+                // Use update to properly handle variables in parent scopes (loops, functions)
+                env.update(statement.varName, value);
                 return value;
 
             case 'print':
