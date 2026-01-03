@@ -802,44 +802,9 @@ class ScriptEngineClass {
         let inQuotes = false;
         let quoteChar = '';
 
-        for (let i = thenStart; i < line.length; i++) {
-            const char = line[i];
-            if ((char === '"' || char === "'") && !inQuotes) {
-                inQuotes = true;
-                quoteChar = char;
-            } else if (char === quoteChar && inQuotes && line[i - 1] !== '\\') {
-                inQuotes = false;
-                quoteChar = '';
-            } else if (!inQuotes) {
-                if (char === '{') braceCount++;
-                else if (char === '}') {
-                    braceCount--;
-                    if (braceCount === 0) {
-                        thenEnd = i;
-                        break;
-                    }
-                }
-            }
-        }
-
-        let thenBody = [];
-        let elseBody = [];
-
-        if (thenStart > 0 && thenEnd > thenStart) {
-            thenBody = this._parse(line.substring(thenStart + 1, thenEnd).trim());
-        }
-
-        // Look for 'else' after the then block's closing brace
-        const afterThen = thenEnd > 0 ? line.substring(thenEnd + 1).trim() : '';
-        if (afterThen.startsWith('else')) {
-            const elseStart = line.indexOf('{', thenEnd);
-            // Find matching brace for else block
-            braceCount = 0;
-            let elseEnd = -1;
-            inQuotes = false;
-            quoteChar = '';
-
-            for (let i = elseStart; i < line.length; i++) {
+        // Only search if we found an opening brace
+        if (thenStart >= 0) {
+            for (let i = thenStart; i < line.length; i++) {
                 const char = line[i];
                 if ((char === '"' || char === "'") && !inQuotes) {
                     inQuotes = true;
@@ -852,15 +817,56 @@ class ScriptEngineClass {
                     else if (char === '}') {
                         braceCount--;
                         if (braceCount === 0) {
-                            elseEnd = i;
+                            thenEnd = i;
                             break;
                         }
                     }
                 }
             }
+        }
 
-            if (elseStart > 0 && elseEnd > elseStart) {
-                elseBody = this._parse(line.substring(elseStart + 1, elseEnd).trim());
+        let thenBody = [];
+        let elseBody = [];
+
+        if (thenStart >= 0 && thenEnd > thenStart) {
+            thenBody = this._parse(line.substring(thenStart + 1, thenEnd).trim());
+        }
+
+        // Look for 'else' after the then block's closing brace
+        const afterThen = thenEnd > 0 ? line.substring(thenEnd + 1).trim() : '';
+        if (afterThen.startsWith('else')) {
+            const elseStart = line.indexOf('{', thenEnd);
+            // Only search if we found an opening brace
+            if (elseStart >= 0) {
+                // Find matching brace for else block
+                braceCount = 0;
+                let elseEnd = -1;
+                inQuotes = false;
+                quoteChar = '';
+
+                for (let i = elseStart; i < line.length; i++) {
+                    const char = line[i];
+                    if ((char === '"' || char === "'") && !inQuotes) {
+                        inQuotes = true;
+                        quoteChar = char;
+                    } else if (char === quoteChar && inQuotes && line[i - 1] !== '\\') {
+                        inQuotes = false;
+                        quoteChar = '';
+                    } else if (!inQuotes) {
+                        if (char === '{') braceCount++;
+                        else if (char === '}') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                                elseEnd = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (elseEnd > elseStart) {
+                    elseBody = this._parse(line.substring(elseStart + 1, elseEnd).trim());
+                }
             }
         }
 
@@ -972,11 +978,9 @@ class ScriptEngineClass {
 
         // Check for array or object literals first - return proper type objects
         if (expr.startsWith('[') && expr.endsWith(']')) {
-            console.log('[ScriptEngine DEBUG] Detected array literal:', expr);
             return { type: 'array_literal', content: expr };
         }
         if (expr.startsWith('{') && expr.endsWith('}') && expr.includes(':')) {
-            console.log('[ScriptEngine DEBUG] Detected object literal:', expr);
             return { type: 'object_literal', content: expr };
         }
 
@@ -1228,7 +1232,6 @@ class ScriptEngineClass {
 
             case 'set':
                 const value = await this._resolveValue(statement.value, env);
-                console.log('[ScriptEngine DEBUG] SET', statement.varName, '=', value, 'type:', typeof value);
                 // Use update to properly handle variables in parent scopes (loops, functions)
                 env.update(statement.varName, value);
                 return value;
@@ -1269,12 +1272,10 @@ class ScriptEngineClass {
                 this.loopBreakRequested = false;
                 // Create loop scope to prevent $i collision with user variables
                 const loopEnv = env.extend();
-                console.log('[ScriptEngine DEBUG] Loop starting, count:', statement.count, 'body statements:', statement.body?.length);
                 for (let i = 0; i < statement.count && !this.breakRequested && !this.loopBreakRequested; i++) {
                     this._checkTimeout();
                     loopEnv.set('i', i);
                     this.continueRequested = false;
-                    console.log('[ScriptEngine DEBUG] Loop iteration', i);
 
                     for (const stmt of statement.body) {
                         if (this.continueRequested) break;
@@ -1467,7 +1468,6 @@ class ScriptEngineClass {
 
             case 'function_def':
                 // Register user-defined function
-                console.log('[ScriptEngine DEBUG] Defining function:', statement.funcName, 'params:', statement.params, 'body:', statement.body?.length, 'statements');
                 this.userFunctions.set(statement.funcName, {
                     params: statement.params,
                     body: statement.body
@@ -1691,16 +1691,12 @@ class ScriptEngineClass {
 
             // Array literal: [1, 2, 3]
             if (value.type === 'array_literal') {
-                const arr = this._parseArrayLiteral(value.content, env);
-                console.log('[ScriptEngine DEBUG] Parsed array literal:', arr);
-                return arr;
+                return this._parseArrayLiteral(value.content, env);
             }
 
             // Object literal: {key: value}
             if (value.type === 'object_literal') {
-                const obj = this._parseObjectLiteral(value.content, env);
-                console.log('[ScriptEngine DEBUG] Parsed object literal:', obj);
-                return obj;
+                return this._parseObjectLiteral(value.content, env);
             }
         }
 
