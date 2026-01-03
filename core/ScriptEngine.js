@@ -389,7 +389,9 @@ class ScriptEngineClass {
             case 'call':
                 return this._parseCall(parts);
             case 'return':
-                return { type: 'return', value: parts[1] ? this._parseValue(parts[1]) : null };
+                // Parse full expression after 'return' (handles 'return call funcName' etc.)
+                const returnExpr = parts.slice(1).join(' ');
+                return { type: 'return', value: returnExpr ? this._parseArithmeticExpression(returnExpr) : null };
             case 'break':
                 return { type: 'break' };
             case 'alert':
@@ -984,15 +986,7 @@ class ScriptEngineClass {
             return { type: 'object_literal', content: expr };
         }
 
-        // Check for function call: call funcName args...
-        if (expr.startsWith('call ')) {
-            const parts = this._tokenize(expr);
-            const funcName = parts[1];
-            const args = parts.slice(2).map(a => this._parseValue(a));
-            return { type: 'call', funcName, args };
-        }
-
-        // Parse addition and subtraction (lowest precedence)
+        // Parse addition and subtraction (lowest precedence) - check BEFORE function calls
         for (const op of ['+', '-']) {
             const idx = this._findOperatorOutsideParens(expr, op);
             if (idx !== -1) {
@@ -1004,6 +998,16 @@ class ScriptEngineClass {
 
                 // Skip if left side is empty (negative number)
                 if (!left && op === '-') continue;
+
+                // Handle ambiguous case: 'call funcName -5' should be a call with arg -5
+                // not a subtraction. Check if left is 'call funcName' (two words only)
+                if (op === '-' && left.startsWith('call ')) {
+                    const leftTokens = this._tokenize(left);
+                    // If left is just 'call funcName' with no args, treat '-number' as arg
+                    if (leftTokens.length === 2 && /^-?\d/.test(right)) {
+                        continue; // Skip this operator, let call parsing handle it
+                    }
+                }
 
                 return {
                     type: 'expression',
@@ -1033,6 +1037,50 @@ class ScriptEngineClass {
         // Handle parenthesized expressions
         if (expr.startsWith('(') && expr.endsWith(')')) {
             return this._parseArithmeticExpression(expr.slice(1, -1));
+        }
+
+        // Check for function call: call funcName args...
+        // (after operators, so 'call abs -5 + 3' splits at '+' first)
+        if (expr.startsWith('call ')) {
+            const parts = this._tokenize(expr);
+            let funcName = parts[1];
+            let args = [];
+
+            // Handle funcName(args) syntax like 'call abs(-5)' or 'call max(3, 7)'
+            const parenIdx = funcName.indexOf('(');
+            if (parenIdx !== -1) {
+                // Check if this is a complete parenthesized expression
+                if (funcName.endsWith(')')) {
+                    // Complete: funcName(arg1,arg2)
+                    const argStr = funcName.slice(parenIdx + 1, -1);
+                    funcName = funcName.slice(0, parenIdx);
+                    if (argStr.trim()) {
+                        const argParts = argStr.split(',').map(a => a.trim());
+                        args = argParts.map(a => this._parseArithmeticExpression(a));
+                    }
+                } else {
+                    // Partial: funcName(arg1, was split - rejoin tokens until we find closing )
+                    funcName = funcName.slice(0, parenIdx);
+                    let argStr = parts[1].slice(parenIdx + 1);
+                    for (let i = 2; i < parts.length; i++) {
+                        const token = parts[i];
+                        argStr += ' ' + token;
+                        if (token.endsWith(')')) {
+                            argStr = argStr.slice(0, -1); // Remove trailing )
+                            break;
+                        }
+                    }
+                    if (argStr.trim()) {
+                        const argParts = argStr.split(',').map(a => a.trim());
+                        args = argParts.map(a => this._parseArithmeticExpression(a));
+                    }
+                }
+            } else {
+                // Parse remaining tokens as arguments
+                args = parts.slice(2).map(a => this._parseArithmeticExpression(a));
+            }
+
+            return { type: 'call', funcName, args };
         }
 
         // Base case: parse as value
