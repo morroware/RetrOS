@@ -972,9 +972,11 @@ class ScriptEngineClass {
 
         // Check for array or object literals first - return proper type objects
         if (expr.startsWith('[') && expr.endsWith(']')) {
+            console.log('[ScriptEngine DEBUG] Detected array literal:', expr);
             return { type: 'array_literal', content: expr };
         }
         if (expr.startsWith('{') && expr.endsWith('}') && expr.includes(':')) {
+            console.log('[ScriptEngine DEBUG] Detected object literal:', expr);
             return { type: 'object_literal', content: expr };
         }
 
@@ -1226,6 +1228,7 @@ class ScriptEngineClass {
 
             case 'set':
                 const value = await this._resolveValue(statement.value, env);
+                console.log('[ScriptEngine DEBUG] SET', statement.varName, '=', value, 'type:', typeof value);
                 // Use update to properly handle variables in parent scopes (loops, functions)
                 env.update(statement.varName, value);
                 return value;
@@ -1266,10 +1269,12 @@ class ScriptEngineClass {
                 this.loopBreakRequested = false;
                 // Create loop scope to prevent $i collision with user variables
                 const loopEnv = env.extend();
+                console.log('[ScriptEngine DEBUG] Loop starting, count:', statement.count, 'body statements:', statement.body?.length);
                 for (let i = 0; i < statement.count && !this.breakRequested && !this.loopBreakRequested; i++) {
                     this._checkTimeout();
                     loopEnv.set('i', i);
                     this.continueRequested = false;
+                    console.log('[ScriptEngine DEBUG] Loop iteration', i);
 
                     for (const stmt of statement.body) {
                         if (this.continueRequested) break;
@@ -1462,6 +1467,7 @@ class ScriptEngineClass {
 
             case 'function_def':
                 // Register user-defined function
+                console.log('[ScriptEngine DEBUG] Defining function:', statement.funcName, 'params:', statement.params, 'body:', statement.body?.length, 'statements');
                 this.userFunctions.set(statement.funcName, {
                     params: statement.params,
                     body: statement.body
@@ -1685,12 +1691,16 @@ class ScriptEngineClass {
 
             // Array literal: [1, 2, 3]
             if (value.type === 'array_literal') {
-                return this._parseArrayLiteral(value.content, env);
+                const arr = this._parseArrayLiteral(value.content, env);
+                console.log('[ScriptEngine DEBUG] Parsed array literal:', arr);
+                return arr;
             }
 
             // Object literal: {key: value}
             if (value.type === 'object_literal') {
-                return this._parseObjectLiteral(value.content, env);
+                const obj = this._parseObjectLiteral(value.content, env);
+                console.log('[ScriptEngine DEBUG] Parsed object literal:', obj);
+                return obj;
             }
         }
 
