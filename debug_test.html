@@ -20,6 +20,7 @@
     <br>
     <button id="runBtn">Run Script</button>
     <button id="clearBtn">Clear</button>
+    <button id="loadTestBtn">Load Test Suite</button>
 
     <h3>Output:</h3>
     <div id="output"></div>
@@ -34,23 +35,38 @@
             console.log('[DEBUG]', msg);
         }
 
-        // Override console.log to capture script output
-        const originalLog = console.log;
-        console.log = function(...args) {
-            originalLog.apply(console, args);
-            if (args[0] === '[Script]') {
-                document.getElementById('output').textContent += args.slice(1).join(' ') + '\n';
-            }
-        };
+        // We'll use EventBus subscription instead of console.log override
 
         debugLog('Page loaded, setting up...');
 
-        // Import ScriptEngine
-        debugLog('Importing ScriptEngine...');
+        // Import ScriptEngine and EventBus (to test full integration)
+        debugLog('Importing modules...');
 
         let ScriptEngine = null;
+        let EventBus = null;
 
         try {
+            debugLog('Importing EventBus...');
+            const eventModule = await import('./core/EventBus.js');
+            EventBus = eventModule.default;
+            debugLog('EventBus imported: ' + typeof EventBus);
+
+            // Test subscribing to script:output like ScriptRunner does
+            debugLog('Setting up script:output subscription...');
+            EventBus.on('script:output', ({ message }) => {
+                debugLog('Received script:output: ' + message);
+                document.getElementById('output').textContent += message + '\n';
+            });
+
+            // Wildcard subscription like ScriptRunner has
+            debugLog('Setting up wildcard subscription...');
+            let eventCount = 0;
+            EventBus.on('*', (payload, meta, event) => {
+                eventCount++;
+                debugLog(`Event #${eventCount}: ${event.name}`);
+            });
+
+            debugLog('Importing ScriptEngine...');
             const module = await import('./core/ScriptEngine.js');
             ScriptEngine = module.default;
             debugLog('ScriptEngine imported successfully');
@@ -59,6 +75,7 @@
 
             // Expose for debugging
             window.ScriptEngine = ScriptEngine;
+            window.EventBus = EventBus;
         } catch(e) {
             debugLog('Import error: ' + e.message);
             debugLog('Stack: ' + e.stack);
@@ -96,6 +113,23 @@
         document.getElementById('clearBtn').addEventListener('click', () => {
             document.getElementById('output').textContent = '';
             document.getElementById('debug').textContent = '';
+        });
+        document.getElementById('loadTestBtn').addEventListener('click', async () => {
+            debugLog('Loading test suite...');
+            try {
+                const response = await fetch('./apps/ScriptRunner.js');
+                const text = await response.text();
+                // Extract the test script from ScriptRunner.js
+                const match = text.match(/const sampleScript = `([\s\S]*?)`;/);
+                if (match) {
+                    document.getElementById('script').value = match[1];
+                    debugLog('Test suite loaded: ' + match[1].length + ' characters');
+                } else {
+                    debugLog('Could not find test script in ScriptRunner.js');
+                }
+            } catch(e) {
+                debugLog('Error loading test suite: ' + e.message);
+            }
         });
 
         debugLog('Setup complete. Ready to run scripts.');
