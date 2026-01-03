@@ -30,9 +30,82 @@ import CommandBus from './CommandBus.js';
 import FileSystemManager from './FileSystemManager.js';
 import StateManager from './StateManager.js';
 
+/**
+ * Environment - Lexical scope chain for variables
+ * Proper scoping instead of Map copy/restore hack
+ */
+class Environment {
+    constructor(parent = null) {
+        this.parent = parent;
+        this.vars = new Map();
+    }
+
+    /**
+     * Get variable value from current or parent scope
+     */
+    get(name) {
+        if (this.vars.has(name)) {
+            return this.vars.get(name);
+        }
+        if (this.parent) {
+            return this.parent.get(name);
+        }
+        return undefined; // Return undefined instead of throwing for compatibility
+    }
+
+    /**
+     * Set variable in current scope
+     */
+    set(name, value) {
+        this.vars.set(name, value);
+    }
+
+    /**
+     * Update variable in nearest scope that has it, or create in current scope
+     */
+    update(name, value) {
+        if (this.vars.has(name)) {
+            this.vars.set(name, value);
+        } else if (this.parent && this.parent.has(name)) {
+            this.parent.update(name, value);
+        } else {
+            // Variable doesn't exist anywhere, create in current scope
+            this.vars.set(name, value);
+        }
+    }
+
+    /**
+     * Check if variable exists in current or parent scope
+     */
+    has(name) {
+        return this.vars.has(name) || (this.parent ? this.parent.has(name) : false);
+    }
+
+    /**
+     * Create child environment
+     */
+    extend() {
+        return new Environment(this);
+    }
+
+    /**
+     * Get all variables in current scope (for debugging)
+     */
+    getAllVars() {
+        const vars = {};
+        for (const [key, value] of this.vars) {
+            vars[key] = value;
+        }
+        if (this.parent) {
+            Object.assign(vars, this.parent.getAllVars());
+        }
+        return vars;
+    }
+}
+
 class ScriptEngineClass {
     constructor() {
-        this.variables = new Map();
+        this.globalEnv = new Environment(); // Use Environment instead of Map
         this.functions = new Map();
         this.userFunctions = new Map(); // User-defined functions
         this.eventHandlers = [];
@@ -59,11 +132,24 @@ class ScriptEngineClass {
         CommandBus.initialize();
 
         // Set up global variables
-        this.variables.set('TRUE', true);
-        this.variables.set('FALSE', false);
-        this.variables.set('NULL', null);
+        this.globalEnv.set('TRUE', true);
+        this.globalEnv.set('FALSE', false);
+        this.globalEnv.set('NULL', null);
 
         console.log('[ScriptEngine] Initialized');
+    }
+
+    /**
+     * Legacy compatibility - keep variables property for backward compatibility
+     */
+    get variables() {
+        // Return a Map-like object that delegates to globalEnv
+        return {
+            get: (name) => this.globalEnv.get(name),
+            set: (name, value) => this.globalEnv.set(name, value),
+            has: (name) => this.globalEnv.has(name),
+            clear: () => { this.globalEnv = new Environment(); }
+        };
     }
 
     /**
@@ -100,16 +186,16 @@ class ScriptEngineClass {
         this.executionStartTime = Date.now();
         this.callStack = [];
 
-        // Merge context variables
+        // Merge context variables into global environment
         for (const [key, value] of Object.entries(context)) {
-            this.variables.set(key, value);
+            this.globalEnv.set(key, value);
         }
 
         EventBus.emit('script:execute', { scriptId, source: 'inline' });
 
         try {
             const statements = this._parse(scriptText);
-            const result = await this._execute(statements);
+            const result = await this._execute(statements, this.globalEnv);
 
             EventBus.emit('script:complete', { scriptId, result });
             this.lastResult = result;
