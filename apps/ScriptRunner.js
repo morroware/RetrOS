@@ -29,29 +29,317 @@ class ScriptRunner extends AppBase {
     }
 
     onOpen(params) {
-        // Simple initial script for quick testing
-        // The full test suite can be loaded via Help -> Load Test Suite
-        const sampleScript = `# Simple RetroScript Demo
-# Click Run (or press F5) to execute
+        // Comprehensive test script covering all major features
+        const sampleScript = `# ═══════════════════════════════════════════════════════
+# RetroScript Feature Test Suite
+# Press F5 or click Run to execute
+# ═══════════════════════════════════════════════════════
 
-print Hello, RetroScript!
+set $passed = 0
+set $failed = 0
+
+print ═══════════════════════════════════════════════════════
+print   RetroScript Feature Test Suite
+print ═══════════════════════════════════════════════════════
 print
 
-# Variables
-set $name = "World"
-set $count = 5
+# ─────────────────────────────────────────────────────────
+# Test 1: Variables and Data Types
+# ─────────────────────────────────────────────────────────
+print [Test 1] Variables and Data Types
+set $str = "Hello"
+set $num = 42
+set $dec = 3.14
+set $bool = true
+set $arr = [1, 2, 3]
+set $obj = {name: "Test", value: 100}
 
-print Welcome to RetroScript, $name!
-print
-
-# Loop example
-print Counting to $count:
-loop $count {
-    print   Number: $i
+if $str == "Hello" then {
+    print   ✓ String variable works
+    set $passed = $passed + 1
+} else {
+    print   ✗ String variable failed
+    set $failed = $failed + 1
 }
 
+if $num == 42 then {
+    print   ✓ Number variable works
+    set $passed = $passed + 1
+} else {
+    print   ✗ Number variable failed
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 2: Arithmetic Operations
+# ─────────────────────────────────────────────────────────
 print
-print Done! Try the Help button for more examples.`;
+print [Test 2] Arithmetic Operations
+set $a = 10
+set $b = 3
+set $sum = $a + $b
+set $diff = $a - $b
+set $prod = $a * $b
+set $quot = $a / $b
+
+if $sum == 13 then {
+    print   ✓ Addition works: 10 + 3 = $sum
+    set $passed = $passed + 1
+} else {
+    print   ✗ Addition failed
+    set $failed = $failed + 1
+}
+
+if $prod == 30 then {
+    print   ✓ Multiplication works: 10 * 3 = $prod
+    set $passed = $passed + 1
+} else {
+    print   ✗ Multiplication failed
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 3: Loops with Variable Count
+# ─────────────────────────────────────────────────────────
+print
+print [Test 3] Loops with Variable Count
+set $count = 5
+set $loopSum = 0
+loop $count {
+    set $loopSum = $loopSum + $i
+}
+
+if $loopSum == 10 then {
+    print   ✓ Loop with variable count works (0+1+2+3+4 = $loopSum)
+    set $passed = $passed + 1
+} else {
+    print   ✗ Loop with variable count failed (got $loopSum, expected 10)
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 4: Nested Loops
+# ─────────────────────────────────────────────────────────
+print
+print [Test 4] Nested Loops
+set $nestedCount = 0
+loop 3 {
+    set $outer = $i
+    loop 2 {
+        set $nestedCount = $nestedCount + 1
+    }
+}
+
+if $nestedCount == 6 then {
+    print   ✓ Nested loops work (3 x 2 = $nestedCount iterations)
+    set $passed = $passed + 1
+} else {
+    print   ✗ Nested loops failed (got $nestedCount, expected 6)
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 5: User-Defined Functions
+# ─────────────────────────────────────────────────────────
+print
+print [Test 5] User-Defined Functions
+
+def add($x, $y) {
+    return $x + $y
+}
+
+def factorial($n) {
+    if $n <= 1 then {
+        return 1
+    }
+    set $prev = call factorial $n - 1
+    return $n * $prev
+}
+
+set $addResult = call add 7 8
+if $addResult == 15 then {
+    print   ✓ Function call works: add(7, 8) = $addResult
+    set $passed = $passed + 1
+} else {
+    print   ✗ Function call failed (got $addResult, expected 15)
+    set $failed = $failed + 1
+}
+
+set $fact5 = call factorial 5
+if $fact5 == 120 then {
+    print   ✓ Recursive function works: factorial(5) = $fact5
+    set $passed = $passed + 1
+} else {
+    print   ✗ Recursive function failed (got $fact5, expected 120)
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 6: Built-in Functions
+# ─────────────────────────────────────────────────────────
+print
+print [Test 6] Built-in Functions
+
+set $absVal = call abs -42
+set $maxVal = call max 10 25 5
+set $minVal = call min 10 25 5
+set $rounded = call round 3.7
+set $upperStr = call upper "hello"
+set $arrLen = call count [1, 2, 3, 4, 5]
+
+if $absVal == 42 then {
+    print   ✓ abs(-42) = $absVal
+    set $passed = $passed + 1
+} else {
+    print   ✗ abs() failed
+    set $failed = $failed + 1
+}
+
+if $maxVal == 25 then {
+    print   ✓ max(10, 25, 5) = $maxVal
+    set $passed = $passed + 1
+} else {
+    print   ✗ max() failed
+    set $failed = $failed + 1
+}
+
+if $upperStr == "HELLO" then {
+    print   ✓ upper("hello") = $upperStr
+    set $passed = $passed + 1
+} else {
+    print   ✗ upper() failed
+    set $failed = $failed + 1
+}
+
+if $arrLen == 5 then {
+    print   ✓ count([1,2,3,4,5]) = $arrLen
+    set $passed = $passed + 1
+} else {
+    print   ✗ count() failed
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 7: String Operations
+# ─────────────────────────────────────────────────────────
+print
+print [Test 7] String Operations
+
+set $hello = "Hello"
+set $world = "World"
+set $greeting = call concat $hello ", " $world "!"
+set $strLen = call length $greeting
+
+if $greeting == "Hello, World!" then {
+    print   ✓ String concat works: $greeting
+    set $passed = $passed + 1
+} else {
+    print   ✗ String concat failed
+    set $failed = $failed + 1
+}
+
+if $strLen == 13 then {
+    print   ✓ String length works: $strLen chars
+    set $passed = $passed + 1
+} else {
+    print   ✗ String length failed
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 8: Array Operations
+# ─────────────────────────────────────────────────────────
+print
+print [Test 8] Array Operations
+
+set $numbers = [10, 20, 30, 40, 50]
+set $first = call first $numbers
+set $last = call last $numbers
+set $sum = call sum $numbers
+
+if $first == 10 then {
+    print   ✓ first([10,20,30,40,50]) = $first
+    set $passed = $passed + 1
+} else {
+    print   ✗ first() failed
+    set $failed = $failed + 1
+}
+
+if $last == 50 then {
+    print   ✓ last([10,20,30,40,50]) = $last
+    set $passed = $passed + 1
+} else {
+    print   ✗ last() failed
+    set $failed = $failed + 1
+}
+
+if $sum == 150 then {
+    print   ✓ sum([10,20,30,40,50]) = $sum
+    set $passed = $passed + 1
+} else {
+    print   ✗ sum() failed
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 9: Foreach Loop
+# ─────────────────────────────────────────────────────────
+print
+print [Test 9] Foreach Loop
+
+set $items = ["apple", "banana", "cherry"]
+set $itemCount = 0
+foreach $item in $items {
+    set $itemCount = $itemCount + 1
+}
+
+if $itemCount == 3 then {
+    print   ✓ foreach loop iterated $itemCount times
+    set $passed = $passed + 1
+} else {
+    print   ✗ foreach failed (got $itemCount, expected 3)
+    set $failed = $failed + 1
+}
+
+# ─────────────────────────────────────────────────────────
+# Test 10: Logical Operators
+# ─────────────────────────────────────────────────────────
+print
+print [Test 10] Logical Operators
+
+set $x = 5
+set $y = 10
+
+if $x < $y && $y > 0 then {
+    print   ✓ AND operator works (5 < 10 && 10 > 0)
+    set $passed = $passed + 1
+} else {
+    print   ✗ AND operator failed
+    set $failed = $failed + 1
+}
+
+if $x > 100 || $y == 10 then {
+    print   ✓ OR operator works (5 > 100 || 10 == 10)
+    set $passed = $passed + 1
+} else {
+    print   ✗ OR operator failed
+    set $failed = $failed + 1
+}
+
+# ═══════════════════════════════════════════════════════
+# Test Summary
+# ═══════════════════════════════════════════════════════
+print
+print ═══════════════════════════════════════════════════════
+set $total = $passed + $failed
+print   Tests Passed: $passed / $total
+print   Tests Failed: $failed
+if $failed == 0 then {
+    print   ✓ ALL TESTS PASSED!
+} else {
+    print   ✗ Some tests failed - check output above
+}
+print ═══════════════════════════════════════════════════════`;
 
         // Full comprehensive test suite (available via Help menu)
         const fullTestSuite = `# ╔══════════════════════════════════════════════════════════════════╗
@@ -2262,17 +2550,20 @@ notify RetroScript Test Suite Complete!`;
                     top: 0;
                     left: 0;
                     right: 0;
+                    bottom: 0;
                     margin: 0;
                     padding: 8px;
                     font-family: 'Consolas', 'Courier New', monospace;
                     font-size: 13px;
                     line-height: 1.4;
                     color: #d4d4d4;
-                    background: transparent;
+                    background: #1e1e1e;
                     white-space: pre-wrap;
                     word-wrap: break-word;
                     pointer-events: none;
                     tab-size: 4;
+                    overflow: auto;
+                    z-index: 0;
                 }
 
                 .script-editor {
