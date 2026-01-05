@@ -293,7 +293,10 @@ class DesktopRendererClass {
      */
     handleIconOpen(icon) {
         EventBus.emit(Events.SOUND_PLAY, { type: 'open' });
-        EventBus.emit(Events.ICON_DBLCLICK, { icon });
+        EventBus.emit(Events.ICON_DBLCLICK, {
+            iconId: icon.id,
+            appId: icon.type === 'app' ? icon.id : undefined
+        });
 
         if (icon.type === 'link' && icon.url) {
             AppRegistry.launch('browser', { url: icon.url });

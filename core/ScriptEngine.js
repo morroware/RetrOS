@@ -296,10 +296,24 @@ class ScriptEngineClass {
             // This ensures closing braces on their own line are included in the block
             const wasInBlock = braceDepth > 0;
 
-            // Count braces to handle multi-line blocks
-            for (const char of trimmedLine) {
-                if (char === '{') braceDepth++;
-                if (char === '}') braceDepth--;
+            // Count braces to handle multi-line blocks (skip braces inside strings)
+            let inQuote = false;
+            let quoteType = '';
+            for (let ci = 0; ci < trimmedLine.length; ci++) {
+                const char = trimmedLine[ci];
+                const prevChar = ci > 0 ? trimmedLine[ci - 1] : '';
+                if ((char === '"' || char === "'") && prevChar !== '\\') {
+                    if (!inQuote) {
+                        inQuote = true;
+                        quoteType = char;
+                    } else if (char === quoteType) {
+                        inQuote = false;
+                        quoteType = '';
+                    }
+                } else if (!inQuote) {
+                    if (char === '{') braceDepth++;
+                    if (char === '}') braceDepth--;
+                }
             }
 
             // Include line in block if: we're entering a block, still in a block, OR were in a block
@@ -415,10 +429,10 @@ class ScriptEngineClass {
             case 'read':
                 return this._parseRead(parts);
             case 'mkdir':
-                return { type: 'mkdir', path: parts[1] };
+                return { type: 'mkdir', path: this._parseValue(parts[1]) };
             case 'delete':
             case 'rm':
-                return { type: 'delete', path: parts[1] };
+                return { type: 'delete', path: this._parseValue(parts[1]) };
             case 'continue':
                 return { type: 'continue' };
             case 'foreach':
@@ -513,10 +527,24 @@ class ScriptEngineClass {
             // Track if we were already in a block
             const wasInBlock = braceDepth > 0;
 
-            // Count braces in this line
-            for (const char of line) {
-                if (char === '{') braceDepth++;
-                if (char === '}') braceDepth--;
+            // Count braces in this line (skip braces inside strings)
+            let inQuote = false;
+            let quoteType = '';
+            for (let ci = 0; ci < line.length; ci++) {
+                const char = line[ci];
+                const prevChar = ci > 0 ? line[ci - 1] : '';
+                if ((char === '"' || char === "'") && prevChar !== '\\') {
+                    if (!inQuote) {
+                        inQuote = true;
+                        quoteType = char;
+                    } else if (char === quoteType) {
+                        inQuote = false;
+                        quoteType = '';
+                    }
+                } else if (!inQuote) {
+                    if (char === '{') braceDepth++;
+                    if (char === '}') braceDepth--;
+                }
             }
 
             // Accumulate lines that are part of a block
@@ -1374,6 +1402,12 @@ class ScriptEngineClass {
                     loopCount = await this._resolveValue(loopCount, env);
                 }
                 loopCount = parseInt(loopCount) || 0;
+                // Apply max iterations limit for safety
+                const loopMaxIterations = 100000;
+                if (loopCount > loopMaxIterations) {
+                    console.warn(`[ScriptEngine] Loop count ${loopCount} exceeds maximum (${loopMaxIterations}), truncating`);
+                    loopCount = loopMaxIterations;
+                }
                 // Create loop scope to prevent $i collision with user variables
                 const loopEnv = env.extend();
                 for (let i = 0; i < loopCount && !this.breakRequested && !this.loopBreakRequested; i++) {
@@ -1551,9 +1585,11 @@ class ScriptEngineClass {
                 const arrayValue = await this._resolveValue(statement.array, env);
                 // Create foreach scope to prevent variable collision
                 const foreachEnv = env.extend();
+                const foreachMaxIterations = 100000; // Prevent runaway loops
 
                 if (Array.isArray(arrayValue)) {
-                    for (let idx = 0; idx < arrayValue.length && !this.breakRequested && !this.loopBreakRequested; idx++) {
+                    const iterationLimit = Math.min(arrayValue.length, foreachMaxIterations);
+                    for (let idx = 0; idx < iterationLimit && !this.breakRequested && !this.loopBreakRequested; idx++) {
                         this._checkTimeout();
                         foreachEnv.set(statement.varName, arrayValue[idx]);
                         foreachEnv.set('i', idx);
@@ -1564,6 +1600,9 @@ class ScriptEngineClass {
                             if (this.loopBreakRequested) break;
                             foreachResult = await this._executeStatement(stmt, foreachEnv);
                         }
+                    }
+                    if (arrayValue.length > foreachMaxIterations) {
+                        console.warn(`[ScriptEngine] Foreach loop truncated at ${foreachMaxIterations} iterations`);
                     }
                 }
                 this.loopBreakRequested = false;
@@ -1615,7 +1654,11 @@ class ScriptEngineClass {
             funcEnv.set(func.params[i], args[i] !== undefined ? args[i] : null);
         }
 
-        // Track call stack
+        // Track call stack with recursion depth limit
+        const maxRecursionDepth = 1000;
+        if (this.callStack.length >= maxRecursionDepth) {
+            throw new Error(`Maximum recursion depth exceeded (${maxRecursionDepth}) - possible infinite recursion in function: ${funcName}`);
+        }
         this.callStack.push(funcName);
 
         try {
@@ -1963,14 +2006,21 @@ class ScriptEngineClass {
         this.defineFunction('flatten', (arr, depth = 1) => Array.isArray(arr) ? arr.flat(depth) : arr);
         this.defineFunction('range', (start, end, step = 1) => {
             const result = [];
+            const maxRangeSize = 100000; // Prevent memory exhaustion
+            // Validate step to prevent infinite loops
+            if (step === 0 || !Number.isFinite(step)) return result;
             if (step > 0) {
-                for (let i = start; i < end; i += step) result.push(i);
+                for (let i = start; i < end && result.length < maxRangeSize; i += step) result.push(i);
             } else if (step < 0) {
-                for (let i = start; i > end; i += step) result.push(i);
+                for (let i = start; i > end && result.length < maxRangeSize; i += step) result.push(i);
             }
             return result;
         });
-        this.defineFunction('fill', (length, value) => Array(length).fill(value));
+        this.defineFunction('fill', (length, value) => {
+            const maxLength = 100000; // Prevent memory exhaustion
+            const safeLength = Math.min(Math.max(0, Math.floor(length)), maxLength);
+            return Array(safeLength).fill(value);
+        });
         this.defineFunction('at', (arr, idx) => {
             if (Array.isArray(arr)) return arr.at(idx);
             return String(arr).at(idx);
