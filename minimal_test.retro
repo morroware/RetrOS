@@ -291,24 +291,24 @@ print ━━━ SECTION 4: File System ━━━
 print
 
 print [25] File Write
-write "Hello from RetroScript!" to "C:/Users/User/Documents/test.txt"
+write "Hello from RetroScript!" to "C:/Users/User/test.txt"
 print   ✓ File written
 set $passed = $passed + 1
 
 print [26] File Read
-read "C:/Users/User/Documents/test.txt" into $content
+read "C:/Users/User/test.txt" into $content
 print   Content: $content
 print   ✓ PASSED
 set $passed = $passed + 1
 
 print [27] Directory & Cleanup
-mkdir "C:/Users/User/Documents/TestDir"
-write "Subdir content" to "C:/Users/User/Documents/TestDir/file.txt"
-read "C:/Users/User/Documents/TestDir/file.txt" into $sub
+mkdir "C:/Users/User/TestDir"
+write "Subdir content" to "C:/Users/User/TestDir/file.txt"
+read "C:/Users/User/TestDir/file.txt" into $sub
 print   Subdir content: $sub
-delete "C:/Users/User/Documents/test.txt"
-delete "C:/Users/User/Documents/TestDir/file.txt"
-rm "C:/Users/User/Documents/TestDir"
+delete "C:/Users/User/test.txt"
+delete "C:/Users/User/TestDir/file.txt"
+rm "C:/Users/User/TestDir"
 print   ✓ Files cleaned up
 print   ✓ PASSED
 set $passed = $passed + 1
