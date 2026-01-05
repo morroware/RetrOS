@@ -2310,6 +2310,7 @@ notify RetroScript Test Suite Complete!`;
                     border-right: 1px solid #3c3c3c;
                     min-width: 35px;
                     overflow: hidden;
+                    white-space: pre;
                 }
 
                 .editor-wrapper {
