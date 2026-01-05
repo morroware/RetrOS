@@ -501,12 +501,50 @@ class ScriptEngineClass {
      */
     _parseBody(bodyText) {
         const statements = [];
-        // First split by newlines, then by semicolons (respecting quotes)
-        const lines = bodyText.split('\n').map(l => l.trim()).filter(l => l && l !== '}');
+        const lines = bodyText.split('\n').map(l => l.trim()).filter(l => l);
 
-        for (const bodyLine of lines) {
-            // Split each line by semicolons (respecting quotes)
-            const subStatements = this._splitBySemicolon(bodyLine);
+        let blockBuffer = '';
+        let braceDepth = 0;
+
+        for (const line of lines) {
+            // Skip empty lines and comments when not in a block
+            if (braceDepth === 0 && (!line || line.startsWith('#'))) continue;
+
+            // Track if we were already in a block
+            const wasInBlock = braceDepth > 0;
+
+            // Count braces in this line
+            for (const char of line) {
+                if (char === '{') braceDepth++;
+                if (char === '}') braceDepth--;
+            }
+
+            // Accumulate lines that are part of a block
+            if (braceDepth > 0 || line.includes('{') || wasInBlock) {
+                blockBuffer += (blockBuffer ? '\n' : '') + line;
+
+                // If we've closed all braces, parse the complete block
+                if (braceDepth === 0 && blockBuffer) {
+                    const subStatements = this._splitBySemicolon(blockBuffer);
+                    for (const subStmt of subStatements) {
+                        const stmt = this._parseLine(subStmt, 0);
+                        if (stmt) statements.push(stmt);
+                    }
+                    blockBuffer = '';
+                }
+            } else if (line && line !== '}') {
+                // Regular line - parse it
+                const subStatements = this._splitBySemicolon(line);
+                for (const subStmt of subStatements) {
+                    const stmt = this._parseLine(subStmt, 0);
+                    if (stmt) statements.push(stmt);
+                }
+            }
+        }
+
+        // Handle any remaining buffer (shouldn't happen with well-formed code)
+        if (blockBuffer) {
+            const subStatements = this._splitBySemicolon(blockBuffer);
             for (const subStmt of subStatements) {
                 const stmt = this._parseLine(subStmt, 0);
                 if (stmt) statements.push(stmt);

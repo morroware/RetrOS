@@ -152,7 +152,8 @@ def factorial($n) {
     if $n <= 1 then {
         return 1
     }
-    set $prev = call factorial $n - 1
+    set $nm1 = $n - 1
+    set $prev = call factorial $nm1
     return $n * $prev
 }
 
