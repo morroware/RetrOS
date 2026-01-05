@@ -74,7 +74,7 @@ class FeatureRegistryClass {
         console.log(`[FeatureRegistry] Total registered: ${this.features.size} features, ${this.metadata.size} metadata entries`);
 
         // Emit registration event
-        EventBus.emit('feature:registered', { id: feature.id, name: feature.name });
+        EventBus.emit('feature:registered', { featureId: feature.id, name: feature.name, category: meta.category });
     }
 
     /**
