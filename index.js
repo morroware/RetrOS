@@ -110,7 +110,7 @@ class BootSequence {
         }
 
         // Emit boot complete event
-        EventBus.emit(Events.BOOT_COMPLETE);
+        EventBus.emit(Events.BOOT_COMPLETE, { timestamp: Date.now() });
 
         // Play startup sound
         EventBus.emit(Events.SOUND_PLAY, { type: 'startup' });

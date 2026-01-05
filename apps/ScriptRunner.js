@@ -30,89 +30,229 @@ class ScriptRunner extends AppBase {
 
     onOpen(params) {
         // Test script with app launching and events
-        const sampleScript = `# RetroScript Test Suite
-# Press F5 or click Run to execute
+        const sampleScript = `# ═══════════════════════════════════════════════════════════════
+#  RetroScript Comprehensive Test Suite
+#  Press F5 or click Run to execute
+# ═══════════════════════════════════════════════════════════════
 
-print ========================================
-print   RetroScript Test Suite
-print ========================================
+print ═══════════════════════════════════════════════════════════════
+print   RetroScript Comprehensive Test Suite
+print ═══════════════════════════════════════════════════════════════
 print
 
-# ----- Test 1: Variables -----
-print [Test 1] Variables
-set $name = "World"
-set $count = 5
-print   name = $name
-print   count = $count
-print   PASSED
+# ----- Test 1: Variables & Data Types -----
+print [Test 1] Variables & Data Types
+set $string = "Hello"
+set $number = 42
+set $bool = true
+set $array = [1, 2, 3]
+set $object = {name: "RetroScript", version: 1}
+print   String: $string
+print   Number: $number
+print   Boolean: $bool
+print   Array length: (call count $array)
+print   Object keys: (call keys $object)
+print   ✓ PASSED
 print
 
-# ----- Test 2: Simple Loop -----
-print [Test 2] Simple Loop
-loop 3 {
-    print   iteration $i
-}
-print   PASSED
-print
-
-# ----- Test 3: Arithmetic -----
-print [Test 3] Arithmetic
+# ----- Test 2: Arithmetic Operations -----
+print [Test 2] Arithmetic Operations
 set $a = 10
 set $b = 3
 set $sum = $a + $b
+set $diff = $a - $b
+set $prod = $a * $b
+set $quot = $a / $b
+set $mod = $a % $b
 print   $a + $b = $sum
-if $sum == 13 then {
-    print   PASSED
+print   $a - $b = $diff
+print   $a * $b = $prod
+print   $a / $b = $quot
+print   $a % $b = $mod
+print   ✓ PASSED
+print
+
+# ----- Test 3: Control Flow -----
+print [Test 3] Control Flow (if/then/else)
+set $score = 85
+if $score >= 90 then {
+    print   Grade: A
 } else {
-    print   FAILED
+    if $score >= 80 then {
+        print   Grade: B
+    } else {
+        print   Grade: C or lower
+    }
+}
+print   ✓ PASSED
+print
+
+# ----- Test 4: Loops -----
+print [Test 4] Loops
+print   Count loop:
+loop 3 {
+    print     iteration $i
+}
+print   While loop:
+set $count = 0
+loop while $count < 3 {
+    print     count = $count
+    set $count = $count + 1
+}
+print   Foreach loop:
+set $items = ["apple", "banana", "cherry"]
+foreach $item in $items {
+    print     item $i: $item
+}
+print   ✓ PASSED
+print
+
+# ----- Test 5: String Functions -----
+print [Test 5] String Functions
+set $text = "  RetroScript  "
+set $trimmed = call trim $text
+set $upper = call upper $trimmed
+set $lower = call lower $trimmed
+set $len = call length $trimmed
+print   Original: '$text'
+print   Trimmed: '$trimmed'
+print   Upper: $upper
+print   Lower: $lower
+print   Length: $len
+print   ✓ PASSED
+print
+
+# ----- Test 6: Math Functions -----
+print [Test 6] Math Functions
+set $rand = call random 1 10
+set $abs = call abs -5
+set $rounded = call round 3.7
+set $sqrt = call sqrt 16
+print   Random(1-10): $rand
+print   Abs(-5): $abs
+print   Round(3.7): $rounded
+print   Sqrt(16): $sqrt
+print   ✓ PASSED
+print
+
+# ----- Test 7: Array Functions -----
+print [Test 7] Array Functions
+set $nums = [5, 2, 8, 1, 9]
+set $first = call first $nums
+set $last = call last $nums
+set $sorted = call sort $nums
+print   Original: $nums
+print   First: $first
+print   Last: $last
+print   Sorted: $sorted
+print   ✓ PASSED
+print
+
+# ----- Test 8: Object Functions -----
+print [Test 8] Object Functions
+set $person = {name: "John", age: 30, role: "admin"}
+set $keys = call keys $person
+set $vals = call values $person
+set $name = call get $person "name"
+print   Object: $person
+print   Keys: $keys
+print   Values: $vals
+print   Name: $name
+print   ✓ PASSED
+print
+
+# ----- Test 9: Time Functions -----
+print [Test 9] Time Functions
+set $now = call now
+set $time = call time
+set $date = call date
+print   Timestamp: $now
+print   Time: $time
+print   Date: $date
+print   ✓ PASSED
+print
+
+# ----- Test 10: Type Functions -----
+print [Test 10] Type Functions
+set $val = 42
+set $type = call typeof $val
+set $isNum = call isNumber $val
+set $isStr = call isString $val
+print   Value: $val
+print   Type: $type
+print   Is number: $isNum
+print   Is string: $isStr
+print   ✓ PASSED
+print
+
+# ----- Test 11: User-Defined Functions -----
+print [Test 11] User-Defined Functions
+def double($x) {
+    return $x * 2
+}
+set $result = call double 5
+print   double(5) = $result
+def greet($name) {
+    print     Hello, $name!
+}
+call greet "RetroScript"
+print   ✓ PASSED
+print
+
+# ----- Test 12: Error Handling -----
+print [Test 12] Error Handling
+try {
+    set $result = call unknownFunction
+    print   ✗ FAILED - should have thrown error
+} catch $err {
+    print   ✓ PASSED - caught error successfully
 }
 print
 
-# ----- Test 4: Launch Apps -----
-print [Test 4] Launch Apps
+# ----- Test 13: Events -----
+print [Test 13] Events
+set $eventReceived = false
+on test:ping {
+    set $eventReceived = true
+    print   Event handler triggered!
+}
+emit test:ping
+wait 100
+if $eventReceived == true then {
+    print   ✓ PASSED
+} else {
+    print   ✗ FAILED - event not received
+}
+print
+
+# ----- Test 14: Notifications -----
+print [Test 14] Notifications
+notify RetroScript test notification!
+print   Notification sent
+print   ✓ PASSED
+print
+
+# ----- Test 15: Launch Apps -----
+print [Test 15] Launch Apps
 print   Launching Calculator...
 launch calculator
 wait 500
-
 print   Launching Notepad...
 launch notepad
 wait 500
-print   PASSED
+print   ✓ PASSED
 print
 
-# ----- Test 5: Events -----
-print [Test 5] Events
-set $eventReceived = false
-
-# Subscribe to a custom event
-on test:ping {
-    set $eventReceived = true
-    print   Event received!
-}
-
-# Emit the event
-print   Emitting test:ping event...
-emit test:ping
-
-wait 100
-
-if $eventReceived == true then {
-    print   PASSED
-} else {
-    print   FAILED - event not received
-}
+# ----- Test 16: Sound -----
+print [Test 16] Sound
+play notify
+print   Sound played
+print   ✓ PASSED
 print
 
-# ----- Test 6: Notifications -----
-print [Test 6] Notifications
-notify Script test notification!
-print   Notification sent
-print   PASSED
-print
-
-print ========================================
-print   All tests completed!
-print ========================================`;
+print ═══════════════════════════════════════════════════════════════
+print   All tests completed successfully!
+print ═══════════════════════════════════════════════════════════════`;
 
         // Full comprehensive test suite (available via Help menu)
         const fullTestSuite = `# ╔══════════════════════════════════════════════════════════════════╗

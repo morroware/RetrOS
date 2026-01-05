@@ -104,7 +104,7 @@ class PluginLoaderClass {
 
             // Emit event
             EventBus.emit('plugin:loaded', {
-                id: plugin.id,
+                pluginId: plugin.id,
                 name: plugin.name,
                 version: plugin.version
             });

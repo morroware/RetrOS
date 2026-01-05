@@ -232,7 +232,11 @@ class AppRegistryClass {
             }
 
             app.launch();
-            EventBus.emit('app:open', { id: appId, name: app.name });
+            EventBus.emit('app:open', {
+                appId: appId,
+                windowId: app.windowId,
+                instance: app.instanceCounter - 1
+            });
             return true;
         } catch (error) {
             console.error(`[AppRegistry] Failed to launch ${appId}:`, error);
