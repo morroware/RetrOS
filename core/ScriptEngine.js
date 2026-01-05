@@ -877,8 +877,8 @@ class ScriptEngineClass {
 
     _parseLoop(parts, line) {
         // loop 5 { statements }
+        // loop $count { statements }
         // loop while condition { statements }
-        const count = parseInt(parts[1]);
 
         // Find the body between { and }
         const braceStart = line.indexOf('{');
@@ -890,14 +890,26 @@ class ScriptEngineClass {
             body = this._parseBody(bodyText);
         }
 
-        if (isNaN(count)) {
-            // While loop
-            const whileIdx = parts.indexOf('while');
+        // Check for explicit "while" keyword first
+        const whileIdx = parts.indexOf('while');
+        if (whileIdx !== -1) {
+            // While loop: loop while condition { statements }
             const condition = parts.slice(whileIdx + 1).join(' ').replace(/\{.*/, '').trim();
             return { type: 'while', condition: this._parseCondition(condition), body };
         }
 
-        return { type: 'loop', count, body };
+        // Parse the count - can be a number or variable
+        const countToken = parts[1];
+        const numericCount = parseInt(countToken);
+
+        if (!isNaN(numericCount)) {
+            // Literal number: loop 5 { ... }
+            return { type: 'loop', count: numericCount, body };
+        }
+
+        // Variable or expression: loop $count { ... }
+        // Parse it as a value to be resolved at runtime
+        return { type: 'loop', count: this._parseValue(countToken), body };
     }
 
     _parseCall(parts) {
@@ -1318,9 +1330,15 @@ class ScriptEngineClass {
             case 'loop':
                 let loopResult = null;
                 this.loopBreakRequested = false;
+                // Resolve count - can be a number or a variable
+                let loopCount = statement.count;
+                if (typeof loopCount === 'object' && loopCount !== null) {
+                    loopCount = await this._resolveValue(loopCount, env);
+                }
+                loopCount = parseInt(loopCount) || 0;
                 // Create loop scope to prevent $i collision with user variables
                 const loopEnv = env.extend();
-                for (let i = 0; i < statement.count && !this.breakRequested && !this.loopBreakRequested; i++) {
+                for (let i = 0; i < loopCount && !this.breakRequested && !this.loopBreakRequested; i++) {
                     this._checkTimeout();
                     loopEnv.set('i', i);
                     this.continueRequested = false;
