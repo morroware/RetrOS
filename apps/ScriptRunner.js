@@ -29,42 +29,90 @@ class ScriptRunner extends AppBase {
     }
 
     onOpen(params) {
-        // Simple test script - no complex features
-        const sampleScript = `# RetroScript Simple Test
+        // Test script with app launching and events
+        const sampleScript = `# RetroScript Test Suite
 # Press F5 or click Run to execute
 
-print Hello, RetroScript!
+print ========================================
+print   RetroScript Test Suite
+print ========================================
 print
 
-# Test 1: Variables
+# ----- Test 1: Variables -----
+print [Test 1] Variables
 set $name = "World"
 set $count = 5
-print Variable test: name = $name, count = $count
+print   name = $name
+print   count = $count
+print   PASSED
 print
 
-# Test 2: Simple Loop
-print Counting to 5:
-loop 5 {
-    print   Loop iteration: $i
+# ----- Test 2: Simple Loop -----
+print [Test 2] Simple Loop
+loop 3 {
+    print   iteration $i
 }
+print   PASSED
 print
 
-# Test 3: Arithmetic
+# ----- Test 3: Arithmetic -----
+print [Test 3] Arithmetic
 set $a = 10
 set $b = 3
 set $sum = $a + $b
-print Arithmetic: $a + $b = $sum
-print
-
-# Test 4: Condition
+print   $a + $b = $sum
 if $sum == 13 then {
-    print Condition passed: sum is 13
+    print   PASSED
 } else {
-    print Condition failed
+    print   FAILED
 }
 print
 
-print Done!`;
+# ----- Test 4: Launch Apps -----
+print [Test 4] Launch Apps
+print   Launching Calculator...
+launch calculator
+wait 500
+
+print   Launching Notepad...
+launch notepad
+wait 500
+print   PASSED
+print
+
+# ----- Test 5: Events -----
+print [Test 5] Events
+set $eventReceived = false
+
+# Subscribe to a custom event
+on test:ping {
+    set $eventReceived = true
+    print   Event received!
+}
+
+# Emit the event
+print   Emitting test:ping event...
+emit test:ping
+
+wait 100
+
+if $eventReceived == true then {
+    print   PASSED
+} else {
+    print   FAILED - event not received
+}
+print
+
+# ----- Test 6: Notifications -----
+print [Test 6] Notifications
+notify Script test notification!
+print   Notification sent
+print   PASSED
+print
+
+print ========================================
+print   All tests completed!
+print ========================================`;
 
         // Full comprehensive test suite (available via Help menu)
         const fullTestSuite = `# ╔══════════════════════════════════════════════════════════════════╗
