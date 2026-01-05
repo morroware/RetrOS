@@ -2315,7 +2315,7 @@ notify RetroScript Test Suite Complete!`;
                 .editor-wrapper {
                     flex: 1;
                     position: relative;
-                    overflow: auto;
+                    overflow: hidden;
                     background: #1e1e1e;
                 }
 
@@ -2324,7 +2324,11 @@ notify RetroScript Test Suite Complete!`;
                 }
 
                 .script-editor {
-                    position: relative;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
                     width: 100%;
                     height: 100%;
                     font-family: 'Consolas', 'Courier New', monospace;
@@ -2337,6 +2341,8 @@ notify RetroScript Test Suite Complete!`;
                     color: #d4d4d4;
                     caret-color: #fff;
                     tab-size: 4;
+                    overflow: auto;
+                    box-sizing: border-box;
                 }
 
                 .script-editor:focus {
