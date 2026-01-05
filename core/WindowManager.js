@@ -445,7 +445,12 @@ class WindowManagerClass {
         document.addEventListener('mousemove', this.boundDragMove);
         document.addEventListener('mouseup', this.boundDragEnd);
 
-        EventBus.emit(Events.DRAG_START, { type: 'window', id });
+        EventBus.emit(Events.DRAG_START, {
+            itemId: id,
+            itemType: 'window',
+            x: e.clientX,
+            y: e.clientY
+        });
     }
 
     /**
@@ -563,7 +568,12 @@ class WindowManagerClass {
             document.body.classList.remove('window-dragging');
 
             this.hideSnapPreview();
-            EventBus.emit(Events.DRAG_END, { type: 'window', id });
+            EventBus.emit(Events.DRAG_END, {
+                itemId: id,
+                x: e.clientX,
+                y: e.clientY,
+                target: this.currentSnapType || 'desktop'
+            });
         }
 
         this.draggedWindow = null;

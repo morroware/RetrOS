@@ -47,11 +47,13 @@ set $number = 42
 set $bool = true
 set $array = [1, 2, 3]
 set $object = {name: "RetroScript", version: 1}
+set $arrLen = call count $array
+set $objKeys = call keys $object
 print   String: $string
 print   Number: $number
 print   Boolean: $bool
-print   Array length: (call count $array)
-print   Object keys: (call keys $object)
+print   Array length: $arrLen
+print   Object keys: $objKeys
 print   ✓ PASSED
 print
 
