@@ -3342,6 +3342,35 @@ export const EventSchema = {
     },
 
     // ==========================================
+    // DVD BOUNCER EVENTS
+    // ==========================================
+    'dvd-bouncer:started': {
+        namespace: 'dvd-bouncer',
+        action: 'started',
+        description: 'DVD bouncer screensaver started',
+        payload: {
+            timestamp: 'number'
+        },
+        example: {
+            timestamp: 1704456000000
+        }
+    },
+
+    'dvd-bouncer:stopped': {
+        namespace: 'dvd-bouncer',
+        action: 'stopped',
+        description: 'DVD bouncer screensaver stopped',
+        payload: {
+            cornerHits: 'number',
+            timestamp: 'number'
+        },
+        example: {
+            cornerHits: 3,
+            timestamp: 1704456300000
+        }
+    },
+
+    // ==========================================
     // PERFORMANCE EVENTS
     // ==========================================
     'perf:fps': {
