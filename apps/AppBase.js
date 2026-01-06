@@ -7,11 +7,13 @@
  * Apps don't need to track windowIds - just use this.getElement(), this.setState(), etc.
  *
  * Apps extend this class and implement:
- *   - onOpen(): Return HTML content
- *   - onClose(): Cleanup (optional)
+ *   - onOpen(params): Return HTML content (required)
+ *   - onMount(): Post-render initialization (optional)
+ *   - onNavigate(params): Handle re-launch when singleton is already open (optional)
  *   - onFocus(): Handle focus (optional)
  *   - onBlur(): Handle blur (optional)
- *   - onMount(): Post-render initialization (optional)
+ *   - onResize(dimensions): Handle window resize (optional)
+ *   - onClose(): Cleanup (optional)
  *
  * Events emitted:
  *   - app:launch - When app starts launching
@@ -114,6 +116,17 @@ class AppBase {
     }
 
     /**
+     * Called when a singleton app is already open and receives new launch parameters.
+     * This allows the app to react to "open with" requests when already running.
+     * For example, My Computer can navigate to a folder, Notepad can open a file, etc.
+     * @param {Object} params - The new launch parameters
+     */
+    onNavigate(params) {
+        // Override in subclass to handle navigation when already open
+        // Default behavior: do nothing (just focus the window)
+    }
+
+    /**
      * Called when app closes - cleanup resources
      */
     onClose() {
@@ -129,8 +142,22 @@ class AppBase {
         // Check singleton - only focus if singleton AND already has open windows
         if (this.singleton && this.openWindows.size > 0) {
             const firstWindowId = this.openWindows.keys().next().value;
+
+            // If there are pending params, call onNavigate to let the app handle them
+            // This allows the app to react to "open with" requests when already running
+            // (e.g., My Computer navigates to a folder, Notepad opens a file)
+            if (this._pendingParams && Object.keys(this._pendingParams).length > 0) {
+                // Set context so onNavigate can use helper methods
+                this._currentWindowId = firstWindowId;
+                try {
+                    this.onNavigate(this._pendingParams);
+                } catch (error) {
+                    console.error(`[${this.id}] Error in onNavigate:`, error);
+                }
+            }
+
             WindowManager.focus(firstWindowId);
-            // Clear pending params since we're not creating a new window
+            // Clear pending params after handling
             this._pendingParams = null;
             return;
         }

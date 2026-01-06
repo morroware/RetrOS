@@ -673,6 +673,19 @@ class MyComputer extends AppBase {
         }
     }
 
+    /**
+     * Called when My Computer is already open and receives new launch parameters.
+     * This handles the case of double-clicking a folder on the desktop when
+     * My Computer is already open - navigate to that folder in the existing window.
+     * @param {Object} params - Launch parameters (initialPath, etc.)
+     */
+    onNavigate(params = {}) {
+        if (params.initialPath && Array.isArray(params.initialPath)) {
+            // Navigate to the requested path in the existing window
+            this.navigateToPath(params.initialPath);
+        }
+    }
+
     getDrives() {
         // Get drives from FileSystemManager
         const drives = [];
