@@ -16,7 +16,7 @@ set challengeText = concat($challengeText, "Destroy asteroids and UFOs to reach 
 set challengeText = concat($challengeText, "Good luck! Your 10 second preparation period begins now...\n")
 
 print "Creating challenge document on desktop..."
-emit filesystem:write path="C:/Users/User/Desktop/CHALLENGE.txt" content=$challengeText
+write $challengeText to "C:/Users/User/Desktop/CHALLENGE.txt"
 
 print "Challenge document created: Desktop/CHALLENGE.txt"
 print "Waiting 10 seconds before beginning..."
@@ -69,7 +69,7 @@ on minesweeper:win {
 # Listen for Asteroids score updates
 on game:score {
     # Check if this is from Asteroids
-    if $event.game == "asteroids" {
+    if $event.appId == "asteroids" {
         set currentScore = $event.score
 
         # Log progress
@@ -100,7 +100,7 @@ on game:score {
             set victoryText = concat($victoryText, $currentScore)
             set victoryText = concat($victoryText, " points\n")
 
-            emit filesystem:write path="C:/Users/User/Desktop/CHALLENGE_COMPLETE.txt" content=$victoryText
+            write $victoryText to "C:/Users/User/Desktop/CHALLENGE_COMPLETE.txt"
 
             print "Victory document created: Desktop/CHALLENGE_COMPLETE.txt"
             print "Script complete!"
