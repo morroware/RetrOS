@@ -42,8 +42,23 @@ class Environment {
 
     /**
      * Get variable value from current or parent scope
+     * Supports dot notation for nested properties (e.g., 'event.appId')
      */
     get(name) {
+        // Handle dot notation for nested property access
+        if (name.includes('.')) {
+            const parts = name.split('.');
+            const rootName = parts[0];
+            let value = this.vars.has(rootName) ? this.vars.get(rootName) :
+                        (this.parent ? this.parent.get(rootName) : undefined);
+
+            // Traverse the property path
+            for (let i = 1; i < parts.length && value != null; i++) {
+                value = value[parts[i]];
+            }
+            return value;
+        }
+
         if (this.vars.has(name)) {
             return this.vars.get(name);
         }
