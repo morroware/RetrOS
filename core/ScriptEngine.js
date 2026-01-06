@@ -2015,6 +2015,12 @@ class ScriptEngineClass {
                 const left = await this._resolveValue(condition.left, env);
                 const right = await this._resolveValue(condition.right, env);
 
+                // Debug: log comparison details for string comparisons
+                if (typeof left === 'string' || typeof right === 'string') {
+                    console.log('[DEBUG] Comparison:', JSON.stringify(left), condition.operator, JSON.stringify(right),
+                        '| types:', typeof left, typeof right, '| result:', left == right);
+                }
+
                 switch (condition.operator) {
                     case '==': return left == right;
                     case '!=': return left != right;
