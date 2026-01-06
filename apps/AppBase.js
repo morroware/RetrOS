@@ -562,6 +562,37 @@ class AppBase {
     }
 
     /**
+     * Show a confirm dialog
+     * @param {string} message - Confirm message
+     * @param {string} title - Optional title
+     * @returns {Promise<boolean>} Resolves to true/false
+     */
+    confirm(message, title = 'Confirm') {
+        return new Promise((resolve) => {
+            // Import dynamically to avoid circular dependency
+            import('../features/SystemDialogs.js').then(module => {
+                module.default.confirm(message, title).then(resolve);
+            });
+        });
+    }
+
+    /**
+     * Show a prompt dialog
+     * @param {string} message - Prompt message
+     * @param {string} defaultValue - Default value
+     * @param {string} title - Optional title
+     * @returns {Promise<string|null>} Resolves to input value or null
+     */
+    prompt(message, defaultValue = '', title = 'Input') {
+        return new Promise((resolve) => {
+            // Import dynamically to avoid circular dependency
+            import('../features/SystemDialogs.js').then(module => {
+                module.default.prompt(message, defaultValue, title).then(resolve);
+            });
+        });
+    }
+
+    /**
      * Unlock an achievement
      * @param {string} id - Achievement ID
      */

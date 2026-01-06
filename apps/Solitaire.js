@@ -283,7 +283,7 @@ class Solitaire extends AppBase {
                 stats: { moves: this.moves }
             });
 
-            alert("You Won!");
+            this.alert("You Won!");
         }
     }
 

@@ -460,8 +460,8 @@ class ControlPanel extends AppBase {
         // Reset button
         const resetButton = this.getElement('#reset-button');
         if (resetButton) {
-            this.addHandler(resetButton, 'click', () => {
-                if (confirm('This will delete all your data and reset IlluminatOS! to defaults. Continue?')) {
+            this.addHandler(resetButton, 'click', async () => {
+                if (await this.confirm('This will delete all your data and reset IlluminatOS! to defaults. Continue?', 'Reset System')) {
                     StateManager.reset();
                 }
             });
@@ -485,7 +485,7 @@ class ControlPanel extends AppBase {
 
                 // Show success message with snapshot info
                 const sizeKB = (json.length / 1024).toFixed(2);
-                alert(`Complete system snapshot exported!\n\nIncludes:\n• Desktop icons & positions\n• File system\n• Display settings\n• App data (calendar, games, etc.)\n• All preferences\n\nSize: ${sizeKB} KB`);
+                this.alert(`Complete system snapshot exported!\n\nIncludes:\n• Desktop icons & positions\n• File system\n• Display settings\n• App data (calendar, games, etc.)\n• All preferences\n\nSize: ${sizeKB} KB`);
             });
         }
 
@@ -516,13 +516,13 @@ class ControlPanel extends AppBase {
                                 if (result.warnings && result.warnings.length > 0) {
                                     message += '\n\nWarnings:\n• ' + result.warnings.join('\n• ');
                                 }
-                                alert(message + '\n\nReloading...');
+                                this.alert(message + '\n\nReloading...');
                                 window.location.reload();
                             } else {
-                                alert('Failed to import snapshot: ' + result.error);
+                                this.alert('Failed to import snapshot: ' + result.error);
                             }
                         } catch (err) {
-                            alert('Failed to import snapshot: ' + err.message);
+                            this.alert('Failed to import snapshot: ' + err.message);
                         }
                     };
                     reader.readAsText(file);

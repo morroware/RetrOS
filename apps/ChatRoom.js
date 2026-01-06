@@ -399,7 +399,7 @@ class ChatRoom extends AppBase {
         const name = input?.value.trim();
 
         if (!name) {
-            alert('Please enter a screen name!');
+            this.alert('Please enter a screen name!');
             return;
         }
 

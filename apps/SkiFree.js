@@ -298,8 +298,8 @@ class SkiFree extends AppBase {
         return window && window.classList.contains('active');
     }
 
-    showGameMenu() {
-        const choice = confirm('Start a new game?');
+    async showGameMenu() {
+        const choice = await this.confirm('Start a new game?', 'New Game');
         if (choice) {
             this.startGame();
         }

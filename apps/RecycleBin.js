@@ -683,7 +683,7 @@ class RecycleBin extends AppBase {
             console.log(`[RecycleBin] Restored file to: ${originalPath.join('\\')}`);
         } catch (err) {
             console.error('[RecycleBin] Failed to restore file:', err);
-            alert(`Failed to restore "${item.label}": ${err.message}`);
+            this.alert(`Failed to restore "${item.label}": ${err.message}`);
         }
     }
 
@@ -694,13 +694,13 @@ class RecycleBin extends AppBase {
         }
     }
 
-    deleteItem(index) {
+    async deleteItem(index) {
         const recycledItems = StateManager.getState('recycledItems');
         if (index < 0 || index >= recycledItems.length) return;
 
         const item = recycledItems[index];
 
-        if (confirm(`Permanently delete "${item.label}"?\n\nThis cannot be undone.`)) {
+        if (await this.confirm(`Permanently delete "${item.label}"?\n\nThis cannot be undone.`, 'Confirm Delete')) {
             // Remove from recycle bin
             const newRecycledItems = recycledItems.filter((_, i) => i !== index);
             StateManager.setState('recycledItems', newRecycledItems, true);
@@ -712,11 +712,11 @@ class RecycleBin extends AppBase {
         }
     }
 
-    emptyRecycleBin() {
+    async emptyRecycleBin() {
         const recycledItems = StateManager.getState('recycledItems');
         if (recycledItems.length === 0) return;
 
-        if (confirm(`Empty the Recycle Bin?\n\nThis will permanently delete all ${recycledItems.length} item(s).\n\nThis cannot be undone.`)) {
+        if (await this.confirm(`Empty the Recycle Bin?\n\nThis will permanently delete all ${recycledItems.length} item(s).\n\nThis cannot be undone.`, 'Empty Recycle Bin')) {
             // Clear recycle bin
             StateManager.setState('recycledItems', [], true);
 
