@@ -638,10 +638,10 @@ class MediaPlayer extends AppBase {
     }
 
     // Playlist Management
-    showAddUrlDialog() {
-        const url = prompt('Enter audio URL (MP3, WAV, OGG):');
+    async showAddUrlDialog() {
+        const url = await this.prompt('Enter audio URL (MP3, WAV, OGG):', '', 'Add URL');
         if (url) {
-            const name = prompt('Enter track name:', url.split('/').pop().replace(/\.[^/.]+$/, ''));
+            const name = await this.prompt('Enter track name:', url.split('/').pop().replace(/\.[^/.]+$/, ''), 'Track Name');
             if (name) {
                 this.addTrack({ name, src: url, duration: null });
             }
@@ -703,8 +703,8 @@ class MediaPlayer extends AppBase {
         this.setStatus('Track removed');
     }
 
-    clearPlaylist() {
-        if (confirm('Clear entire playlist?')) {
+    async clearPlaylist() {
+        if (await this.confirm('Clear entire playlist?', 'Clear Playlist')) {
             this.stop();
             this.setInstanceState('playlist', []);
             this.setInstanceState('currentTrack', 0);

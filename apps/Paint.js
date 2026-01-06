@@ -538,7 +538,7 @@ class Paint extends AppBase {
                 this.ctx.drawImage(img, 0, 0);
             };
             img.onerror = () => {
-                alert('Failed to load image - the file may be corrupted');
+                this.alert('Failed to load image - the file may be corrupted');
                 console.error('Image load error for:', filePath);
             };
             img.src = content;
@@ -547,7 +547,7 @@ class Paint extends AppBase {
             this.updateWindowTitle();
         } catch (e) {
             console.error('Error loading image:', e);
-            alert(`Error loading image: ${e.message}`);
+            this.alert(`Error loading image: ${e.message}`);
         }
     }
 
@@ -562,8 +562,8 @@ class Paint extends AppBase {
         }
     }
 
-    openImage() {
-        const path = prompt('Enter image file path (e.g., C:/Users/User/Pictures/image.png):');
+    async openImage() {
+        const path = await this.prompt('Enter image file path (e.g., C:/Users/User/Pictures/image.png):', '', 'Open Image');
         if (!path) return;
 
         try {
@@ -576,7 +576,7 @@ class Paint extends AppBase {
             this.updateWindowTitle();
             this.alert('📂 Image opened!');
         } catch (e) {
-            alert(`Error opening image: ${e.message}`);
+            this.alert(`Error opening image: ${e.message}`);
         }
     }
 
@@ -591,7 +591,7 @@ class Paint extends AppBase {
                 FileSystemManager.writeFile(currentFile, dataURL, 'png');
                 this.alert('💾 Image saved!');
             } catch (e) {
-                alert(`Error saving image: ${e.message}`);
+                this.alert(`Error saving image: ${e.message}`);
             }
         } else {
             // No file selected, prompt for Save As
@@ -599,16 +599,17 @@ class Paint extends AppBase {
         }
     }
 
-    saveImageAs() {
+    async saveImageAs() {
         // Generate a default filename with full timestamp (date + time) for unique names
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         const defaultName = `drawing_${timestamp}.png`;
         const defaultPath = `C:/Users/User/Desktop/${defaultName}`;
 
-        const path = prompt(
+        const path = await this.prompt(
             'Save image to:\n\nTip: Save to Desktop for easy access!\nOr use Pictures folder: C:/Users/User/Pictures/',
-            defaultPath
+            defaultPath,
+            'Save Image As'
         );
         if (!path) return;
 
@@ -631,7 +632,7 @@ class Paint extends AppBase {
             this.updateWindowTitle();
             this.alert('💾 Image saved to ' + parsedPath.join('/'));
         } catch (e) {
-            alert(`Error saving image: ${e.message}`);
+            this.alert(`Error saving image: ${e.message}`);
         }
     }
 }

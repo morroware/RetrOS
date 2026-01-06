@@ -434,8 +434,8 @@ class AdminPanel extends AppBase {
         // Reset icons button
         const resetBtn = this.getElement('#reset-icons-btn');
         if (resetBtn) {
-            this.addHandler(resetBtn, 'click', () => {
-                if (confirm('Reset all desktop icons to defaults?')) {
+            this.addHandler(resetBtn, 'click', async () => {
+                if (await this.confirm('Reset all desktop icons to defaults?', 'Reset Icons')) {
                     StorageManager.remove('desktopIcons');
                     window.location.reload();
                 }
@@ -454,10 +454,10 @@ class AdminPanel extends AppBase {
         // Delete buttons
         const deleteBtns = this.getElements('.delete-icon-btn');
         deleteBtns.forEach(btn => {
-            this.addHandler(btn, 'click', (e) => {
+            this.addHandler(btn, 'click', async (e) => {
                 const index = parseInt(e.currentTarget.dataset.index);
                 const icons = StateManager.getState('icons');
-                if (confirm(`Delete icon "${icons[index].label}"?`)) {
+                if (await this.confirm(`Delete icon "${icons[index].label}"?`, 'Delete Icon')) {
                     icons.splice(index, 1);
                     StateManager.setState('icons', icons, true);
                     EventBus.emit('desktop:refresh');
@@ -557,7 +557,7 @@ class AdminPanel extends AppBase {
                 const password = this.getElement('#new-password').value;
                 if (password) {
                     StorageManager.set('adminPassword', password);
-                    alert('Password set successfully!');
+                    this.alert('Password set successfully!');
                     this.getElement('#new-password').value = '';
                 }
             });
@@ -565,11 +565,11 @@ class AdminPanel extends AppBase {
 
         const clearPasswordBtn = this.getElement('#clear-password-btn');
         if (clearPasswordBtn) {
-            this.addHandler(clearPasswordBtn, 'click', () => {
-                if (confirm('Remove password protection?')) {
+            this.addHandler(clearPasswordBtn, 'click', async () => {
+                if (await this.confirm('Remove password protection?', 'Remove Password')) {
                     StorageManager.remove('adminPassword');
                     StateManager.setState('user.isAdmin', false);
-                    alert('Password protection removed');
+                    this.alert('Password protection removed');
                 }
             });
         }
@@ -585,15 +585,15 @@ class AdminPanel extends AppBase {
                     'retro-lover', 'achievement-hunter'
                 ];
                 StateManager.setState('achievements', allAchievements, true);
-                alert('All achievements unlocked!');
+                this.alert('All achievements unlocked!');
                 this.setContent(this.renderAdminInterface());
             });
         }
 
         const clearBtn = this.getElement('#clear-achievements-btn');
         if (clearBtn) {
-            this.addHandler(clearBtn, 'click', () => {
-                if (confirm('Clear all achievements?')) {
+            this.addHandler(clearBtn, 'click', async () => {
+                if (await this.confirm('Clear all achievements?', 'Clear Achievements')) {
                     StateManager.setState('achievements', [], true);
                     this.setContent(this.renderAdminInterface());
                 }
@@ -606,7 +606,7 @@ class AdminPanel extends AppBase {
         if (consoleBtn) {
             this.addHandler(consoleBtn, 'click', () => {
                 console.log('IlluminatOS! State:', StateManager.exportState());
-                alert('State logged to console. Press F12 to view.');
+                this.alert('State logged to console. Press F12 to view.');
             });
         }
 
@@ -619,9 +619,9 @@ class AdminPanel extends AppBase {
 
         const clearAllBtn = this.getElement('#clear-all-btn');
         if (clearAllBtn) {
-            this.addHandler(clearAllBtn, 'click', () => {
-                if (confirm('WARNING: This will erase ALL data and reset IlluminatOS! to factory defaults. Continue?')) {
-                    if (confirm('Are you absolutely sure? This cannot be undone.')) {
+            this.addHandler(clearAllBtn, 'click', async () => {
+                if (await this.confirm('WARNING: This will erase ALL data and reset IlluminatOS! to factory defaults. Continue?', 'Factory Reset')) {
+                    if (await this.confirm('Are you absolutely sure? This cannot be undone.', 'Confirm Factory Reset')) {
                         StateManager.reset();
                     }
                 }
