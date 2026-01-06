@@ -28,9 +28,9 @@ class SemanticEventBusClass {
         // Middleware functions
         this.middleware = [];
 
-        // Event log for debugging
+        // Event log for debugging (circular buffer to prevent memory leaks)
         this.eventLog = [];
-        this.maxLogSize = 100;
+        this.maxLogSize = 1000; // Increased from 100 for better debugging while preventing memory leaks
 
         // Configuration
         this.config = {

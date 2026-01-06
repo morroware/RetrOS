@@ -26,6 +26,7 @@ class Terminal extends AppBase {
         this.godMode = false;
         this.activeProcess = null;
         this.currentPath = [...PATHS.USER_HOME];
+        this.lastOutput = '';
 
         // DOS-like environment variables
         this.envVars = {
@@ -39,6 +40,126 @@ class Terminal extends AppBase {
             'OS': 'IlluminatOS!',
             'WINDIR': 'C:\\WINDOWS'
         };
+
+        // Register semantic event commands for scriptability
+        this.registerCommands();
+        this.registerQueries();
+    }
+
+    /**
+     * Register commands for script control
+     */
+    registerCommands() {
+        // Execute a terminal command
+        this.registerCommand('execute', (cmd) => {
+            if (!cmd || typeof cmd !== 'string') {
+                return { success: false, error: 'Command must be a string' };
+            }
+            try {
+                this.executeCommand(cmd);
+                EventBus.emit('terminal:command:executed', {
+                    appId: this.id,
+                    windowId: this.windowId,
+                    command: cmd,
+                    timestamp: Date.now()
+                });
+                return { success: true, command: cmd, output: this.lastOutput };
+            } catch (error) {
+                EventBus.emit('terminal:command:error', {
+                    appId: this.id,
+                    command: cmd,
+                    error: error.message
+                });
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Clear the terminal screen
+        this.registerCommand('clear', () => {
+            this.cmdClear();
+            EventBus.emit('terminal:cleared', {
+                appId: this.id,
+                windowId: this.windowId,
+                timestamp: Date.now()
+            });
+            return { success: true };
+        });
+
+        // Print text to terminal
+        this.registerCommand('print', (text, color = null) => {
+            if (text !== undefined && text !== null) {
+                this.print(String(text), color);
+                return { success: true, text: String(text) };
+            }
+            return { success: false, error: 'No text provided' };
+        });
+
+        // Change directory
+        this.registerCommand('cd', (path) => {
+            if (!path) {
+                return { success: false, error: 'Path required' };
+            }
+            try {
+                this.cmdCd([path]);
+                EventBus.emit('terminal:directory:changed', {
+                    appId: this.id,
+                    path: this.currentPath,
+                    timestamp: Date.now()
+                });
+                return { success: true, path: this.currentPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // List directory contents
+        this.registerCommand('dir', (path = null) => {
+            try {
+                const output = this.cmdDir(path ? [path] : []);
+                return { success: true, output };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+    }
+
+    /**
+     * Register queries for script inspection
+     */
+    registerQueries() {
+        // Get current directory path
+        this.registerQuery('getCurrentPath', () => {
+            return {
+                path: this.currentPath,
+                pathString: this.currentPath.join('\\')
+            };
+        });
+
+        // Get command history
+        this.registerQuery('getHistory', () => {
+            return { history: [...this.commandHistory] };
+        });
+
+        // Get last output
+        this.registerQuery('getLastOutput', () => {
+            return { output: this.lastOutput };
+        });
+
+        // Get environment variables
+        this.registerQuery('getEnvVars', () => {
+            return { envVars: { ...this.envVars } };
+        });
+
+        // Get terminal state
+        this.registerQuery('getState', () => {
+            return {
+                currentPath: this.currentPath,
+                pathString: this.currentPath.join('\\'),
+                godMode: this.godMode,
+                hasActiveProcess: this.activeProcess !== null,
+                historyCount: this.commandHistory.length
+            };
+        });
     }
 
     onOpen() {
@@ -237,6 +358,18 @@ class Terminal extends AppBase {
         div.innerHTML = this.escapeHtml(text).replace(/\n/g, '<br>');
         output.appendChild(div);
         this.scrollToBottom();
+
+        // Capture output for script access
+        this.lastOutput = String(text);
+
+        // Emit semantic event for output
+        EventBus.emit('terminal:output', {
+            appId: this.id,
+            windowId: this.windowId,
+            text: String(text),
+            color,
+            timestamp: Date.now()
+        });
     }
 
     printHtml(html) {

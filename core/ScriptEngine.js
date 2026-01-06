@@ -105,6 +105,17 @@ class Environment {
 
 class ScriptEngineClass {
     constructor() {
+        // Safety limits to prevent resource exhaustion
+        this.LIMITS = {
+            MAX_RECURSION_DEPTH: 1000,
+            MAX_LOOP_ITERATIONS: 100000,
+            MAX_STRING_LENGTH: 1000000, // 1MB
+            MAX_ARRAY_LENGTH: 100000,
+            MAX_OBJECT_KEYS: 10000,
+            MAX_EVENT_HANDLERS: 1000,
+            DEFAULT_EXECUTION_TIMEOUT: 30000 // 30 seconds
+        };
+
         this.globalEnv = new Environment(); // Use Environment instead of Map
         this.functions = new Map();
         this.userFunctions = new Map(); // User-defined functions
@@ -116,7 +127,7 @@ class ScriptEngineClass {
         this.loopBreakRequested = false;
         this.continueRequested = false; // For continue statement
         this.lastResult = null;
-        this.executionTimeout = 30000; // 30 second default timeout
+        this.executionTimeout = this.LIMITS.DEFAULT_EXECUTION_TIMEOUT;
         this.executionStartTime = null;
         this.callStack = []; // Track call stack for better errors
 
@@ -179,6 +190,11 @@ class ScriptEngineClass {
      * @returns {Promise<object>} Execution result
      */
     async run(scriptText, context = {}) {
+        // Input validation
+        if (!scriptText || typeof scriptText !== 'string') {
+            return { success: false, error: 'Invalid script: script must be a non-empty string' };
+        }
+
         const scriptId = `script_${Date.now()}`;
         this.running = true;
         this.breakRequested = false;
@@ -187,14 +203,36 @@ class ScriptEngineClass {
         this.callStack = [];
 
         // Merge context variables into global environment
-        for (const [key, value] of Object.entries(context)) {
-            this.globalEnv.set(key, value);
+        try {
+            for (const [key, value] of Object.entries(context)) {
+                this.globalEnv.set(key, value);
+            }
+        } catch (error) {
+            return { success: false, error: `Invalid context: ${error.message}` };
         }
 
         EventBus.emit('script:execute', { scriptId, source: 'inline' });
 
         try {
-            const statements = this._parse(scriptText);
+            // Parse script with error recovery
+            let statements;
+            try {
+                statements = this._parse(scriptText);
+            } catch (parseError) {
+                // Add helpful context to parse errors
+                const errorMsg = `Syntax error: ${parseError.message}`;
+                const errorInfo = {
+                    scriptId,
+                    error: errorMsg,
+                    line: parseError.line || 0,
+                    stack: [],
+                    type: 'parse'
+                };
+                EventBus.emit('script:error', errorInfo);
+                return { success: false, error: errorMsg, line: parseError.line || 0, type: 'parse' };
+            }
+
+            // Execute statements
             const result = await this._execute(statements, this.globalEnv);
 
             EventBus.emit('script:complete', { scriptId, result });
@@ -206,10 +244,17 @@ class ScriptEngineClass {
                 scriptId,
                 error: error.message,
                 line: error.line || 0,
-                stack: this.callStack.slice()
+                stack: this.callStack.slice(),
+                type: 'runtime'
             };
             EventBus.emit('script:error', errorInfo);
-            return { success: false, error: error.message, line: error.line, stack: this.callStack.slice() };
+            return {
+                success: false,
+                error: error.message,
+                line: error.line,
+                stack: this.callStack.slice(),
+                type: 'runtime'
+            };
         } finally {
             this.running = false;
             this.executionStartTime = null;
@@ -1377,6 +1422,10 @@ class ScriptEngineClass {
                 return { event: statement.eventName, payload };
 
             case 'on':
+                // Prevent event handler memory leaks
+                if (this.eventHandlers.length >= this.LIMITS.MAX_EVENT_HANDLERS) {
+                    throw new Error(`Maximum event handlers (${this.LIMITS.MAX_EVENT_HANDLERS}) exceeded. Call cleanup() to remove old handlers.`);
+                }
                 const unsubscribe = EventBus.on(statement.eventName, async (eventPayload) => {
                     env.set('event', eventPayload);
                     await this._execute(statement.body, env);
@@ -1403,10 +1452,9 @@ class ScriptEngineClass {
                 }
                 loopCount = parseInt(loopCount) || 0;
                 // Apply max iterations limit for safety
-                const loopMaxIterations = 100000;
-                if (loopCount > loopMaxIterations) {
-                    console.warn(`[ScriptEngine] Loop count ${loopCount} exceeds maximum (${loopMaxIterations}), truncating`);
-                    loopCount = loopMaxIterations;
+                if (loopCount > this.LIMITS.MAX_LOOP_ITERATIONS) {
+                    console.warn(`[ScriptEngine] Loop count ${loopCount} exceeds maximum (${this.LIMITS.MAX_LOOP_ITERATIONS}), truncating`);
+                    loopCount = this.LIMITS.MAX_LOOP_ITERATIONS;
                 }
                 // Create loop scope to prevent $i collision with user variables
                 const loopEnv = env.extend();
@@ -1429,15 +1477,14 @@ class ScriptEngineClass {
                 let whileResult = null;
                 this.loopBreakRequested = false;
                 let whileIterations = 0;
-                const maxIterations = 100000; // Prevent infinite loops
                 // Create loop scope for while loops too
                 const whileEnv = env.extend();
 
                 while (await this._evaluateCondition(statement.condition, whileEnv) && !this.breakRequested && !this.loopBreakRequested) {
                     this._checkTimeout();
                     whileIterations++;
-                    if (whileIterations > maxIterations) {
-                        throw new Error(`While loop exceeded maximum iterations (${maxIterations})`);
+                    if (whileIterations > this.LIMITS.MAX_LOOP_ITERATIONS) {
+                        throw new Error(`While loop exceeded maximum iterations (${this.LIMITS.MAX_LOOP_ITERATIONS})`);
                     }
 
                     this.continueRequested = false;
@@ -1585,10 +1632,9 @@ class ScriptEngineClass {
                 const arrayValue = await this._resolveValue(statement.array, env);
                 // Create foreach scope to prevent variable collision
                 const foreachEnv = env.extend();
-                const foreachMaxIterations = 100000; // Prevent runaway loops
 
                 if (Array.isArray(arrayValue)) {
-                    const iterationLimit = Math.min(arrayValue.length, foreachMaxIterations);
+                    const iterationLimit = Math.min(arrayValue.length, this.LIMITS.MAX_LOOP_ITERATIONS);
                     for (let idx = 0; idx < iterationLimit && !this.breakRequested && !this.loopBreakRequested; idx++) {
                         this._checkTimeout();
                         foreachEnv.set(statement.varName, arrayValue[idx]);
@@ -1601,8 +1647,8 @@ class ScriptEngineClass {
                             foreachResult = await this._executeStatement(stmt, foreachEnv);
                         }
                     }
-                    if (arrayValue.length > foreachMaxIterations) {
-                        console.warn(`[ScriptEngine] Foreach loop truncated at ${foreachMaxIterations} iterations`);
+                    if (arrayValue.length > this.LIMITS.MAX_LOOP_ITERATIONS) {
+                        console.warn(`[ScriptEngine] Foreach loop truncated at ${this.LIMITS.MAX_LOOP_ITERATIONS} iterations`);
                     }
                 }
                 this.loopBreakRequested = false;
@@ -1655,9 +1701,8 @@ class ScriptEngineClass {
         }
 
         // Track call stack with recursion depth limit
-        const maxRecursionDepth = 1000;
-        if (this.callStack.length >= maxRecursionDepth) {
-            throw new Error(`Maximum recursion depth exceeded (${maxRecursionDepth}) - possible infinite recursion in function: ${funcName}`);
+        if (this.callStack.length >= this.LIMITS.MAX_RECURSION_DEPTH) {
+            throw new Error(`Maximum recursion depth exceeded (${this.LIMITS.MAX_RECURSION_DEPTH}) - possible infinite recursion in function: ${funcName}`);
         }
         this.callStack.push(funcName);
 
@@ -2006,19 +2051,17 @@ class ScriptEngineClass {
         this.defineFunction('flatten', (arr, depth = 1) => Array.isArray(arr) ? arr.flat(depth) : arr);
         this.defineFunction('range', (start, end, step = 1) => {
             const result = [];
-            const maxRangeSize = 100000; // Prevent memory exhaustion
             // Validate step to prevent infinite loops
             if (step === 0 || !Number.isFinite(step)) return result;
             if (step > 0) {
-                for (let i = start; i < end && result.length < maxRangeSize; i += step) result.push(i);
+                for (let i = start; i < end && result.length < this.LIMITS.MAX_ARRAY_LENGTH; i += step) result.push(i);
             } else if (step < 0) {
-                for (let i = start; i > end && result.length < maxRangeSize; i += step) result.push(i);
+                for (let i = start; i > end && result.length < this.LIMITS.MAX_ARRAY_LENGTH; i += step) result.push(i);
             }
             return result;
         });
         this.defineFunction('fill', (length, value) => {
-            const maxLength = 100000; // Prevent memory exhaustion
-            const safeLength = Math.min(Math.max(0, Math.floor(length)), maxLength);
+            const safeLength = Math.min(Math.max(0, Math.floor(length)), this.LIMITS.MAX_ARRAY_LENGTH);
             return Array(safeLength).fill(value);
         });
         this.defineFunction('at', (arr, idx) => {
@@ -2240,19 +2283,43 @@ class ScriptEngineClass {
     }
 
     /**
-     * Cleanup event handlers
+     * Cleanup event handlers and user-defined functions
+     * Call this after script execution to prevent memory leaks
      */
     cleanup() {
+        // Unsubscribe all event handlers
         for (const unsubscribe of this.eventHandlers) {
-            unsubscribe();
+            if (typeof unsubscribe === 'function') {
+                try {
+                    unsubscribe();
+                } catch (e) {
+                    console.warn('[ScriptEngine] Error unsubscribing handler:', e);
+                }
+            }
         }
         this.eventHandlers = [];
-        this.variables.clear();
+
+        // Clear user-defined functions from both maps
+        for (const funcName of this.userFunctions.keys()) {
+            this.functions.delete(funcName);
+        }
         this.userFunctions.clear();
+
+        // Reset global environment
+        this.globalEnv = new Environment();
+        this.globalEnv.set('TRUE', true);
+        this.globalEnv.set('FALSE', false);
+        this.globalEnv.set('NULL', null);
+
+        // Reset execution state
         this.callStack = [];
         this.breakRequested = false;
         this.loopBreakRequested = false;
         this.continueRequested = false;
+        this.running = false;
+        this.executionStartTime = null;
+
+        // Re-register built-in functions (they were cleared with the global env)
         this._registerBuiltins();
     }
 

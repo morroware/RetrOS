@@ -30,18 +30,19 @@ export const USER_NAME = 'User';
 
 /**
  * Common file system paths
+ * Frozen to prevent accidental modifications
  */
-export const PATHS = {
-    USER_HOME: ['C:', 'Users', 'User'],
-    DESKTOP: ['C:', 'Users', 'User', 'Desktop'],
-    DOCUMENTS: ['C:', 'Users', 'User', 'Documents'],
-    PICTURES: ['C:', 'Users', 'User', 'Pictures'],
-    MUSIC: ['C:', 'Users', 'User', 'Music'],
-    PROGRAM_FILES: ['C:', 'Program Files'],
-    WINDOWS: ['C:', 'Windows'],
-    SYSTEM32: ['C:', 'Windows', 'System32'],
-    MEDIA: ['C:', 'Windows', 'Media']
-};
+export const PATHS = Object.freeze({
+    USER_HOME: Object.freeze(['C:', 'Users', 'User']),
+    DESKTOP: Object.freeze(['C:', 'Users', 'User', 'Desktop']),
+    DOCUMENTS: Object.freeze(['C:', 'Users', 'User', 'Documents']),
+    PICTURES: Object.freeze(['C:', 'Users', 'User', 'Pictures']),
+    MUSIC: Object.freeze(['C:', 'Users', 'User', 'Music']),
+    PROGRAM_FILES: Object.freeze(['C:', 'Program Files']),
+    WINDOWS: Object.freeze(['C:', 'Windows']),
+    SYSTEM32: Object.freeze(['C:', 'Windows', 'System32']),
+    MEDIA: Object.freeze(['C:', 'Windows', 'Media'])
+});
 
 /**
  * Get a path array - helper function
@@ -56,7 +57,7 @@ export function getPath(pathName) {
 // Window Management
 // ============================================
 
-export const WINDOW = {
+export const WINDOW = Object.freeze({
     MIN_WIDTH: 300,
     MIN_HEIGHT: 200,
     BASE_Z_INDEX: 1000,
@@ -64,13 +65,13 @@ export const WINDOW = {
     MAX_CASCADE: 10,
     ANIMATION_DURATION: 150,  // ms
     CLOSE_ANIMATION: 200      // ms
-};
+});
 
 // ============================================
 // Desktop Configuration
 // ============================================
 
-export const DESKTOP = {
+export const DESKTOP = Object.freeze({
     ICON_WIDTH: 100,
     ICON_HEIGHT: 100,
     GRID_SIZE: 20,
@@ -78,13 +79,13 @@ export const DESKTOP = {
     FILE_ICONS_START_X: 420,
     FILE_ICONS_START_Y: 20,
     FILE_ICON_SPACING: 90
-};
+});
 
 // ============================================
 // Timing Constants
 // ============================================
 
-export const TIMING = {
+export const TIMING = Object.freeze({
     // UI Debounce/Delays
     CLICK_DELAY: 100,
     MOUNT_DELAY: 50,
@@ -100,24 +101,24 @@ export const TIMING = {
     // Feedback
     TOAST_DURATION: 3000,
     FEEDBACK_DURATION: 2000
-};
+});
 
 // ============================================
 // Audio Configuration
 // ============================================
 
-export const AUDIO = {
+export const AUDIO = Object.freeze({
     DEFAULT_VOLUME: 0.5,
     EFFECT_VOLUME: 0.7,
     MUSIC_VOLUME: 0.5,
     FADE_DURATION: 300
-};
+});
 
 // ============================================
 // App Categories
 // ============================================
 
-export const CATEGORIES = {
+export const CATEGORIES = Object.freeze({
     ACCESSORIES: 'accessories',
     GAMES: 'games',
     MULTIMEDIA: 'multimedia',
@@ -125,7 +126,7 @@ export const CATEGORIES = {
     SYSTEM_TOOLS: 'systemtools',
     SETTINGS: 'settings',
     SYSTEM: 'system'
-};
+});
 
 /**
  * Category display names and icons for Start Menu
@@ -133,22 +134,23 @@ export const CATEGORIES = {
  *   - name: Display name
  *   - icon: Emoji icon (for backwards compatibility)
  *   - faIcon: FontAwesome icon class
+ * Frozen to prevent accidental modifications
  */
-export const CATEGORY_INFO = {
-    accessories: { name: 'Accessories', icon: '📝', faIcon: 'CATEGORY_ACCESSORIES' },
-    games: { name: 'Games', icon: '🎮', faIcon: 'CATEGORY_GAMES' },
-    multimedia: { name: 'Multimedia', icon: '🎵', faIcon: 'CATEGORY_MULTIMEDIA' },
-    internet: { name: 'Internet', icon: '🌐', faIcon: 'CATEGORY_INTERNET' },
-    systemtools: { name: 'System Tools', icon: '🔧', faIcon: 'CATEGORY_SYSTEM_TOOLS' },
-    settings: { name: 'Settings', icon: '⚙️', faIcon: 'CATEGORY_SETTINGS' },
-    system: { name: 'System', icon: '💻', faIcon: 'CATEGORY_SYSTEM' }
-};
+export const CATEGORY_INFO = Object.freeze({
+    accessories: Object.freeze({ name: 'Accessories', icon: '📝', faIcon: 'CATEGORY_ACCESSORIES' }),
+    games: Object.freeze({ name: 'Games', icon: '🎮', faIcon: 'CATEGORY_GAMES' }),
+    multimedia: Object.freeze({ name: 'Multimedia', icon: '🎵', faIcon: 'CATEGORY_MULTIMEDIA' }),
+    internet: Object.freeze({ name: 'Internet', icon: '🌐', faIcon: 'CATEGORY_INTERNET' }),
+    systemtools: Object.freeze({ name: 'System Tools', icon: '🔧', faIcon: 'CATEGORY_SYSTEM_TOOLS' }),
+    settings: Object.freeze({ name: 'Settings', icon: '⚙️', faIcon: 'CATEGORY_SETTINGS' }),
+    system: Object.freeze({ name: 'System', icon: '💻', faIcon: 'CATEGORY_SYSTEM' })
+});
 
 // ============================================
 // Storage Keys
 // ============================================
 
-export const STORAGE_KEYS = {
+export const STORAGE_KEYS = Object.freeze({
     PREFIX: 'smos_',
     DESKTOP_ICONS: 'desktopIcons',
     FILE_POSITIONS: 'filePositions',
@@ -163,7 +165,7 @@ export const STORAGE_KEYS = {
     DESKTOP_BG: 'desktopBg',
     ADMIN_PASSWORD: 'adminPassword',
     FILESYSTEM: 'filesystem'
-};
+});
 
 // ============================================
 // Event Names
@@ -171,28 +173,28 @@ export const STORAGE_KEYS = {
 // Note: Main event definitions are in EventBus.js
 // This section is for custom app events
 
-export const CUSTOM_EVENTS = {
+export const CUSTOM_EVENTS = Object.freeze({
     DIALOG_ALERT: 'dialog:alert',
     DIALOG_CONFIRM: 'dialog:confirm',
     DIALOG_PROMPT: 'dialog:prompt',
     BSOD_TRIGGER: 'bsod:trigger',
     FILESYSTEM_CHANGED: 'filesystem:changed',
     DESKTOP_RENDER: 'desktop:render'
-};
+});
 
 // ============================================
 // File Types
 // ============================================
 
-export const FILE_TYPES = {
-    TEXT: ['txt', 'md', 'log', 'ini', 'cfg'],
-    IMAGE: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico'],
-    AUDIO: ['mp3', 'wav', 'ogg', 'flac'],
-    VIDEO: ['mp4', 'avi', 'mkv', 'webm'],
-    EXECUTABLE: ['exe', 'bat', 'cmd'],
-    DOCUMENT: ['doc', 'docx', 'pdf'],
-    ARCHIVE: ['zip', 'rar', '7z', 'tar', 'gz']
-};
+export const FILE_TYPES = Object.freeze({
+    TEXT: Object.freeze(['txt', 'md', 'log', 'ini', 'cfg']),
+    IMAGE: Object.freeze(['png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico']),
+    AUDIO: Object.freeze(['mp3', 'wav', 'ogg', 'flac']),
+    VIDEO: Object.freeze(['mp4', 'avi', 'mkv', 'webm']),
+    EXECUTABLE: Object.freeze(['exe', 'bat', 'cmd']),
+    DOCUMENT: Object.freeze(['doc', 'docx', 'pdf']),
+    ARCHIVE: Object.freeze(['zip', 'rar', '7z', 'tar', 'gz'])
+});
 
 /**
  * Get app ID for opening a file type
@@ -217,8 +219,9 @@ export function getAppForExtension(extension) {
 /**
  * @deprecated Use IconSystem.icon() or IconSystem.emoji() instead
  * This is kept for backwards compatibility with existing code
+ * Frozen to prevent accidental modifications
  */
-export const ICONS = {
+export const ICONS = Object.freeze({
     // Apps
     COMPUTER: '💻',
     RECYCLE_BIN: '🗑️',
@@ -255,7 +258,7 @@ export const ICONS = {
     ERROR: '❌',
     SUCCESS: '✅',
     QUESTION: '❓'
-};
+});
 
 // ============================================
 // Icon Helper Functions
