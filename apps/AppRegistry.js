@@ -213,48 +213,131 @@ class AppRegistryClass {
     }
 
     /**
-     * Launch an application
+     * Launch an application with comprehensive error handling
+     * @param {string} appId - App ID to launch
+     * @param {object} params - Launch parameters
+     * @returns {boolean} True if launch succeeded, false otherwise
      */
     launch(appId, params = {}) {
+        // Validate input
+        if (!appId || typeof appId !== 'string') {
+            console.error('[AppRegistry] Invalid appId:', appId);
+            EventBus.emit('app:launch:error', {
+                appId: String(appId),
+                error: 'Invalid app ID',
+                type: 'validation'
+            });
+            return false;
+        }
+
         const app = this.apps.get(appId);
-        
+
         if (!app) {
             console.error(`[AppRegistry] Unknown app: ${appId}`);
-            EventBus.emit('dialog:alert', { 
-                message: `Cannot find application: ${appId}` 
+            EventBus.emit('app:launch:error', {
+                appId,
+                error: 'App not found',
+                type: 'not_found'
+            });
+            EventBus.emit('dialog:alert', {
+                message: `Cannot find application: ${appId}`,
+                title: 'Application Not Found',
+                icon: 'error'
             });
             return false;
         }
 
         try {
-            if (params && app.setParams) {
-                app.setParams(params);
+            // Set parameters if provided
+            if (params && typeof params === 'object') {
+                if (typeof app.setParams === 'function') {
+                    try {
+                        app.setParams(params);
+                    } catch (paramError) {
+                        console.warn(`[AppRegistry] Error setting params for ${appId}:`, paramError);
+                        // Continue anyway - params are optional
+                    }
+                }
+            }
+
+            // Launch the app (this is the critical operation)
+            if (typeof app.launch !== 'function') {
+                throw new Error(`App ${appId} does not have a launch() method`);
             }
 
             app.launch();
+
+            // Emit success event
             EventBus.emit('app:open', {
                 appId: appId,
                 windowId: app.windowId,
-                instance: app.instanceCounter - 1
+                instance: app.instanceCounter - 1,
+                timestamp: Date.now()
             });
+
+            console.log(`[AppRegistry] Successfully launched ${app.name} (${appId})`);
             return true;
+
         } catch (error) {
+            // Comprehensive error logging
             console.error(`[AppRegistry] Failed to launch ${appId}:`, error);
-            EventBus.emit('dialog:alert', { 
-                message: `Failed to open ${app.name}: ${error.message}` 
+            console.error('[AppRegistry] Error stack:', error.stack);
+
+            // Emit semantic event for error tracking
+            EventBus.emit('app:launch:error', {
+                appId,
+                appName: app.name,
+                error: error.message,
+                stack: error.stack,
+                type: 'launch_failed',
+                timestamp: Date.now()
             });
+
+            // Show user-friendly error dialog
+            EventBus.emit('dialog:alert', {
+                message: `Failed to open ${app.name}:\n\n${error.message}`,
+                title: 'Application Error',
+                icon: 'error'
+            });
+
             return false;
         }
     }
 
     /**
      * Close an application
+     * @param {string} appId - App ID to close
+     * @returns {boolean} True if close succeeded, false otherwise
      */
     close(appId) {
+        if (!appId || typeof appId !== 'string') {
+            console.error('[AppRegistry] Invalid appId for close:', appId);
+            return false;
+        }
+
         const app = this.apps.get(appId);
-        if (app) {
-            app.close();
-            EventBus.emit('app:close', { id: appId });
+        if (!app) {
+            console.warn(`[AppRegistry] Cannot close unknown app: ${appId}`);
+            return false;
+        }
+
+        try {
+            if (typeof app.close === 'function') {
+                app.close();
+            }
+            EventBus.emit('app:close', {
+                id: appId,
+                timestamp: Date.now()
+            });
+            return true;
+        } catch (error) {
+            console.error(`[AppRegistry] Error closing ${appId}:`, error);
+            EventBus.emit('app:close:error', {
+                appId,
+                error: error.message,
+                timestamp: Date.now()
+            });
+            return false;
         }
     }
 

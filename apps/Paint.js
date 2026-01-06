@@ -5,6 +5,7 @@
 
 import AppBase from './AppBase.js';
 import FileSystemManager from '../core/FileSystemManager.js';
+import EventBus from '../core/EventBus.js';
 
 class Paint extends AppBase {
     constructor() {
@@ -26,6 +27,134 @@ class Paint extends AppBase {
         this.lastY = 0;
         this.brushSize = 3;
         this.resizeObserver = null;
+
+        // Register semantic event commands for scriptability
+        this.registerCommands();
+        this.registerQueries();
+    }
+
+    /**
+     * Register commands for script control
+     */
+    registerCommands() {
+        // Set drawing tool
+        this.registerCommand('setTool', (tool) => {
+            if (['brush', 'eraser', 'bucket'].includes(tool)) {
+                this.tool = tool;
+                EventBus.emit('paint:tool:changed', {
+                    appId: this.id,
+                    windowId: this.windowId,
+                    tool,
+                    timestamp: Date.now()
+                });
+                return { success: true, tool };
+            }
+            return { success: false, error: 'Invalid tool. Use: brush, eraser, or bucket' };
+        });
+
+        // Set drawing color
+        this.registerCommand('setColor', (color) => {
+            if (typeof color === 'string' && color.match(/^#[0-9A-Fa-f]{6}$/)) {
+                this.color = color;
+                const display = this.getElement('#currentColorDisplay');
+                if (display) display.style.background = color;
+                EventBus.emit('paint:color:changed', {
+                    appId: this.id,
+                    windowId: this.windowId,
+                    color,
+                    timestamp: Date.now()
+                });
+                return { success: true, color };
+            }
+            return { success: false, error: 'Invalid color. Use hex format: #RRGGBB' };
+        });
+
+        // Set brush size
+        this.registerCommand('setBrushSize', (size) => {
+            const numSize = parseInt(size);
+            if (numSize > 0 && numSize <= 50) {
+                this.brushSize = numSize;
+                const select = this.getElement('#brushSize');
+                if (select) select.value = String(numSize);
+                EventBus.emit('paint:brushSize:changed', {
+                    appId: this.id,
+                    windowId: this.windowId,
+                    size: numSize,
+                    timestamp: Date.now()
+                });
+                return { success: true, size: numSize };
+            }
+            return { success: false, error: 'Invalid size. Use number between 1-50' };
+        });
+
+        // Clear canvas
+        this.registerCommand('clear', () => {
+            const canvas = this.getElement('#paintCanvas');
+            if (canvas && this.ctx) {
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+                EventBus.emit('paint:canvas:cleared', {
+                    appId: this.id,
+                    windowId: this.windowId,
+                    timestamp: Date.now()
+                });
+                return { success: true };
+            }
+            return { success: false, error: 'Canvas not available' };
+        });
+
+        // Draw line
+        this.registerCommand('drawLine', (x1, y1, x2, y2) => {
+            if (this.ctx) {
+                this.ctx.strokeStyle = this.color;
+                this.ctx.lineWidth = this.brushSize;
+                this.ctx.lineCap = 'round';
+                this.ctx.beginPath();
+                this.ctx.moveTo(x1, y1);
+                this.ctx.lineTo(x2, y2);
+                this.ctx.stroke();
+                return { success: true, from: {x: x1, y: y1}, to: {x: x2, y: y2} };
+            }
+            return { success: false, error: 'Canvas not available' };
+        });
+
+        // Fill rectangle
+        this.registerCommand('fillRect', (x, y, width, height) => {
+            if (this.ctx) {
+                this.ctx.fillStyle = this.color;
+                this.ctx.fillRect(x, y, width, height);
+                return { success: true, x, y, width, height };
+            }
+            return { success: false, error: 'Canvas not available' };
+        });
+    }
+
+    /**
+     * Register queries for script inspection
+     */
+    registerQueries() {
+        // Get current tool state
+        this.registerQuery('getState', () => {
+            return {
+                tool: this.tool,
+                color: this.color,
+                brushSize: this.brushSize,
+                currentFile: this.getInstanceState('currentFile'),
+                fileName: this.getInstanceState('fileName')
+            };
+        });
+
+        // Get canvas dimensions
+        this.registerQuery('getCanvasDimensions', () => {
+            const canvas = this.getElement('#paintCanvas');
+            if (canvas) {
+                return {
+                    width: canvas.width,
+                    height: canvas.height
+                };
+            }
+            return { width: 0, height: 0 };
+        });
     }
 
     onOpen(params = {}) {

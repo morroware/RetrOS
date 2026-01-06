@@ -5,6 +5,7 @@
 
 import AppBase from './AppBase.js';
 import WindowManager from '../core/WindowManager.js';
+import EventBus from '../core/EventBus.js';
 
 class Browser extends AppBase {
     constructor() {
@@ -23,6 +24,65 @@ class Browser extends AppBase {
         this.historyIndex = -1;
         this.homepage = 'https://www.wikipedia.org';
         this.initialUrl = null;
+
+        // Register semantic event commands
+        this.registerCommands();
+        this.registerQueries();
+    }
+
+    registerCommands() {
+        this.registerCommand('navigate', (url) => {
+            if (!url || typeof url !== 'string') {
+                return { success: false, error: 'URL required' };
+            }
+            try {
+                this.navigate(url);
+                EventBus.emit('browser:navigated', { appId: this.id, url, timestamp: Date.now() });
+                return { success: true, url };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        this.registerCommand('back', () => {
+            if (this.historyIndex > 0) {
+                this.goBack();
+                return { success: true, url: this.history[this.historyIndex] };
+            }
+            return { success: false, error: 'No previous page' };
+        });
+
+        this.registerCommand('forward', () => {
+            if (this.historyIndex < this.history.length - 1) {
+                this.goForward();
+                return { success: true, url: this.history[this.historyIndex] };
+            }
+            return { success: false, error: 'No next page' };
+        });
+
+        this.registerCommand('refresh', () => {
+            this.refresh();
+            return { success: true };
+        });
+
+        this.registerCommand('home', () => {
+            this.navigate(this.homepage);
+            return { success: true, url: this.homepage };
+        });
+    }
+
+    registerQueries() {
+        this.registerQuery('getCurrentUrl', () => {
+            return { url: this.history[this.historyIndex] || this.homepage };
+        });
+
+        this.registerQuery('getHistory', () => {
+            return { history: [...this.history], currentIndex: this.historyIndex };
+        });
+
+        this.registerQuery('getHomepage', () => {
+            return { homepage: this.homepage };
+        });
     }
 
     setParams(params) {
