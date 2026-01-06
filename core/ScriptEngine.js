@@ -803,7 +803,7 @@ class ScriptEngineClass {
     }
 
     /**
-     * Tokenize a line respecting quoted strings and brackets
+     * Tokenize a line respecting quoted strings
      * @private
      */
     _tokenize(line) {
@@ -811,8 +811,6 @@ class ScriptEngineClass {
         let current = '';
         let inQuotes = false;
         let quoteChar = '';
-        let bracketDepth = 0;
-        let braceDepth = 0;
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
@@ -826,27 +824,10 @@ class ScriptEngineClass {
                 inQuotes = false;
                 current += char;
                 quoteChar = '';
-            } else if (!inQuotes) {
-                // Track bracket depth for array literals
-                if (char === '[') {
-                    bracketDepth++;
-                    current += char;
-                } else if (char === ']') {
-                    bracketDepth--;
-                    current += char;
-                } else if (char === '{') {
-                    braceDepth++;
-                    current += char;
-                } else if (char === '}') {
-                    braceDepth--;
-                    current += char;
-                } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && bracketDepth === 0 && braceDepth === 0) {
-                    if (current) {
-                        tokens.push(current);
-                        current = '';
-                    }
-                } else {
-                    current += char;
+            } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
+                if (current) {
+                    tokens.push(current);
+                    current = '';
                 }
             } else {
                 current += char;
@@ -858,6 +839,51 @@ class ScriptEngineClass {
         }
 
         return tokens;
+    }
+
+    /**
+     * Combine tokens that form array or object literals (split by spaces)
+     * e.g., ['[1,', '2,', '3]'] -> ['[1, 2, 3]']
+     * @private
+     */
+    _combineArrayObjectTokens(tokens) {
+        const result = [];
+        let combining = '';
+        let bracketDepth = 0;
+        let braceDepth = 0;
+
+        for (const token of tokens) {
+            // Count brackets and braces in this token
+            for (const char of token) {
+                if (char === '[') bracketDepth++;
+                else if (char === ']') bracketDepth--;
+                else if (char === '{') braceDepth++;
+                else if (char === '}') braceDepth--;
+            }
+
+            if (combining) {
+                // We're in the middle of an array/object literal
+                combining += ' ' + token;
+                if (bracketDepth === 0 && braceDepth === 0) {
+                    // Finished the literal
+                    result.push(combining);
+                    combining = '';
+                }
+            } else if (bracketDepth > 0 || braceDepth > 0) {
+                // Starting a new array/object literal
+                combining = token;
+            } else {
+                // Regular token
+                result.push(token);
+            }
+        }
+
+        // If we still have an unclosed literal, add it anyway
+        if (combining) {
+            result.push(combining);
+        }
+
+        return result;
     }
 
     _parseLaunch(parts) {
@@ -1237,8 +1263,10 @@ class ScriptEngineClass {
                     }
                 }
             } else {
-                // Parse remaining tokens as arguments
-                args = parts.slice(2).map(a => this._parseArithmeticExpression(a));
+                // Parse remaining tokens as arguments, handling array/object literals with spaces
+                const rawArgs = parts.slice(2);
+                const combinedArgs = this._combineArrayObjectTokens(rawArgs);
+                args = combinedArgs.map(a => this._parseArithmeticExpression(a));
             }
 
             return { type: 'call', funcName, args };
