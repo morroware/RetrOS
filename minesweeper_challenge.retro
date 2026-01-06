@@ -1,45 +1,419 @@
-# Multi-Stage Game Challenge Script
-# Stage 1: Beat Minesweeper
-# Stage 2: Score 1000+ points in Asteroids
-# Final: Victory!
+# ====================================================================
+# PROJECT: PHOENIX - A RetrOS ARG Experience
+# ====================================================================
+# You've discovered a mysterious script hidden in the system...
+# Something called "Project Phoenix" is mentioned in corrupted logs.
+# As a digital archaeologist, you must piece together the fragments.
+# ====================================================================
 
-print "=== RETROS GAME CHALLENGE ==="
-print "Initializing challenge..."
+# Initialize story variables
+set $playerName = "AGENT"
+set $discoveredSecrets = 0
+set $phase = "INIT"
+set $timestamp = call now
+set $sessionId = call random 1000 9999
 
-# Create challenge document on desktop
-set challengeText = "RETROS GAME CHALLENGE\n\nWelcome to the ultimate RetroOS gaming challenge!\n\nSTAGE 1: Beat Minesweeper\nClear the minefield without hitting any mines.\n\nSTAGE 2: Score 1000 Points in Asteroids\nDestroy asteroids and UFOs to reach 1000 points.\n\nGood luck! Your 10 second preparation period begins now...\n"
-
-print "Creating challenge document on desktop..."
-write $challengeText to "C:/Users/User/Desktop/CHALLENGE.txt"
-
-print "Challenge document created: Desktop/CHALLENGE.txt"
-print "Waiting 10 seconds before beginning..."
-
-# Wait 10 seconds
-wait 10000
-
-print "Time's up! Starting STAGE 1..."
-
-# Stage 1: Minesweeper
-emit dialog:alert message="STAGE 1: Beat Minesweeper to proceed!" title="Game Challenge - Stage 1"
-
-# Give user a moment to read and close dialog
+# Create initial terminal-like experience
+print "==================================="
+print "  RETROS SECURE TERMINAL v2.7.3"
+print "==================================="
+print "Initializing..."
+wait 1000
+print "Loading system archives..."
+wait 800
+print "Decrypting fragment 001..."
+wait 600
+print ""
+print "[WARNING] Unauthorized access detected"
+print "[SYSTEM] Security protocol bypassed"
+print "[INFO] Welcome, digital archaeologist"
+print ""
 wait 1500
 
-# Launch Minesweeper
-print "Launching Minesweeper..."
-launch minesweeper
+# Create the first mysterious file
+set $fragment1 = "FRAGMENT 001 - PROJECT PHOENIX\n"
+set $fragment1 = $fragment1 + "================================\n\n"
+set $fragment1 = $fragment1 + "Date: [CORRUPTED]\n"
+set $fragment1 = $fragment1 + "From: Dr. Elena Chen, Lead Researcher\n"
+set $fragment1 = $fragment1 + "Classification: REDACTED\n\n"
+set $fragment1 = $fragment1 + "The system is more than it appears.\n"
+set $fragment1 = $fragment1 + "Each application holds a piece of the truth.\n"
+set $fragment1 = $fragment1 + "The games... they're not just games.\n\n"
+set $fragment1 = $fragment1 + "To unlock Project Phoenix, you must prove\n"
+set $fragment1 = $fragment1 + "your mastery of the system.\n\n"
+set $fragment1 = $fragment1 + "BEGIN TRIAL SEQUENCE:\n"
+set $fragment1 = $fragment1 + "Phase 1: Clear the minefield (MINESWEEPER)\n"
+set $fragment1 = $fragment1 + "Phase 2: Navigate the void (ASTEROIDS)\n"
+set $fragment1 = $fragment1 + "Phase 3: Achieve order (SOLITAIRE)\n"
+set $fragment1 = $fragment1 + "Phase 4: [ENCRYPTED]\n\n"
+set $fragment1 = $fragment1 + "Session ID: " + call toString $sessionId + "\n"
+set $fragment1 = $fragment1 + "Your journey begins now...\n"
 
-# Wait for game to open
+write $fragment1 to "C:/Users/User/Desktop/FRAGMENT_001.txt"
+print "✓ Fragment 001 recovered: Desktop/FRAGMENT_001.txt"
 wait 2000
 
-print "Waiting for you to beat Minesweeper..."
+# Create a mysterious directory structure
+print ""
+print "Creating secure workspace..."
+mkdir "C:/Users/User/Desktop/ProjectPhoenix"
+wait 500
 
-# Listen for Minesweeper win event - ALL ON ONE LINE
-on minesweeper:win { print "✓ STAGE 1 COMPLETE! Minesweeper beaten!"; emit sound:play sound="win"; wait 2000; print "Starting STAGE 2: Asteroids Challenge..."; emit dialog:alert message="STAGE 2: Get 1000 points in Asteroids to proceed!" title="Game Challenge - Stage 2"; wait 1500; print "Launching Asteroids..."; launch asteroids; wait 2000; print "Waiting for you to score 1000 points..." }
+# Introduction sequence
+emit dialog:alert message="Fragment 001 has been recovered.\n\nRead FRAGMENT_001.txt on your desktop\nto begin your journey.\n\nThe truth awaits..." title="PROJECT PHOENIX - Initiated"
+wait 2000
 
-# Listen for Asteroids score updates - ALL ON ONE LINE
-on game:score { if $event.appId == "asteroids" then { set currentScore = $event.score; print "Asteroids score: "; print $currentScore; if $currentScore >= 1000 then { print "✓ STAGE 2 COMPLETE! 1000 points achieved!"; emit sound:play sound="win"; wait 1500; print "CHALLENGE COMPLETE!"; emit dialog:alert message="YOU WON THE CHALLENGE!\n\nYou mastered both Minesweeper and Asteroids!\n\nCongratulations, champion!" title="VICTORY!"; set victoryText = "RETROS GAME CHALLENGE - COMPLETED!\n\n✓ STAGE 1: Minesweeper - COMPLETE\n✓ STAGE 2: Asteroids (1000+ points) - COMPLETE\n\nCONGRATULATIONS!\nYou are a true RetroOS gaming champion!\n"; write $victoryText to "C:/Users/User/Desktop/CHALLENGE_COMPLETE.txt"; print "Victory document created: Desktop/CHALLENGE_COMPLETE.txt"; print "Script complete!" } } }
+print ""
+print "==================================="
+print "  PHASE 1: THE MINEFIELD"
+print "==================================="
+print ""
+print "Ancient defense systems still protect"
+print "the data you seek. Navigate carefully."
+print ""
+wait 2000
 
-# Script completes but event handlers remain active
-print "Event handlers registered - monitoring for game progress..."
+# Launch Phase 1: Minesweeper
+emit sound:play sound="notify"
+print "Launching tactical grid system..."
+wait 1500
+launch minesweeper
+wait 2000
+
+print "⏳ Awaiting minefield clearance..."
+
+# PHASE 1: Minesweeper Victory Handler
+on minesweeper:win {
+    if $phase == "INIT" then {
+        set $phase = "PHASE1_COMPLETE"
+        set $discoveredSecrets = $discoveredSecrets + 1
+
+        print ""
+        print "╔════════════════════════════════════╗"
+        print "║  ✓ PHASE 1 COMPLETE               ║"
+        print "║  Minefield Cleared                 ║"
+        print "╚════════════════════════════════════╝"
+
+        emit sound:play sound="win"
+        wait 1500
+
+        # Create reward file with next clue
+        set $fragment2 = "FRAGMENT 002 - MEMORY CORE ALPHA\n"
+        set $fragment2 = $fragment2 + "================================\n\n"
+        set $fragment2 = $fragment2 + "You've proven your tactical skills.\n"
+        set $fragment2 = $fragment2 + "Clearance time: " + call toString $event.time + " seconds\n\n"
+        set $fragment2 = $fragment2 + "DECRYPTED MESSAGE:\n"
+        set $fragment2 = $fragment2 + "The void holds ancient artifacts.\n"
+        set $fragment2 = $fragment2 + "Destroy 10 asteroids to unlock\n"
+        set $fragment2 = $fragment2 + "the next fragment.\n\n"
+        set $fragment2 = $fragment2 + "But beware... reaching 1000 points\n"
+        set $fragment2 = $fragment2 + "may reveal something more...\n\n"
+        set $fragment2 = $fragment2 + "- Dr. Chen\n"
+
+        write $fragment2 to "C:/Users/User/Desktop/ProjectPhoenix/FRAGMENT_002.txt"
+
+        notify "Fragment 002 unlocked!"
+        wait 2000
+
+        print ""
+        print "==================================="
+        print "  PHASE 2: THE VOID"
+        print "==================================="
+        print ""
+        print "You must navigate the asteroid field."
+        print "Reach 1000 points to proceed."
+        print ""
+
+        wait 2000
+        emit dialog:alert message="PHASE 2: THE VOID\n\nNavigate the asteroid field.\nReach 1000 points to unlock\nthe next phase." title="PROJECT PHOENIX - Phase 2"
+
+        wait 1500
+        print "Launching navigation system..."
+        launch asteroids
+        wait 2000
+
+        set $asteroidsGoal = 1000
+        set $asteroidsStarted = true
+        print "⏳ Monitoring void navigation..."
+    }
+}
+
+# PHASE 2: Asteroids Score Tracking
+on game:score {
+    if $event.appId == "asteroids" then {
+        set $currentScore = $event.score
+
+        # Easter egg at 100 points
+        if $currentScore == 100 then {
+            notify "Something stirs in the void..."
+        }
+
+        # Easter egg at 500 points
+        if $currentScore == 500 then {
+            print "◆ SIGNAL DETECTED: Partial data stream intercepted"
+            set $hint = "PARTIAL DECRYPT: ...snake in the grass... ...foundation..."
+            write $hint to "C:/Users/User/Desktop/ProjectPhoenix/SIGNAL_TRACE.txt"
+            notify "Signal trace saved!"
+        }
+
+        # Progress updates
+        if $currentScore >= 250 && $currentScore < 255 then {
+            print "▸ Progress: " + call toString $currentScore + " points - 25% complete"
+        }
+
+        if $currentScore >= 500 && $currentScore < 505 then {
+            print "▸ Progress: " + call toString $currentScore + " points - 50% complete"
+        }
+
+        if $currentScore >= 750 && $currentScore < 755 then {
+            print "▸ Progress: " + call toString $currentScore + " points - 75% complete"
+        }
+
+        # Victory condition
+        if $currentScore >= 1000 && $phase == "PHASE1_COMPLETE" then {
+            set $phase = "PHASE2_COMPLETE"
+            set $discoveredSecrets = $discoveredSecrets + 1
+
+            print ""
+            print "╔════════════════════════════════════╗"
+            print "║  ✓ PHASE 2 COMPLETE               ║"
+            print "║  The Void Conquered                ║"
+            print "║  Score: " + call toString $currentScore + " points              ║"
+            print "╚════════════════════════════════════╝"
+
+            emit sound:play sound="win"
+            wait 2000
+
+            # Create Fragment 3
+            set $fragment3 = "FRAGMENT 003 - MEMORY CORE BETA\n"
+            set $fragment3 = $fragment3 + "================================\n\n"
+            set $fragment3 = $fragment3 + "Impressive navigation, Agent.\n"
+            set $fragment3 = $fragment3 + "Final Score: " + call toString $currentScore + "\n\n"
+            set $fragment3 = $fragment3 + "DECRYPTED MESSAGE:\n"
+            set $fragment3 = $fragment3 + "Order from chaos. This is the way.\n"
+            set $fragment3 = $fragment3 + "The card game holds ancient wisdom.\n\n"
+            set $fragment3 = $fragment3 + "Complete one game of Solitaire.\n"
+            set $fragment3 = $fragment3 + "Victory will unlock the next layer.\n\n"
+            set $fragment3 = $fragment3 + "Dr. Chen's final note:\n"
+            set $fragment3 = $fragment3 + "'The foundation is everything.'\n"
+
+            write $fragment3 to "C:/Users/User/Desktop/ProjectPhoenix/FRAGMENT_003.txt"
+            notify "Fragment 003 unlocked!"
+
+            wait 2000
+            print ""
+            print "==================================="
+            print "  PHASE 3: ORDER FROM CHAOS"
+            print "==================================="
+            print ""
+            print "Arrange the cards. Find the pattern."
+            print "Victory reveals the truth."
+            print ""
+
+            wait 2000
+            emit dialog:alert message="PHASE 3: ORDER FROM CHAOS\n\nComplete a game of Solitaire\nto unlock the final secrets." title="PROJECT PHOENIX - Phase 3"
+
+            wait 1500
+            print "Launching pattern recognition system..."
+            launch solitaire
+            wait 2000
+            print "⏳ Monitoring pattern completion..."
+        }
+    }
+}
+
+# PHASE 3: Solitaire Victory Handler
+on solitaire:win {
+    if $phase == "PHASE2_COMPLETE" then {
+        set $phase = "PHASE3_COMPLETE"
+        set $discoveredSecrets = $discoveredSecrets + 1
+
+        print ""
+        print "╔════════════════════════════════════╗"
+        print "║  ✓ PHASE 3 COMPLETE               ║"
+        print "║  Order Achieved                    ║"
+        print "║  Moves: " + call toString $event.moves + "                        ║"
+        print "╚════════════════════════════════════╝"
+
+        emit sound:play sound="win"
+        wait 2000
+
+        # Create Fragment 4 - The revelation
+        set $fragment4 = "FRAGMENT 004 - FINAL REVELATION\n"
+        set $fragment4 = $fragment4 + "================================\n\n"
+        set $fragment4 = $fragment4 + "You've done well, Agent.\n"
+        set $fragment4 = $fragment4 + "Solitaire completed in " + call toString $event.moves + " moves.\n\n"
+        set $fragment4 = $fragment4 + "PROJECT PHOENIX DECLASSIFIED:\n\n"
+        set $fragment4 = $fragment4 + "This system was never just an operating system.\n"
+        set $fragment4 = $fragment4 + "It's a training ground. A test.\n\n"
+        set $fragment4 = $fragment4 + "Every game teaches a skill:\n"
+        set $fragment4 = $fragment4 + "- Minesweeper: Risk assessment\n"
+        set $fragment4 = $fragment4 + "- Asteroids: Quick decision making\n"
+        set $fragment4 = $fragment4 + "- Solitaire: Strategic planning\n\n"
+        set $fragment4 = $fragment4 + "But there's one more test...\n"
+        set $fragment4 = $fragment4 + "Remember the signal at 500 points?\n"
+        set $fragment4 = $fragment4 + "'Snake in the grass... foundation...'\n\n"
+        set $fragment4 = $fragment4 + "FINAL CHALLENGE:\n"
+        set $fragment4 = $fragment4 + "Play Snake. Reach a length of 10.\n"
+        set $fragment4 = $fragment4 + "The foundation of growth.\n\n"
+        set $fragment4 = $fragment4 + "- Dr. Elena Chen, Project Phoenix Lead\n"
+
+        write $fragment4 to "C:/Users/User/Desktop/ProjectPhoenix/FRAGMENT_004.txt"
+        notify "Fragment 004 unlocked!"
+
+        wait 3000
+        print ""
+        print "==================================="
+        print "  FINAL CHALLENGE: GROWTH"
+        print "==================================="
+        print ""
+        print "The snake represents growth, adaptation."
+        print "Reach length 10 to complete the protocol."
+        print ""
+
+        wait 2000
+        emit dialog:alert message="FINAL CHALLENGE\n\nReach length 10 in Snake\nto complete Project Phoenix." title="PROJECT PHOENIX - Final Test"
+
+        wait 1500
+        print "Launching adaptation protocol..."
+        launch snake
+        wait 2000
+
+        set $snakeGoal = 10
+        print "⏳ Monitoring growth sequence..."
+    }
+}
+
+# PHASE 4: Snake Score Handler (tracking length via score)
+on snake:eat {
+    if $phase == "PHASE3_COMPLETE" then {
+        set $snakeLength = $event.score
+
+        if $snakeLength >= 5 && $snakeLength < 6 then {
+            print "▸ Length: " + call toString $snakeLength + " - Halfway there..."
+        }
+
+        if $snakeLength >= 10 then {
+            set $phase = "COMPLETE"
+            set $discoveredSecrets = $discoveredSecrets + 1
+
+            print ""
+            print "╔════════════════════════════════════╗"
+            print "║  ✓ FINAL CHALLENGE COMPLETE       ║"
+            print "║  PROJECT PHOENIX UNLOCKED          ║"
+            print "╚════════════════════════════════════╝"
+
+            emit sound:play sound="win"
+            wait 2000
+
+            # Create the final revelation
+            set $finalDoc = "PROJECT PHOENIX - COMPLETE\n"
+            set $finalDoc = $finalDoc + "╔════════════════════════════════════════════╗\n"
+            set $finalDoc = $finalDoc + "║      CONGRATULATIONS, AGENT " + call toString $sessionId + "       ║\n"
+            set $finalDoc = $finalDoc + "╚════════════════════════════════════════════╝\n\n"
+            set $finalDoc = $finalDoc + "You have completed all trials.\n"
+            set $finalDoc = $finalDoc + "Secrets discovered: " + call toString $discoveredSecrets + "\n\n"
+            set $finalDoc = $finalDoc + "MISSION SUMMARY:\n"
+            set $finalDoc = $finalDoc + "✓ Phase 1: Minefield Cleared\n"
+            set $finalDoc = $finalDoc + "✓ Phase 2: Void Conquered (1000+ points)\n"
+            set $finalDoc = $finalDoc + "✓ Phase 3: Order Achieved\n"
+            set $finalDoc = $finalDoc + "✓ Phase 4: Growth Mastered\n\n"
+            set $finalDoc = $finalDoc + "FINAL MESSAGE FROM DR. CHEN:\n\n"
+            set $finalDoc = $finalDoc + "You've proven yourself capable of the skills\n"
+            set $finalDoc = $finalDoc + "needed for what comes next.\n\n"
+            set $finalDoc = $finalDoc + "Project Phoenix was never about the games.\n"
+            set $finalDoc = $finalDoc + "It was about finding people like you -\n"
+            set $finalDoc = $finalDoc + "people who can think strategically,\n"
+            set $finalDoc = $finalDoc + "adapt quickly, and persist through challenges.\n\n"
+            set $finalDoc = $finalDoc + "The real question is:\n"
+            set $finalDoc = $finalDoc + "What will you do with this knowledge?\n\n"
+            set $finalDoc = $finalDoc + "Welcome to the Phoenix Initiative.\n\n"
+            set $finalDoc = $finalDoc + "P.S. - Try opening Notepad and reading\n"
+            set $finalDoc = $finalDoc + "the file 'SECRET_CODES.txt' we created\n"
+            set $finalDoc = $finalDoc + "in your ProjectPhoenix folder...\n\n"
+            set $finalDoc = $finalDoc + "Session completed: " + call date + "\n"
+
+            write $finalDoc to "C:/Users/User/Desktop/ProjectPhoenix/MISSION_COMPLETE.txt"
+
+            # Easter egg: Create a secret codes file
+            set $secretCodes = "SECRET CODES - PHOENIX INITIATIVE\n"
+            set $secretCodes = $secretCodes + "===================================\n\n"
+            set $secretCodes = $secretCodes + "You found the secret!\n\n"
+            set $secretCodes = $secretCodes + "Bonus Challenges:\n"
+            set $secretCodes = $secretCodes + "- Beat Minesweeper in under 60 seconds\n"
+            set $secretCodes = $secretCodes + "- Reach 5000 points in Asteroids\n"
+            set $secretCodes = $secretCodes + "- Beat FreeCell (the ultimate test)\n\n"
+            set $secretCodes = $secretCodes + "Achievement Code: PHOENIX-" + call toString $sessionId + "-ALPHA\n\n"
+            set $secretCodes = $secretCodes + "You are now part of something greater.\n"
+
+            write $secretCodes to "C:/Users/User/Desktop/ProjectPhoenix/SECRET_CODES.txt"
+
+            wait 2000
+            print ""
+            print "╔════════════════════════════════════════════╗"
+            print "║                                            ║"
+            print "║       PROJECT PHOENIX COMPLETED            ║"
+            print "║                                            ║"
+            print "║  All fragments have been recovered.        ║"
+            print "║  Check your ProjectPhoenix folder for      ║"
+            print "║  your mission briefing and secrets.        ║"
+            print "║                                            ║"
+            print "╔════════════════════════════════════════════╗"
+            print ""
+
+            wait 2000
+            emit dialog:alert message="MISSION ACCOMPLISHED!\n\nAll fragments recovered.\nProject Phoenix is complete.\n\nCheck your Desktop for the full story." title="PHOENIX INITIATIVE - Welcome"
+
+            wait 2000
+            notify "Mission files saved to Desktop/ProjectPhoenix/"
+
+            print ""
+            print "Thank you for playing!"
+            print "Script execution complete."
+        }
+    }
+}
+
+# Achievement tracking - hidden achievements
+on game:highscore {
+    if $event.appId == "asteroids" then {
+        if $event.score >= 5000 then {
+            set $achievement = "HIDDEN ACHIEVEMENT UNLOCKED!\n\n"
+            set $achievement = $achievement + "VOID MASTER\n"
+            set $achievement = $achievement + "Reached 5000 points in Asteroids\n\n"
+            set $achievement = $achievement + "You've exceeded all expectations.\n"
+
+            write $achievement to "C:/Users/User/Desktop/ProjectPhoenix/ACHIEVEMENT_VOID_MASTER.txt"
+            emit dialog:alert message="HIDDEN ACHIEVEMENT!\n\nVOID MASTER\n\nYou've mastered the asteroid field!" title="Achievement Unlocked"
+        }
+    }
+}
+
+# FreeCell easter egg
+on freecell:win {
+    set $fcEgg = "BONUS FRAGMENT - HIDDEN\n"
+    set $fcEgg = $fcEgg + "======================\n\n"
+    set $fcEgg = $fcEgg + "You discovered the hidden challenge!\n"
+    set $fcEgg = $fcEgg + "FreeCell was Dr. Chen's favorite game.\n\n"
+    set $fcEgg = $fcEgg + "She left this message:\n"
+    set $fcEgg = $fcEgg + "'Sometimes the hardest puzzles have\n"
+    set $fcEgg = $fcEgg + "the simplest solutions. You just need\n"
+    set $fcEgg = $fcEgg + "to see them from a different angle.'\n\n"
+    set $fcEgg = $fcEgg + "Thank you for playing.\n"
+
+    write $fcEgg to "C:/Users/User/Desktop/ProjectPhoenix/BONUS_FRAGMENT.txt"
+    emit dialog:alert message="BONUS FRAGMENT DISCOVERED!\n\nDr. Chen would be proud." title="Hidden Message"
+}
+
+# All event handlers are now registered
+print ""
+print "█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█"
+print "█  PROJECT PHOENIX INITIATED      █"
+print "█  Event handlers: ACTIVE         █"
+print "█  Session ID: " + call toString $sessionId + "              █"
+print "█  Status: AWAITING PHASE 1       █"
+print "█▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█"
+print ""
+print "Your journey begins now..."
+print "Good luck, Agent."
+print ""
