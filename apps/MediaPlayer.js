@@ -53,6 +53,151 @@ class MediaPlayer extends AppBase {
                 duration: null
             }
         ];
+
+        // Register semantic event commands for scriptability
+        this.registerCommands();
+        this.registerQueries();
+    }
+
+    /**
+     * Register commands for script control
+     */
+    registerCommands() {
+        // Play current track or resume
+        this.registerCommand('play', () => {
+            const audio = this.getInstanceState('audio');
+            if (audio) {
+                audio.play();
+                this.setInstanceState('playing', true);
+                EventBus.emit('mediaplayer:play', {
+                    appId: this.id,
+                    track: this.getInstanceState('currentTrack'),
+                    timestamp: Date.now()
+                });
+                return { success: true };
+            }
+            return { success: false, error: 'No audio loaded' };
+        });
+
+        // Pause playback
+        this.registerCommand('pause', () => {
+            const audio = this.getInstanceState('audio');
+            if (audio) {
+                audio.pause();
+                this.setInstanceState('playing', false);
+                EventBus.emit('mediaplayer:pause', {
+                    appId: this.id,
+                    timestamp: Date.now()
+                });
+                return { success: true };
+            }
+            return { success: false, error: 'No audio loaded' };
+        });
+
+        // Stop playback
+        this.registerCommand('stop', () => {
+            const audio = this.getInstanceState('audio');
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                this.setInstanceState('playing', false);
+                EventBus.emit('mediaplayer:stop', {
+                    appId: this.id,
+                    timestamp: Date.now()
+                });
+                return { success: true };
+            }
+            return { success: false, error: 'No audio loaded' };
+        });
+
+        // Next track
+        this.registerCommand('next', () => {
+            const playlist = this.getInstanceState('playlist') || [];
+            const currentTrack = this.getInstanceState('currentTrack') || 0;
+            const nextTrack = (currentTrack + 1) % playlist.length;
+            this.playTrack(nextTrack);
+            return { success: true, track: nextTrack };
+        });
+
+        // Previous track
+        this.registerCommand('previous', () => {
+            const playlist = this.getInstanceState('playlist') || [];
+            const currentTrack = this.getInstanceState('currentTrack') || 0;
+            const prevTrack = currentTrack === 0 ? playlist.length - 1 : currentTrack - 1;
+            this.playTrack(prevTrack);
+            return { success: true, track: prevTrack };
+        });
+
+        // Set volume (0-100)
+        this.registerCommand('setVolume', (volume) => {
+            const vol = Math.max(0, Math.min(100, parseInt(volume))) / 100;
+            SoundSystem.setVolume(vol);
+            this.setInstanceState('volume', vol);
+            const audio = this.getInstanceState('audio');
+            if (audio) audio.volume = vol;
+            EventBus.emit('mediaplayer:volume:changed', {
+                appId: this.id,
+                volume: vol,
+                timestamp: Date.now()
+            });
+            return { success: true, volume: vol };
+        });
+
+        // Seek to position (in seconds)
+        this.registerCommand('seek', (position) => {
+            const audio = this.getInstanceState('audio');
+            if (audio) {
+                audio.currentTime = Math.max(0, Math.min(audio.duration || 0, position));
+                return { success: true, position: audio.currentTime };
+            }
+            return { success: false, error: 'No audio loaded' };
+        });
+
+        // Play specific track by index
+        this.registerCommand('playTrack', (index) => {
+            const playlist = this.getInstanceState('playlist') || [];
+            const trackIndex = parseInt(index);
+            if (trackIndex >= 0 && trackIndex < playlist.length) {
+                this.playTrack(trackIndex);
+                return { success: true, track: trackIndex };
+            }
+            return { success: false, error: 'Invalid track index' };
+        });
+    }
+
+    /**
+     * Register queries for script inspection
+     */
+    registerQueries() {
+        // Get current playback state
+        this.registerQuery('getState', () => {
+            const audio = this.getInstanceState('audio');
+            return {
+                playing: this.getInstanceState('playing'),
+                currentTrack: this.getInstanceState('currentTrack'),
+                currentTime: audio ? audio.currentTime : 0,
+                duration: audio ? audio.duration : 0,
+                volume: this.getInstanceState('volume'),
+                repeat: this.getInstanceState('repeat'),
+                shuffle: this.getInstanceState('shuffle')
+            };
+        });
+
+        // Get playlist
+        this.registerQuery('getPlaylist', () => {
+            return { playlist: this.getInstanceState('playlist') || [] };
+        });
+
+        // Get current track info
+        this.registerQuery('getCurrentTrack', () => {
+            const playlist = this.getInstanceState('playlist') || [];
+            const currentTrack = this.getInstanceState('currentTrack') || 0;
+            const track = playlist[currentTrack];
+            return {
+                index: currentTrack,
+                track: track || null
+            };
+        });
     }
 
     onOpen() {

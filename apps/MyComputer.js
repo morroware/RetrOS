@@ -30,6 +30,159 @@ class MyComputer extends AppBase {
             { name: 'Control Panel', icon: '⚙️', app: 'controlpanel', desc: 'System settings and configuration' },
             { name: 'Recycle Bin', icon: '🗑️', app: 'recyclebin', desc: 'Deleted files and folders' }
         ];
+
+        // Register semantic event commands for scriptability
+        this.registerCommands();
+        this.registerQueries();
+    }
+
+    /**
+     * Register commands for script control
+     */
+    registerCommands() {
+        // Navigate to a path
+        this.registerCommand('navigate', (path) => {
+            if (!path) {
+                return { success: false, error: 'Path required' };
+            }
+            try {
+                const parsedPath = Array.isArray(path) ? path : FileSystemManager.parsePath(path);
+                this.navigateToPath(parsedPath);
+                EventBus.emit('mycomputer:navigated', {
+                    appId: this.id,
+                    path: parsedPath,
+                    timestamp: Date.now()
+                });
+                return { success: true, path: parsedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Create folder
+        this.registerCommand('createFolder', (path, name) => {
+            try {
+                const basePath = Array.isArray(path) ? path : FileSystemManager.parsePath(path);
+                const newPath = [...basePath, name];
+                FileSystemManager.createDirectory(newPath);
+                EventBus.emit('mycomputer:folder:created', {
+                    appId: this.id,
+                    path: newPath,
+                    timestamp: Date.now()
+                });
+                return { success: true, path: newPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Delete file or folder
+        this.registerCommand('delete', (path) => {
+            try {
+                const parsedPath = Array.isArray(path) ? path : FileSystemManager.parsePath(path);
+                const node = FileSystemManager.getNode(parsedPath);
+                if (node?.type === 'directory') {
+                    FileSystemManager.deleteDirectory(parsedPath);
+                } else {
+                    FileSystemManager.deleteFile(parsedPath);
+                }
+                EventBus.emit('mycomputer:deleted', {
+                    appId: this.id,
+                    path: parsedPath,
+                    timestamp: Date.now()
+                });
+                return { success: true, path: parsedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Rename file or folder
+        this.registerCommand('rename', (path, newName) => {
+            try {
+                const parsedPath = Array.isArray(path) ? path : FileSystemManager.parsePath(path);
+                FileSystemManager.renameNode(parsedPath, newName);
+                const newPath = [...parsedPath.slice(0, -1), newName];
+                EventBus.emit('mycomputer:renamed', {
+                    appId: this.id,
+                    oldPath: parsedPath,
+                    newPath: newPath,
+                    timestamp: Date.now()
+                });
+                return { success: true, oldPath: parsedPath, newPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Open file with default app
+        this.registerCommand('openFile', (path) => {
+            try {
+                const parsedPath = Array.isArray(path) ? path : FileSystemManager.parsePath(path);
+                const node = FileSystemManager.getNode(parsedPath);
+                if (!node) {
+                    return { success: false, error: 'File not found' };
+                }
+
+                // Determine app to open file with based on extension
+                const fileName = parsedPath[parsedPath.length - 1];
+                const ext = fileName.split('.').pop()?.toLowerCase();
+
+                let appId = 'notepad'; // Default
+                if (['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(ext)) {
+                    appId = 'paint';
+                } else if (['mp3', 'wav', 'ogg'].includes(ext)) {
+                    appId = 'mediaplayer';
+                }
+
+                AppRegistry.launch(appId, { filePath: parsedPath });
+                return { success: true, path: parsedPath, appId };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+    }
+
+    /**
+     * Register queries for script inspection
+     */
+    registerQueries() {
+        // Get current path
+        this.registerQuery('getCurrentPath', () => {
+            const path = this.getInstanceState('currentPath') || ['C:'];
+            return { path, pathString: path.join('/') };
+        });
+
+        // List directory contents
+        this.registerQuery('listDirectory', (path) => {
+            try {
+                const parsedPath = path ? (Array.isArray(path) ? path : FileSystemManager.parsePath(path))
+                                        : this.getInstanceState('currentPath') || ['C:'];
+                const items = FileSystemManager.listDirectory(parsedPath);
+                return { success: true, path: parsedPath, items };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Get file/folder info
+        this.registerQuery('getNodeInfo', (path) => {
+            try {
+                const parsedPath = Array.isArray(path) ? path : FileSystemManager.parsePath(path);
+                const node = FileSystemManager.getNode(parsedPath);
+                if (!node) {
+                    return { success: false, error: 'Not found' };
+                }
+                return { success: true, node };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Get system folders
+        this.registerQuery('getSystemFolders', () => {
+            return { folders: this.systemFolders };
+        });
     }
 
     onOpen(params = {}) {
