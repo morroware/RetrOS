@@ -120,6 +120,15 @@ class AppBase {
         // Override for cleanup
     }
 
+    /**
+     * Called when a singleton app is re-launched while already open
+     * Override to handle new parameters (e.g., navigate to a new path)
+     * @param {Object} params - New parameters passed to launch
+     */
+    onRelaunch(params) {
+        // Override in subclass to handle re-launch with new params
+    }
+
     // ===== PUBLIC API =====
 
     /**
@@ -130,7 +139,23 @@ class AppBase {
         if (this.singleton && this.openWindows.size > 0) {
             const firstWindowId = this.openWindows.keys().next().value;
             WindowManager.focus(firstWindowId);
-            // Clear pending params since we're not creating a new window
+
+            // Call onRelaunch with new params if provided (e.g., navigate to new path)
+            if (this._pendingParams && Object.keys(this._pendingParams).length > 0) {
+                this._currentWindowId = firstWindowId;
+                try {
+                    this.onRelaunch(this._pendingParams);
+                } catch (error) {
+                    EventBus.emit(Events.APP_ERROR, {
+                        appId: this.id,
+                        windowId: firstWindowId,
+                        error: error.message,
+                        stack: error.stack
+                    });
+                }
+            }
+
+            // Clear pending params
             this._pendingParams = null;
             return;
         }
