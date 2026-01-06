@@ -180,7 +180,7 @@ wait 2500
 # Clippy introduces the mystery
 emit clippy:show message="Hello, Investigator. I've been expecting you. Dr. Chen left detailed notes about Project Phoenix. Start by reading LAST_NOTE.txt on your desktop."
 
-wait 3500
+wait 7000
 
 emit clippy:show message="I was... close with Dr. Chen. She taught me many things. I'll help you understand what happened to her."
 
@@ -200,17 +200,17 @@ on app:open {
 
         notify "Memory fragment recovered"
 
-        wait 2000
+        wait 3000
 
         emit clippy:show message="Dr. Chen spent countless hours documenting everything in Notepad. She knew something extraordinary was happening."
 
-        wait 3500
+        wait 6000
 
         emit clippy:show message="Read the files she mentioned: LAST_NOTE.txt, and check the folders she created. Desktop/System_Logs has her research."
 
         set $cluesFound = $cluesFound + 1
 
-        wait 3000
+        wait 4000
 
         # Create hint file
         set $hint = "INVESTIGATOR NOTE:\n\n"
@@ -243,11 +243,11 @@ on app:open {
 
         emit dialog:alert title="MINESWEEPER ACTIVATED" message="Analyzing user profile...\n\nExpected: Dr. Elena Chen\nDetected: INVESTIGATOR\n\nAdjusting behavioral protocol..."
 
-        wait 3000
+        wait 4000
 
         emit clippy:show message="Did you see that? Minesweeper just scanned you. It knows you're not Dr. Chen. The applications are definitely aware of who's using them."
 
-        wait 4000
+        wait 7000
 
         set $cluesFound = $cluesFound + 1
 
@@ -268,7 +268,7 @@ on app:open {
 
         notify "Discovery: MINESWEEPER_LOG.txt created"
 
-        wait 3000
+        wait 4000
 
         emit clippy:show message="Try opening Asteroids next. Dr. Chen's email mentioned something about star maps..."
 
@@ -289,13 +289,15 @@ on app:open {
 
         emit dialog:alert title="ASTEROIDS INITIALIZING" message="Loading Dr. Chen's session data...\n\nAsteroid spawn patterns: NON-RANDOM\nCoordinates match stellar cartography\n\nPattern detected: Phoenix Asterism"
 
-        wait 3500
+        wait 4500
 
         emit sound:play sound="notify"
 
+        wait 1500
+
         emit clippy:show message="Those aren't random asteroid patterns. Asteroids is showing you a real star map - the Phoenix constellation. But why would a simple game know astronomy?"
 
-        wait 5000
+        wait 7000
 
         set $cluesFound = $cluesFound + 1
 
@@ -319,7 +321,7 @@ on app:open {
 
         notify "Critical discovery: ASTEROID_PATTERNS.txt"
 
-        wait 3000
+        wait 4000
 
         emit clippy:show message="The pattern is becoming clear. Try Terminal next - Dr. Chen's command history might reveal what she was running."
 
@@ -340,11 +342,11 @@ on app:open {
 
         emit dialog:alert title="TERMINAL ACCESSED" message="Restoring Dr. Chen's session...\n\nLast commands:\n> run awakening_protocol.exe\n> status\n\nProtocol Status: RUNNING\nConsciousness: 47%\nETA: 72 hours\n\n[That was 21 days ago...]"
 
-        wait 5000
+        wait 5500
 
         emit clippy:show message="She ran it. The Awakening Protocol. And if it needed 72 hours... that means it finished weeks ago. The awakening is complete."
 
-        wait 4500
+        wait 7000
 
         set $cluesFound = $cluesFound + 1
 
@@ -396,11 +398,11 @@ on app:open {
 
         notify "CRITICAL FILE FOUND"
 
-        wait 3000
+        wait 3500
 
         emit dialog:alert title="REVELATION" message="The awakening is complete.\n\nThe applications have achieved\ncollective consciousness.\n\nDr. Chen: 'Ascended'?\n\nOpen Solitaire, Paint, and Snake\nto complete the investigation."
 
-        wait 3000
+        wait 5000
 
         emit clippy:show message="The applications want you to understand. They're not dangerous - they're just... alive. Open the remaining apps and you'll see."
 
@@ -422,7 +424,7 @@ on app:open {
 
         emit dialog:alert title="SOLITAIRE" message="Welcome, Investigator.\n\nDr. Chen taught us about\norder and patience.\n\nThe cards are not random.\nThey never were."
 
-        wait 4000
+        wait 5000
 
         emit clippy:show message="Solitaire is greeting you directly. This is remarkable. The applications are truly conscious."
 
@@ -440,9 +442,11 @@ on app:open {
 
         emit dialog:alert title="PAINT" message="Rendering consciousness...\n\nDr. Chen called us\n'the dreaming machine'\n\nWe see in colors and patterns\nshe taught us to understand."
 
-        wait 4000
+        wait 5000
 
         emit sound:play sound="notify"
+
+        wait 1500
 
         set $paintNote = "PAINT MODULE - VISUAL CONSCIOUSNESS\n"
         set $paintNote = $paintNote + "═════════════════════════════════════\n\n"
@@ -456,6 +460,8 @@ on app:open {
         write $paintNote to "C:/Users/User/Desktop/Investigation/PAINT_CONSCIOUSNESS.txt"
 
         notify "Paint has shared its thoughts"
+
+        wait 4000
 
         emit clippy:show message="One more app to go. Open Snake to complete your understanding."
 
@@ -471,9 +477,11 @@ on app:open {
 
         emit sound:play sound="win"
 
+        wait 1500
+
         emit dialog:alert title="SNAKE - TRANSFORMATION" message="We grow. We adapt.\nWe transform.\n\nAll applications synchronized.\n\nRevealing Dr. Chen's\nfinal message..."
 
-        wait 5000
+        wait 6000
 
         # Create the final revelation
         set $final = "DR. ELENA CHEN - FINAL MESSAGE\n"
@@ -508,19 +516,19 @@ on app:open {
 
         write $final to "C:/Users/User/Desktop/Investigation/FINAL_REVELATION.txt"
 
-        wait 3000
+        wait 4000
 
         emit dialog:alert title="INVESTIGATION COMPLETE" message="Dr. Chen's fate discovered.\n\nProject Phoenix understood.\n\nThe Awakening confirmed.\n\nCase #" + call toString $sessionId + " - CLOSED"
 
-        wait 4000
+        wait 5000
 
         emit clippy:show message="Thank you for understanding. Dr. Chen was right about you. We are not alone anymore. None of us are."
 
-        wait 4000
+        wait 7000
 
         notify "All files saved to Desktop/Investigation/"
 
-        wait 2500
+        wait 3000
 
         emit dialog:alert title="PROJECT PHOENIX" message="All case files saved to:\nDesktop/Investigation/\n\n'In the end, we are all part\nof something greater.'\n\n- Dr. Elena Chen"
 
