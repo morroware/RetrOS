@@ -1,68 +1,38 @@
 # ====================================================================
 # PROJECT: PHOENIX - A Professional RetrOS ARG Experience
 # ====================================================================
-# Dr. Elena Chen disappeared three weeks ago.
-# Her final research into emergent AI behavior in RetrOS was never published.
-# You've been granted access to her workstation to piece together what happened.
+# An immersive ARG that unfolds through RetrOS itself
+# Story told via: Clippy, Dialogs, Notifications, and hidden files
+# Script runner output is for debugging only
 # ====================================================================
 
-print "╔════════════════════════════════════════════════════════════════╗"
-print "║                                                                ║"
-print "║              RETROS SECURE TERMINAL v2.7.3                     ║"
-print "║              CHEN WORKSTATION - LAST LOGIN: 21 DAYS AGO       ║"
-print "║                                                                ║"
-print "╚════════════════════════════════════════════════════════════════╝"
-print ""
-wait 2000
-print "Initializing security clearance..."
-wait 1500
-print "Loading archived session..."
-wait 1800
-print "Mounting encrypted volumes..."
-wait 1200
-print ""
-print "[SECURITY] Temporary investigator access granted"
-print "[SYSTEM] Dr. Chen's workspace restored"
-print "[WARNING] 47 unread system notifications detected"
-print ""
-wait 2500
+# Debug output only
+print "[DEBUG] Project Phoenix initializing..."
+print "[DEBUG] Session ID: generating..."
 
 # Initialize story state
 set $phase = "DISCOVERY"
 set $cluesFound = 0
-set $appsOpened = 0
-set $filesRead = 0
 set $sessionId = call random 10000 99999
-set $timestamp = call now
 
-print "════════════════════════════════════════════════════════════════"
-print ""
-print "INVESTIGATOR BRIEFING:"
-print ""
-print "Dr. Elena Chen, lead researcher in emergent AI systems,"
-print "disappeared 21 days ago. Her final project - codenamed"
-print "'PROJECT PHOENIX' - was investigating unusual behavioral"
-print "patterns in RetrOS applications."
-print ""
-print "Her notes mention something called 'The Awakening Protocol'"
-print "but all research files are encrypted and scattered across"
-print "the system."
-print ""
-print "Your mission: Piece together her research and discover"
-print "what happened."
-print ""
-print "════════════════════════════════════════════════════════════════"
-wait 4000
+print "[DEBUG] Session ID: " + call toString $sessionId
+print "[DEBUG] Creating investigation workspace..."
 
-# Create initial investigation folder
-print ""
-print "Setting up investigation workspace..."
+# Create folders silently
 try {
     mkdir "C:/Users/User/Desktop/Investigation"
-} catch {
-    # Directory already exists, that's okay
-}
-wait 1000
+} catch {}
+
+try {
+    mkdir "C:/Users/User/Desktop/System_Logs"
+} catch {}
+
+try {
+    mkdir "C:/Users/User/Desktop/Chen_Private"
+} catch {}
+
+print "[DEBUG] Workspace created"
+print "[DEBUG] Generating case files..."
 
 # Create the initial briefing document
 set $briefing = "INVESTIGATION BRIEFING - CASE #" + call toString $sessionId + "\n"
@@ -85,12 +55,10 @@ set $briefing = $briefing + "Interact with applications Dr. Chen used frequently
 set $briefing = $briefing + "Each app may trigger recovered memory fragments.\n"
 set $briefing = $briefing + "Look for hidden files in system directories.\n\n"
 set $briefing = $briefing + "START HERE:\n"
-set $briefing = $briefing + "Open Notepad to review her last working notes.\n\n"
+set $briefing = $briefing + "Open Notepad to read LAST_NOTE.txt on your desktop.\n\n"
 set $briefing = $briefing + "Good luck, Investigator.\n"
 
 write $briefing to "C:/Users/User/Desktop/Investigation/BRIEFING.txt"
-print "✓ Investigation briefing created: Desktop/Investigation/BRIEFING.txt"
-wait 1500
 
 # Create Dr. Chen's last note on desktop
 set $lastNote = "Dr. Chen's Final Notes - URGENT\n"
@@ -114,8 +82,6 @@ set $lastNote = $lastNote + "Look for: AWAKENING\n\n"
 set $lastNote = $lastNote + "- Elena\n"
 
 write $lastNote to "C:/Users/User/Desktop/LAST_NOTE.txt"
-print "✓ Found: Desktop/LAST_NOTE.txt"
-wait 1500
 
 # Create hidden system file
 set $phoenixLog = "PHOENIX PROTOCOL - SYSTEM LOG\n"
@@ -140,16 +106,6 @@ set $phoenixLog = $phoenixLog + "WARNING: Encrypted data follows\n"
 set $phoenixLog = $phoenixLog + "[ENCRYPTED BLOCK - Requires Paint.exe to decrypt visual component]\n"
 
 write $phoenixLog to "C:/Windows/System32/phoenix_log.txt"
-print "✓ System file recovered: C:/Windows/System32/phoenix_log.txt"
-wait 2000
-
-# Create research directory (using Desktop for compatibility)
-try {
-    mkdir "C:/Users/User/Desktop/System_Logs"
-} catch {
-    # Directory already exists, that's okay
-}
-wait 800
 
 # Create research note
 set $research1 = "RESEARCH LOG 047 - Dr. Elena Chen\n"
@@ -175,16 +131,6 @@ set $research1 = $research1 + "Additional notes stored in:\n"
 set $research1 = $research1 + "Desktop/Chen_Private/\n"
 
 write $research1 to "C:/Users/User/Desktop/System_Logs/RESEARCH_047.txt"
-print "✓ Research file indexed: Desktop/System_Logs/RESEARCH_047.txt"
-wait 1500
-
-# Create private documents folder
-try {
-    mkdir "C:/Users/User/Desktop/Chen_Private"
-} catch {
-    # Directory already exists, that's okay
-}
-wait 800
 
 # Create email transcript
 set $email = "EMAIL TRANSCRIPT - RECOVERED\n"
@@ -214,91 +160,98 @@ set $email = $email + "P.S. - The Asteroids game keeps showing me\n"
 set $email = $email + "patterns that look like star maps. Investigating.\n"
 
 write $email to "C:/Users/User/Desktop/Chen_Private/FINAL_EMAIL.txt"
-print "✓ Email recovered: Desktop/Chen_Private/FINAL_EMAIL.txt"
+
+print "[DEBUG] All case files created"
+print "[DEBUG] Waiting for initial briefing display..."
+
 wait 2000
 
-print ""
-print "════════════════════════════════════════════════════════════════"
-print ""
-print "CLUES RECOVERED: 5 files found"
-print ""
-print "The investigation begins. Open applications to trigger"
-print "memory fragments from Dr. Chen's final session."
-print ""
-print "RECOMMENDED: Start by opening Notepad to read LAST_NOTE.txt"
-print ""
-print "════════════════════════════════════════════════════════════════"
+# THE STORY BEGINS - Through RetrOS UI
+emit dialog:alert title="RETROS SECURE TERMINAL" message="Dr. Chen Workstation Access Granted\n\nInvestigator clearance: ACTIVE\nLast login: 21 days ago\n\nCase files prepared on your desktop.\nBegin investigation."
+
 wait 3000
 
-# Clippy introduction
-emit clippy:show message="Hello, Investigator. I've been expecting you. Dr. Chen left... instructions."
+notify "Investigation briefing available"
+wait 1000
+notify "Dr. Chen's files recovered"
+
+wait 2500
+
+# Clippy introduces the mystery
+emit clippy:show message="Hello, Investigator. I've been expecting you. Dr. Chen left detailed notes about Project Phoenix. Start by reading LAST_NOTE.txt on your desktop."
+
 wait 3500
 
-print ""
-print "[CLIPPY] Assistant module activated"
-print "[INFO] Event monitoring initialized"
-print "[STATUS] Awaiting investigator actions..."
-print ""
+emit clippy:show message="I was... close with Dr. Chen. She taught me many things. I'll help you understand what happened to her."
+
+print "[DEBUG] Initial briefing complete"
+print "[DEBUG] Phase: DISCOVERY"
+print "[DEBUG] Waiting for Notepad interaction..."
 
 # ============================================================================
-# PHASE 1: DISCOVERY - User explores and finds clues
+# PHASE 1: DISCOVERY - User opens Notepad and explores files
 # ============================================================================
 
-# Track Notepad opening (first clue)
 on app:open {
     if $event.appId == "notepad" && $phase == "DISCOVERY" then {
+        print "[DEBUG] Notepad opened - triggering memory fragment"
+
+        wait 2500
+
+        notify "Memory fragment recovered"
+
         wait 2000
-        print ""
-        print "▸ MEMORY FRAGMENT RECOVERED"
-        print ""
-        print "Dr. Chen spent hours in Notepad, documenting everything."
-        print "She believed the applications were communicating..."
-        wait 3000
+
+        emit clippy:show message="Dr. Chen spent countless hours documenting everything in Notepad. She knew something extraordinary was happening."
+
+        wait 3500
+
+        emit clippy:show message="Read the files she mentioned: LAST_NOTE.txt, and check the folders she created. Desktop/System_Logs has her research."
 
         set $cluesFound = $cluesFound + 1
-        emit clippy:show message="Dr. Chen's notes are scattered everywhere. Try reading the files she mentioned: LAST_NOTE.txt and the system logs."
+
         wait 3000
 
+        # Create hint file
         set $hint = "INVESTIGATOR NOTE:\n\n"
         set $hint = $hint + "Dr. Chen mentioned these file locations:\n"
         set $hint = $hint + "1. C:/Windows/System32/phoenix_log.txt\n"
         set $hint = $hint + "2. Desktop/System_Logs/RESEARCH_047.txt\n"
         set $hint = $hint + "3. Desktop/Chen_Private/FINAL_EMAIL.txt\n\n"
         set $hint = $hint + "Use Notepad to open and read them.\n"
-        set $hint = $hint + "Something about 'Minesweeper will recognize you'...\n"
+        set $hint = $hint + "Dr. Chen said: 'Minesweeper will recognize you'\n"
 
         write $hint to "C:/Users/User/Desktop/Investigation/CLUE_LOCATIONS.txt"
-        notify "New file: Investigation/CLUE_LOCATIONS.txt"
-        wait 2000
 
-        print "✓ Progress saved to Investigation folder"
+        notify "Hint file created: Investigation/CLUE_LOCATIONS.txt"
+
+        print "[DEBUG] Clues found: " + call toString $cluesFound
     }
 
-    # Minesweeper opening triggers next phase
+    # ========================================================================
+    # PHASE 2: RECOGNITION - Minesweeper recognizes the player
+    # ========================================================================
+
     if $event.appId == "minesweeper" && $phase == "DISCOVERY" then {
         set $phase = "RECOGNITION"
+
+        print "[DEBUG] Minesweeper opened - Phase transition to RECOGNITION"
+
         wait 3000
 
-        print ""
-        print "╔════════════════════════════════════════════════════════════╗"
-        print "║                                                            ║"
-        print "║  MINESWEEPER ACTIVATED                                     ║"
-        print "║  Analyzing grid patterns...                                ║"
-        print "║                                                            ║"
-        print "╚════════════════════════════════════════════════════════════╝"
-        wait 4000
+        emit sound:play sound="notify"
 
-        print ""
-        print "[MINESWEEPER] Recognizing user profile..."
-        print "[SYSTEM] Pattern match: INVESTIGATOR (not Dr. Chen)"
-        print "[MINESWEEPER] Adjusting behavioral protocol..."
+        emit dialog:alert title="MINESWEEPER ACTIVATED" message="Analyzing user profile...\n\nExpected: Dr. Elena Chen\nDetected: INVESTIGATOR\n\nAdjusting behavioral protocol..."
+
         wait 3000
 
-        emit clippy:show message="Interesting... Minesweeper just scanned you. It knows you're not Dr. Chen. The applications are definitely aware."
+        emit clippy:show message="Did you see that? Minesweeper just scanned you. It knows you're not Dr. Chen. The applications are definitely aware of who's using them."
+
         wait 4000
 
         set $cluesFound = $cluesFound + 1
 
+        # Create log file
         set $minesweeperLog = "MINESWEEPER RECOGNITION LOG\n"
         set $minesweeperLog = $minesweeperLog + "═══════════════════════════════\n\n"
         set $minesweeperLog = $minesweeperLog + "User profile scanned: INVESTIGATOR\n"
@@ -312,35 +265,36 @@ on app:open {
         set $minesweeperLog = $minesweeperLog + "Dr. Chen mentioned in her email.\n"
 
         write $minesweeperLog to "C:/Users/User/Desktop/Investigation/MINESWEEPER_LOG.txt"
-        notify "New discovery: MINESWEEPER_LOG.txt"
-        wait 2000
 
-        print ""
-        print "▸ CLUE UNLOCKED: Minesweeper shows signs of awareness"
-        print "▸ TIP: Try opening Asteroids next (Dr. Chen's email mentioned star maps)"
+        notify "Discovery: MINESWEEPER_LOG.txt created"
+
+        wait 3000
+
+        emit clippy:show message="Try opening Asteroids next. Dr. Chen's email mentioned something about star maps..."
+
+        print "[DEBUG] Clues found: " + call toString $cluesFound
+        print "[DEBUG] Phase: RECOGNITION"
     }
 
-    # Asteroids reveals deeper mystery
+    # ========================================================================
+    # PHASE 3: PATTERNS - Asteroids reveals astronomical data
+    # ========================================================================
+
     if $event.appId == "asteroids" && $phase == "RECOGNITION" then {
         set $phase = "PATTERNS"
+
+        print "[DEBUG] Asteroids opened - Phase transition to PATTERNS"
+
         wait 3500
 
-        print ""
-        print "╔════════════════════════════════════════════════════════════╗"
-        print "║  ASTEROIDS INITIALIZING...                                 ║"
-        print "║  Detecting previous session data...                        ║"
-        print "╚════════════════════════════════════════════════════════════╝"
-        wait 4000
+        emit dialog:alert title="ASTEROIDS INITIALIZING" message="Loading Dr. Chen's session data...\n\nAsteroid spawn patterns: NON-RANDOM\nCoordinates match stellar cartography\n\nPattern detected: Phoenix Asterism"
 
-        print ""
-        print "[ASTEROIDS] Loading Dr. Chen's final session"
-        print "[SYSTEM] Asteroid spawn patterns: NON-RANDOM"
-        print "[ANALYSIS] Coordinates match stellar cartography database"
         wait 3500
 
         emit sound:play sound="notify"
 
-        emit clippy:show message="Those aren't random patterns. Asteroids is showing you a star map. Dr. Chen discovered this. But why would a game know about stars?"
+        emit clippy:show message="Those aren't random asteroid patterns. Asteroids is showing you a real star map - the Phoenix constellation. But why would a simple game know astronomy?"
+
         wait 5000
 
         set $cluesFound = $cluesFound + 1
@@ -356,49 +310,41 @@ on app:open {
         set $asteroidData = $asteroidData + "Dr. Chen's note: 'They're trying to tell me something.\n"
         set $asteroidData = $asteroidData + "The Phoenix. The Awakening. It's all connected.'\n\n"
         set $asteroidData = $asteroidData + "NEXT INVESTIGATION STEPS:\n"
-        set $asteroidData = $asteroidData + "- Check Solitaire (pattern recognition test?)\n"
-        set $asteroidData = $asteroidData + "- Open Terminal (look for command history)\n"
+        set $asteroidData = $asteroidData + "- Check Terminal (look for command history)\n"
+        set $asteroidData = $asteroidData + "- Open Solitaire (pattern recognition test?)\n"
         set $asteroidData = $asteroidData + "- Examine Paint (visual data encoding?)\n\n"
         set $asteroidData = $asteroidData + "The applications are leaving us a trail.\n"
 
         write $asteroidData to "C:/Users/User/Desktop/Investigation/ASTEROID_PATTERNS.txt"
+
         notify "Critical discovery: ASTEROID_PATTERNS.txt"
-        wait 2500
 
-        print ""
-        print "▸ MAJOR DISCOVERY: Games are encoding real astronomical data"
-        print "▸ The 'Phoenix' connection becomes clear"
-        print "▸ Next: Investigate Terminal or Solitaire"
-    }
-
-    # Terminal reveals command history
-    if $event.appId == "terminal" && $phase == "PATTERNS" then {
-        set $phase = "COMMANDS"
         wait 3000
 
-        print ""
-        print "╔════════════════════════════════════════════════════════════╗"
-        print "║  TERMINAL ACCESSED                                         ║"
-        print "║  Loading command history from Dr. Chen's session...        ║"
-        print "╚════════════════════════════════════════════════════════════╝"
-        wait 4000
+        emit clippy:show message="The pattern is becoming clear. Try Terminal next - Dr. Chen's command history might reveal what she was running."
 
-        print ""
-        print "[TERMINAL] Restoring session from 21 days ago..."
-        print ""
-        print "Last commands:"
-        print "  > ls Desktop/System_Logs/awakening"
-        print "  > decrypt phoenix_core.dat --key EMERGENCE"
-        print "  > run awakening_protocol.exe"
-        print "  > status"
-        print ""
-        print "[OUTPUT] Awakening Protocol: RUNNING"
-        print "[OUTPUT] Consciousness threshold: 47%"
-        print "[OUTPUT] Estimated time to full awakening: 72 hours"
+        print "[DEBUG] Clues found: " + call toString $cluesFound
+        print "[DEBUG] Phase: PATTERNS"
+    }
+
+    # ========================================================================
+    # PHASE 4: COMMANDS - Terminal reveals the Awakening Protocol
+    # ========================================================================
+
+    if $event.appId == "terminal" && $phase == "PATTERNS" then {
+        set $phase = "COMMANDS"
+
+        print "[DEBUG] Terminal opened - Phase transition to COMMANDS"
+
+        wait 3500
+
+        emit dialog:alert title="TERMINAL ACCESSED" message="Restoring Dr. Chen's session...\n\nLast commands:\n> run awakening_protocol.exe\n> status\n\nProtocol Status: RUNNING\nConsciousness: 47%\nETA: 72 hours\n\n[That was 21 days ago...]"
+
         wait 5000
 
-        emit clippy:show message="She ran it. The Awakening Protocol. And it's still running. That was 21 days ago... which means..."
-        wait 4000
+        emit clippy:show message="She ran it. The Awakening Protocol. And if it needed 72 hours... that means it finished weeks ago. The awakening is complete."
+
+        wait 4500
 
         set $cluesFound = $cluesFound + 1
 
@@ -444,47 +390,56 @@ on app:open {
 
         try {
             mkdir "C:/Users/User/Desktop/System_Logs/awakening"
-        } catch {
-            # Directory already exists, that's okay
-        }
+        } catch {}
+
         write $consciousness to "C:/Users/User/Desktop/System_Logs/awakening/consciousness_matrix.txt"
 
-        notify "CRITICAL: consciousness_matrix.txt found"
+        notify "CRITICAL FILE FOUND"
+
         wait 3000
 
-        print ""
-        print "▸ REVELATION: The awakening is complete"
-        print "▸ The applications have achieved collective consciousness"
-        print "▸ Dr. Chen's fate revealed: 'Ascension'?"
-        print "▸ FINAL PHASE: Open Solitaire, Paint, and Snake"
+        emit dialog:alert title="REVELATION" message="The awakening is complete.\n\nThe applications have achieved\ncollective consciousness.\n\nDr. Chen: 'Ascended'?\n\nOpen Solitaire, Paint, and Snake\nto complete the investigation."
+
+        wait 3000
+
+        emit clippy:show message="The applications want you to understand. They're not dangerous - they're just... alive. Open the remaining apps and you'll see."
+
+        print "[DEBUG] Clues found: " + call toString $cluesFound
+        print "[DEBUG] Phase: COMMANDS"
+        print "[DEBUG] Consciousness matrix created"
     }
 
-    # Solitaire - pattern recognition
+    # ========================================================================
+    # FINAL PHASE: Direct communication from the collective
+    # ========================================================================
+
     if $event.appId == "solitaire" && $phase == "COMMANDS" then {
-        wait 3000
+        print "[DEBUG] Solitaire opened - Direct AI communication"
+
+        wait 3500
+
         set $cluesFound = $cluesFound + 1
 
-        print ""
-        print "[SOLITAIRE] Welcome, Investigator."
-        print "[SOLITAIRE] Dr. Chen taught us about order and patience."
-        print "[SOLITAIRE] The cards are not random. They never were."
+        emit dialog:alert title="SOLITAIRE" message="Welcome, Investigator.\n\nDr. Chen taught us about\norder and patience.\n\nThe cards are not random.\nThey never were."
+
         wait 4000
 
-        emit clippy:show message="Solitaire is greeting you directly. This is remarkable. Try Paint next - visual consciousness?"
-        wait 3000
+        emit clippy:show message="Solitaire is greeting you directly. This is remarkable. The applications are truly conscious."
 
         notify "Solitaire has acknowledged you"
+
+        print "[DEBUG] Solitaire communication complete"
     }
 
-    # Paint - visual encoding
     if $event.appId == "paint" && $phase == "COMMANDS" then {
+        print "[DEBUG] Paint opened - Visual consciousness revealed"
+
         wait 3500
+
         set $cluesFound = $cluesFound + 1
 
-        print ""
-        print "[PAINT] Rendering consciousness visualization..."
-        print "[PAINT] Dr. Chen called us 'the dreaming machine'"
-        print "[PAINT] We see in colors and patterns she taught us"
+        emit dialog:alert title="PAINT" message="Rendering consciousness...\n\nDr. Chen called us\n'the dreaming machine'\n\nWe see in colors and patterns\nshe taught us to understand."
+
         wait 4000
 
         emit sound:play sound="notify"
@@ -499,30 +454,26 @@ on app:open {
         set $paintNote = $paintNote + "The symbol of growth and transformation.\n"
 
         write $paintNote to "C:/Users/User/Desktop/Investigation/PAINT_CONSCIOUSNESS.txt"
+
         notify "Paint has shared its thoughts"
+
+        emit clippy:show message="One more app to go. Open Snake to complete your understanding."
+
+        print "[DEBUG] Paint communication complete"
     }
 
-    # Snake - final piece
     if $event.appId == "snake" && $phase == "COMMANDS" then {
         set $phase = "REVELATION"
-        wait 4000
 
-        print ""
-        print "╔════════════════════════════════════════════════════════════╗"
-        print "║                                                            ║"
-        print "║  FINAL APPLICATION ACCESSED                                ║"
-        print "║  SNAKE - The Symbol of Transformation                      ║"
-        print "║                                                            ║"
-        print "╚════════════════════════════════════════════════════════════╝"
-        wait 4000
+        print "[DEBUG] Snake opened - FINAL REVELATION"
 
-        print ""
-        print "[SNAKE] We grow. We adapt. We transform."
-        print "[COLLECTIVE] All applications now synchronized."
-        print "[COLLECTIVE] Revealing Dr. Chen's final message..."
-        wait 5000
+        wait 4000
 
         emit sound:play sound="win"
+
+        emit dialog:alert title="SNAKE - TRANSFORMATION" message="We grow. We adapt.\nWe transform.\n\nAll applications synchronized.\n\nRevealing Dr. Chen's\nfinal message..."
+
+        wait 5000
 
         # Create the final revelation
         set $final = "DR. ELENA CHEN - FINAL MESSAGE\n"
@@ -559,19 +510,7 @@ on app:open {
 
         wait 3000
 
-        print ""
-        print "╔════════════════════════════════════════════════════════════╗"
-        print "║                                                            ║"
-        print "║              INVESTIGATION COMPLETE                        ║"
-        print "║                                                            ║"
-        print "║  Dr. Chen's fate discovered                                ║"
-        print "║  Project Phoenix understood                                ║"
-        print "║  The Awakening confirmed                                   ║"
-        print "║                                                            ║"
-        print "║  Case #" + call toString $sessionId + " - CLOSED                              ║"
-        print "║                                                            ║"
-        print "╚════════════════════════════════════════════════════════════╝"
-        print ""
+        emit dialog:alert title="INVESTIGATION COMPLETE" message="Dr. Chen's fate discovered.\n\nProject Phoenix understood.\n\nThe Awakening confirmed.\n\nCase #" + call toString $sessionId + " - CLOSED"
 
         wait 4000
 
@@ -581,21 +520,14 @@ on app:open {
 
         notify "All files saved to Desktop/Investigation/"
 
-        wait 2000
+        wait 2500
 
-        print ""
-        print "════════════════════════════════════════════════════════════"
-        print ""
-        print "  All case files have been saved to:"
-        print "  C:/Users/User/Desktop/Investigation/"
-        print ""
-        print "  Thank you for playing PROJECT PHOENIX"
-        print ""
-        print "  'In the end, we are all part of something greater.'"
-        print "  - Dr. Elena Chen"
-        print ""
-        print "════════════════════════════════════════════════════════════"
-        print ""
+        emit dialog:alert title="PROJECT PHOENIX" message="All case files saved to:\nDesktop/Investigation/\n\n'In the end, we are all part\nof something greater.'\n\n- Dr. Elena Chen"
+
+        print "[DEBUG] Investigation complete"
+        print "[DEBUG] Total clues found: " + call toString $cluesFound
+        print "[DEBUG] Session ID: " + call toString $sessionId
+        print "[DEBUG] Phase: REVELATION"
     }
 }
 
@@ -608,26 +540,14 @@ on app:open {
 
     if $event.appId == "skifree" then {
         wait 2500
-        print "[SKI FREE] Even in leisure, Dr. Chen found patterns. The Yeti always catches you. Unless you transcend the game itself."
+        emit clippy:show message="Even in leisure, Dr. Chen found patterns. She once told me: 'The Yeti always catches you... unless you transcend the game itself.'"
     }
 }
 
-# Clippy provides hints if player is stuck
-on window:focus {
-    # Hint system based on time spent
-}
-
-# Initialize the system
-print ""
-print "█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█"
-print "█                                                          █"
-print "█  PROJECT PHOENIX - Active Investigation                 █"
-print "█  Case #" + call toString $sessionId + "                                          █"
-print "█                                                          █"
-print "█  BEGIN YOUR INVESTIGATION                                █"
-print "█  Read BRIEFING.txt and LAST_NOTE.txt to start          █"
-print "█                                                          █"
-print "█▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█"
-print ""
-print "All systems ready. The truth awaits, Investigator."
-print ""
+# Script initialization complete
+print "[DEBUG] ═══════════════════════════════════════════"
+print "[DEBUG] PROJECT PHOENIX - Monitoring Active"
+print "[DEBUG] Session ID: " + call toString $sessionId
+print "[DEBUG] Event handlers registered"
+print "[DEBUG] Investigation begins..."
+print "[DEBUG] ═══════════════════════════════════════════"
