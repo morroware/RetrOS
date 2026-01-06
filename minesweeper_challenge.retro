@@ -7,13 +7,7 @@ print "=== RETROS GAME CHALLENGE ==="
 print "Initializing challenge..."
 
 # Create challenge document on desktop
-set challengeText = "RETROS GAME CHALLENGE\n\n"
-set challengeText = concat($challengeText, "Welcome to the ultimate RetroOS gaming challenge!\n\n")
-set challengeText = concat($challengeText, "STAGE 1: Beat Minesweeper\n")
-set challengeText = concat($challengeText, "Clear the minefield without hitting any mines.\n\n")
-set challengeText = concat($challengeText, "STAGE 2: Score 1000 Points in Asteroids\n")
-set challengeText = concat($challengeText, "Destroy asteroids and UFOs to reach 1000 points.\n\n")
-set challengeText = concat($challengeText, "Good luck! Your 10 second preparation period begins now...\n")
+set challengeText = "RETROS GAME CHALLENGE\n\nWelcome to the ultimate RetroOS gaming challenge!\n\nSTAGE 1: Beat Minesweeper\nClear the minefield without hitting any mines.\n\nSTAGE 2: Score 1000 Points in Asteroids\nDestroy asteroids and UFOs to reach 1000 points.\n\nGood luck! Your 10 second preparation period begins now...\n"
 
 print "Creating challenge document on desktop..."
 write $challengeText to "C:/Users/User/Desktop/CHALLENGE.txt"
@@ -41,72 +35,11 @@ wait 2000
 
 print "Waiting for you to beat Minesweeper..."
 
-# Listen for Minesweeper win event
-on minesweeper:win {
-    print "✓ STAGE 1 COMPLETE! Minesweeper beaten!"
+# Listen for Minesweeper win event - ALL ON ONE LINE
+on minesweeper:win { print "✓ STAGE 1 COMPLETE! Minesweeper beaten!"; emit sound:play sound="win"; wait 2000; print "Starting STAGE 2: Asteroids Challenge..."; emit dialog:alert message="STAGE 2: Get 1000 points in Asteroids to proceed!" title="Game Challenge - Stage 2"; wait 1500; print "Launching Asteroids..."; launch asteroids; wait 2000; print "Waiting for you to score 1000 points..." }
 
-    # Play victory sound
-    emit sound:play sound="win"
-
-    # Wait a moment
-    wait 2000
-
-    # Stage 2: Asteroids
-    print "Starting STAGE 2: Asteroids Challenge..."
-    emit dialog:alert message="STAGE 2: Get 1000 points in Asteroids to proceed!" title="Game Challenge - Stage 2"
-
-    # Wait for dialog to close
-    wait 1500
-
-    # Launch Asteroids
-    print "Launching Asteroids..."
-    launch asteroids
-
-    wait 2000
-    print "Waiting for you to score 1000 points..."
-}
-
-# Listen for Asteroids score updates
-on game:score {
-    # Check if this is from Asteroids
-    if $event.appId == "asteroids" {
-        set currentScore = $event.score
-
-        # Log progress
-        print "Asteroids score: "
-        print currentScore
-
-        # Check if they reached 1000 points
-        if $currentScore >= 1000 {
-            print "✓ STAGE 2 COMPLETE! 1000 points achieved!"
-
-            # Play victory sound
-            emit sound:play sound="win"
-
-            # Wait a moment for dramatic effect
-            wait 1500
-
-            # FINAL VICTORY!
-            print "🎉🎉🎉 CHALLENGE COMPLETE! 🎉🎉🎉"
-            emit dialog:alert message="🎉 YOU WON THE CHALLENGE! 🎉\n\nYou've mastered both Minesweeper and Asteroids!\n\nCongratulations, champion!" title="VICTORY!"
-
-            # Update the challenge file
-            set victoryText = "RETROS GAME CHALLENGE - COMPLETED!\n\n"
-            set victoryText = concat($victoryText, "✓ STAGE 1: Minesweeper - COMPLETE\n")
-            set victoryText = concat($victoryText, "✓ STAGE 2: Asteroids (1000+ points) - COMPLETE\n\n")
-            set victoryText = concat($victoryText, "CONGRATULATIONS!\n")
-            set victoryText = concat($victoryText, "You are a true RetroOS gaming champion!\n\n")
-            set victoryText = concat($victoryText, "Final Score: ")
-            set victoryText = concat($victoryText, $currentScore)
-            set victoryText = concat($victoryText, " points\n")
-
-            write $victoryText to "C:/Users/User/Desktop/CHALLENGE_COMPLETE.txt"
-
-            print "Victory document created: Desktop/CHALLENGE_COMPLETE.txt"
-            print "Script complete!"
-        }
-    }
-}
+# Listen for Asteroids score updates - ALL ON ONE LINE
+on game:score { if $event.appId == "asteroids" then { set currentScore = $event.score; print "Asteroids score: "; print $currentScore; if $currentScore >= 1000 then { print "✓ STAGE 2 COMPLETE! 1000 points achieved!"; emit sound:play sound="win"; wait 1500; print "CHALLENGE COMPLETE!"; emit dialog:alert message="YOU WON THE CHALLENGE!\n\nYou mastered both Minesweeper and Asteroids!\n\nCongratulations, champion!" title="VICTORY!"; set victoryText = "RETROS GAME CHALLENGE - COMPLETED!\n\n✓ STAGE 1: Minesweeper - COMPLETE\n✓ STAGE 2: Asteroids (1000+ points) - COMPLETE\n\nCONGRATULATIONS!\nYou are a true RetroOS gaming champion!\n"; write $victoryText to "C:/Users/User/Desktop/CHALLENGE_COMPLETE.txt"; print "Victory document created: Desktop/CHALLENGE_COMPLETE.txt"; print "Script complete!" } } }
 
 # Script completes but event handlers remain active
 print "Event handlers registered - monitoring for game progress..."
