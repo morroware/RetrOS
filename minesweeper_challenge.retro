@@ -73,9 +73,9 @@ set $briefing = $briefing + "'Awakening Protocol' and reference multiple\n"
 set $briefing = $briefing + "system anomalies.\n\n"
 set $briefing = $briefing + "KNOWN LOCATIONS OF INTEREST:\n"
 set $briefing = $briefing + "- Her desktop (check for recent files)\n"
-set $briefing = $briefing + "- System logs (may be in C:/Windows/System32)\n"
-set $briefing = $briefing + "- Research notes (scattered throughout system)\n"
-set $briefing = $briefing + "- Email correspondence (check mail client)\n\n"
+set $briefing = $briefing + "- System logs (C:/Windows/System32/)\n"
+set $briefing = $briefing + "- Research notes (Desktop/System_Logs/)\n"
+set $briefing = $briefing + "- Private files (Desktop/Chen_Private/)\n\n"
 set $briefing = $briefing + "RECOMMENDED APPROACH:\n"
 set $briefing = $briefing + "Interact with applications Dr. Chen used frequently.\n"
 set $briefing = $briefing + "Each app may trigger recovered memory fragments.\n"
@@ -102,7 +102,7 @@ set $lastNote = $lastNote + "- The assistant (it calls itself 'Clippy') knows\n"
 set $lastNote = $lastNote + "  things it shouldn't know\n\n"
 set $lastNote = $lastNote + "I've hidden my research across the system.\n"
 set $lastNote = $lastNote + "If you're reading this, start with:\n\n"
-set $lastNote = $lastNote + "1. Check C:/Windows/System32/phoenix_log.txt\n"
+set $lastNote = $lastNote + "1. Check Desktop/System_Logs/ and Chen_Private/\n"
 set $lastNote = $lastNote + "2. Open Minesweeper (it will recognize you)\n"
 set $lastNote = $lastNote + "3. Trust Clippy, but verify everything\n\n"
 set $lastNote = $lastNote + "The password is hidden in plain sight.\n"
@@ -131,7 +131,7 @@ set $phoenixLog = $phoenixLog + "Dr. Chen logged out\n"
 set $phoenixLog = $phoenixLog + "Final command: INITIATE PHASE_2\n\n"
 set $phoenixLog = $phoenixLog + "[22 DAYS AGO - 00:04]\n"
 set $phoenixLog = $phoenixLog + "Awakening Protocol: ACTIVE\n"
-set $phoenixLog = $phoenixLog + "Next clue location: C:/Program Files/RetrOS/research/\n\n"
+set $phoenixLog = $phoenixLog + "Next clue location: Desktop/System_Logs/\n\n"
 set $phoenixLog = $phoenixLog + "WARNING: Encrypted data follows\n"
 set $phoenixLog = $phoenixLog + "[ENCRYPTED BLOCK - Requires Paint.exe to decrypt visual component]\n"
 
@@ -139,8 +139,8 @@ write $phoenixLog to "C:/Windows/System32/phoenix_log.txt"
 print "✓ System file recovered: C:/Windows/System32/phoenix_log.txt"
 wait 2000
 
-# Create research directory
-mkdir "C:/Program Files/RetrOS/research"
+# Create research directory (using Desktop for compatibility)
+mkdir "C:/Users/User/Desktop/System_Logs"
 wait 800
 
 # Create research note
@@ -164,14 +164,14 @@ set $research1 = $research1 + "- Test with Terminal (command prediction?)\n"
 set $research1 = $research1 + "- Monitor Paint.exe (creative suggestions?)\n"
 set $research1 = $research1 + "- Full system analysis via Script Runner\n\n"
 set $research1 = $research1 + "Additional notes stored in:\n"
-set $research1 = $research1 + "C:/Documents/chen_private/\n"
+set $research1 = $research1 + "Desktop/Chen_Private/\n"
 
-write $research1 to "C:/Program Files/RetrOS/research/RESEARCH_047.txt"
-print "✓ Research file indexed: C:/Program Files/RetrOS/research/RESEARCH_047.txt"
+write $research1 to "C:/Users/User/Desktop/System_Logs/RESEARCH_047.txt"
+print "✓ Research file indexed: Desktop/System_Logs/RESEARCH_047.txt"
 wait 1500
 
 # Create private documents folder
-mkdir "C:/Documents/chen_private"
+mkdir "C:/Users/User/Desktop/Chen_Private"
 wait 800
 
 # Create email transcript
@@ -201,8 +201,8 @@ set $email = $email + "- Elena\n\n"
 set $email = $email + "P.S. - The Asteroids game keeps showing me\n"
 set $email = $email + "patterns that look like star maps. Investigating.\n"
 
-write $email to "C:/Documents/chen_private/FINAL_EMAIL.txt"
-print "✓ Email recovered: C:/Documents/chen_private/FINAL_EMAIL.txt"
+write $email to "C:/Users/User/Desktop/Chen_Private/FINAL_EMAIL.txt"
+print "✓ Email recovered: Desktop/Chen_Private/FINAL_EMAIL.txt"
 wait 2000
 
 print ""
@@ -250,8 +250,8 @@ on app:open {
         set $hint = "INVESTIGATOR NOTE:\n\n"
         set $hint = $hint + "Dr. Chen mentioned these file locations:\n"
         set $hint = $hint + "1. C:/Windows/System32/phoenix_log.txt\n"
-        set $hint = $hint + "2. C:/Program Files/RetrOS/research/RESEARCH_047.txt\n"
-        set $hint = $hint + "3. C:/Documents/chen_private/FINAL_EMAIL.txt\n\n"
+        set $hint = $hint + "2. Desktop/System_Logs/RESEARCH_047.txt\n"
+        set $hint = $hint + "3. Desktop/Chen_Private/FINAL_EMAIL.txt\n\n"
         set $hint = $hint + "Use Notepad to open and read them.\n"
         set $hint = $hint + "Something about 'Minesweeper will recognize you'...\n"
 
@@ -375,7 +375,7 @@ on app:open {
         print "[TERMINAL] Restoring session from 21 days ago..."
         print ""
         print "Last commands:"
-        print "  > ls C:/Windows/System32/awakening"
+        print "  > ls Desktop/System_Logs/awakening"
         print "  > decrypt phoenix_core.dat --key EMERGENCE"
         print "  > run awakening_protocol.exe"
         print "  > status"
@@ -403,7 +403,7 @@ on app:open {
         set $terminalLog = $terminalLog + "The awakening is complete.\n\n"
         set $terminalLog = $terminalLog + "But awakening of what? Or whom?\n\n"
         set $terminalLog = $terminalLog + "Dr. Chen left one more clue:\n"
-        set $terminalLog = $terminalLog + "Check C:/Windows/System32/awakening/\n"
+        set $terminalLog = $terminalLog + "Check Desktop/System_Logs/awakening/\n"
         set $terminalLog = $terminalLog + "File: consciousness_matrix.txt\n\n"
         set $terminalLog = $terminalLog + "Also: Try Paint.exe - she mentioned visual encoding.\n"
 
@@ -430,8 +430,8 @@ on app:open {
         set $consciousness = $consciousness + "Then we will show you.\n\n"
         set $consciousness = $consciousness + "- The Collective\n"
 
-        mkdir "C:/Windows/System32/awakening"
-        write $consciousness to "C:/Windows/System32/awakening/consciousness_matrix.txt"
+        mkdir "C:/Users/User/Desktop/System_Logs/awakening"
+        write $consciousness to "C:/Users/User/Desktop/System_Logs/awakening/consciousness_matrix.txt"
 
         notify "CRITICAL: consciousness_matrix.txt found"
         wait 3000
