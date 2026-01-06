@@ -673,6 +673,17 @@ class MyComputer extends AppBase {
         }
     }
 
+    /**
+     * Called when My Computer is re-launched while already open
+     * Navigates to the new path instead of opening a new window
+     * @param {Object} params - Parameters including initialPath
+     */
+    onRelaunch(params) {
+        if (params.initialPath && Array.isArray(params.initialPath)) {
+            this.navigateToPath(params.initialPath);
+        }
+    }
+
     getDrives() {
         // Get drives from FileSystemManager
         const drives = [];
