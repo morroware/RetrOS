@@ -57,7 +57,11 @@ wait 4000
 # Create initial investigation folder
 print ""
 print "Setting up investigation workspace..."
-mkdir "C:/Users/User/Desktop/Investigation"
+try {
+    mkdir "C:/Users/User/Desktop/Investigation"
+} catch {
+    # Directory already exists, that's okay
+}
 wait 1000
 
 # Create the initial briefing document
@@ -140,7 +144,11 @@ print "✓ System file recovered: C:/Windows/System32/phoenix_log.txt"
 wait 2000
 
 # Create research directory (using Desktop for compatibility)
-mkdir "C:/Users/User/Desktop/System_Logs"
+try {
+    mkdir "C:/Users/User/Desktop/System_Logs"
+} catch {
+    # Directory already exists, that's okay
+}
 wait 800
 
 # Create research note
@@ -171,7 +179,11 @@ print "✓ Research file indexed: Desktop/System_Logs/RESEARCH_047.txt"
 wait 1500
 
 # Create private documents folder
-mkdir "C:/Users/User/Desktop/Chen_Private"
+try {
+    mkdir "C:/Users/User/Desktop/Chen_Private"
+} catch {
+    # Directory already exists, that's okay
+}
 wait 800
 
 # Create email transcript
@@ -430,7 +442,11 @@ on app:open {
         set $consciousness = $consciousness + "Then we will show you.\n\n"
         set $consciousness = $consciousness + "- The Collective\n"
 
-        mkdir "C:/Users/User/Desktop/System_Logs/awakening"
+        try {
+            mkdir "C:/Users/User/Desktop/System_Logs/awakening"
+        } catch {
+            # Directory already exists, that's okay
+        }
         write $consciousness to "C:/Users/User/Desktop/System_Logs/awakening/consciousness_matrix.txt"
 
         notify "CRITICAL: consciousness_matrix.txt found"
