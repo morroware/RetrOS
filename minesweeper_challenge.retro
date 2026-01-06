@@ -1,0 +1,47 @@
+# Minesweeper Challenge Script
+# Wait 10 seconds, show challenge dialog, launch Minesweeper, wait for win
+
+print "Minesweeper Challenge starting..."
+print "Waiting 10 seconds before beginning..."
+
+# Wait 10 seconds
+wait 10000
+
+print "Time's up! Preparing challenge..."
+
+# Show challenge dialog
+emit dialog:alert message="Beat Minesweeper to proceed!" title="Minesweeper Challenge"
+
+# Give user a moment to read and close dialog
+wait 1500
+
+# Launch Minesweeper
+print "Launching Minesweeper..."
+launch minesweeper
+
+# Wait for game to open
+wait 2000
+
+print "Waiting for you to win..."
+
+# Listen for Minesweeper win event
+on minesweeper:win {
+    print "Minesweeper won! Congratulations!"
+
+    # Show victory notification
+    emit dialog:alert message="🎉 You won! Congratulations! 🎉" title="Victory!"
+
+    # Play a victory sound
+    emit sound:play sound="win"
+
+    print "Challenge complete!"
+
+    # Stop the script
+    stop
+}
+
+# Keep the script running to listen for events
+print "Script is now monitoring for Minesweeper victory..."
+while TRUE {
+    wait 1000
+}
