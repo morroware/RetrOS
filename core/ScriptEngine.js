@@ -803,7 +803,7 @@ class ScriptEngineClass {
     }
 
     /**
-     * Tokenize a line respecting quoted strings
+     * Tokenize a line respecting quoted strings and brackets
      * @private
      */
     _tokenize(line) {
@@ -811,6 +811,8 @@ class ScriptEngineClass {
         let current = '';
         let inQuotes = false;
         let quoteChar = '';
+        let bracketDepth = 0;
+        let braceDepth = 0;
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
@@ -824,10 +826,27 @@ class ScriptEngineClass {
                 inQuotes = false;
                 current += char;
                 quoteChar = '';
-            } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && !inQuotes) {
-                if (current) {
-                    tokens.push(current);
-                    current = '';
+            } else if (!inQuotes) {
+                // Track bracket depth for array literals
+                if (char === '[') {
+                    bracketDepth++;
+                    current += char;
+                } else if (char === ']') {
+                    bracketDepth--;
+                    current += char;
+                } else if (char === '{') {
+                    braceDepth++;
+                    current += char;
+                } else if (char === '}') {
+                    braceDepth--;
+                    current += char;
+                } else if ((char === ' ' || char === '\n' || char === '\t' || char === '\r') && bracketDepth === 0 && braceDepth === 0) {
+                    if (current) {
+                        tokens.push(current);
+                        current = '';
+                    }
+                } else {
+                    current += char;
                 }
             } else {
                 current += char;
