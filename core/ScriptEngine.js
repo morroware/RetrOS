@@ -1374,9 +1374,12 @@ class ScriptEngineClass {
         let quoteChar = '';
 
         // Search from right to left for left-associative parsing
-        for (let i = str.length - op.length; i >= 0; i--) {
+        // Start from the very end to properly track quote state, but only check
+        // for operators at valid positions (where the full operator fits)
+        for (let i = str.length - 1; i >= 0; i--) {
             const char = str[i];
 
+            // Track quote state (going right-to-left, we see closing quotes first)
             if ((char === '"' || char === "'") && !inQuotes) {
                 inQuotes = true;
                 quoteChar = char;
@@ -1384,22 +1387,26 @@ class ScriptEngineClass {
                 inQuotes = false;
                 quoteChar = '';
             } else if (!inQuotes) {
+                // Track parentheses (going right-to-left, ')' increases depth)
                 if (char === ')') parenDepth++;
                 else if (char === '(') parenDepth--;
             }
 
-            if (parenDepth === 0 && !inQuotes && str.substring(i, i + op.length) === op) {
-                // Make sure we're not matching part of a longer operator
-                // e.g., don't match '=' in '==' or '<' in '<='
-                const before = i > 0 ? str[i - 1] : '';
-                const after = i + op.length < str.length ? str[i + op.length] : '';
+            // Only check for operator if there's room for the full operator string
+            if (i <= str.length - op.length) {
+                if (parenDepth === 0 && !inQuotes && str.substring(i, i + op.length) === op) {
+                    // Make sure we're not matching part of a longer operator
+                    // e.g., don't match '=' in '==' or '<' in '<='
+                    const before = i > 0 ? str[i - 1] : '';
+                    const after = i + op.length < str.length ? str[i + op.length] : '';
 
-                // For single-char operators, check they're not part of multi-char ones
-                if (op === '>' && (before === '>' || after === '=' || before === '-')) continue;
-                if (op === '<' && (after === '=' || after === '<')) continue;
-                if (op === '=' && (before === '=' || before === '!' || before === '<' || before === '>' || after === '=')) continue;
+                    // For single-char operators, check they're not part of multi-char ones
+                    if (op === '>' && (before === '>' || after === '=' || before === '-')) continue;
+                    if (op === '<' && (after === '=' || after === '<')) continue;
+                    if (op === '=' && (before === '=' || before === '!' || before === '<' || before === '>' || after === '=')) continue;
 
-                return i;
+                    return i;
+                }
             }
         }
 
