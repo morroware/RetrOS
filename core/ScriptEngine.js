@@ -141,6 +141,8 @@ class ScriptEngineClass {
         this.breakRequested = false;
         this.loopBreakRequested = false;
         this.continueRequested = false; // For continue statement
+        this.returnRequested = false; // For return statement propagation
+        this.returnValue = null; // Value from return statement
         this.lastResult = null;
         this.executionTimeout = this.LIMITS.DEFAULT_EXECUTION_TIMEOUT;
         this.executionStartTime = null;
@@ -214,6 +216,8 @@ class ScriptEngineClass {
         this.running = true;
         this.breakRequested = false;
         this.continueRequested = false;
+        this.returnRequested = false;
+        this.returnValue = null;
         this.executionStartTime = Date.now();
         this.callStack = [];
 
@@ -1367,12 +1371,13 @@ class ScriptEngineClass {
         let result = null;
 
         for (const statement of statements) {
-            if (this.breakRequested || this.loopBreakRequested) break;
+            if (this.breakRequested || this.loopBreakRequested || this.returnRequested) break;
 
             result = await this._executeStatement(statement, env);
 
-            if (statement.type === 'return') {
-                return result;
+            // Check if a return was executed (either directly or in a nested block)
+            if (this.returnRequested) {
+                return this.returnValue;
             }
             if (statement.type === 'break') {
                 break;
@@ -1479,7 +1484,7 @@ class ScriptEngineClass {
                 }
                 // Create loop scope to prevent $i collision with user variables
                 const loopEnv = env.extend();
-                for (let i = 0; i < loopCount && !this.breakRequested && !this.loopBreakRequested; i++) {
+                for (let i = 0; i < loopCount && !this.breakRequested && !this.loopBreakRequested && !this.returnRequested; i++) {
                     this._checkTimeout();
                     loopEnv.set('i', i);
                     this.continueRequested = false;
@@ -1487,6 +1492,7 @@ class ScriptEngineClass {
                     for (const stmt of statement.body) {
                         if (this.continueRequested) break;
                         if (this.loopBreakRequested) break;
+                        if (this.returnRequested) break;
                         loopResult = await this._executeStatement(stmt, loopEnv);
                     }
                 }
@@ -1501,7 +1507,7 @@ class ScriptEngineClass {
                 // Create loop scope for while loops too
                 const whileEnv = env.extend();
 
-                while (await this._evaluateCondition(statement.condition, whileEnv) && !this.breakRequested && !this.loopBreakRequested) {
+                while (await this._evaluateCondition(statement.condition, whileEnv) && !this.breakRequested && !this.loopBreakRequested && !this.returnRequested) {
                     this._checkTimeout();
                     whileIterations++;
                     if (whileIterations > this.LIMITS.MAX_LOOP_ITERATIONS) {
@@ -1512,6 +1518,7 @@ class ScriptEngineClass {
                     for (const stmt of statement.body) {
                         if (this.continueRequested) break;
                         if (this.loopBreakRequested) break;
+                        if (this.returnRequested) break;
                         whileResult = await this._executeStatement(stmt, whileEnv);
                     }
                 }
@@ -1636,7 +1643,9 @@ class ScriptEngineClass {
                 return await CommandBus.execute(statement.command, { args: cmdArgs });
 
             case 'return':
-                return await this._resolveValue(statement.value, env);
+                this.returnRequested = true;
+                this.returnValue = await this._resolveValue(statement.value, env);
+                return this.returnValue;
 
             case 'break':
                 this.loopBreakRequested = true;
@@ -1656,7 +1665,7 @@ class ScriptEngineClass {
 
                 if (Array.isArray(arrayValue)) {
                     const iterationLimit = Math.min(arrayValue.length, this.LIMITS.MAX_LOOP_ITERATIONS);
-                    for (let idx = 0; idx < iterationLimit && !this.breakRequested && !this.loopBreakRequested; idx++) {
+                    for (let idx = 0; idx < iterationLimit && !this.breakRequested && !this.loopBreakRequested && !this.returnRequested; idx++) {
                         this._checkTimeout();
                         foreachEnv.set(statement.varName, arrayValue[idx]);
                         foreachEnv.set('i', idx);
@@ -1665,6 +1674,7 @@ class ScriptEngineClass {
                         for (const stmt of statement.body) {
                             if (this.continueRequested) break;
                             if (this.loopBreakRequested) break;
+                            if (this.returnRequested) break;
                             foreachResult = await this._executeStatement(stmt, foreachEnv);
                         }
                     }
@@ -1732,7 +1742,10 @@ class ScriptEngineClass {
             return result;
         } finally {
             this.callStack.pop();
-            // No need to restore - child environment is automatically discarded!
+            // Clear return flag after function completes (it was consumed by this function)
+            this.returnRequested = false;
+            this.returnValue = null;
+            // No need to restore environment - child environment is automatically discarded!
         }
     }
 
@@ -2337,6 +2350,8 @@ class ScriptEngineClass {
         this.breakRequested = false;
         this.loopBreakRequested = false;
         this.continueRequested = false;
+        this.returnRequested = false;
+        this.returnValue = null;
         this.running = false;
         this.executionStartTime = null;
 
