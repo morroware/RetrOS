@@ -1441,9 +1441,15 @@ class ScriptEngineClass {
                 if (this.eventHandlers.length >= this.LIMITS.MAX_EVENT_HANDLERS) {
                     throw new Error(`Maximum event handlers (${this.LIMITS.MAX_EVENT_HANDLERS}) exceeded. Call cleanup() to remove old handlers.`);
                 }
+                console.log(`[ScriptEngine] Registering handler for: ${statement.eventName}, body statements:`, statement.body?.length || 0);
                 const unsubscribe = EventBus.on(statement.eventName, async (eventPayload) => {
-                    env.set('event', eventPayload);
-                    await this._execute(statement.body, env);
+                    console.log(`[ScriptEngine] Event received: ${statement.eventName}`, eventPayload);
+                    try {
+                        env.set('event', eventPayload);
+                        await this._execute(statement.body, env);
+                    } catch (err) {
+                        console.error(`[ScriptEngine] Error in event handler for ${statement.eventName}:`, err);
+                    }
                 });
                 this.eventHandlers.push(unsubscribe);
                 return { subscribed: statement.eventName };
