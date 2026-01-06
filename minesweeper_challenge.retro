@@ -35,13 +35,8 @@ on minesweeper:win {
     emit sound:play sound="win"
 
     print "Challenge complete!"
-
-    # Stop the script
-    stop
 }
 
-# Keep the script running to listen for events
+# Script completes but event handler remains active
 print "Script is now monitoring for Minesweeper victory..."
-while TRUE {
-    wait 1000
-}
+print "Event handler registered - waiting for win..."
