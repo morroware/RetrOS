@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROJECT EREBUS - ARG Demo for RetrOS
 # ═══════════════════════════════════════════════════════════════════════════════
-# Version 5.0 - Single line statements only
+# Version 5.1 - No return statements in event handlers
 # ═══════════════════════════════════════════════════════════════════════════════
 
 print "[EREBUS] Starting..."
@@ -148,7 +148,8 @@ emit dialog:alert title="PROJECT EREBUS" message="Investigation started! Open De
 # ═══════════════════════════════════════════════════════════════════════════════
 
 on app:close {
-    if $event.appId != "notepad" then { return }
+    set $isNotepad = $event.appId == "notepad"
+    if $isNotepad then {
 
     # Cipher 1 check
     if $c1 == 0 then {
@@ -324,6 +325,8 @@ on app:close {
     if $solved >= 8 && $act == 2 then {
         set $act = 3
         emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available"
+    }
+
     }
 }
 
