@@ -5,6 +5,7 @@
 
 import AppBase from './AppBase.js';
 import AppRegistry from './AppRegistry.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class HelpSystem extends AppBase {
     constructor() {
@@ -672,6 +673,8 @@ class HelpSystem extends AppBase {
     }
 
     navigateTo(topic, addToHistory = true) {
+        const previousTopic = this.currentTopic;
+
         if (addToHistory && this.currentTopic !== topic) {
             // Trim forward history when navigating
             if (this.historyIndex < this.history.length - 1) {
@@ -682,6 +685,12 @@ class HelpSystem extends AppBase {
         }
 
         this.currentTopic = topic;
+
+        // Emit topic changed event
+        this.emitAppEvent('topic:changed', {
+            topic: topic,
+            previousTopic: previousTopic
+        });
 
         const content = this.getElement('#help-content');
         if (content) {

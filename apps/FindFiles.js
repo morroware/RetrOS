@@ -6,7 +6,7 @@
 import AppBase from './AppBase.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import AppRegistry from './AppRegistry.js';
-import EventBus from '../core/EventBus.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class FindFiles extends AppBase {
     constructor() {
@@ -323,6 +323,13 @@ class FindFiles extends AppBase {
         this.isSearching = false;
         this.getElement('#btn-find-now').disabled = false;
         this.getElement('#btn-stop').disabled = true;
+
+        // Emit search complete event
+        this.emitAppEvent('search:complete', {
+            query: searchName,
+            location: location,
+            resultsCount: this.searchResults.length
+        });
     }
 
     async searchDirectory(path, pattern, contentSearch, includeSubfolders, caseSensitive) {
@@ -479,6 +486,13 @@ class FindFiles extends AppBase {
     }
 
     openResult(result) {
+        // Emit result opened event
+        this.emitAppEvent('result:opened', {
+            name: result.name,
+            path: result.path.join('/'),
+            type: result.type
+        });
+
         if (result.isDirectory) {
             // Open in My Computer
             AppRegistry.launch('mycomputer', { path: result.path });
@@ -508,6 +522,11 @@ class FindFiles extends AppBase {
     stopSearch() {
         this.isSearching = false;
         this.updateStatus('Search stopped.');
+
+        // Emit search stopped event
+        this.emitAppEvent('search:stopped', {
+            resultsFound: this.searchResults.length
+        });
     }
 
     newSearch() {
