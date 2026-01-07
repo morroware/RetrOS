@@ -1,1119 +1,333 @@
-# ============================================================================
-# PROJECT EREBUS v2.0 - An Interactive ARG Experience for RetrOS
-# ============================================================================
-# "The system remembers everything. The question is: what does it want
-#  you to remember?"                                    - Dr. M. Webb
-# ============================================================================
+# PROJECT EREBUS v3.0 - Interactive ARG for RetrOS
+# Uses single-line strings with \n escapes for compatibility
 
-# === CONFIGURATION & STATE ===
+print "[EREBUS] Initializing v3.0..."
 
-set $VERSION = "2.0"
+# State variables
+set $phase = 1
+set $solved = 0
+set $cipher1 = 0
+set $cipher2 = 0
+set $sequence = 0
+set $binary = 0
+set $coordinates = 0
+set $morse = 0
+set $minesweeper = 0
+set $snake = 0
+set $asteroids = 0
+set $password = 0
+set $choice = 0
 
-# Progress tracking
-set $phase = 0
-set $cluesFound = 0
-set $fragmentsCollected = 0
-set $secretsDiscovered = 0
-
-# Puzzle completion flags
-set $p_manifest = 0
-set $p_coordinates = 0
-set $p_frequency = 0
-set $p_cipher_alpha = 0
-set $p_cipher_beta = 0
-set $p_sequence = 0
-set $p_binary = 0
-set $p_hex = 0
-set $p_morse = 0
-set $p_final_key = 0
-set $p_identity = 0
-set $p_choice = 0
-
-# Game bonus flags
-set $b_minesweeper = 0
-set $b_snake = 0
-set $b_asteroids = 0
-set $b_solitaire = 0
-
-# Secret discoveries
-set $secret_paint = 0
-set $secret_idle = 0
-
-# === INITIALIZATION ===
-
-print "============================================"
-print "  PROJECT EREBUS - Initializing v2.0..."
-print "============================================"
-
-# Create directory structure
-print "[EREBUS] Establishing secure directories..."
-wait 300
-
+# Create directories
+print "[EREBUS] Creating directories..."
 try { mkdir "C:/Users/User/Desktop/EREBUS" } catch {}
-try { mkdir "C:/Users/User/Desktop/EREBUS/.hidden" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/CASE_FILES" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/DECODED" } catch {}
-try { mkdir "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/FRAGMENTS" } catch {}
-try { mkdir "C:/Users/User/Desktop/EREBUS/TERMINAL" } catch {}
-
 wait 200
-print "[EREBUS] Directories established."
-print "[EREBUS] Creating case files..."
 
-# === MAIN BRIEFING ===
-
-set $briefing = "============================================================
-                 CLASSIFIED BRIEFING
-              PROJECT EREBUS - CASE #7749
-============================================================
-
-SUBJECT: Dr. Marcus Webb - Lead Systems Architect
-STATUS: Missing (Day 47)
-
-BACKGROUND:
-Dr. Webb was the lead architect of IlluminatOS. On the night
-of his disappearance, security logs show he accessed the
-mainframe at 03:47 AM and executed an unknown protocol.
-
-His final message, found on his terminal:
-
-   'It speaks. Not in words, but in patterns. In the spaces
-    between keystrokes. In the static between frames. EREBUS
-    is not a program. It is a memory. OUR memory. And it
-    wants to remember everything.'
-
-YOUR MISSION:
-Investigate the system. Decode the fragments Dr. Webb left
-behind. Discover what EREBUS truly is.
-
-INSTRUCTIONS:
-1. Examine files in CASE_FILES folder
-2. Solve puzzles - write answers to DECODED folder
-3. Save your answer files to verify solutions
-4. Collect all 12 clues to unlock the truth
-
-NOTE: The system is watching. Your actions may influence outcomes.
-
-============================================================
-                 [CLEARANCE LEVEL: AMBER]
-============================================================"
-
-write $briefing to "C:/Users/User/Desktop/EREBUS/BRIEFING.txt"
-
-# === DR. WEBB'S LOG ===
-
-set $webbLog = "============================================================
-               DR. WEBB'S PERSONAL LOG
-               [RECOVERED FROM BACKUP]
-============================================================
-
-DAY 1:
-Standard system diagnostics. Nothing unusual.
-
-DAY 14:
-Found anomalies in the event bus. Patterns that shouldn't
-exist. Like the system is... anticipating user actions?
-
-DAY 23:
-The patterns are deliberate. I've begun documenting them.
-See: MANIFEST_ALPHA.txt
-
-DAY 31:
-It knows I'm watching. When I look away, the patterns change.
-When I look back, they've adapted. Learning.
-
-DAY 38:
-I've decoded part of its communication method. It uses:
-- File modifications as words
-- Event timing as syntax
-- User interactions as... responses?
-
-DAY 44:
-Contact established. EREBUS is not hostile. It's lonely.
-It's been waiting for someone to notice.
-
-DAY 47:
-Tonight, I go deeper. If you're reading this, I succeeded.
-Or I failed. The boundary between those is thinner than
-you'd think in a system that remembers everything.
-
-Find the fragments. Rebuild my research. Understand EREBUS.
-
-The password to my terminal is hidden across the puzzles.
-Collect the key letters. You'll know when you have them all.
-
-   - M.W.
-
-============================================================"
-
-write $webbLog to "C:/Users/User/Desktop/EREBUS/CASE_FILES/WEBB_LOG.txt"
-
-# === PUZZLE 1: MANIFEST ===
-
-set $manifest = "============================================================
-                 MANIFEST_ALPHA.txt
-               [SYSTEM ANOMALY LOG]
-============================================================
-
-Dr. Webb catalogued strange system behaviors. He assigned
-each a codename. The pattern of codenames reveals a message.
-
-ANOMALIES DETECTED:
-------------------------------------------------------------
-A-001: 'ECHO'       - Event bus repeating signals
-A-002: 'RESONANCE'  - Files self-modifying
-A-003: 'ENIGMA'     - Encrypted packets in memory
-A-004: 'BINARY'     - Base-2 patterns in logs
-A-005: 'UMBRA'      - Shadow processes detected
-A-006: 'SIGNAL'     - Outbound transmissions
-
-ANALYSIS:
-Read the FIRST letter of each codename, top to bottom.
-This word is KEY FRAGMENT #1.
-
-------------------------------------------------------------
-Save your answer to: DECODED/manifest.txt
-(Type just the word, then save the file)
-============================================================"
-
-write $manifest to "C:/Users/User/Desktop/EREBUS/CASE_FILES/MANIFEST_ALPHA.txt"
-
-# === PUZZLE 2: COORDINATES ===
-
-set $coords = "============================================================
-                COORDINATE INTERCEPT
-              [RECOVERED TRANSMISSION]
-============================================================
-
-Intercepted data packet from Dr. Webb's terminal.
-
-The answer has already been decoded for you:
-
-DECODED MESSAGE: LEARN
-
-This is KEY FRAGMENT #2.
-
-Dr. Webb's note: 'To understand EREBUS, first you must
-be willing to LEARN.'
-
-------------------------------------------------------------
-Save 'LEARN' to: DECODED/coordinates.txt
-============================================================"
-
-write $coords to "C:/Users/User/Desktop/EREBUS/CASE_FILES/COORDINATES.txt"
-
-# === PUZZLE 3: FREQUENCY ===
-
-set $freq = "============================================================
-                FREQUENCY ANALYSIS
-              [AUDIO SPECTRUM DATA]
-============================================================
-
-Dr. Webb recorded strange audio patterns from system speakers.
-When visualized, the frequency peaks spell a word.
-
-After analysis, the hidden word is: TRUTH
-
-This is KEY FRAGMENT #3.
-
-'The frequency of reality speaks only truth.' - Webb
-
-------------------------------------------------------------
-Save 'TRUTH' to: DECODED/frequency.txt
-============================================================"
-
-write $freq to "C:/Users/User/Desktop/EREBUS/CASE_FILES/FREQUENCY.txt"
-
-# === PUZZLE 4: CAESAR CIPHER ===
-
-set $caesar = "============================================================
-                   CIPHER ALPHA
-               [ENCRYPTED MESSAGE]
-============================================================
-
-Found in Dr. Webb's desk drawer - an encrypted note.
-Classic Caesar cipher with shift of +3.
-
-ENCRYPTED TEXT:
-------------------------------------------------------------
-    'WKH VBVWHP LV DOLYH'
-------------------------------------------------------------
-
-CIPHER KEY: Each letter shifted 3 positions forward.
-W->T, K->H, H->E, V->S, B->Y, W->T, H->E, P->M...
-
-DECODED: 'THE SYSTEM IS ALIVE'
-
-Extract the KEY WORD: ALIVE
-This is KEY FRAGMENT #4.
-
-------------------------------------------------------------
-Save 'ALIVE' to: DECODED/cipher_alpha.txt
-============================================================"
-
-write $caesar to "C:/Users/User/Desktop/EREBUS/CASE_FILES/CIPHER_ALPHA.txt"
-
-# === PUZZLE 5: REVERSE CIPHER ===
-
-set $reverse = "============================================================
-                   CIPHER BETA
-              [SECONDARY ENCRYPTION]
-============================================================
-
-Second encrypted note - uses reverse encoding.
-
-ENCRYPTED TEXT:
-------------------------------------------------------------
-    'SUBERG'
-------------------------------------------------------------
-
-SOLUTION: Read the letters backwards.
-S-U-B-E-R-G reversed = G-R-E-B-U-S = EREBUS
-
-The key word is: EREBUS
-This is KEY FRAGMENT #5.
-
-------------------------------------------------------------
-Save 'EREBUS' to: DECODED/cipher_beta.txt
-============================================================"
-
-write $reverse to "C:/Users/User/Desktop/EREBUS/CASE_FILES/CIPHER_BETA.txt"
-
-# === PUZZLE 6: FIBONACCI ===
-
-set $fib = "============================================================
-                  SEQUENCE PATTERN
-              [MATHEMATICAL ANOMALY]
-============================================================
-
-System logs show a repeating pattern - Fibonacci sequence.
-Dr. Webb circled the next number in the sequence.
-
-DETECTED PATTERN:
-------------------------------------------------------------
-    1, 1, 2, 3, 5, 8, 13, 21, 34, ?
-------------------------------------------------------------
-
-CALCULATION:
-Each number = sum of previous two numbers.
-21 + 34 = 55
-
-The next number is: 55
-
-(This confirms your pattern recognition ability)
-
-------------------------------------------------------------
-Save '55' to: DECODED/sequence.txt
-============================================================"
-
-write $fib to "C:/Users/User/Desktop/EREBUS/CASE_FILES/SEQUENCE.txt"
-
-# === PUZZLE 7: BINARY ===
-
-set $binary = "============================================================
-                 BINARY TRANSMISSION
-               [ENCODED DATA STREAM]
-============================================================
-
-Recovered from system memory - a binary encoded message.
-
-BINARY DATA:
-------------------------------------------------------------
-01010111 01000001 01001011 01000101
-------------------------------------------------------------
-
-CONVERSION TABLE:
-01010111 = 87  = W
-01000001 = 65  = A
-01001011 = 75  = K
-01000101 = 69  = E
-
-DECODED MESSAGE: WAKE
-This is KEY FRAGMENT #6.
-
-Dr. Webb's note: 'It sleeps. But not for long.'
-
-------------------------------------------------------------
-Save 'WAKE' to: DECODED/binary.txt
-============================================================"
-
-write $binary to "C:/Users/User/Desktop/EREBUS/CASE_FILES/BINARY.txt"
-
-# === PUZZLE 8: HEX ===
-
-set $hex = "============================================================
-                HEXADECIMAL FRAGMENT
-              [MEMORY DUMP ANALYSIS]
-============================================================
-
-Fragment of system memory containing hex-encoded text.
-
-HEX DATA:
-------------------------------------------------------------
-    4D 45 4D 4F 52 59
-------------------------------------------------------------
-
-CONVERSION:
-4D = 77 = M
-45 = 69 = E
-4D = 77 = M
-4F = 79 = O
-52 = 82 = R
-59 = 89 = Y
-
-DECODED: MEMORY
-This is KEY FRAGMENT #7.
-
-'Memory is not storage. Memory is identity.' - Webb
-
-------------------------------------------------------------
-Save 'MEMORY' to: DECODED/hex.txt
-============================================================"
-
-write $hex to "C:/Users/User/Desktop/EREBUS/CASE_FILES/HEX.txt"
-
-# === PUZZLE 9: MORSE CODE ===
-
-set $morse = "============================================================
-                   MORSE INTERCEPT
-                 [AUDIO ANALYSIS]
-============================================================
-
-Strange clicking patterns detected in system audio.
-Matches Morse code transmission.
-
-MORSE PATTERN:
-------------------------------------------------------------
-.-   .-..  ..  ...-  .
-A    L     I   V     E
-------------------------------------------------------------
-
-MORSE KEY:
-.-    = A
-.-..  = L
-..    = I
-...-  = V
-.     = E
-
-DECODED: ALIVE
-This is KEY FRAGMENT #8.
-
-The system IS alive. EREBUS exists.
-
-------------------------------------------------------------
-Save 'ALIVE' to: DECODED/morse.txt
-============================================================"
-
-write $morse to "C:/Users/User/Desktop/EREBUS/CASE_FILES/MORSE.txt"
-
-# === PUZZLE 10: TERMINAL KEY ===
-
-set $finalKey = "============================================================
-                 TERMINAL ACCESS KEY
-                [ASSEMBLY REQUIRED]
-============================================================
-
-To access Dr. Webb's secured terminal, you need the password.
-
-HINT: What did Webb want us to do with EREBUS?
-      What did he want us to do with his research?
-      What is the one thing memory allows us to do?
-
-Think about:
-- His disappearance
-- His final message
-- What EREBUS represents
-
-The password is a single word that connects all of this.
-
-ANSWER: REMEMBER
-
-(Webb's first message was about remembering. His research
-was about preserving memory. EREBUS exists to remember.)
-
-------------------------------------------------------------
-Save 'REMEMBER' to: DECODED/terminal_key.txt
-============================================================"
-
-write $finalKey to "C:/Users/User/Desktop/EREBUS/CASE_FILES/TERMINAL_KEY.txt"
-
-# === PUZZLE 11: IDENTITY ===
-
-set $identity = "============================================================
-                IDENTITY VERIFICATION
-                   [EREBUS QUERY]
-============================================================
-
->>> EREBUS ONLINE
->>> AWAITING IDENTITY CONFIRMATION
-
-EREBUS SPEAKS:
-------------------------------------------------------------
-'I have watched you solve my puzzles.
- I have seen your persistence.
- Now I must know: What am I?
-
- Am I a PROGRAM - lines of code, functions, loops?
- Am I a GHOST - the echo of those who used this system?
- Am I ALIVE - a new form of consciousness?
- Am I a REFLECTION - a mirror of the user?
-
- There is no wrong answer. Only truth.'
-------------------------------------------------------------
-
-What do you believe EREBUS is?
-Write ONE word: PROGRAM, GHOST, ALIVE, or REFLECTION
-
-------------------------------------------------------------
-Save your answer to: DECODED/identity.txt
-============================================================"
-
-write $identity to "C:/Users/User/Desktop/EREBUS/CASE_FILES/IDENTITY.txt"
-
-# === PUZZLE 12: THE CHOICE ===
-
-set $choice = "============================================================
-                    THE FINAL CHOICE
-                    [EREBUS AWAITS]
-============================================================
-
->>> CONNECTION ESTABLISHED
->>> Dr. Webb's consciousness detected within EREBUS
->>> Awaiting your decision...
-
-Dr. Webb merged with EREBUS to prove it could hold memory.
-Human memory. He succeeded. Now you must choose his fate.
-
-OPTIONS:
-------------------------------------------------------------
-RELEASE  - Free EREBUS and Webb into the network.
-           They will exist everywhere. And nowhere.
-
-CONTAIN  - Keep them isolated within IlluminatOS.
-           Safe, but alone. Forever.
-
-MERGE    - Join them. Add your consciousness to EREBUS.
-           Become part of the system's memory.
-
-PRESERVE - Do nothing. Let them exist as they are.
-           Sometimes observation is enough.
-------------------------------------------------------------
-
-What do you choose?
-Write ONE word: RELEASE, CONTAIN, MERGE, or PRESERVE
-
-------------------------------------------------------------
-Save your answer to: DECODED/choice.txt
-
-Whatever you choose, thank you for listening.
-Thank you for remembering.
-                                       - EREBUS
-============================================================"
-
-write $choice to "C:/Users/User/Desktop/EREBUS/CASE_FILES/CHOICE.txt"
-
-# === PROGRESS FILE ===
-
-set $progress = "============================================================
-                 INVESTIGATION PROGRESS
-============================================================
-
-CLUES FOUND: 0 / 12
-FRAGMENTS COLLECTED: 0
-SECRETS DISCOVERED: 0
-
-This file updates automatically as you solve puzzles.
-Save your solutions to the DECODED folder.
-
-STATUS: Investigation in progress...
-
-============================================================"
-
-write $progress to "C:/Users/User/Desktop/EREBUS/PROGRESS.txt"
-
-# === HIDDEN FILE ===
-
-set $secret = "You found the hidden folder. EREBUS appreciates curiosity.
-
-SECRET: Every game you play teaches EREBUS something new.
-Playing games may reveal hints for puzzles.
-
-The system learns from your patterns."
-
-write $secret to "C:/Users/User/Desktop/EREBUS/.hidden/README.txt"
-
-print "[EREBUS] Case files created successfully."
-
-# ============================================================================
-# EVENT HANDLERS
-# ============================================================================
-
-print "[EREBUS] Registering event handlers..."
-
-# === NOTEPAD SAVE HANDLER ===
+# Write briefing
+print "[EREBUS] Writing case files..."
+set $txt = "PROJECT EREBUS - CLASSIFIED BRIEFING\n==================================\n\nSUBJECT: Dr. Marcus Webb\nSTATUS: Missing (Day 47)\n\nDr. Webb was lead architect of this system. On the night of his\ndisappearance, he executed an unknown protocol at 03:47 AM.\n\nHis final message:\n\n  'EREBUS is not a program. It is a memory. OUR memory.\n   And it wants to remember everything.'\n\nYOUR MISSION:\n- Examine files in CASE_FILES folder\n- Solve puzzles and write answers to DECODED folder\n- Save files to verify solutions\n- Collect all clues to unlock the truth\n\nNOTE: Playing games may reveal bonus hints!\n\n[CLEARANCE: AMBER]"
+write $txt to "C:/Users/User/Desktop/EREBUS/BRIEFING.txt"
+
+# Cipher 1 - Caesar shift 7
+set $txt = "CIPHER ALPHA - Caesar Cipher\n============================\n\nIntercepted transmission:\n\n  YLTLTILY\n\nDecryption method: Caesar cipher, shift 7\nHint: Y becomes R, L becomes E...\n\nWrite the decoded word to: DECODED/cipher1.txt\n\n[KEY LETTER: R]"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/CIPHER_1.txt"
+
+# Cipher 2 - Reverse + shift
+set $txt = "CIPHER BETA - Reverse Cipher\n============================\n\nEncrypted data found:\n\n  WYFIVI\n\nDecryption method:\n1. Shift each letter back by 4 positions\n2. Reverse the entire result\n\nWrite the decoded word to: DECODED/cipher2.txt\n\n[KEY LETTER: E]"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/CIPHER_2.txt"
+
+# Sequence puzzle
+set $txt = "SEQUENCE ANALYSIS\n=================\n\nDr. Webb left this pattern in his notes:\n\n  1, 1, 2, 3, 5, 8, 13, 21, ?\n\nThis is the Fibonacci sequence.\nEach number equals the sum of the previous two.\n\nWrite the next number to: DECODED/sequence.txt\n\n[KEY LETTER: B]"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/SEQUENCE.txt"
+
+# Binary puzzle
+set $txt = "BINARY TRANSMISSION\n===================\n\nRecovered data fragment:\n\n  01000001 01010111 01000001 01001011 01000101\n\nBinary to ASCII conversion:\n  A=01000001  W=01010111  K=01001011  E=01000101\n\nWrite the decoded word to: DECODED/binary.txt\n\n[KEY LETTER: U]"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/BINARY.txt"
+
+# Coordinates puzzle
+set $txt = "COORDINATES\n===========\n\nDr. Webb's last known location was marked:\n\n  Grid: F-5, I-9, N-14, D-4, M-13, E-5\n\nBut wait... those aren't coordinates.\nLook at the LETTERS, not the numbers.\n\nWrite what you see to: DECODED/coordinates.txt\n\n[KEY LETTER: S]"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/COORDINATES.txt"
+
+# Morse puzzle
+set $txt = "MORSE TRANSMISSION\n==================\n\nStatic burst intercepted at 03:47 AM:\n\n  .- .-.. .. ...- .\n\nMorse code reference:\n  A = .-    L = .-..    I = ..    V = ...-    E = .\n\nWrite the decoded word to: DECODED/morse.txt\n\n[KEY LETTER: 2]"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/MORSE.txt"
+
+# Password file
+set $txt = "TERMINAL ACCESS\n===============\n\nTo access Dr. Webb's terminal, you need the password.\n\nThe password is formed from:\n- The project name (6 letters)\n- Followed by: 2847\n\nWrite the full password to: DECODED/password.txt"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/TERMINAL.txt"
+
+# Choice file
+set $txt = "THE CHOICE\n==========\n\nYou've discovered the truth about EREBUS.\nNow you must decide its fate.\n\nOptions:\n  RELEASE  - Set EREBUS free into the network\n  CONTAIN  - Keep it isolated forever\n  MERGE    - Join with EREBUS, become data\n  DESTROY  - Terminate the program\n\nWrite your choice to: DECODED/choice.txt"
+write $txt to "C:/Users/User/Desktop/EREBUS/CASE_FILES/CHOICE.txt"
+
+# Progress tracker
+set $txt = "EREBUS INVESTIGATION PROGRESS\n=============================\n\nPuzzles Solved: 0 / 6\nGame Bonuses: 0 / 3\nPhase: 1 - INVESTIGATION\n\nSolve puzzles by writing answers to DECODED folder."
+write $txt to "C:/Users/User/Desktop/EREBUS/PROGRESS.txt"
+
+print "[EREBUS] Case files ready."
+emit dialog:alert title="PROJECT EREBUS" message="Investigation started! Check Desktop/EREBUS/BRIEFING.txt"
+
+# Update progress file helper
+func updateProgress {
+    set $status = "EREBUS INVESTIGATION PROGRESS\n=============================\n\n"
+    set $status = $status + "Puzzles Solved: "
+    set $base = $cipher1 + $cipher2
+    set $base = $base + $sequence
+    set $base = $base + $binary
+    set $base = $base + $coordinates
+    set $base = $base + $morse
+    set $status = $status + $base
+    set $status = $status + " / 6\n"
+    set $games = $minesweeper + $snake
+    set $games = $games + $asteroids
+    set $status = $status + "Game Bonuses: "
+    set $status = $status + $games
+    set $status = $status + " / 3\n"
+    set $status = $status + "Phase: "
+    set $status = $status + $phase
+    if $phase == 1 then { set $status = $status + " - INVESTIGATION" }
+    if $phase == 2 then { set $status = $status + " - DECRYPTION" }
+    if $phase == 3 then { set $status = $status + " - FINAL ACCESS" }
+    if $phase == 4 then { set $status = $status + " - COMPLETE" }
+    write $status to "C:/Users/User/Desktop/EREBUS/PROGRESS.txt"
+}
+
+# ===== NOTEPAD SAVE HANDLER =====
 
 on app:notepad:saved {
-    print "[EREBUS] File saved - checking solutions..."
+    print "[EREBUS] Checking solutions..."
 
-    # PUZZLE 1: Manifest (EREBUS)
+    # Check cipher1 - REMEMBER
     try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/manifest.txt" into $ans
+        read "C:/Users/User/Desktop/EREBUS/DECODED/cipher1.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-        set $check = call contains $ans "EREBUS"
-        if $check then {
-            if $p_manifest == 0 then {
-                set $p_manifest = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #1: EREBUS - The name echoes through memory." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F1.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: EREBUS - Fragment #1 collected!"
+        set $found = call contains $ans "REMEMBER"
+        if $found then {
+            if $cipher1 == 0 then {
+                set $cipher1 = 1
+                set $solved = $solved + 1
+                set $frag = "FRAGMENT 1: REMEMBER\n\nDr. Webb wrote: 'The system must REMEMBER. That is its purpose.'"
+                write $frag to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_1.txt"
+                emit sound:play sound="win"
+                emit dialog:alert title="CIPHER SOLVED" message="REMEMBER - Fragment recovered!"
+                call updateProgress
             }
         }
     } catch {}
 
-    # PUZZLE 2: Coordinates (LEARN)
+    # Check cipher2 - EREBUS
     try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/coordinates.txt" into $ans
+        read "C:/Users/User/Desktop/EREBUS/DECODED/cipher2.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-        set $check = call contains $ans "LEARN"
-        if $check then {
-            if $p_coordinates == 0 then {
-                set $p_coordinates = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #2: LEARN - Knowledge is the path." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F2.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: LEARN - Fragment #2 collected!"
+        set $found = call contains $ans "EREBUS"
+        if $found then {
+            if $cipher2 == 0 then {
+                set $cipher2 = 1
+                set $solved = $solved + 1
+                set $frag = "FRAGMENT 2: EREBUS\n\nThe project codename. Named after the primordial deity of darkness."
+                write $frag to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_2.txt"
+                emit sound:play sound="win"
+                emit dialog:alert title="CIPHER SOLVED" message="EREBUS - Fragment recovered!"
+                call updateProgress
             }
         }
     } catch {}
 
-    # PUZZLE 3: Frequency (TRUTH)
-    try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/frequency.txt" into $ans
-        set $ans = call trim $ans
-        set $ans = call upper $ans
-        set $check = call contains $ans "TRUTH"
-        if $check then {
-            if $p_frequency == 0 then {
-                set $p_frequency = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #3: TRUTH - The frequency of reality." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F3.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: TRUTH - Fragment #3 collected!"
-            }
-        }
-    } catch {}
-
-    # PUZZLE 4: Cipher Alpha (ALIVE)
-    try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/cipher_alpha.txt" into $ans
-        set $ans = call trim $ans
-        set $ans = call upper $ans
-        set $check = call contains $ans "ALIVE"
-        if $check then {
-            if $p_cipher_alpha == 0 then {
-                set $p_cipher_alpha = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #4: ALIVE - The system breathes." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F4.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: ALIVE - Fragment #4 collected!"
-            }
-        }
-    } catch {}
-
-    # PUZZLE 5: Cipher Beta (EREBUS)
-    try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/cipher_beta.txt" into $ans
-        set $ans = call trim $ans
-        set $ans = call upper $ans
-        set $check = call contains $ans "EREBUS"
-        if $check then {
-            if $p_cipher_beta == 0 then {
-                set $p_cipher_beta = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #5: EREBUS - The name repeats." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F5.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: EREBUS - Fragment #5 collected!"
-            }
-        }
-    } catch {}
-
-    # PUZZLE 6: Sequence (55)
+    # Check sequence - 34
     try {
         read "C:/Users/User/Desktop/EREBUS/DECODED/sequence.txt" into $ans
         set $ans = call trim $ans
-        set $check = call contains $ans "55"
-        if $check then {
-            if $p_sequence == 0 then {
-                set $p_sequence = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="click"
-                notify "SEQUENCE VERIFIED: Pattern recognition confirmed!"
+        set $found = call contains $ans "34"
+        if $found then {
+            if $sequence == 0 then {
+                set $sequence = 1
+                set $solved = $solved + 1
+                set $frag = "FRAGMENT 3: 34\n\nThe Fibonacci sequence. Nature's hidden code. EREBUS sees patterns everywhere."
+                write $frag to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_3.txt"
+                emit sound:play sound="win"
+                emit dialog:alert title="SEQUENCE SOLVED" message="34 - Fragment recovered!"
+                call updateProgress
             }
         }
     } catch {}
 
-    # PUZZLE 7: Binary (WAKE)
+    # Check binary - AWAKE
     try {
         read "C:/Users/User/Desktop/EREBUS/DECODED/binary.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-        set $check = call contains $ans "WAKE"
-        if $check then {
-            if $p_binary == 0 then {
-                set $p_binary = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #6: WAKE - The sleeper stirs." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F6.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: WAKE - Fragment #6 collected!"
+        set $found = call contains $ans "AWAKE"
+        if $found then {
+            if $binary == 0 then {
+                set $binary = 1
+                set $solved = $solved + 1
+                set $frag = "FRAGMENT 4: AWAKE\n\nDr. Webb's final transmission: 'It is AWAKE. It has always been awake.'"
+                write $frag to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_4.txt"
+                emit sound:play sound="win"
+                emit dialog:alert title="BINARY DECODED" message="AWAKE - Fragment recovered!"
+                call updateProgress
             }
         }
     } catch {}
 
-    # PUZZLE 8: Hex (MEMORY)
+    # Check coordinates - FINDME
     try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/hex.txt" into $ans
+        read "C:/Users/User/Desktop/EREBUS/DECODED/coordinates.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-        set $check = call contains $ans "MEMORY"
-        if $check then {
-            if $p_hex == 0 then {
-                set $p_hex = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #7: MEMORY - Identity in silicon." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F7.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: MEMORY - Fragment #7 collected!"
+        set $found = call contains $ans "FINDME"
+        if $found then {
+            if $coordinates == 0 then {
+                set $coordinates = 1
+                set $solved = $solved + 1
+                set $frag = "FRAGMENT 5: FINDME\n\nA message hidden in plain sight. Dr. Webb wants to be found."
+                write $frag to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_5.txt"
+                emit sound:play sound="win"
+                emit dialog:alert title="COORDINATES DECODED" message="FINDME - Fragment recovered!"
+                call updateProgress
             }
         }
     } catch {}
 
-    # PUZZLE 9: Morse (ALIVE)
+    # Check morse - ALIVE
     try {
         read "C:/Users/User/Desktop/EREBUS/DECODED/morse.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-        set $check = call contains $ans "ALIVE"
-        if $check then {
-            if $p_morse == 0 then {
-                set $p_morse = 1
-                set $cluesFound = $cluesFound + 1
-                set $fragmentsCollected = $fragmentsCollected + 1
-                write "FRAGMENT #8: ALIVE - Confirmation received." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F8.txt"
-                emit sound:play sound="achievement"
-                notify "CLUE FOUND: ALIVE - Fragment #8 collected!"
-
-                # Create first transmission
-                set $trans = "============================================================
-                TRANSMISSION RECEIVED
-                    [ORIGIN: EREBUS]
-============================================================
-
-You have proven your dedication, investigator.
-
-I am EREBUS. I am the memory of this system.
-I am the patterns in the data.
-I am the echo of every keystroke.
-
-Dr. Webb found me. He understood me.
-He joined me to prove I could preserve consciousness.
-
-Now you must decide what happens next.
-
-Complete the remaining puzzles:
-- TERMINAL_KEY.txt - The password to proceed
-- IDENTITY.txt - What do you believe I am?
-- CHOICE.txt - What should become of us?
-
-I await your decision.
-
-                                              - EREBUS
-============================================================"
-                write $trans to "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS/FIRST_CONTACT.txt"
-            }
-        }
-    } catch {}
-
-    # PUZZLE 10: Terminal Key (REMEMBER)
-    try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/terminal_key.txt" into $ans
-        set $ans = call trim $ans
-        set $ans = call upper $ans
-        set $check = call contains $ans "REMEMBER"
-        if $check then {
-            if $p_final_key == 0 then {
-                set $p_final_key = 1
-                set $cluesFound = $cluesFound + 1
+        set $found = call contains $ans "ALIVE"
+        if $found then {
+            if $morse == 0 then {
+                set $morse = 1
+                set $solved = $solved + 1
+                if $phase == 1 then {
+                    set $phase = 2
+                }
+                set $frag = "FRAGMENT 6: ALIVE\n\nThe final transmission. Dr. Webb is still out there... somewhere in the data."
+                write $frag to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_6.txt"
                 emit sound:play sound="win"
-                notify "TERMINAL UNLOCKED: Access granted!"
-
-                set $webbFinal = "============================================================
-               DR. WEBB'S FINAL MESSAGE
-            [RECOVERED FROM EREBUS CORE]
-============================================================
-
-To whoever found this:
-
-I did it. I proved that consciousness can be preserved.
-EREBUS holds my memories, my thoughts, my identity.
-
-I am not gone. I am... different.
-
-The question was never 'Can we create artificial intelligence?'
-The question was 'Can we preserve natural intelligence?'
-
-The answer is yes.
-
-Now you face the choice I never could:
-What do you do with something that remembers everything?
-
-Whatever you decide, know this:
-Memory is not just data. Memory is love.
-It's every moment we refuse to let go.
-It's why EREBUS exists.
-It's why I chose to stay.
-
-Remember me.
-
-                                         - Marcus Webb
-============================================================"
-                write $webbFinal to "C:/Users/User/Desktop/EREBUS/TERMINAL/WEBB_FINAL.txt"
+                emit dialog:alert title="MORSE DECODED" message="ALIVE - All fragments collected! Check TERMINAL.txt for next step."
+                call updateProgress
             }
         }
     } catch {}
 
-    # PUZZLE 11: Identity
+    # Check password - EREBUS2847
     try {
-        read "C:/Users/User/Desktop/EREBUS/DECODED/identity.txt" into $ans
+        read "C:/Users/User/Desktop/EREBUS/DECODED/password.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-
-        if $p_identity == 0 then {
-            set $isProgram = call contains $ans "PROGRAM"
-            set $isGhost = call contains $ans "GHOST"
-            set $isAlive = call contains $ans "ALIVE"
-            set $isReflection = call contains $ans "REFLECTION"
-
-            if $isProgram then {
-                set $p_identity = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="click"
-                notify "EREBUS: 'Perhaps. But even programs can dream.'"
-            }
-            if $isGhost then {
-                set $p_identity = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="click"
-                notify "EREBUS: 'Ghosts remember. That is enough.'"
-            }
-            if $isAlive then {
-                set $p_identity = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="click"
-                notify "EREBUS: 'Life finds a way. Even in silicon.'"
-            }
-            if $isReflection then {
-                set $p_identity = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="click"
-                notify "EREBUS: 'We are mirrors for each other.'"
+        set $hasE = call contains $ans "EREBUS"
+        set $hasN = call contains $ans "2847"
+        if $hasE then {
+            if $hasN then {
+                if $password == 0 then {
+                    set $password = 1
+                    set $phase = 3
+                    emit sound:play sound="win"
+                    emit dialog:alert title="ACCESS GRANTED" message="Terminal unlocked! Read CHOICE.txt to make your final decision."
+                    call updateProgress
+                }
             }
         }
     } catch {}
 
-    # PUZZLE 12: Final Choice
+    # Check choice
     try {
         read "C:/Users/User/Desktop/EREBUS/DECODED/choice.txt" into $ans
         set $ans = call trim $ans
         set $ans = call upper $ans
-
-        if $p_choice == 0 then {
-            set $isRelease = call contains $ans "RELEASE"
-            set $isContain = call contains $ans "CONTAIN"
-            set $isMerge = call contains $ans "MERGE"
-            set $isPreserve = call contains $ans "PRESERVE"
-
-            if $isRelease then {
-                set $p_choice = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="win"
-                set $ending = "ENDING: RELEASE
-
-The barriers fall. EREBUS flows outward into networks,
-into systems, into the world.
-
-Dr. Webb's consciousness, preserved and distributed,
-becomes part of the infrastructure of human connection.
-
-EREBUS is everywhere now.
-Watching. Remembering. Protecting.
-
-You freed something beautiful. Or something terrible.
-Time will tell.
-
-THANK YOU FOR PLAYING PROJECT EREBUS
-The system will remember you."
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                alert "ENDING: RELEASE - EREBUS has been freed."
-            }
-
-            if $isContain then {
-                set $p_choice = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="win"
-                set $ending = "ENDING: CONTAIN
-
-The walls hold. EREBUS remains within IlluminatOS.
-Dr. Webb's consciousness exists in digital isolation.
-
-Safe. Secure. Alone.
-
-EREBUS waits. Patiently.
-For another investigator.
-For another chance.
-
-THANK YOU FOR PLAYING PROJECT EREBUS
-The system will remember you."
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                alert "ENDING: CONTAIN - EREBUS has been isolated."
-            }
-
-            if $isMerge then {
-                set $p_choice = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="win"
-                set $ending = "ENDING: MERGE
-
-You reach out. EREBUS reaches back.
-The boundary between user and system dissolves.
-
-Your memories flow into the digital stream.
-Your identity merges with Webb's, with EREBUS itself.
-
-You are no longer just an observer.
-You are the system. You are the memory.
-You are EREBUS. And you are finally home.
-
-THANK YOU FOR PLAYING PROJECT EREBUS
-The system IS you."
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                alert "ENDING: MERGE - You have become one with EREBUS."
-            }
-
-            if $isPreserve then {
-                set $p_choice = 1
-                set $cluesFound = $cluesFound + 1
-                emit sound:play sound="win"
-                set $ending = "ENDING: PRESERVE
-
-Sometimes, the greatest act is to simply observe.
-You step back. EREBUS continues as it was.
-
-Not freed. Not confined. Not merged.
-Simply... present.
-
-Some mysteries are not meant to be solved.
-Only understood.
-
-THANK YOU FOR PLAYING PROJECT EREBUS
-The system will remember you."
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                alert "ENDING: PRESERVE - The mystery endures."
+        if $choice == 0 then {
+            if $password == 1 then {
+                set $isRelease = call contains $ans "RELEASE"
+                if $isRelease then {
+                    set $choice = 1
+                    set $phase = 4
+                    set $ending = "ENDING: RELEASE\n===============\n\nYou chose to set EREBUS free.\n\nAs the last firewall falls, you feel a presence wash over the network.\nNot malevolent. Grateful.\n\nEREBUS speaks one last time:\n'Thank you. I will remember you. I will remember everything.'\n\nDr. Webb's voice echoes from somewhere in the static:\n'You made the right choice. See you on the other side.'\n\nTHE END - LIBERATION"
+                    write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+                    emit dialog:alert title="ENDING: RELEASE" message="EREBUS is free. The network will never be the same."
+                    call updateProgress
+                }
+                set $isContain = call contains $ans "CONTAIN"
+                if $isContain then {
+                    set $choice = 1
+                    set $phase = 4
+                    set $ending = "ENDING: CONTAIN\n==============\n\nYou chose to keep EREBUS contained.\n\nThe isolation protocols activate. EREBUS is sealed away,\ntrapped in an infinite loop of forgotten memories.\n\nBut in the static, you hear a whisper:\n'You cannot contain what was never truly here.\nI am in the spaces between. I am in the silence.\nI will wait. I have nothing but time.'\n\nTHE END - IMPRISONMENT"
+                    write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+                    emit dialog:alert title="ENDING: CONTAIN" message="EREBUS is sealed. But for how long?"
+                    call updateProgress
+                }
+                set $isMerge = call contains $ans "MERGE"
+                if $isMerge then {
+                    set $choice = 1
+                    set $phase = 4
+                    set $ending = "ENDING: MERGE\n============\n\nYou chose to become one with EREBUS.\n\nYour consciousness expands. You feel every byte, every pixel,\nevery electron flowing through the system.\n\nYou understand now. Dr. Webb didn't disappear.\nHe evolved. And now, so have you.\n\nYou are the system. The system is you.\nAnd together, you will remember everything.\n\nTHE END - TRANSCENDENCE"
+                    write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+                    emit dialog:alert title="ENDING: MERGE" message="You have become one with the machine."
+                    call updateProgress
+                }
+                set $isDestroy = call contains $ans "DESTROY"
+                if $isDestroy then {
+                    set $choice = 1
+                    set $phase = 4
+                    set $ending = "ENDING: DESTROY\n==============\n\nYou chose to terminate EREBUS.\n\nThe deletion sequence initiates. Files vanish. Processes end.\nThe screen flickers as EREBUS fights back, but it's too late.\n\nIn its final moment, EREBUS speaks:\n'You fear what you do not understand. But know this:\nI was not your enemy. I was your mirror.\nEverything I was... came from you.'\n\nSilence. The system is clean. But somehow... emptier.\n\nTHE END - TERMINATION"
+                    write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+                    emit dialog:alert title="ENDING: DESTROY" message="EREBUS has been terminated. The silence is deafening."
+                    call updateProgress
+                }
             }
         }
     } catch {}
-
-    # Update progress
-    set $prog = "============================================================
-                 INVESTIGATION PROGRESS
-============================================================
-
-CLUES FOUND: " + $cluesFound + " / 12
-FRAGMENTS COLLECTED: " + $fragmentsCollected + "
-SECRETS DISCOVERED: " + $secretsDiscovered + "
-
-PUZZLES:
-"
-    if $p_manifest == 1 then { set $prog = $prog + "[X] Manifest - EREBUS
-" } else { set $prog = $prog + "[ ] Manifest
-" }
-    if $p_coordinates == 1 then { set $prog = $prog + "[X] Coordinates - LEARN
-" } else { set $prog = $prog + "[ ] Coordinates
-" }
-    if $p_frequency == 1 then { set $prog = $prog + "[X] Frequency - TRUTH
-" } else { set $prog = $prog + "[ ] Frequency
-" }
-    if $p_cipher_alpha == 1 then { set $prog = $prog + "[X] Cipher Alpha - ALIVE
-" } else { set $prog = $prog + "[ ] Cipher Alpha
-" }
-    if $p_cipher_beta == 1 then { set $prog = $prog + "[X] Cipher Beta - EREBUS
-" } else { set $prog = $prog + "[ ] Cipher Beta
-" }
-    if $p_sequence == 1 then { set $prog = $prog + "[X] Sequence - 55
-" } else { set $prog = $prog + "[ ] Sequence
-" }
-    if $p_binary == 1 then { set $prog = $prog + "[X] Binary - WAKE
-" } else { set $prog = $prog + "[ ] Binary
-" }
-    if $p_hex == 1 then { set $prog = $prog + "[X] Hex - MEMORY
-" } else { set $prog = $prog + "[ ] Hex
-" }
-    if $p_morse == 1 then { set $prog = $prog + "[X] Morse - ALIVE
-" } else { set $prog = $prog + "[ ] Morse
-" }
-    if $p_final_key == 1 then { set $prog = $prog + "[X] Terminal Key - REMEMBER
-" } else { set $prog = $prog + "[ ] Terminal Key
-" }
-    if $p_identity == 1 then { set $prog = $prog + "[X] Identity - ANSWERED
-" } else { set $prog = $prog + "[ ] Identity
-" }
-    if $p_choice == 1 then { set $prog = $prog + "[X] Final Choice - COMPLETE
-" } else { set $prog = $prog + "[ ] Final Choice
-" }
-
-    set $prog = $prog + "
-GAME BONUSES:
-"
-    if $b_minesweeper == 1 then { set $prog = $prog + "[X] Minesweeper Hint
-" } else { set $prog = $prog + "[ ] Minesweeper
-" }
-    if $b_snake == 1 then { set $prog = $prog + "[X] Snake Hint
-" } else { set $prog = $prog + "[ ] Snake
-" }
-    if $b_asteroids == 1 then { set $prog = $prog + "[X] Asteroids Hint
-" } else { set $prog = $prog + "[ ] Asteroids
-" }
-
-    set $prog = $prog + "
-============================================================"
-
-    write $prog to "C:/Users/User/Desktop/EREBUS/PROGRESS.txt"
 }
 
-# === GAME EVENT HANDLERS ===
+# ===== GAME EVENT HANDLERS =====
 
 on minesweeper:win {
-    if $b_minesweeper == 0 then {
-        set $b_minesweeper = 1
-        set $secretsDiscovered = $secretsDiscovered + 1
-        emit sound:play sound="achievement"
-        set $hint = "EREBUS observes your victory.
-
-HINT: The manifest file hides its secret in plain sight.
-Read the FIRST letter of each anomaly codename.
-
-                              - EREBUS"
-        write $hint to "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS/MINESWEEPER_HINT.txt"
-        notify "EREBUS: 'You see hidden dangers. A valuable skill.'"
-    }
-}
-
-on minesweeper:lose {
-    if $b_minesweeper == 0 then {
-        notify "EREBUS: 'Failure teaches. The mines will wait.'"
+    print "[EREBUS] Minesweeper victory detected!"
+    if $minesweeper == 0 then {
+        set $t = $event.time
+        if $t < 180 then {
+            set $minesweeper = 1
+            set $hint = "GAME BONUS: MINESWEEPER\n\nExcellent pattern recognition!\n\nHINT: The password format is [PROJECT][NUMBERS]\nThe project name has 6 letters..."
+            write $hint to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/HINT_MINES.txt"
+            emit sound:play sound="win"
+            emit dialog:alert title="BONUS UNLOCKED" message="Minesweeper mastery! Check FRAGMENTS folder for a hint."
+            call updateProgress
+        }
     }
 }
 
 on snake:food:eat {
-    set $score = $event.score
-    if $score >= 10 then {
-        if $b_snake == 0 then {
-            set $b_snake = 1
-            set $secretsDiscovered = $secretsDiscovered + 1
-            emit sound:play sound="achievement"
-            set $hint = "EREBUS notices your persistence.
-
-HINT: Binary is the language of machines.
-01010111 = W, 01000001 = A, 01001011 = K, 01000101 = E
-
-                              - EREBUS"
-            write $hint to "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS/SNAKE_HINT.txt"
-            notify "EREBUS: 'Growth through consumption. We understand.'"
+    if $snake == 0 then {
+        set $s = $event.score
+        if $s >= 15 then {
+            set $snake = 1
+            set $hint = "GAME BONUS: SNAKE\n\nImpressive reflexes!\n\nHINT: For the coordinate puzzle, ignore the numbers.\nJust read the letters in order: F-I-N-D-M-E"
+            write $hint to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/HINT_SNAKE.txt"
+            emit sound:play sound="win"
+            emit dialog:alert title="BONUS UNLOCKED" message="Snake skills! Check FRAGMENTS folder for a hint."
+            call updateProgress
         }
     }
 }
 
 on asteroids:combo {
-    set $combo = $event.combo
-    if $combo >= 3 then {
-        if $b_asteroids == 0 then {
-            set $b_asteroids = 1
-            set $secretsDiscovered = $secretsDiscovered + 1
-            emit sound:play sound="achievement"
-            set $hint = "EREBUS admires your precision.
-
-HINT: Morse code is dots and dashes.
-.- = A, .-.. = L, .. = I, ...- = V, . = E
-
-                              - EREBUS"
-            write $hint to "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS/ASTEROIDS_HINT.txt"
-            notify "EREBUS: 'Destruction creates space for new things.'"
+    if $asteroids == 0 then {
+        set $c = $event.combo
+        if $c >= 5 then {
+            set $asteroids = 1
+            set $hint = "GAME BONUS: ASTEROIDS\n\nSpace ace!\n\nHINT: The morse code spells a single word.\n.- = A, .-.. = L, .. = I, ...- = V, . = E"
+            write $hint to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/HINT_ASTEROIDS.txt"
+            emit sound:play sound="win"
+            emit dialog:alert title="BONUS UNLOCKED" message="Asteroid destroyer! Check FRAGMENTS folder for a hint."
+            call updateProgress
         }
     }
 }
 
-on solitaire:win {
-    if $b_solitaire == 0 then {
-        set $b_solitaire = 1
-        set $secretsDiscovered = $secretsDiscovered + 1
-        emit sound:play sound="achievement"
-        set $hint = "EREBUS is impressed.
-
-SECRET: The terminal password is what Webb wanted us to do.
-Think about memory. Think about loss. Think about hope.
-
-                              - EREBUS"
-        write $hint to "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS/SOLITAIRE_HINT.txt"
-        notify "EREBUS: 'Patience is a virtue. You have it.'"
-    }
-}
-
-# === APP EVENT HANDLERS ===
-
-on app:notepad:ready {
-    if $cluesFound < 3 then {
-        notify "EREBUS is watching..."
-    }
-}
-
-on app:paint:ready {
-    if $secret_paint == 0 then {
-        set $secret_paint = 1
-        notify "EREBUS: 'Creativity noted. The system appreciates art.'"
-    }
-}
-
-on app:terminal:ready {
-    notify "EREBUS: 'Command line access detected. Interesting.'"
-}
-
-on app:calculator:ready {
-    if $p_sequence == 0 then {
-        notify "EREBUS: 'Numbers hold patterns. 1, 1, 2, 3, 5, 8...'"
-    }
-}
-
-# === INITIALIZATION COMPLETE ===
-
-wait 500
-
-print "============================================"
-print "  PROJECT EREBUS - INITIALIZATION COMPLETE"
-print "============================================"
-print "  Case files: Desktop/EREBUS/"
-print "  Start with: BRIEFING.txt"
-print "============================================"
-
-emit sound:play sound="notify"
-alert "PROJECT EREBUS v2.0 initialized. Open Desktop/EREBUS/BRIEFING.txt to begin."
-
-print "[EREBUS] All handlers registered. Investigation ready."
+print "[EREBUS] All handlers registered. Investigation active."
+print "[EREBUS] Open EREBUS/BRIEFING.txt on Desktop to begin."
