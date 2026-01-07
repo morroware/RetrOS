@@ -273,7 +273,8 @@ print "[EREBUS] Session: " + $sessionKey
 
 wait 500
 
-emit dialog:alert title="PROJECT EREBUS" message="Session: " + $sessionKey + "\n\nINVESTIGATION ACTIVE\n\nStart: Desktop/EREBUS/BRIEFING.txt"
+set $startMsg = "Session: " + $sessionKey + "\n\nINVESTIGATION ACTIVE\n\nStart: Desktop/EREBUS/BRIEFING.txt"
+emit dialog:alert title="PROJECT EREBUS" message=$startMsg
 
 wait 1000
 
@@ -513,57 +514,61 @@ on app:close {
 
 on minesweeper:win {
     if $p_mine == false && $act >= 2 then {
-        if $event.time < 180 then {
+        set $t = $event.time
+        if $t < 180 then {
             set $p_mine = true
             set $solved = $solved + 1
+            set $tRound = call round $t
+            set $tStr = call toString $tRound
             emit sound:play sound="win"
-            emit dialog:alert title="MINESWEEPER MASTERED" message="Time: " + call toString call round $event.time + "s\n\nProgress: " + call toString $solved + "/14"
+            emit dialog:alert title="MINESWEEPER MASTERED" message="Great time! Challenge complete."
             emit clippy:show message="Minesweeper complete! Remember 2847."
-
-            # Check for Act III
-            if $solved >= 8 && $act == 2 then {
-                set $act = 3
-                set $phase = "ACT_III"
-                wait 1000
-                emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
-            }
         }
+    }
+    # Check for Act III after minesweeper
+    if $solved >= 8 && $act == 2 then {
+        set $act = 3
+        set $phase = "ACT_III"
+        wait 500
+        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
     }
 }
 
 on asteroids:combo {
     if $p_ast == false && $act >= 2 then {
-        if $event.combo >= 5 then {
+        set $c = $event.combo
+        if $c >= 5 then {
             set $p_ast = true
             set $solved = $solved + 1
             emit sound:play sound="win"
-            emit dialog:alert title="ASTEROIDS COMBO" message="Combo: " + call toString $event.combo + "x\n\nPatterns spell: FINDME\nWrite to: SOLUTIONS/coordinates.txt"
-
-            if $solved >= 8 && $act == 2 then {
-                set $act = 3
-                set $phase = "ACT_III"
-                wait 1000
-                emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
-            }
+            emit dialog:alert title="ASTEROIDS COMBO" message="Great combo!\n\nPatterns spell: FINDME\nWrite to: SOLUTIONS/coordinates.txt"
         }
+    }
+    # Check for Act III after asteroids
+    if $solved >= 8 && $act == 2 then {
+        set $act = 3
+        set $phase = "ACT_III"
+        wait 500
+        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
 
 on snake:eat {
     if $p_snake == false && $act >= 2 then {
-        if $event.score >= 15 then {
+        set $s = $event.score
+        if $s >= 15 then {
             set $p_snake = true
             set $solved = $solved + 1
             emit sound:play sound="win"
-            emit dialog:alert title="SNAKE COMPLETE" message="Score: " + call toString $event.score + "\n\nProgress: " + call toString $solved + "/14"
-
-            if $solved >= 8 && $act == 2 then {
-                set $act = 3
-                set $phase = "ACT_III"
-                wait 1000
-                emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
-            }
+            emit dialog:alert title="SNAKE COMPLETE" message="The Ouroboros test passed!"
         }
+    }
+    # Check for Act III after snake
+    if $solved >= 8 && $act == 2 then {
+        set $act = 3
+        set $phase = "ACT_III"
+        wait 500
+        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
 
@@ -572,7 +577,7 @@ on solitaire:win {
         set $p_sol = true
         set $solved = $solved + 1
         emit sound:play sound="win"
-        emit dialog:alert title="SOLITAIRE COMPLETE" message="Patience rewarded.\n\nProgress: " + call toString $solved + "/14"
+        emit dialog:alert title="SOLITAIRE COMPLETE" message="Patience rewarded."
     }
 }
 
@@ -581,7 +586,7 @@ on freecell:win {
         set $p_free = true
         set $solved = $solved + 1
         emit sound:play sound="win"
-        emit dialog:alert title="FREECELL COMPLETE" message="Logic mastered.\n\nProgress: " + call toString $solved + "/14"
+        emit dialog:alert title="FREECELL COMPLETE" message="Logic mastered."
     }
 }
 
