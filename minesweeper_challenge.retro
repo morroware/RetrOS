@@ -271,14 +271,12 @@ print "[EREBUS] Session: " + $sessionKey
 # SECTION 5: NOTIFICATIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-wait 500
-
 set $startMsg = "Session: " + $sessionKey + "\n\nINVESTIGATION ACTIVE\n\nStart: Desktop/EREBUS/BRIEFING.txt"
 emit dialog:alert title="PROJECT EREBUS" message=$startMsg
 
-wait 1000
+wait 200
 
-emit clippy:show message="Welcome, Investigator. Dr. Webb left puzzles. Start with BRIEFING.txt. Hints are in the Documents folder."
+emit clippy:show message="Welcome! Start with Desktop/EREBUS/BRIEFING.txt"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECTION 6: EVENT HANDLERS
@@ -287,11 +285,10 @@ emit clippy:show message="Welcome, Investigator. Dr. Webb left puzzles. Start wi
 on app:close {
     if $event.appId != "notepad" then { return }
 
-    wait 300
     set $matched = false
 
     # Check Cipher 1
-    if $matched == false && $p_cipher1 == false then {
+    if $p_cipher1 == false then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_1.txt" into $ans
             set $ans = call trim $ans
@@ -305,7 +302,6 @@ on app:close {
                 write "FRAGMENT 1: REMEMBER" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_01.txt"
                 emit sound:play sound="win"
                 emit dialog:alert title="CIPHER 1 SOLVED" message="Keyword: REMEMBER\n\nFragment 1 acquired!"
-                emit clippy:show message="REMEMBER. Dr. Webb's first message. Keep going!"
             }
         } catch {}
     }
@@ -325,7 +321,6 @@ on app:close {
                 write "FRAGMENT 2: EREBUS" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_02.txt"
                 emit sound:play sound="win"
                 emit dialog:alert title="CIPHER 2 SOLVED" message="Project: EREBUS\n\nFragment 2 acquired!"
-                emit clippy:show message="EREBUS. The darkness between. You're making progress."
             }
         } catch {}
     }
@@ -390,7 +385,7 @@ on app:close {
     if $solved >= 5 && $act == 1 then {
         set $act = 2
         set $phase = "ACT_II"
-        wait 500
+        wait 200
         emit dialog:alert title="ACT II UNLOCKED" message="Game challenges now active!\n\nMinesweeper, Asteroids, Snake await."
     }
 
@@ -458,7 +453,7 @@ on app:close {
     if $solved >= 8 && $act == 2 then {
         set $act = 3
         set $phase = "ACT_III"
-        wait 500
+        wait 200
         emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
     }
 
@@ -529,7 +524,7 @@ on minesweeper:win {
     if $solved >= 8 && $act == 2 then {
         set $act = 3
         set $phase = "ACT_III"
-        wait 500
+        wait 200
         emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
     }
 }
@@ -548,7 +543,7 @@ on asteroids:combo {
     if $solved >= 8 && $act == 2 then {
         set $act = 3
         set $phase = "ACT_III"
-        wait 500
+        wait 200
         emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
@@ -567,7 +562,7 @@ on snake:eat {
     if $solved >= 8 && $act == 2 then {
         set $act = 3
         set $phase = "ACT_III"
-        wait 500
+        wait 200
         emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
