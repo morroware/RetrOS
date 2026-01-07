@@ -258,6 +258,25 @@ async function initializeOS(onProgress = () => {}) {
     onProgress(90, 'Setting up handlers...');
     await initComponent('GlobalHandlers', () => setupGlobalHandlers());
 
+    // === Phase 5.5: Run Autoexec Script ===
+    console.log('[IlluminatOS!] Phase 5.5: Autoexec Scripts');
+    onProgress(95, 'Running startup scripts...');
+    await initComponent('Autoexec', async () => {
+        try {
+            const { runAutoexec } = await import('./core/script/AutoexecLoader.js');
+            await runAutoexec({
+                FileSystemManager,
+                EventBus,
+                CommandBus,
+                StateManager,
+                WindowManager
+            });
+        } catch (error) {
+            // Autoexec errors should not prevent boot
+            console.warn('[IlluminatOS!] Autoexec error (non-fatal):', error);
+        }
+    });
+
     // Mark as visited
     if (!StateManager.getState('user.hasVisited')) {
         StateManager.setState('user.hasVisited', true, true);
