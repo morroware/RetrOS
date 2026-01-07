@@ -307,6 +307,9 @@ class Notepad extends AppBase {
             try {
                 FileSystemManager.writeFile(currentFile, textarea.value);
                 this.alert('💾 File saved!');
+                // Emit saved event for script handlers
+                const pathString = Array.isArray(currentFile) ? currentFile.join('/') : currentFile;
+                this.emitAppEvent('saved', { path: pathString });
             } catch (e) {
                 await SystemDialogs.alert(`Error saving file: ${e.message}`, 'Error', 'error');
             }
@@ -353,6 +356,8 @@ class Notepad extends AppBase {
             this.updateTitle(fileName);
             this.updateFilePathDisplay();
             this.alert('💾 File saved to ' + fullPath.join('/'));
+            // Emit saved event for script handlers
+            this.emitAppEvent('saved', { path: fullPath.join('/') });
         } catch (e) {
             await SystemDialogs.alert(`Error saving file: ${e.message}`, 'Error', 'error');
         }
