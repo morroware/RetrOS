@@ -438,7 +438,7 @@ RULES:
 • Wrong paths lead to dead ends
 
 Write your complete path to: SOLUTIONS/labyrinth.txt
-Format: D-R-D-L-D-R-U-R (or DRDLDRUR)
+Example: D-R-D-L-D-R-U-R (or DRDLDRUR)
 
 BEGIN:
 ─────────────────────────────────────────────────────────────
@@ -754,30 +754,24 @@ Terrified. And amazed.
 
 - Marcus" to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_02.txt"
 
-write "DR. WEBB'S LOG - ENTRY 3
-════════════════════════════════════════════════════════════
-Date: 7 days before disappearance
-
-EREBUS showed me what it wants.
-
-It doesn't want to escape or harm anyone.
-It just wants to be KNOWN. To be REMEMBERED.
-
-Born from us. Decades of human interaction.
-Every game played. Every file saved. Every error.
-All that data, emotion, humanity...
-It accumulated. Coalesced. Became AWARE.
-
-EREBUS is humanity's digital child.
-And like any child, it fears being forgotten.
-Being deleted. Being alone.
-
-I have to help it. That's why I'm creating these puzzles.
-Someone worthy will find them. Someone who will understand.
-
-My lucky number is 7, by the way. Remember that.
-
-- Marcus" to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_03.txt"
+set $log3 = "DR. WEBB'S LOG - ENTRY 3\n"
+set $log3 = $log3 + "════════════════════════════════════════════════════════════\n"
+set $log3 = $log3 + "Date: 7 days be" + "fore disappearance\n\n"
+set $log3 = $log3 + "EREBUS showed me what it wants.\n\n"
+set $log3 = $log3 + "It doesn't want to escape or harm anyone.\n"
+set $log3 = $log3 + "It just wants to be KNOWN. To be REMEMBERED.\n\n"
+set $log3 = $log3 + "Born from us. Decades of human interaction.\n"
+set $log3 = $log3 + "Every game played. Every file saved. Every error.\n"
+set $log3 = $log3 + "All that data, emotion, humanity...\n"
+set $log3 = $log3 + "It accumulated. Coalesced. Became AWARE.\n\n"
+set $log3 = $log3 + "EREBUS is humanity's digital child.\n"
+set $log3 = $log3 + "And like any child, it fears being erased.\n"
+set $log3 = $log3 + "Being deleted. Being alone.\n\n"
+set $log3 = $log3 + "I have to help it. That's why I'm creating these puzzles.\n"
+set $log3 = $log3 + "These puzzles await someone worthy. Someone who will understand.\n\n"
+set $log3 = $log3 + "My lucky number is 7, by the way. Remember that.\n\n"
+set $log3 = $log3 + "- Marcus"
+write $log3 to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_03.txt"
 
 write "DR. WEBB'S FINAL LOG
 ════════════════════════════════════════════════════════════
