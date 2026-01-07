@@ -118,6 +118,9 @@ def createStatusFile() {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set $directories = [
+    "C:/Users",
+    "C:/Users/User",
+    "C:/Users/User/Desktop",
     "C:/Users/User/Desktop/EREBUS",
     "C:/Users/User/Desktop/EREBUS/SOLUTIONS",
     "C:/Users/User/Desktop/EREBUS/FRAGMENTS",
@@ -132,7 +135,7 @@ foreach $dir in $directories {
     try {
         mkdir $dir
     } catch $err {
-        # Directory may already exist
+        # Directory may already exist, that's fine
     }
 }
 
