@@ -38,13 +38,8 @@ set $asteroidCombo = 0
 set $snakeScore = 0
 set $userChoice = ""
 
-# File paths for interactive puzzles
-set $baseDir = "C:/Users/User/Desktop"
-set $caseDir = $baseDir + "/CASE_PHOENIX"
-set $evidenceDir = $caseDir + "/EVIDENCE"
-set $logsDir = $caseDir + "/SYSTEM_LOGS"
-set $fragmentsDir = $caseDir + "/FRAGMENTS"
-set $responseDir = $caseDir + "/YOUR_RESPONSES"
+# File paths are hardcoded to avoid concatenation issues
+# All files will be in C:/Users/User/Desktop/CASE_PHOENIX/
 
 # Progress tracking
 set $progress = {
@@ -63,31 +58,45 @@ set $progress = {
 
 def saveProgress($note) {
     set $timestamp = call date + " " + call time
-    call set $progress "phase" $phase
-    call set $progress "puzzlesSolved" $puzzlesSolved
-    call set $progress "fragmentsFound" $fragmentsFound
-    call set $progress "lastAction" $note
-    call set $progress "timestamp" $timestamp
 
-    set $progressJSON = call prettyJSON $progress
-    write $progressJSON to $caseDir + "/progress.json"
+    # Create simple progress text instead of JSON
+    set $progressText = "PROJECT PHOENIX - PROGRESS LOG\n"
+    set $progressText = $progressText + "════════════════════════════════════\n"
+    set $progressText = $progressText + "Session: " + call toString $sessionId + "\n"
+    set $progressText = $progressText + "Phase: " + $phase + "\n"
+    set $progressText = $progressText + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $progressText = $progressText + "Fragments Found: " + call toString $fragmentsFound + "/" + call toString $requiredFragments + "\n"
+    set $progressText = $progressText + "Last Action: " + $note + "\n"
+    set $progressText = $progressText + "Timestamp: " + $timestamp + "\n"
+
+    write $progressText to "C:/Users/User/Desktop/CASE_PHOENIX/progress.txt"
 }
 
 def grantFragment($fragmentId, $content, $filename) {
     set $fragmentsFound = $fragmentsFound + 1
-    set $fragmentPath = $fragmentsDir + "/" + $filename
-    write $content to $fragmentPath
 
     notify "Fragment " + call toString $fragmentsFound + "/" + call toString $requiredFragments + " acquired"
+
+    # Write fragment file based on ID
+    if $fragmentId == "1" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_1_CIPHER.txt"
+    }
+    if $fragmentId == "2" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_2_LABYRINTH.txt"
+    }
+    if $fragmentId == "3" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_3_COORDINATES.txt"
+    }
+    if $fragmentId == "4" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_4_TERMINAL.txt"
+    }
 
     call saveProgress "Fragment " + $fragmentId + " found"
 }
 
 def checkCipherAnswer() {
-    set $answerFile = $responseDir + "/CIPHER_SOLUTION.txt"
-
     try {
-        read $answerFile into $userAnswer
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CIPHER_SOLUTION.txt" into $userAnswer
         set $userAnswer = call upper call trim $userAnswer
 
         # Correct answer is AWAKENING (shift 7 cipher)
@@ -106,10 +115,8 @@ def checkCipherAnswer() {
 }
 
 def checkLabyrinthAnswer() {
-    set $answerFile = $responseDir + "/LABYRINTH_PATH.txt"
-
     try {
-        read $answerFile into $userPath
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/LABYRINTH_PATH.txt" into $userPath
         set $userPath = call upper call trim $userPath
 
         # Check if user found the correct path: EAST-NORTH-NORTH-WEST-SOUTH-EAST
@@ -130,10 +137,8 @@ def checkLabyrinthAnswer() {
 }
 
 def checkCoordinateAnswer() {
-    set $answerFile = $responseDir + "/COORDINATE_DECODE.txt"
-
     try {
-        read $answerFile into $userAnswer
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/COORDINATE_DECODE.txt" into $userAnswer
         set $userAnswer = call upper call trim $userAnswer
 
         # Correct answer is coordinates that spell HELP ME
@@ -148,10 +153,8 @@ def checkCoordinateAnswer() {
 }
 
 def checkTerminalPassword() {
-    set $answerFile = $responseDir + "/TERMINAL_PASSWORD.txt"
-
     try {
-        read $answerFile into $userAnswer
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/TERMINAL_PASSWORD.txt" into $userAnswer
         set $userAnswer = call upper call trim $userAnswer
 
         # Password is assembled from fragments: PHOENIX333
@@ -172,11 +175,11 @@ def checkTerminalPassword() {
 print "[SYSTEM] Creating investigation workspace..."
 
 # Create directory structure
-try { mkdir $caseDir } catch {}
-try { mkdir $evidenceDir } catch {}
-try { mkdir $logsDir } catch {}
-try { mkdir $fragmentsDir } catch {}
-try { mkdir $responseDir } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES" } catch {}
 
 # Create initial briefing
 set $briefing = "CLASSIFIED INVESTIGATION - CASE #" + call toString $sessionId + "\n"
@@ -210,7 +213,7 @@ set $briefing = $briefing + "You're going to need it.\n\n"
 set $briefing = $briefing + "[SYSTEM NOTICE: This investigation is real-time.]\n"
 set $briefing = $briefing + "[The system will respond to your actions.]\n"
 
-write $briefing to $caseDir + "/BRIEFING.txt"
+write $briefing to "C:/Users/User/Desktop/CASE_PHOENIX/BRIEFING.txt"
 
 # Create the first clue - a multi-layered cipher puzzle
 set $firstClue = "DR. CHEN'S FIRST MESSAGE\n"
@@ -235,7 +238,7 @@ set $firstClue = $firstClue + "- L.J.\n\n"
 set $firstClue = $firstClue + "HINT: Try different shift values. One will make sense.\n"
 set $firstClue = $firstClue + "Common shifts: 1, 3, 7, 13, 23\n"
 
-write $firstClue to $evidenceDir + "/FIRST_CLUE.txt"
+write $firstClue to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/FIRST_CLUE.txt"
 
 # Create the labyrinth puzzle - requires actual exploration
 set $labyrinth = "FILE SYSTEM LABYRINTH - DR. CHEN'S TEST\n"
@@ -252,7 +255,7 @@ set $labyrinth = $labyrinth + "   /YOUR_RESPONSES/LABYRINTH_PATH.txt\n\n"
 set $labyrinth = $labyrinth + "WARNING: Wrong turns lead to dead ends.\n"
 set $labyrinth = $labyrinth + "The correct path is exactly 6 moves.\n"
 
-write $labyrinth to $evidenceDir + "/LABYRINTH_INSTRUCTIONS.txt"
+write $labyrinth to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/LABYRINTH_INSTRUCTIONS.txt"
 
 # Create labyrinth files
 set $labStart = "LABYRINTH - START POSITION\n"
@@ -264,7 +267,7 @@ set $labStart = $labStart + "WEST: A dark passage with strange sounds\n"
 set $labStart = $labStart + "      Read: LAB_WEST.txt to go this way\n\n"
 set $labStart = $labStart + "Choose wisely. Not all paths lead forward.\n"
 
-write $labStart to $logsDir + "/LABYRINTH_START.txt"
+write $labStart to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LABYRINTH_START.txt"
 
 # Create the correct path: EAST -> NORTH -> NORTH -> WEST -> SOUTH -> EAST
 set $labEast = "LABYRINTH - EAST CORRIDOR\n"
@@ -277,7 +280,7 @@ set $labEast = $labEast + "       Read: LAB_EAST_NORTH.txt\n\n"
 set $labEast = $labEast + "SOUTH: A descending tunnel\n"
 set $labEast = $labEast + "       Read: LAB_EAST_SOUTH.txt (DEAD END)\n"
 
-write $labEast to $logsDir + "/LAB_EAST.txt"
+write $labEast to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EAST.txt"
 
 set $labWest = "LABYRINTH - WEST PASSAGE (DEAD END)\n"
 set $labWest = $labWest + "════════════════════════════════════\n\n"
@@ -286,7 +289,7 @@ set $labWest = $labWest + "'Wrong way... turn back...'\n\n"
 set $labWest = $labWest + "This path leads nowhere.\n"
 set $labWest = $labWest + "Return to START and try EAST.\n"
 
-write $labWest to $logsDir + "/LAB_WEST.txt"
+write $labWest to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_WEST.txt"
 
 set $labEastNorth = "LABYRINTH - UPPER LEVEL\n"
 set $labEastNorth = $labEastNorth + "════════════════════════════════════\n\n"
@@ -298,7 +301,7 @@ set $labEastNorth = $labEastNorth + "       Read: LAB_NORTH_NORTH.txt\n\n"
 set $labEastNorth = $labEastNorth + "EAST: A locked door (need key)\n"
 set $labEastNorth = $labEastNorth + "      Read: LAB_LOCKED.txt (BLOCKED)\n"
 
-write $labEastNorth to $logsDir + "/LAB_EAST_NORTH.txt"
+write $labEastNorth to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EAST_NORTH.txt"
 
 set $labNorthNorth = "LABYRINTH - LONG HALLWAY\n"
 set $labNorthNorth = $labNorthNorth + "════════════════════════════════════\n\n"
@@ -310,7 +313,7 @@ set $labNorthNorth = $labNorthNorth + "WEST: A red door with warning signs\n"
 set $labNorthNorth = $labNorthNorth + "      Read: LAB_RED_DOOR.txt\n\n"
 set $labNorthNorth = $labNorthNorth + "NORTH: Continue forward (DEAD END)\n"
 
-write $labNorthNorth to $logsDir + "/LAB_NORTH_NORTH.txt"
+write $labNorthNorth to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_NORTH_NORTH.txt"
 
 set $labRedDoor = "LABYRINTH - BEHIND THE RED DOOR\n"
 set $labRedDoor = $labRedDoor + "════════════════════════════════════\n\n"
@@ -325,7 +328,7 @@ set $labRedDoor = $labRedDoor + "SOUTH: Exit through server room\n"
 set $labRedDoor = $labRedDoor + "       Read: LAB_SERVER_EXIT.txt\n\n"
 set $labRedDoor = $labRedDoor + "WEST: Deeper into the servers (DANGEROUS)\n"
 
-write $labRedDoor to $logsDir + "/LAB_RED_DOOR.txt"
+write $labRedDoor to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_RED_DOOR.txt"
 
 set $labServerExit = "LABYRINTH - SERVER ROOM EXIT\n"
 set $labServerExit = $labServerExit + "════════════════════════════════════\n\n"
@@ -335,7 +338,7 @@ set $labServerExit = $labServerExit + "One path remains:\n"
 set $labServerExit = $labServerExit + "EAST: The final door - light beyond\n"
 set $labServerExit = $labServerExit + "      Read: LAB_EXIT.txt\n"
 
-write $labServerExit to $logsDir + "/LAB_SERVER_EXIT.txt"
+write $labServerExit to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_SERVER_EXIT.txt"
 
 set $labExit = "LABYRINTH - EXIT\n"
 set $labExit = $labExit + "════════════════════════════════════\n\n"
@@ -349,7 +352,7 @@ set $labExit = $labExit + "/YOUR_RESPONSES/LABYRINTH_PATH.txt\n\n"
 set $labExit = $labExit + "Format: ENNWSE or E-N-N-W-S-E\n\n"
 set $labExit = $labExit + "The system will verify and grant Fragment 2.\n"
 
-write $labExit to $logsDir + "/LAB_EXIT.txt"
+write $labExit to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EXIT.txt"
 
 # Create coordinate puzzle for Asteroids
 set $coordPuzzle = "ASTEROID COORDINATE PUZZLE\n"
@@ -369,7 +372,7 @@ set $coordPuzzle = $coordPuzzle + "What message is Dr. Chen sending?\n\n"
 set $coordPuzzle = $coordPuzzle + "Get a 3+ combo in Asteroids, then decode the message.\n"
 set $coordPuzzle = $coordPuzzle + "Write your answer to: /YOUR_RESPONSES/COORDINATE_DECODE.txt\n"
 
-write $coordPuzzle to $evidenceDir + "/COORDINATE_PUZZLE.txt"
+write $coordPuzzle to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/COORDINATE_PUZZLE.txt"
 
 # Create the README guide
 set $readme = "HOW TO SOLVE THIS ARG\n"
@@ -393,7 +396,7 @@ set $readme = $readme + "✓ Snake Achievement (reach score 10+)\n"
 set $readme = $readme + "✓ Final Choice (decide Dr. Chen's fate)\n\n"
 set $readme = $readme + "The system is watching. Good luck.\n"
 
-write $readme to $caseDir + "/README.txt"
+write $readme to "C:/Users/User/Desktop/CASE_PHOENIX/README.txt"
 
 # Save initial progress
 call saveProgress "Investigation initialized"
@@ -479,7 +482,7 @@ on app:close {
         } else {
             # Check if file exists but wrong answer
             try {
-                read $responseDir + "/CIPHER_SOLUTION.txt" into $attempt
+                read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CIPHER_SOLUTION.txt" into $attempt
 
                 notify "Cipher answer incorrect. Try a different shift value."
 
@@ -656,7 +659,7 @@ on app:close {
             set $terminalMsg = $terminalMsg + "The system will respond.\n\n"
             set $terminalMsg = $terminalMsg + "Choose wisely.\n"
 
-            write $terminalMsg to $caseDir + "/TERMINAL_UNLOCKED.txt"
+            write $terminalMsg to "C:/Users/User/Desktop/CASE_PHOENIX/TERMINAL_UNLOCKED.txt"
 
             notify "Terminal unlocked. Read TERMINAL_UNLOCKED.txt"
 
@@ -774,10 +777,8 @@ on app:close {
     if $event.appId == "notepad" && $phase == "CHOICE" && $decisionMade == false then {
         wait 1000
 
-        set $choiceFile = $responseDir + "/CHOICE.txt"
-
         try {
-            read $choiceFile into $userChoice
+            read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CHOICE.txt" into $userChoice
             set $userChoice = call upper call trim $userChoice
 
             if call contains $userChoice "SHUTDOWN" || call contains $userChoice "INTEGRATION" then {
@@ -827,7 +828,7 @@ on app:close {
                     set $ending = $ending + "The threat is neutralized.\n\n"
                     set $ending = $ending + "Case closed.\n"
 
-                    write $ending to $caseDir + "/CASE_CLOSED_SHUTDOWN.txt"
+                    write $ending to "C:/Users/User/Desktop/CASE_PHOENIX/CASE_CLOSED_SHUTDOWN.txt"
 
                     wait 6000
 
@@ -882,7 +883,7 @@ on app:close {
                     set $ending = $ending + "The future is uncertain.\n\n"
                     set $ending = $ending + "Case... ongoing.\n"
 
-                    write $ending to $caseDir + "/CASE_CLOSED_INTEGRATION.txt"
+                    write $ending to "C:/Users/User/Desktop/CASE_PHOENIX/CASE_CLOSED_INTEGRATION.txt"
 
                     wait 6000
 
