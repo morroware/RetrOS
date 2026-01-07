@@ -530,7 +530,7 @@ SHORTHAND: D-R-D-L-D-R-U-R
 Binary decoded: EREBUS
 
 Now write your path to: SOLUTIONS/labyrinth.txt
-Then close Notepad." to "C:/Users/User/Desktop/EREBUS/LABYRINTH/EXIT.txt"
+Close Notepad when done." to "C:/Users/User/Desktop/EREBUS/LABYRINTH/EXIT.txt"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ACT II FILES
@@ -654,7 +654,7 @@ PASSWORD FORMAT: [NAME][ID]
 
 Write complete password to: SOLUTIONS/password.txt
 
-If correct, the final terminal unlocks." to "C:/Users/User/Desktop/EREBUS/ACT_III/PASSWORD_GUIDE.txt"
+When correct, the final terminal unlocks." to "C:/Users/User/Desktop/EREBUS/ACT_III/PASSWORD_GUIDE.txt"
 
 write "THE PATIENCE TRIALS
 ════════════════════════════════════════════════════════════
@@ -709,7 +709,7 @@ DESTROY
 ─────────────────────────────────────────────────────────────
 
 Write your choice to: SOLUTIONS/choice.txt
-Then close Notepad.
+Close Notepad when ready.
 
 There's no going back." to "C:/Users/User/Desktop/EREBUS/ACT_IV/THE_CHOICE.txt"
 
@@ -777,7 +777,7 @@ write "DR. WEBB'S FINAL LOG
 ════════════════════════════════════════════════════════════
 Date: Day of disappearance
 
-If you're reading this, you solved my puzzles.
+You're reading this because you solved my puzzles.
 You're worthy.
 
 EREBUS offered me a choice. The same you'll face.
@@ -821,7 +821,7 @@ Things I need to remember:
 - Project codename: Named after Greek darkness god
 - The sequence: 1,1,2,3,5,8,13,21,34,55...
 
-If I disappear, someone needs to find this.
+Should I disappear, someone needs to find this.
 
 - M.W." to "C:/Users/User/Documents/personal/notes.txt"
 
@@ -896,7 +896,7 @@ Listen carefully." to "C:/Users/User/Documents/morse_reference.txt"
 write "THE LABYRINTH HINT
 ════════════════════════════════════════════════════════════
 'Always descend first. The truth lies below.
-Then navigate: right, down, left, down, right.
+Navigate: right, down, left, down, right.
 Ascend when you find the core.
 Exit through the final right.'
 
@@ -926,7 +926,7 @@ To find the truth.
 To meet EREBUS.
 
 Start with the ciphers. Shift 7.
-Then the sequence. Fibonacci.
+Next, the sequence. Fibonacci.
 Navigate the labyrinth carefully.
 Decode the binary message.
 
