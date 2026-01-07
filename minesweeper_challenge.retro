@@ -114,30 +114,17 @@ def createStatusFile() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DIRECTORY STRUCTURE - Using Array Iteration
+# DIRECTORY STRUCTURE - Create folders individually (proven working pattern)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-set $directories = [
-    "C:/Users",
-    "C:/Users/User",
-    "C:/Users/User/Desktop",
-    "C:/Users/User/Desktop/EREBUS",
-    "C:/Users/User/Desktop/EREBUS/SOLUTIONS",
-    "C:/Users/User/Desktop/EREBUS/FRAGMENTS",
-    "C:/Users/User/Desktop/EREBUS/ACT_I",
-    "C:/Users/User/Desktop/EREBUS/ACT_II",
-    "C:/Users/User/Desktop/EREBUS/ACT_III",
-    "C:/Users/User/Desktop/EREBUS/ACT_IV",
-    "C:/Users/User/Desktop/EREBUS/LOGS"
-]
-
-foreach $dir in $directories {
-    try {
-        mkdir $dir
-    } catch $err {
-        # Directory may already exist, that's fine
-    }
-}
+try { mkdir "C:/Users/User/Desktop/EREBUS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/SOLUTIONS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/FRAGMENTS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_I" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_II" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_III" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_IV" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/LOGS" } catch {}
 
 print [EREBUS] Directory structure created
 
