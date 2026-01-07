@@ -953,15 +953,24 @@ class ScriptEngineClass {
         const braceStart = line.indexOf('{');
         const braceEnd = line.lastIndexOf('}');
 
+        console.log(`[ScriptEngine._parseOn] eventName: ${eventName}`);
+        console.log(`[ScriptEngine._parseOn] braceStart: ${braceStart}, braceEnd: ${braceEnd}`);
+        console.log(`[ScriptEngine._parseOn] line length: ${line.length}`);
+
         if (braceStart > 0 && braceEnd > braceStart) {
             const body = line.substring(braceStart + 1, braceEnd).trim();
+            console.log(`[ScriptEngine._parseOn] body length: ${body.length}`);
+            console.log(`[ScriptEngine._parseOn] body preview: ${body.substring(0, 100)}...`);
+            const parsedBody = this._parse(body);
+            console.log(`[ScriptEngine._parseOn] parsedBody statements: ${parsedBody.length}`);
             return {
                 type: 'on',
                 eventName,
-                body: this._parse(body)
+                body: parsedBody
             };
         }
 
+        console.log(`[ScriptEngine._parseOn] WARNING: No body found for event handler!`);
         return { type: 'on', eventName, body: [] };
     }
 
