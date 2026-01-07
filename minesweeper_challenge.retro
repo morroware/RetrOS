@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # PROJECT EREBUS - ARG Demo for RetrOS
 # ═══════════════════════════════════════════════════════════════════════════════
-# Version 5.1 - No return statements in event handlers
+# Version 5.2 - Trigger on save instead of close
 # ═══════════════════════════════════════════════════════════════════════════════
 
 print "[EREBUS] Starting..."
@@ -144,12 +144,11 @@ print "[EREBUS] Files created"
 emit dialog:alert title="PROJECT EREBUS" message="Investigation started! Open Desktop/EREBUS/BRIEFING.txt"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# EVENT HANDLER - Notepad close
+# EVENT HANDLER - Notepad save
 # ═══════════════════════════════════════════════════════════════════════════════
 
-on app:close {
-    set $isNotepad = $event.appId == "notepad"
-    if $isNotepad then {
+on app:notepad:saved {
+    set $path = $event.path
 
     # Cipher 1 check
     if $c1 == 0 then {
@@ -325,8 +324,6 @@ on app:close {
     if $solved >= 8 && $act == 2 then {
         set $act = 3
         emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available"
-    }
-
     }
 }
 
