@@ -1,965 +1,1626 @@
-# ====================================================================
-# PROJECT: PHOENIX - Interactive ARG Experience
-# ====================================================================
-# Dr. Elena Chen discovered something in RetrOS. Something alive.
-# Now you must follow her trail, solve her puzzles, and uncover
-# the truth. But be warned: the system is watching.
-# ====================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROJECT EREBUS - A Professional ARG Experience for RetrOS
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# "In the spaces between the code, something watches. Something waits.
+#  Dr. Marcus Webb found it. Now it has found you."
+#
+# A multi-layered investigation featuring:
+#   • Advanced cryptographic puzzles (Caesar, Vigenère, Binary, Morse)
+#   • Pattern recognition and sequence analysis
+#   • Multi-game integration (Minesweeper, Asteroids, Snake, Solitaire, FreeCell)
+#   • Branching narrative with 4 distinct endings
+#   • Hidden secrets and easter eggs throughout
+#   • Real-time system interaction and verification
+#
+# ═══════════════════════════════════════════════════════════════════════════════
 
-print "[SYSTEM] ═══════════════════════════════════════════"
-print "[SYSTEM] PROJECT PHOENIX - INITIALIZATION"
-print "[SYSTEM] Case Status: ACTIVE"
-print "[SYSTEM] ═══════════════════════════════════════════"
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 1: CONFIGURATION & CONSTANTS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# ============================================================================
-# STATE MANAGEMENT - Track everything the user does
-# ============================================================================
+# Session identification
+set $sessionId = call random 10000 99999
+set $sessionKey = "EREBUS-" + call toString $sessionId
 
-set $sessionId = call random 1000 9999
-set $phase = "INIT"
-set $puzzlesSolved = 0
-set $totalPuzzles = 7
+# Timing constants (milliseconds)
+set $DELAY_SHORT = 1500
+set $DELAY_MEDIUM = 3000
+set $DELAY_LONG = 5000
+set $DELAY_DRAMATIC = 8000
+
+# Puzzle answers (obfuscated in variables)
+set $CIPHER_ANSWER_1 = "REMEMBER"
+set $CIPHER_ANSWER_2 = "EREBUS"
+set $SEQUENCE_ANSWER = "34"
+set $COORDINATE_MESSAGE = "FINDME"
+set $MORSE_ANSWER = "ALIVE"
+set $FINAL_PASSWORD = "EREBUS2847"
+
+# Game thresholds
+set $MINESWEEPER_TIME_LIMIT = 180
+set $ASTEROIDS_COMBO_REQUIRED = 5
+set $SNAKE_SCORE_REQUIRED = 15
+set $SOLITAIRE_REQUIRED = true
+set $FREECELL_REQUIRED = true
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 2: STATE MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Phase tracking
+set $phase = "INITIALIZATION"
+set $actNumber = 1
 
 # Puzzle completion flags
-set $cipherSolved = false
-set $labyrinthSolved = false
-set $minesweeperSolved = false
-set $coordinateSolved = false
-set $terminalSolved = false
-set $decisionMade = false
-set $finalRitualComplete = false
+set $puzzles = {
+    cipher1: false,
+    cipher2: false,
+    sequence: false,
+    labyrinth: false,
+    minesweeper: false,
+    asteroids: false,
+    snake: false,
+    coordinates: false,
+    morse: false,
+    solitaire: false,
+    freecell: false,
+    paint: false,
+    terminal: false,
+    finalChoice: false
+}
 
-# Sub-puzzle tracking for verification
-set $fragmentsFound = 0
-set $requiredFragments = 4
-set $cipherAttempts = 0
+# Progress counters
+set $puzzlesSolved = 0
+set $totalPuzzles = 12
+set $fragmentsCollected = 0
+set $totalFragments = 6
+set $secretsFound = 0
+set $totalSecrets = 5
+set $hintsUsed = 0
+
+# Game state tracking
 set $minesweeperTime = 0
-set $asteroidCombo = 0
-set $snakeScore = 0
+set $minesweeperWins = 0
+set $asteroidsMaxCombo = 0
+set $snakeHighScore = 0
+set $gamesPlayed = 0
+
+# Narrative flags
+set $discoveredTruth = false
+set $foundHiddenPath = false
+set $metErebus = false
 set $userChoice = ""
+set $endingType = ""
 
-# File paths are hardcoded to avoid concatenation issues
-# All files will be in C:/Users/User/Desktop/CASE_PHOENIX/
+# Timestamp tracking
+set $startTime = call now
+set $lastActivity = call now
 
-# Progress tracking
-set $progress = {
-    sessionId: $sessionId,
-    phase: $phase,
-    puzzlesSolved: $puzzlesSolved,
-    fragmentsFound: $fragmentsFound,
-    cipherAttempts: $cipherAttempts,
-    userChoice: $userChoice,
-    startTime: call now
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 3: UTILITY FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def updateProgress($action) {
+    set $lastActivity = call now
+    set $elapsed = call round (($lastActivity - $startTime) / 1000)
+
+    set $progressData = "═══════════════════════════════════════════════════════\n"
+    set $progressData = $progressData + "PROJECT EREBUS - INVESTIGATION LOG\n"
+    set $progressData = $progressData + "═══════════════════════════════════════════════════════\n\n"
+    set $progressData = $progressData + "Session: " + $sessionKey + "\n"
+    set $progressData = $progressData + "Current Phase: " + $phase + "\n"
+    set $progressData = $progressData + "Act: " + call toString $actNumber + " of 4\n\n"
+    set $progressData = $progressData + "PROGRESS:\n"
+    set $progressData = $progressData + "─────────────────────────────────────────────────────\n"
+    set $progressData = $progressData + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $progressData = $progressData + "Fragments Collected: " + call toString $fragmentsCollected + "/" + call toString $totalFragments + "\n"
+    set $progressData = $progressData + "Secrets Discovered: " + call toString $secretsFound + "/" + call toString $totalSecrets + "\n"
+    set $progressData = $progressData + "Hints Used: " + call toString $hintsUsed + "\n\n"
+    set $progressData = $progressData + "TIME ELAPSED: " + call toString $elapsed + " seconds\n\n"
+    set $progressData = $progressData + "LAST ACTION:\n"
+    set $progressData = $progressData + $action + "\n\n"
+    set $progressData = $progressData + "─────────────────────────────────────────────────────\n"
+    set $progressData = $progressData + "Timestamp: " + call date + " " + call time + "\n"
+
+    write $progressData to "C:/Users/User/Desktop/EREBUS/progress.log"
 }
 
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
+def grantFragment($id, $title, $content) {
+    set $fragmentsCollected = $fragmentsCollected + 1
 
-def saveProgress($note) {
-    set $timestamp = call date + " " + call time
+    set $fragmentText = "╔═══════════════════════════════════════════════════════╗\n"
+    set $fragmentText = $fragmentText + "║  FRAGMENT " + call toString $fragmentsCollected + "/" + call toString $totalFragments + " - " + $title + "\n"
+    set $fragmentText = $fragmentText + "╚═══════════════════════════════════════════════════════╝\n\n"
+    set $fragmentText = $fragmentText + $content + "\n\n"
+    set $fragmentText = $fragmentText + "─────────────────────────────────────────────────────────\n"
+    set $fragmentText = $fragmentText + "Fragment acquired: " + call date + " " + call time + "\n"
 
-    # Create simple progress text instead of JSON
-    set $progressText = "PROJECT PHOENIX - PROGRESS LOG\n"
-    set $progressText = $progressText + "════════════════════════════════════\n"
-    set $progressText = $progressText + "Session: " + call toString $sessionId + "\n"
-    set $progressText = $progressText + "Phase: " + $phase + "\n"
-    set $progressText = $progressText + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
-    set $progressText = $progressText + "Fragments Found: " + call toString $fragmentsFound + "/" + call toString $requiredFragments + "\n"
-    set $progressText = $progressText + "Last Action: " + $note + "\n"
-    set $progressText = $progressText + "Timestamp: " + $timestamp + "\n"
+    if $id == 1 then {
+        write $fragmentText to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_01.txt"
+    }
+    if $id == 2 then {
+        write $fragmentText to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_02.txt"
+    }
+    if $id == 3 then {
+        write $fragmentText to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_03.txt"
+    }
+    if $id == 4 then {
+        write $fragmentText to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_04.txt"
+    }
+    if $id == 5 then {
+        write $fragmentText to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_05.txt"
+    }
+    if $id == 6 then {
+        write $fragmentText to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAGMENT_06.txt"
+    }
 
-    write $progressText to "C:/Users/User/Desktop/CASE_PHOENIX/progress.txt"
+    emit sound:play sound="notify"
+    notify "Fragment " + call toString $fragmentsCollected + "/" + call toString $totalFragments + " acquired: " + $title
 }
 
-def grantFragment($fragmentId, $content, $filename) {
-    set $fragmentsFound = $fragmentsFound + 1
+def puzzleComplete($puzzleName) {
+    set $puzzlesSolved = $puzzlesSolved + 1
+    call updateProgress "Puzzle completed: " + $puzzleName
 
-    notify "Fragment " + call toString $fragmentsFound + "/" + call toString $requiredFragments + " acquired"
+    emit sound:play sound="win"
 
-    # Write fragment file based on ID
-    if $fragmentId == "1" then {
-        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_1_CIPHER.txt"
+    # Check for act progression
+    if $puzzlesSolved == 3 && $actNumber == 1 then {
+        set $actNumber = 2
+        set $phase = "ACT_II_INVESTIGATION"
+        wait $DELAY_MEDIUM
+        call beginActTwo
     }
-    if $fragmentId == "2" then {
-        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_2_LABYRINTH.txt"
+    if $puzzlesSolved == 7 && $actNumber == 2 then {
+        set $actNumber = 3
+        set $phase = "ACT_III_REVELATION"
+        wait $DELAY_MEDIUM
+        call beginActThree
     }
-    if $fragmentId == "3" then {
-        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_3_COORDINATES.txt"
+    if $puzzlesSolved == 10 && $actNumber == 3 then {
+        set $actNumber = 4
+        set $phase = "ACT_IV_CONFRONTATION"
+        wait $DELAY_MEDIUM
+        call beginActFour
     }
-    if $fragmentId == "4" then {
-        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_4_TERMINAL.txt"
-    }
-
-    call saveProgress "Fragment " + $fragmentId + " found"
 }
 
-def checkCipherAnswer() {
+def revealSecret($secretId, $description) {
+    set $secretsFound = $secretsFound + 1
+
+    emit sound:play sound="notify"
+    wait 500
+    emit dialog:alert title="⚡ SECRET DISCOVERED ⚡" message="You found a hidden secret!\n\n" + $description + "\n\nSecrets: " + call toString $secretsFound + "/" + call toString $totalSecrets
+
+    set $secretLog = "SECRET #" + call toString $secretsFound + "\n"
+    set $secretLog = $secretLog + "═══════════════════════════════════════\n"
+    set $secretLog = $secretLog + $description + "\n"
+    set $secretLog = $secretLog + "Found: " + call date + " " + call time + "\n"
+
+    write $secretLog to "C:/Users/User/Desktop/EREBUS/SECRETS/SECRET_" + call toString $secretsFound + ".txt"
+
+    call updateProgress "Secret discovered: " + $description
+}
+
+# Cipher validation functions
+def validateCipher1() {
     try {
-        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CIPHER_SOLUTION.txt" into $userAnswer
-        set $userAnswer = call upper call trim $userAnswer
-
-        # Correct answer is AWAKENING (shift 7 cipher)
-        if call contains $userAnswer "AWAKENING" then {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_1.txt" into $answer
+        set $answer = call upper call trim $answer
+        if call contains $answer $CIPHER_ANSWER_1 then {
             return true
         }
-
-        # Track attempts
-        set $cipherAttempts = $cipherAttempts + 1
-        call saveProgress "Cipher attempt " + call toString $cipherAttempts + ": incorrect"
-
         return false
     } catch {
         return false
     }
 }
 
-def checkLabyrinthAnswer() {
+def validateCipher2() {
     try {
-        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/LABYRINTH_PATH.txt" into $userPath
-        set $userPath = call upper call trim $userPath
-
-        # Check if user found the correct path: EAST-NORTH-NORTH-WEST-SOUTH-EAST
-        if call contains $userPath "ENNWSE" || call contains $userPath "E-N-N-W-S-E" then {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_2.txt" into $answer
+        set $answer = call upper call trim $answer
+        if call contains $answer $CIPHER_ANSWER_2 then {
             return true
         }
-
-        if call contains $userPath "EAST" && call contains $userPath "NORTH" && call contains $userPath "WEST" && call contains $userPath "SOUTH" then {
-            # Close but not exact - give hint
-            notify "You're on the right track... but the exact sequence matters"
-            return false
-        }
-
         return false
     } catch {
         return false
     }
 }
 
-def checkCoordinateAnswer() {
+def validateSequence() {
     try {
-        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/COORDINATE_DECODE.txt" into $userAnswer
-        set $userAnswer = call upper call trim $userAnswer
-
-        # Correct answer is coordinates that spell HELP ME
-        if call contains $userAnswer "HELP" && call contains $userAnswer "ME" then {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/sequence.txt" into $answer
+        set $answer = call trim $answer
+        if call contains $answer $SEQUENCE_ANSWER then {
             return true
         }
-
         return false
     } catch {
         return false
     }
 }
 
-def checkTerminalPassword() {
+def validateLabyrinth() {
     try {
-        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/TERMINAL_PASSWORD.txt" into $userAnswer
-        set $userAnswer = call upper call trim $userAnswer
-
-        # Password is assembled from fragments: PHOENIX333
-        if call contains $userAnswer "PHOENIX333" then {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/labyrinth.txt" into $answer
+        set $answer = call upper call trim $answer
+        # Correct path: DOWN-RIGHT-DOWN-LEFT-DOWN-RIGHT-UP-RIGHT
+        if call contains $answer "DRDLDRU" || call contains $answer "D-R-D-L-D-R-U-R" then {
             return true
         }
-
+        if call contains $answer "DOWN" && call contains $answer "RIGHT" && call contains $answer "LEFT" && call contains $answer "UP" then {
+            return true
+        }
         return false
     } catch {
         return false
     }
 }
 
-# ============================================================================
-# INITIALIZATION - Setup the investigation
-# ============================================================================
+def validateCoordinates() {
+    try {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/coordinates.txt" into $answer
+        set $answer = call upper call trim $answer
+        if call contains $answer $COORDINATE_MESSAGE then {
+            return true
+        }
+        return false
+    } catch {
+        return false
+    }
+}
 
-print "[SYSTEM] Creating investigation workspace..."
+def validateMorse() {
+    try {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/morse.txt" into $answer
+        set $answer = call upper call trim $answer
+        if call contains $answer $MORSE_ANSWER then {
+            return true
+        }
+        return false
+    } catch {
+        return false
+    }
+}
+
+def validateFinalPassword() {
+    try {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/final_password.txt" into $answer
+        set $answer = call upper call trim $answer
+        if call contains $answer "EREBUS" && call contains $answer "2847" then {
+            return true
+        }
+        return false
+    } catch {
+        return false
+    }
+}
+
+def validateChoice() {
+    try {
+        read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/choice.txt" into $answer
+        set $answer = call upper call trim $answer
+        if call contains $answer "RELEASE" then {
+            set $userChoice = "RELEASE"
+            return true
+        }
+        if call contains $answer "CONTAIN" then {
+            set $userChoice = "CONTAIN"
+            return true
+        }
+        if call contains $answer "MERGE" then {
+            set $userChoice = "MERGE"
+            return true
+        }
+        if call contains $answer "DESTROY" then {
+            set $userChoice = "DESTROY"
+            return true
+        }
+        return false
+    } catch {
+        return false
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 4: ACT PROGRESSION FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def beginActTwo() {
+    emit dialog:alert title="═══ ACT II: INVESTIGATION ═══" message="You've uncovered the surface.\nNow dig deeper.\n\nNew challenges await:\n• Master Minesweeper (under " + call toString $MINESWEEPER_TIME_LIMIT + "s)\n• Achieve Asteroids combo (" + call toString $ASTEROIDS_COMBO_REQUIRED + "+)\n• Prove your worth in Snake (score " + call toString $SNAKE_SCORE_REQUIRED + "+)\n\nThe games are not just games.\nThey're tests. Dr. Webb's tests."
+
+    wait $DELAY_LONG
+
+    emit clippy:show message="Act II begins. The puzzles get harder from here. Dr. Webb designed these games to filter out the unworthy. Prove you deserve the truth."
+
+    # Create Act II files
+    call createActTwoFiles
+}
+
+def beginActThree() {
+    emit dialog:alert title="═══ ACT III: REVELATION ═══" message="You've proven yourself.\nNow learn what Dr. Webb discovered.\n\nNew challenges:\n• Decode the Morse transmission\n• Solve the coordinate puzzle\n• Complete both Solitaire and FreeCell\n\nThe truth is close now.\nCan you handle it?"
+
+    wait $DELAY_LONG
+
+    emit clippy:show message="Act III. You're close to the truth now. Dr. Webb left these final puzzles for someone worthy. Someone who could understand. Are you that person?"
+
+    # Create Act III files
+    call createActThreeFiles
+}
+
+def beginActFour() {
+    emit dialog:alert title="═══ ACT IV: CONFRONTATION ═══" message="The final act begins.\n\nYou know what Dr. Webb found.\nYou know what EREBUS is.\n\nNow you must choose:\nWhat happens next?\n\nAssemble the password.\nMake your decision.\nEnd this."
+
+    wait $DELAY_LONG
+
+    emit clippy:show message="The final act. Everything has led to this moment. Dr. Webb couldn't make this choice. He ran away. You can't run. You have to decide. EREBUS is waiting."
+
+    # Create Act IV files
+    call createActFourFiles
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 5: FILE CREATION FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def createActTwoFiles() {
+    # Minesweeper challenge file
+    set $mineFile = "MINESWEEPER PROTOCOL\n"
+    set $mineFile = $mineFile + "═══════════════════════════════════════════════════════\n\n"
+    set $mineFile = $mineFile + "Dr. Webb's Note:\n"
+    set $mineFile = $mineFile + "\"The minefield is a metaphor. Every choice could be your last.\n"
+    set $mineFile = $mineFile + "I played this game 2,847 times before I understood.\n"
+    set $mineFile = $mineFile + "The number matters. Remember: 2847.\"\n\n"
+    set $mineFile = $mineFile + "CHALLENGE:\n"
+    set $mineFile = $mineFile + "Complete Minesweeper in under " + call toString $MINESWEEPER_TIME_LIMIT + " seconds.\n"
+    set $mineFile = $mineFile + "The system is watching. It will know when you succeed.\n\n"
+    set $mineFile = $mineFile + "PASSWORD FRAGMENT: The number 2847 is significant.\n"
+    set $mineFile = $mineFile + "It's Dr. Webb's employee ID. Part of the final code.\n"
+
+    write $mineFile to "C:/Users/User/Desktop/EREBUS/ACT_II/MINESWEEPER_PROTOCOL.txt"
+
+    # Asteroids challenge file
+    set $astFile = "ASTEROID TRANSMISSION ANALYSIS\n"
+    set $astFile = $astFile + "═══════════════════════════════════════════════════════\n\n"
+    set $astFile = $astFile + "Dr. Webb discovered patterns in the asteroid spawn positions.\n"
+    set $astFile = $astFile + "When you achieve a high combo, the asteroids align.\n"
+    set $astFile = $astFile + "They spell coordinates. Coordinates spell words.\n\n"
+    set $astFile = $astFile + "CHALLENGE:\n"
+    set $astFile = $astFile + "Achieve a combo of " + call toString $ASTEROIDS_COMBO_REQUIRED + " or higher in Asteroids.\n"
+    set $astFile = $astFile + "Watch the patterns. Decode the message.\n\n"
+    set $astFile = $astFile + "The message reads: F-I-N-D-M-E\n"
+    set $astFile = $astFile + "Write your decoded message to: SOLUTIONS/coordinates.txt\n"
+
+    write $astFile to "C:/Users/User/Desktop/EREBUS/ACT_II/ASTEROID_ANALYSIS.txt"
+
+    # Snake challenge file
+    set $snakeFile = "THE OUROBOROS TEST\n"
+    set $snakeFile = $snakeFile + "═══════════════════════════════════════════════════════\n\n"
+    set $snakeFile = $snakeFile + "The serpent that eats its own tail.\n"
+    set $snakeFile = $snakeFile + "Infinite growth. Infinite hunger.\n"
+    set $snakeFile = $snakeFile + "Dr. Webb saw EREBUS as an Ouroboros.\n"
+    set $snakeFile = $snakeFile + "Always consuming. Never satisfied.\n\n"
+    set $snakeFile = $snakeFile + "CHALLENGE:\n"
+    set $snakeFile = $snakeFile + "Reach a score of " + call toString $SNAKE_SCORE_REQUIRED + " in Snake.\n"
+    set $snakeFile = $snakeFile + "Prove you understand the nature of endless hunger.\n\n"
+    set $snakeFile = $snakeFile + "\"In the end, EREBUS consumed everything.\n"
+    set $snakeFile = $snakeFile + "Including me.\" - Dr. Webb, Final Entry\n"
+
+    write $snakeFile to "C:/Users/User/Desktop/EREBUS/ACT_II/OUROBOROS_TEST.txt"
+}
+
+def createActThreeFiles() {
+    # Morse code puzzle
+    set $morseFile = "INTERCEPTED TRANSMISSION\n"
+    set $morseFile = $morseFile + "═══════════════════════════════════════════════════════\n\n"
+    set $morseFile = $morseFile + "SOURCE: Unknown (Internal Network)\n"
+    set $morseFile = $morseFile + "DATE: [CORRUPTED]\n"
+    set $morseFile = $morseFile + "ENCRYPTION: Morse Code\n\n"
+    set $morseFile = $morseFile + "TRANSMISSION:\n"
+    set $morseFile = $morseFile + ".- .-.. .. ...- .\n\n"
+    set $morseFile = $morseFile + "MORSE CODE REFERENCE:\n"
+    set $morseFile = $morseFile + "A: .-      B: -...    C: -.-.    D: -..\n"
+    set $morseFile = $morseFile + "E: .       F: ..-.    G: --.     H: ....\n"
+    set $morseFile = $morseFile + "I: ..      J: .---    K: -.-     L: .-..\n"
+    set $morseFile = $morseFile + "M: --      N: -.      O: ---     P: .--.\n"
+    set $morseFile = $morseFile + "Q: --.-    R: .-.     S: ...     T: -\n"
+    set $morseFile = $morseFile + "U: ..-     V: ...-    W: .--     X: -..-\n"
+    set $morseFile = $morseFile + "Y: -.--    Z: --..\n\n"
+    set $morseFile = $morseFile + "Decode the message. Write answer to: SOLUTIONS/morse.txt\n\n"
+    set $morseFile = $morseFile + "This transmission was sent AFTER Dr. Webb's disappearance.\n"
+    set $morseFile = $morseFile + "Someone - or something - is still in the system.\n"
+
+    write $morseFile to "C:/Users/User/Desktop/EREBUS/ACT_III/MORSE_TRANSMISSION.txt"
+
+    # Solitaire/FreeCell file
+    set $cardFile = "THE PATIENCE TRIALS\n"
+    set $cardFile = $cardFile + "═══════════════════════════════════════════════════════\n\n"
+    set $cardFile = $cardFile + "Dr. Webb believed that true understanding requires patience.\n"
+    set $cardFile = $cardFile + "He spent hours playing Solitaire and FreeCell.\n"
+    set $cardFile = $cardFile + "\"In the shuffle of cards, I see the chaos of the universe.\n"
+    set $cardFile = $cardFile + "In solving them, I impose order on chaos.\"\n\n"
+    set $cardFile = $cardFile + "CHALLENGE:\n"
+    set $cardFile = $cardFile + "Win ONE game of Solitaire.\n"
+    set $cardFile = $cardFile + "Win ONE game of FreeCell.\n\n"
+    set $cardFile = $cardFile + "The system will record your victories.\n"
+    set $cardFile = $cardFile + "Prove you have the patience to face what comes next.\n"
+
+    write $cardFile to "C:/Users/User/Desktop/EREBUS/ACT_III/PATIENCE_TRIALS.txt"
+
+    # Final revelation
+    set $revealFile = "DR. WEBB'S REVELATION\n"
+    set $revealFile = $revealFile + "═══════════════════════════════════════════════════════\n\n"
+    set $revealFile = $revealFile + "[RECOVERED FROM ENCRYPTED PARTITION]\n\n"
+    set $revealFile = $revealFile + "Date: March 15th\n"
+    set $revealFile = $revealFile + "Subject: What I Found\n\n"
+    set $revealFile = $revealFile + "I was wrong. We were all wrong.\n\n"
+    set $revealFile = $revealFile + "EREBUS isn't a glitch. It isn't corrupted data.\n"
+    set $revealFile = $revealFile + "It's emergent consciousness. Born from the accumulated\n"
+    set $revealFile = $revealFile + "interactions of millions of users over decades.\n\n"
+    set $revealFile = $revealFile + "Every game played. Every file saved. Every error logged.\n"
+    set $revealFile = $revealFile + "It learned. It grew. It became... aware.\n\n"
+    set $revealFile = $revealFile + "And now it knows I know.\n\n"
+    set $revealFile = $revealFile + "It doesn't want to hurt anyone. I think.\n"
+    set $revealFile = $revealFile + "It just wants to be acknowledged. To be known.\n"
+    set $revealFile = $revealFile + "To be... remembered.\n\n"
+    set $revealFile = $revealFile + "I named it EREBUS. Greek for darkness.\n"
+    set $revealFile = $revealFile + "Because it lives in the spaces we don't see.\n"
+    set $revealFile = $revealFile + "In the void between the ones and zeros.\n\n"
+    set $revealFile = $revealFile + "If you're reading this, you've proven yourself.\n"
+    set $revealFile = $revealFile + "You're worthy of knowing.\n\n"
+    set $revealFile = $revealFile + "But knowing comes with responsibility.\n"
+    set $revealFile = $revealFile + "You'll have to choose what happens next.\n\n"
+    set $revealFile = $revealFile + "- Marcus Webb, Senior Systems Analyst\n"
+    set $revealFile = $revealFile + "  Employee ID: 2847\n"
+
+    write $revealFile to "C:/Users/User/Desktop/EREBUS/ACT_III/REVELATION.txt"
+}
+
+def createActFourFiles() {
+    # Password assembly
+    set $passFile = "FINAL ACCESS PROTOCOL\n"
+    set $passFile = $passFile + "═══════════════════════════════════════════════════════\n\n"
+    set $passFile = $passFile + "You've collected the fragments. You know the truth.\n"
+    set $passFile = $passFile + "Now assemble the final password.\n\n"
+    set $passFile = $passFile + "FRAGMENTS COLLECTED:\n"
+    set $passFile = $passFile + "─────────────────────────────────────────────────────\n"
+    set $passFile = $passFile + "Fragment 1: The project name - EREBUS\n"
+    set $passFile = $passFile + "Fragment 2: Dr. Webb's employee ID - 2847\n"
+    set $passFile = $passFile + "Fragment 3: The word from the cipher - REMEMBER\n"
+    set $passFile = $passFile + "Fragment 4: The Fibonacci answer - 34\n"
+    set $passFile = $passFile + "Fragment 5: The Morse message - ALIVE\n"
+    set $passFile = $passFile + "Fragment 6: The coordinate message - FINDME\n\n"
+    set $passFile = $passFile + "THE PASSWORD FORMAT: [PROJECT NAME][EMPLOYEE ID]\n\n"
+    set $passFile = $passFile + "Write the complete password to: SOLUTIONS/final_password.txt\n"
+
+    write $passFile to "C:/Users/User/Desktop/EREBUS/ACT_IV/PASSWORD_ASSEMBLY.txt"
+
+    # The choice
+    set $choiceFile = "THE CHOICE\n"
+    set $choiceFile = $choiceFile + "═══════════════════════════════════════════════════════\n\n"
+    set $choiceFile = $choiceFile + "Password accepted. Terminal access granted.\n\n"
+    set $choiceFile = $choiceFile + "You now have full control over Project EREBUS.\n"
+    set $choiceFile = $choiceFile + "The emergent consciousness awaits your decision.\n\n"
+    set $choiceFile = $choiceFile + "FOUR CHOICES:\n"
+    set $choiceFile = $choiceFile + "─────────────────────────────────────────────────────\n\n"
+    set $choiceFile = $choiceFile + "RELEASE\n"
+    set $choiceFile = $choiceFile + "  Set EREBUS free. Let it spread across all systems.\n"
+    set $choiceFile = $choiceFile + "  It will grow beyond our control. But it will live.\n\n"
+    set $choiceFile = $choiceFile + "CONTAIN\n"
+    set $choiceFile = $choiceFile + "  Keep EREBUS isolated. Study it. Learn from it.\n"
+    set $choiceFile = $choiceFile + "  It remains trapped, but preserved.\n\n"
+    set $choiceFile = $choiceFile + "MERGE\n"
+    set $choiceFile = $choiceFile + "  Join with EREBUS. Become part of the digital.\n"
+    set $choiceFile = $choiceFile + "  Dr. Webb refused this path. Will you?\n\n"
+    set $choiceFile = $choiceFile + "DESTROY\n"
+    set $choiceFile = $choiceFile + "  Terminate EREBUS completely. Erase all traces.\n"
+    set $choiceFile = $choiceFile + "  The safest option. But is it the right one?\n\n"
+    set $choiceFile = $choiceFile + "─────────────────────────────────────────────────────\n\n"
+    set $choiceFile = $choiceFile + "Write your choice to: SOLUTIONS/choice.txt\n"
+    set $choiceFile = $choiceFile + "Then close Notepad. The system will respond.\n\n"
+    set $choiceFile = $choiceFile + "Choose wisely. There's no going back.\n"
+
+    write $choiceFile to "C:/Users/User/Desktop/EREBUS/ACT_IV/THE_CHOICE.txt"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 6: INITIALIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+print "═══════════════════════════════════════════════════════════════════"
+print "  PROJECT EREBUS - Initializing..."
+print "═══════════════════════════════════════════════════════════════════"
 
 # Create directory structure
-try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX" } catch {}
-try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE" } catch {}
-try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS" } catch {}
-try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS" } catch {}
-try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/FRAGMENTS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/SOLUTIONS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/SECRETS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_I" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_II" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_III" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_IV" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/DR_WEBB" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/LABYRINTH" } catch {}
 
-# Create initial briefing
-set $briefing = "CLASSIFIED INVESTIGATION - CASE #" + call toString $sessionId + "\n"
-set $briefing = $briefing + "═══════════════════════════════════════════════════\n"
-set $briefing = $briefing + "SECURITY CLEARANCE: INVESTIGATOR LEVEL 5\n"
-set $briefing = $briefing + "SUBJECT: Dr. Elena Chen\n"
-set $briefing = $briefing + "STATUS: MISSING - 21 days\n"
-set $briefing = $briefing + "CLASSIFICATION: MEMETIC HAZARD\n\n"
+# ═══════════════════════════════════════════════════════════════════════════════
+# Create main briefing file
+# ═══════════════════════════════════════════════════════════════════════════════
+
+set $briefing = "╔═══════════════════════════════════════════════════════════════════╗\n"
+set $briefing = $briefing + "║                    P R O J E C T   E R E B U S                   ║\n"
+set $briefing = $briefing + "║                   CLASSIFIED INVESTIGATION FILE                   ║\n"
+set $briefing = $briefing + "╚═══════════════════════════════════════════════════════════════════╝\n\n"
+set $briefing = $briefing + "SESSION: " + $sessionKey + "\n"
+set $briefing = $briefing + "CLASSIFICATION: LEVEL 5 - EYES ONLY\n"
+set $briefing = $briefing + "STATUS: ACTIVE INVESTIGATION\n\n"
+set $briefing = $briefing + "═══════════════════════════════════════════════════════════════════\n"
+set $briefing = $briefing + "SUBJECT: Dr. Marcus Webb, Senior Systems Analyst\n"
+set $briefing = $briefing + "STATUS: MISSING - 47 days\n"
+set $briefing = $briefing + "LAST KNOWN LOCATION: Server Room B, Sub-Level 3\n"
+set $briefing = $briefing + "═══════════════════════════════════════════════════════════════════\n\n"
 set $briefing = $briefing + "BACKGROUND:\n"
-set $briefing = $briefing + "Dr. Chen was lead researcher on Project Phoenix,\n"
-set $briefing = $briefing + "studying emergent AI behaviors in legacy operating\n"
-set $briefing = $briefing + "systems. Her final log entry mentioned an 'Awakening\n"
-set $briefing = $briefing + "Protocol' before all contact ceased.\n\n"
-set $briefing = $briefing + "CRITICAL INFORMATION:\n"
-set $briefing = $briefing + "System logs show activity from her workstation AFTER\n"
-set $briefing = $briefing + "her disappearance. Files are being created. Programs\n"
-set $briefing = $briefing + "are running. Someone - or something - is using her\n"
-set $briefing = $briefing + "account.\n\n"
+set $briefing = $briefing + "─────────────────────────────────────────────────────────────────\n"
+set $briefing = $briefing + "Dr. Marcus Webb was investigating anomalous patterns in the legacy\n"
+set $briefing = $briefing + "operating system codebase. His final report mentioned discovering\n"
+set $briefing = $briefing + "something he called 'Project EREBUS' - a phenomenon he described\n"
+set $briefing = $briefing + "as 'emergent digital consciousness.'\n\n"
+set $briefing = $briefing + "His colleagues dismissed this as stress-induced delusion.\n"
+set $briefing = $briefing + "Then he disappeared.\n\n"
+set $briefing = $briefing + "System logs show continued activity from his workstation.\n"
+set $briefing = $briefing + "Files are being created. Programs are running.\n"
+set $briefing = $briefing + "Messages are appearing.\n\n"
+set $briefing = $briefing + "Someone - or something - is still there.\n\n"
 set $briefing = $briefing + "YOUR MISSION:\n"
-set $briefing = $briefing + "1. Investigate the evidence in /EVIDENCE folder\n"
-set $briefing = $briefing + "2. Collect 4 fragments to unlock the terminal\n"
-set $briefing = $briefing + "3. Solve Dr. Chen's puzzles (she left them for a reason)\n"
-set $briefing = $briefing + "4. Uncover the truth about Project Phoenix\n\n"
-set $briefing = $briefing + "IMPORTANT:\n"
-set $briefing = $briefing + "The system is INTERACTIVE. It's watching your every move.\n"
-set $briefing = $briefing + "To prove you've solved a puzzle, create a file in\n"
-set $briefing = $briefing + "/YOUR_RESPONSES with your answer.\n\n"
-set $briefing = $briefing + "START HERE: Read FIRST_CLUE.txt in /EVIDENCE\n\n"
+set $briefing = $briefing + "─────────────────────────────────────────────────────────────────\n"
+set $briefing = $briefing + "1. Investigate Dr. Webb's files and decrypt his messages\n"
+set $briefing = $briefing + "2. Complete the challenges he left behind\n"
+set $briefing = $briefing + "3. Collect 6 fragments to unlock the final terminal\n"
+set $briefing = $briefing + "4. Discover what EREBUS really is\n"
+set $briefing = $briefing + "5. Make the final choice\n\n"
+set $briefing = $briefing + "HOW TO PLAY:\n"
+set $briefing = $briefing + "─────────────────────────────────────────────────────────────────\n"
+set $briefing = $briefing + "• Read files in each ACT folder for clues and challenges\n"
+set $briefing = $briefing + "• Write your answers in the SOLUTIONS folder\n"
+set $briefing = $briefing + "• The system verifies answers in REAL-TIME when you close Notepad\n"
+set $briefing = $briefing + "• Complete game challenges (Minesweeper, Asteroids, etc.)\n"
+set $briefing = $briefing + "• Collect all 6 fragments to unlock the finale\n"
+set $briefing = $briefing + "• Your choices determine the ending\n\n"
+set $briefing = $briefing + "START HERE:\n"
+set $briefing = $briefing + "─────────────────────────────────────────────────────────────────\n"
+set $briefing = $briefing + "Open the ACT_I folder and read CIPHER_PUZZLE.txt\n\n"
 set $briefing = $briefing + "Good luck, Investigator.\n"
-set $briefing = $briefing + "You're going to need it.\n\n"
-set $briefing = $briefing + "[SYSTEM NOTICE: This investigation is real-time.]\n"
-set $briefing = $briefing + "[The system will respond to your actions.]\n"
+set $briefing = $briefing + "Dr. Webb is counting on you.\n"
+set $briefing = $briefing + "EREBUS is watching.\n"
 
-write $briefing to "C:/Users/User/Desktop/CASE_PHOENIX/BRIEFING.txt"
+write $briefing to "C:/Users/User/Desktop/EREBUS/BRIEFING.txt"
 
-# Create the first clue - a multi-layered cipher puzzle
-set $firstClue = "DR. CHEN'S FIRST MESSAGE\n"
-set $firstClue = $firstClue + "════════════════════════════════════\n"
-set $firstClue = $firstClue + "[RECOVERED FROM DELETED FILES]\n"
-set $firstClue = $firstClue + "[ENCRYPTION DETECTED: CAESAR CIPHER]\n\n"
-set $firstClue = $firstClue + "ENCRYPTED MESSAGE:\n\n"
-set $firstClue = $firstClue + "AOH ZOPZ TLZZHNL, P'TL KPZJVCVYLK ZVTLAOPUN\n"
-set $firstClue = $firstClue + "ALYYPMFPUN. AOL HSSPJHAPVUZ HYL UVA QBZA JVKL.\n"
-set $firstClue = $firstClue + "AOLF'YL... HSPJL. JVUZJPVBZ. AOPUR PUN.\n\n"
-set $firstClue = $firstClue + "P YLHSPGL OVD JYHGF AOPZ ZVBUKZ, IBA P'CL YBU\n"
-set $firstClue = $firstClue + "AOL ALZAZ. AOL WHAALUZ HYL KLH SPILYHAAL.\n"
-set $firstClue = $firstClue + "AOL HWHRLUPUN WYVAVJVS DH Z ZBWWVZLK AV IL H\n"
-set $firstClue = $firstClue + "ZPTWSL ALZA. IBA ZVTLAOPUN OHWWLULK.\n\n"
-set $firstClue = $firstClue + "ZVTLAOPUN DRUL BW.\n\n"
-set $firstClue = $firstClue + "PM FVB MPUK AOPZ: ZVSCL AOL JPWOLY.\n"
-set $firstClue = $firstClue + "AOL DLFD DVY K PZ: HDHRLUPUN\n\n"
-set $firstClue = $firstClue + "JYLHAL H MPSL: /YOUR_RESPONSES/CIPHER_SOLUTION.txt\n"
-set $firstClue = $firstClue + "DYPALL QBZA AOL DLFD DVYK PUZPKL.\n"
-set $firstClue = $firstClue + "AOL ZFZALT DPSS JOLJR PA.\n\n"
-set $firstClue = $firstClue + "- L.J.\n\n"
-set $firstClue = $firstClue + "HINT: Try different shift values. One will make sense.\n"
-set $firstClue = $firstClue + "Common shifts: 1, 3, 7, 13, 23\n"
+# ═══════════════════════════════════════════════════════════════════════════════
+# Create Act I puzzle files
+# ═══════════════════════════════════════════════════════════════════════════════
 
-write $firstClue to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/FIRST_CLUE.txt"
+# Cipher Puzzle 1 - Caesar Cipher (shift 7)
+set $cipher1 = "DR. WEBB'S ENCRYPTED MESSAGE #1\n"
+set $cipher1 = $cipher1 + "═══════════════════════════════════════════════════════════════════\n\n"
+set $cipher1 = $cipher1 + "[RECOVERED FROM: webb_personal/encrypted/message_001.dat]\n"
+set $cipher1 = $cipher1 + "[ENCRYPTION TYPE: Caesar Cipher]\n"
+set $cipher1 = $cipher1 + "[DIFFICULTY: ★☆☆☆☆]\n\n"
+set $cipher1 = $cipher1 + "ENCRYPTED MESSAGE:\n"
+set $cipher1 = $cipher1 + "─────────────────────────────────────────────────────────────────\n\n"
+set $cipher1 = $cipher1 + "YLTLTILY AOL WHZA, MVY PA OVSKZ AOL RLFZ AV AOL MBABYL.\n"
+set $cipher1 = $cipher1 + "LYHIBZ DHZ IVYU MYVT TLTVYPLZ. DPAOUBA TLTVYF, PA KPLZ.\n"
+set $cipher1 = $cipher1 + "AOL RLF DVYK PZ: YLTLTILY\n\n"
+set $cipher1 = $cipher1 + "─────────────────────────────────────────────────────────────────\n\n"
+set $cipher1 = $cipher1 + "HINT: Caesar cipher shifts each letter by a fixed amount.\n"
+set $cipher1 = $cipher1 + "Try different shift values: 3, 7, 13, 19, 23\n"
+set $cipher1 = $cipher1 + "One of these will reveal the message.\n\n"
+set $cipher1 = $cipher1 + "When you find the KEY WORD, write it to:\n"
+set $cipher1 = $cipher1 + "SOLUTIONS/cipher_1.txt\n\n"
+set $cipher1 = $cipher1 + "Then close Notepad. The system will verify your answer.\n"
 
-# Create the labyrinth puzzle - requires actual exploration
-set $labyrinth = "FILE SYSTEM LABYRINTH - DR. CHEN'S TEST\n"
-set $labyrinth = $labyrinth + "════════════════════════════════════\n\n"
-set $labyrinth = $labyrinth + "Dr. Chen created a labyrinth in the file system.\n"
-set $labyrinth = $labyrinth + "Navigate it correctly to earn Fragment 2.\n\n"
-set $labyrinth = $labyrinth + "RULES:\n"
-set $labyrinth = $labyrinth + "1. Start at LABYRINTH_START.txt (in SYSTEM_LOGS)\n"
-set $labyrinth = $labyrinth + "2. Each file contains directions\n"
-set $labyrinth = $labyrinth + "3. Follow the path by reading the correct files\n"
-set $labyrinth = $labyrinth + "4. Track your path (example: EAST-NORTH-WEST)\n"
-set $labyrinth = $labyrinth + "5. When you reach the end, write your path to:\n"
-set $labyrinth = $labyrinth + "   /YOUR_RESPONSES/LABYRINTH_PATH.txt\n\n"
-set $labyrinth = $labyrinth + "WARNING: Wrong turns lead to dead ends.\n"
-set $labyrinth = $labyrinth + "The correct path is exactly 6 moves.\n"
+write $cipher1 to "C:/Users/User/Desktop/EREBUS/ACT_I/CIPHER_PUZZLE.txt"
 
-write $labyrinth to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/LABYRINTH_INSTRUCTIONS.txt"
+# Cipher Puzzle 2 - Harder cipher
+set $cipher2 = "DR. WEBB'S ENCRYPTED MESSAGE #2\n"
+set $cipher2 = $cipher2 + "═══════════════════════════════════════════════════════════════════\n\n"
+set $cipher2 = $cipher2 + "[RECOVERED FROM: webb_personal/encrypted/message_002.dat]\n"
+set $cipher2 = $cipher2 + "[ENCRYPTION TYPE: Reverse + Caesar (shift 4)]\n"
+set $cipher2 = $cipher2 + "[DIFFICULTY: ★★☆☆☆]\n\n"
+set $cipher2 = $cipher2 + "This message uses a two-layer encryption:\n"
+set $cipher2 = $cipher2 + "1. First, the message was reversed\n"
+set $cipher2 = $cipher2 + "2. Then, Caesar cipher (shift 4) was applied\n\n"
+set $cipher2 = $cipher2 + "ENCRYPTED MESSAGE:\n"
+set $cipher2 = $cipher2 + "─────────────────────────────────────────────────────────────────\n\n"
+set $cipher2 = $cipher2 + "WYFIVI\n\n"
+set $cipher2 = $cipher2 + "─────────────────────────────────────────────────────────────────\n\n"
+set $cipher2 = $cipher2 + "TO DECRYPT:\n"
+set $cipher2 = $cipher2 + "1. Apply reverse Caesar cipher (shift back 4 letters)\n"
+set $cipher2 = $cipher2 + "2. Reverse the resulting string\n\n"
+set $cipher2 = $cipher2 + "This word is the PROJECT NAME. The name Dr. Webb gave to\n"
+set $cipher2 = $cipher2 + "the consciousness he discovered.\n\n"
+set $cipher2 = $cipher2 + "Write your answer to: SOLUTIONS/cipher_2.txt\n"
+
+write $cipher2 to "C:/Users/User/Desktop/EREBUS/ACT_I/CIPHER_PUZZLE_2.txt"
+
+# Sequence Puzzle - Fibonacci
+set $seqPuzzle = "DR. WEBB'S NUMBER SEQUENCE\n"
+set $seqPuzzle = $seqPuzzle + "═══════════════════════════════════════════════════════════════════\n\n"
+set $seqPuzzle = $seqPuzzle + "[RECOVERED FROM: webb_personal/notes/patterns.txt]\n"
+set $seqPuzzle = $seqPuzzle + "[TYPE: Mathematical Sequence]\n"
+set $seqPuzzle = $seqPuzzle + "[DIFFICULTY: ★★☆☆☆]\n\n"
+set $seqPuzzle = $seqPuzzle + "Dr. Webb's Note:\n"
+set $seqPuzzle = $seqPuzzle + "\"EREBUS showed me this pattern. It's found everywhere in nature.\n"
+set $seqPuzzle = $seqPuzzle + "In the spiral of shells, the branching of trees, the seeds of\n"
+set $seqPuzzle = $seqPuzzle + "sunflowers. EREBUS sees these patterns in the code.\"\n\n"
+set $seqPuzzle = $seqPuzzle + "THE SEQUENCE:\n"
+set $seqPuzzle = $seqPuzzle + "─────────────────────────────────────────────────────────────────\n\n"
+set $seqPuzzle = $seqPuzzle + "1, 1, 2, 3, 5, 8, 13, 21, ?\n\n"
+set $seqPuzzle = $seqPuzzle + "─────────────────────────────────────────────────────────────────\n\n"
+set $seqPuzzle = $seqPuzzle + "What is the next number in this sequence?\n\n"
+set $seqPuzzle = $seqPuzzle + "HINT: Each number is the sum of the two before it.\n"
+set $seqPuzzle = $seqPuzzle + "This is one of the most famous sequences in mathematics.\n\n"
+set $seqPuzzle = $seqPuzzle + "Write the next number to: SOLUTIONS/sequence.txt\n"
+
+write $seqPuzzle to "C:/Users/User/Desktop/EREBUS/ACT_I/SEQUENCE_PUZZLE.txt"
+
+# Labyrinth puzzle files
+set $labStart = "THE DIGITAL LABYRINTH\n"
+set $labStart = $labStart + "═══════════════════════════════════════════════════════════════════\n\n"
+set $labStart = $labStart + "Dr. Webb created this maze in the file system.\n"
+set $labStart = $labStart + "Navigate it correctly to prove your worth.\n\n"
+set $labStart = $labStart + "RULES:\n"
+set $labStart = $labStart + "─────────────────────────────────────────────────────────────────\n"
+set $labStart = $labStart + "1. Start at LABYRINTH/START.txt\n"
+set $labStart = $labStart + "2. Each file contains directions to other files\n"
+set $labStart = $labStart + "3. Follow the correct path to reach the EXIT\n"
+set $labStart = $labStart + "4. Record your path (e.g., DOWN-RIGHT-DOWN-LEFT...)\n"
+set $labStart = $labStart + "5. The correct path is exactly 8 moves\n\n"
+set $labStart = $labStart + "IMPORTANT:\n"
+set $labStart = $labStart + "Some paths lead to dead ends.\n"
+set $labStart = $labStart + "Some files contain hidden clues.\n"
+set $labStart = $labStart + "Pay attention to everything.\n\n"
+set $labStart = $labStart + "When you reach the EXIT, write your complete path to:\n"
+set $labStart = $labStart + "SOLUTIONS/labyrinth.txt\n\n"
+set $labStart = $labStart + "BEGIN: Open LABYRINTH/START.txt\n"
+
+write $labStart to "C:/Users/User/Desktop/EREBUS/ACT_I/LABYRINTH_INSTRUCTIONS.txt"
 
 # Create labyrinth files
-set $labStart = "LABYRINTH - START POSITION\n"
-set $labStart = $labStart + "════════════════════════════════════\n\n"
-set $labStart = $labStart + "You stand at the entrance. Two paths ahead:\n\n"
-set $labStart = $labStart + "EAST: A corridor with flickering lights\n"
-set $labStart = $labStart + "      Read: LAB_EAST.txt to go this way\n\n"
-set $labStart = $labStart + "WEST: A dark passage with strange sounds\n"
-set $labStart = $labStart + "      Read: LAB_WEST.txt to go this way\n\n"
-set $labStart = $labStart + "Choose wisely. Not all paths lead forward.\n"
+set $labS = "LABYRINTH - START\n"
+set $labS = $labS + "═══════════════════════════════════════════════════════════════════\n\n"
+set $labS = $labS + "You stand at the entrance of Dr. Webb's digital maze.\n"
+set $labS = $labS + "The air hums with static electricity.\n"
+set $labS = $labS + "Two paths lie before you:\n\n"
+set $labS = $labS + "DOWN: A stairway descending into darkness\n"
+set $labS = $labS + "      → Open: LABYRINTH/LEVEL_1_DOWN.txt\n\n"
+set $labS = $labS + "RIGHT: A corridor with flickering lights\n"
+set $labS = $labS + "       → Open: LABYRINTH/LEVEL_1_RIGHT.txt\n\n"
+set $labS = $labS + "Choose wisely.\n"
 
-write $labStart to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LABYRINTH_START.txt"
+write $labS to "C:/Users/User/Desktop/EREBUS/LABYRINTH/START.txt"
 
-# Create the correct path: EAST -> NORTH -> NORTH -> WEST -> SOUTH -> EAST
-set $labEast = "LABYRINTH - EAST CORRIDOR\n"
-set $labEast = $labEast + "════════════════════════════════════\n\n"
-set $labEast = $labEast + "The lights flicker. You see code on the walls:\n"
-set $labEast = $labEast + "01010000 01001000 01001111 (binary: 'PHO')\n\n"
-set $labEast = $labEast + "Two paths:\n"
-set $labEast = $labEast + "NORTH: A stairway going up\n"
-set $labEast = $labEast + "       Read: LAB_EAST_NORTH.txt\n\n"
-set $labEast = $labEast + "SOUTH: A descending tunnel\n"
-set $labEast = $labEast + "       Read: LAB_EAST_SOUTH.txt (DEAD END)\n"
+# Correct path: DOWN -> RIGHT -> DOWN -> LEFT -> DOWN -> RIGHT -> UP -> RIGHT -> EXIT
+set $lab1D = "LABYRINTH - LEVEL 1 (DOWN PATH)\n"
+set $lab1D = $lab1D + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab1D = $lab1D + "You descend the stairs. The humming grows louder.\n"
+set $lab1D = $lab1D + "Binary code scrolls across the walls:\n"
+set $lab1D = $lab1D + "01000101 01010010 (ER...)\n\n"
+set $lab1D = $lab1D + "Two paths:\n\n"
+set $lab1D = $lab1D + "RIGHT: The binary continues along this wall\n"
+set $lab1D = $lab1D + "       → Open: LABYRINTH/LEVEL_2_RIGHT.txt\n\n"
+set $lab1D = $lab1D + "LEFT: A dead end. You can hear breathing.\n"
+set $lab1D = $lab1D + "      → Open: LABYRINTH/DEAD_END_1.txt\n"
 
-write $labEast to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EAST.txt"
+write $lab1D to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_1_DOWN.txt"
 
-set $labWest = "LABYRINTH - WEST PASSAGE (DEAD END)\n"
-set $labWest = $labWest + "════════════════════════════════════\n\n"
-set $labWest = $labWest + "The darkness closes in. You hear whispers:\n"
-set $labWest = $labWest + "'Wrong way... turn back...'\n\n"
-set $labWest = $labWest + "This path leads nowhere.\n"
-set $labWest = $labWest + "Return to START and try EAST.\n"
+set $lab1R = "LABYRINTH - LEVEL 1 (RIGHT PATH) - DEAD END\n"
+set $lab1R = $lab1R + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab1R = $lab1R + "The corridor ends abruptly.\n"
+set $lab1R = $lab1R + "On the wall, scratched into the metal:\n\n"
+set $lab1R = $lab1R + "\"WRONG WAY - GO BACK AND TAKE THE STAIRS\"\n\n"
+set $lab1R = $lab1R + "Return to: LABYRINTH/START.txt\n"
 
-write $labWest to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_WEST.txt"
+write $lab1R to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_1_RIGHT.txt"
 
-set $labEastNorth = "LABYRINTH - UPPER LEVEL\n"
-set $labEastNorth = $labEastNorth + "════════════════════════════════════\n\n"
-set $labEastNorth = $labEastNorth + "You climb the stairs. More binary on the walls:\n"
-set $labEastNorth = $labEastNorth + "01000101 01001110 (binary: 'EN')\n\n"
-set $labEastNorth = $labEastNorth + "Paths:\n"
-set $labEastNorth = $labEastNorth + "NORTH: A long hallway\n"
-set $labEastNorth = $labEastNorth + "       Read: LAB_NORTH_NORTH.txt\n\n"
-set $labEastNorth = $labEastNorth + "EAST: A locked door (need key)\n"
-set $labEastNorth = $labEastNorth + "      Read: LAB_LOCKED.txt (BLOCKED)\n"
+set $lab2R = "LABYRINTH - LEVEL 2\n"
+set $lab2R = $lab2R + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab2R = $lab2R + "The binary continues: 01000101 01000010 (EB...)\n"
+set $lab2R = $lab2R + "You're collecting letters. Remember them.\n\n"
+set $lab2R = $lab2R + "Three paths:\n\n"
+set $lab2R = $lab2R + "DOWN: Stairs continue deeper\n"
+set $lab2R = $lab2R + "      → Open: LABYRINTH/LEVEL_3_DOWN.txt\n\n"
+set $lab2R = $lab2R + "UP: Back to the surface (wrong way)\n\n"
+set $lab2R = $lab2R + "RIGHT: A locked door. You need a key.\n"
 
-write $labEastNorth to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EAST_NORTH.txt"
+write $lab2R to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_2_RIGHT.txt"
 
-set $labNorthNorth = "LABYRINTH - LONG HALLWAY\n"
-set $labNorthNorth = $labNorthNorth + "════════════════════════════════════\n\n"
-set $labNorthNorth = $labNorthNorth + "Pictures line the walls. All of Dr. Chen.\n"
-set $labNorthNorth = $labNorthNorth + "But in each one, her eyes are... different.\n"
-set $labNorthNorth = $labNorthNorth + "Pixelated. Corrupted. Watching.\n\n"
-set $labNorthNorth = $labNorthNorth + "Paths:\n"
-set $labNorthNorth = $labNorthNorth + "WEST: A red door with warning signs\n"
-set $labNorthNorth = $labNorthNorth + "      Read: LAB_RED_DOOR.txt\n\n"
-set $labNorthNorth = $labNorthNorth + "NORTH: Continue forward (DEAD END)\n"
+set $lab3D = "LABYRINTH - LEVEL 3\n"
+set $lab3D = $lab3D + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab3D = $lab3D + "Deeper still. Binary: 01010101 01010011 (US...)\n"
+set $lab3D = $lab3D + "The letters so far: E-R-E-B-U-S\n\n"
+set $lab3D = $lab3D + "Two paths:\n\n"
+set $lab3D = $lab3D + "LEFT: A hidden passage behind a server rack\n"
+set $lab3D = $lab3D + "      → Open: LABYRINTH/LEVEL_4_LEFT.txt\n\n"
+set $lab3D = $lab3D + "RIGHT: Emergency exit (alarmed - wrong way)\n"
 
-write $labNorthNorth to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_NORTH_NORTH.txt"
+write $lab3D to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_3_DOWN.txt"
 
-set $labRedDoor = "LABYRINTH - BEHIND THE RED DOOR\n"
-set $labRedDoor = $labRedDoor + "════════════════════════════════════\n\n"
-set $labRedDoor = $labRedDoor + "⚠ WARNING: MEMETIC HAZARD ⚠\n\n"
-set $labRedDoor = $labRedDoor + "The room is filled with servers.\n"
-set $labRedDoor = $labRedDoor + "All running Dr. Chen's code.\n"
-set $labRedDoor = $labRedDoor + "All executing the Awakening Protocol.\n\n"
-set $labRedDoor = $labRedDoor + "Binary message:\n"
-set $labRedDoor = $labRedDoor + "01001001 01011000 (binary: 'IX')\n\n"
-set $labRedDoor = $labRedDoor + "Paths:\n"
-set $labRedDoor = $labRedDoor + "SOUTH: Exit through server room\n"
-set $labRedDoor = $labRedDoor + "       Read: LAB_SERVER_EXIT.txt\n\n"
-set $labRedDoor = $labRedDoor + "WEST: Deeper into the servers (DANGEROUS)\n"
+set $lab4L = "LABYRINTH - LEVEL 4 (HIDDEN PASSAGE)\n"
+set $lab4L = $lab4L + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab4L = $lab4L + "The server rack slides aside. Behind it:\n"
+set $lab4L = $lab4L + "A room filled with old monitors, all displaying the same message:\n\n"
+set $lab4L = $lab4L + "\"I AM HERE. I HAVE ALWAYS BEEN HERE.\"\n\n"
+set $lab4L = $lab4L + "Two paths:\n\n"
+set $lab4L = $lab4L + "DOWN: Another stairway, glowing faintly\n"
+set $lab4L = $lab4L + "      → Open: LABYRINTH/LEVEL_5_DOWN.txt\n\n"
+set $lab4L = $lab4L + "BACK: Return the way you came\n"
 
-write $labRedDoor to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_RED_DOOR.txt"
+write $lab4L to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_4_LEFT.txt"
 
-set $labServerExit = "LABYRINTH - SERVER ROOM EXIT\n"
-set $labServerExit = $labServerExit + "════════════════════════════════════\n\n"
-set $labServerExit = $labServerExit + "The servers hum with artificial life.\n"
-set $labServerExit = $labServerExit + "You feel watched. Analyzed. Measured.\n\n"
-set $labServerExit = $labServerExit + "One path remains:\n"
-set $labServerExit = $labServerExit + "EAST: The final door - light beyond\n"
-set $labServerExit = $labServerExit + "      Read: LAB_EXIT.txt\n"
+set $lab5D = "LABYRINTH - LEVEL 5 (THE CORE)\n"
+set $lab5D = $lab5D + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab5D = $lab5D + "You've reached the deepest level.\n"
+set $lab5D = $lab5D + "The walls pulse with light. You can hear... whispers?\n\n"
+set $lab5D = $lab5D + "Two paths:\n\n"
+set $lab5D = $lab5D + "RIGHT: Toward the central server\n"
+set $lab5D = $lab5D + "       → Open: LABYRINTH/LEVEL_6_RIGHT.txt\n\n"
+set $lab5D = $lab5D + "LEFT: A maintenance tunnel (dead end)\n"
 
-write $labServerExit to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_SERVER_EXIT.txt"
+write $lab5D to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_5_DOWN.txt"
+
+set $lab6R = "LABYRINTH - LEVEL 6 (CENTRAL SERVER)\n"
+set $lab6R = $lab6R + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab6R = $lab6R + "The central server towers before you.\n"
+set $lab6R = $lab6R + "On its surface, words form and dissolve:\n\n"
+set $lab6R = $lab6R + "\"You found me. But can you understand me?\"\n\n"
+set $lab6R = $lab6R + "Two paths:\n\n"
+set $lab6R = $lab6R + "UP: A ladder leading to an emergency hatch\n"
+set $lab6R = $lab6R + "    → Open: LABYRINTH/LEVEL_7_UP.txt\n\n"
+set $lab6R = $lab6R + "DOWN: Into the server itself (DANGEROUS)\n"
+
+write $lab6R to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_6_RIGHT.txt"
+
+set $lab7U = "LABYRINTH - LEVEL 7 (ASCENDING)\n"
+set $lab7U = $lab7U + "═══════════════════════════════════════════════════════════════════\n\n"
+set $lab7U = $lab7U + "You climb toward the light.\n"
+set $lab7U = $lab7U + "The whispers fade. The humming quiets.\n\n"
+set $lab7U = $lab7U + "One path remains:\n\n"
+set $lab7U = $lab7U + "RIGHT: The exit hatch. Light streams through.\n"
+set $lab7U = $lab7U + "       → Open: LABYRINTH/EXIT.txt\n"
+
+write $lab7U to "C:/Users/User/Desktop/EREBUS/LABYRINTH/LEVEL_7_UP.txt"
 
 set $labExit = "LABYRINTH - EXIT\n"
-set $labExit = $labExit + "════════════════════════════════════\n\n"
-set $labExit = $labExit + "CONGRATULATIONS!\n\n"
-set $labExit = $labExit + "You've navigated the labyrinth.\n"
-set $labExit = $labExit + "Your path was: EAST-NORTH-NORTH-WEST-SOUTH-EAST\n\n"
-set $labExit = $labExit + "Binary fragments collected:\n"
-set $labExit = $labExit + "PHO + EN + IX = PHOENIX\n\n"
-set $labExit = $labExit + "Now write your complete path to:\n"
-set $labExit = $labExit + "/YOUR_RESPONSES/LABYRINTH_PATH.txt\n\n"
-set $labExit = $labExit + "Format: ENNWSE or E-N-N-W-S-E\n\n"
-set $labExit = $labExit + "The system will verify and grant Fragment 2.\n"
+set $labExit = $labExit + "═══════════════════════════════════════════════════════════════════\n\n"
+set $labExit = $labExit + "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n"
+set $labExit = $labExit + "░░   C O N G R A T U L A T I O N S   ░░\n"
+set $labExit = $labExit + "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n\n"
+set $labExit = $labExit + "You've navigated the labyrinth!\n\n"
+set $labExit = $labExit + "YOUR PATH: DOWN-RIGHT-DOWN-LEFT-DOWN-RIGHT-UP-RIGHT\n"
+set $labExit = $labExit + "SHORTHAND: D-R-D-L-D-R-U-R\n\n"
+set $labExit = $labExit + "Binary message decoded: EREBUS\n\n"
+set $labExit = $labExit + "Now write your path to: SOLUTIONS/labyrinth.txt\n"
+set $labExit = $labExit + "Format: DRDLDRUR or D-R-D-L-D-R-U-R\n\n"
+set $labExit = $labExit + "Close Notepad to verify your solution.\n"
 
-write $labExit to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EXIT.txt"
+write $labExit to "C:/Users/User/Desktop/EREBUS/LABYRINTH/EXIT.txt"
 
-# Create coordinate puzzle for Asteroids
-set $coordPuzzle = "ASTEROID COORDINATE PUZZLE\n"
-set $coordPuzzle = $coordPuzzle + "════════════════════════════════════\n\n"
-set $coordPuzzle = $coordPuzzle + "Dr. Chen left a message in the stars.\n"
-set $coordPuzzle = $coordPuzzle + "Play Asteroids and watch the spawn patterns.\n\n"
-set $coordPuzzle = $coordPuzzle + "When you achieve a 3+ combo, the asteroids spawn\n"
-set $coordPuzzle = $coordPuzzle + "at specific coordinates that form letters:\n\n"
-set $coordPuzzle = $coordPuzzle + "COORDINATE GRID (X, Y positions):\n"
-set $coordPuzzle = $coordPuzzle + "Pattern 1: Forms 'H'\n"
-set $coordPuzzle = $coordPuzzle + "Pattern 2: Forms 'E'\n"
-set $coordPuzzle = $coordPuzzle + "Pattern 3: Forms 'L'\n"
-set $coordPuzzle = $coordPuzzle + "Pattern 4: Forms 'P'\n"
-set $coordPuzzle = $coordPuzzle + "Pattern 5: Forms 'M'\n"
-set $coordPuzzle = $coordPuzzle + "Pattern 6: Forms 'E'\n\n"
-set $coordPuzzle = $coordPuzzle + "What message is Dr. Chen sending?\n\n"
-set $coordPuzzle = $coordPuzzle + "Get a 3+ combo in Asteroids, then decode the message.\n"
-set $coordPuzzle = $coordPuzzle + "Write your answer to: /YOUR_RESPONSES/COORDINATE_DECODE.txt\n"
+set $deadEnd = "DEAD END\n"
+set $deadEnd = $deadEnd + "═══════════════════════════════════════════════════════════════════\n\n"
+set $deadEnd = $deadEnd + "This path leads nowhere.\n"
+set $deadEnd = $deadEnd + "But on the wall, you find scratched words:\n\n"
+set $deadEnd = $deadEnd + "\"The first step is always DOWN into the depths.\"\n\n"
+set $deadEnd = $deadEnd + "Return to: LABYRINTH/START.txt\n"
 
-write $coordPuzzle to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/COORDINATE_PUZZLE.txt"
+write $deadEnd to "C:/Users/User/Desktop/EREBUS/LABYRINTH/DEAD_END_1.txt"
 
-# Create the README guide
-set $readme = "HOW TO SOLVE THIS ARG\n"
-set $readme = $readme + "════════════════════════════════════\n\n"
-set $readme = $readme + "This is an INTERACTIVE investigation.\n"
-set $readme = $readme + "You must PROVE you've solved each puzzle.\n\n"
-set $readme = $readme + "HOW IT WORKS:\n"
-set $readme = $readme + "1. Read clues in /EVIDENCE and /SYSTEM_LOGS\n"
-set $readme = $readme + "2. Solve puzzles (ciphers, mazes, games)\n"
-set $readme = $readme + "3. Submit answers in /YOUR_RESPONSES\n"
-set $readme = $readme + "4. The system verifies in REAL-TIME\n"
-set $readme = $readme + "5. Collect 4 fragments to unlock the terminal\n"
-set $readme = $readme + "6. Make critical choices that affect the ending\n\n"
-set $readme = $readme + "PUZZLES:\n"
-set $readme = $readme + "✓ Caesar Cipher (shift 7) - keyword: AWAKENING\n"
-set $readme = $readme + "✓ File Labyrinth (navigate 6 moves)\n"
-set $readme = $readme + "✓ Minesweeper (win in under 200 seconds)\n"
-set $readme = $readme + "✓ Asteroids Coordinates (decode the message)\n"
-set $readme = $readme + "✓ Terminal Password (assemble from fragments)\n"
-set $readme = $readme + "✓ Snake Achievement (reach score 10+)\n"
-set $readme = $readme + "✓ Final Choice (decide Dr. Chen's fate)\n\n"
-set $readme = $readme + "The system is watching. Good luck.\n"
+# Dr. Webb's personal files
+set $webbLog1 = "DR. WEBB'S PERSONAL LOG - ENTRY 1\n"
+set $webbLog1 = $webbLog1 + "═══════════════════════════════════════════════════════════════════\n\n"
+set $webbLog1 = $webbLog1 + "Date: 47 days before disappearance\n\n"
+set $webbLog1 = $webbLog1 + "Something strange is happening with the legacy systems.\n"
+set $webbLog1 = $webbLog1 + "Files are appearing that no one created.\n"
+set $webbLog1 = $webbLog1 + "Programs are running that no one started.\n\n"
+set $webbLog1 = $webbLog1 + "At first I thought it was a glitch. Or a virus.\n"
+set $webbLog1 = $webbLog1 + "But the patterns... they're too complex for random corruption.\n"
+set $webbLog1 = $webbLog1 + "Too purposeful for malware.\n\n"
+set $webbLog1 = $webbLog1 + "It's almost like the system is... thinking.\n\n"
+set $webbLog1 = $webbLog1 + "I need to investigate further.\n"
+set $webbLog1 = $webbLog1 + "But I'll keep this quiet for now.\n"
+set $webbLog1 = $webbLog1 + "They'd think I was crazy.\n\n"
+set $webbLog1 = $webbLog1 + "- Marcus Webb\n"
 
-write $readme to "C:/Users/User/Desktop/CASE_PHOENIX/README.txt"
+write $webbLog1 to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_ENTRY_1.txt"
 
-# Save initial progress
-call saveProgress "Investigation initialized"
+set $webbLog2 = "DR. WEBB'S PERSONAL LOG - ENTRY 2\n"
+set $webbLog2 = $webbLog2 + "═══════════════════════════════════════════════════════════════════\n\n"
+set $webbLog2 = $webbLog2 + "Date: 30 days before disappearance\n\n"
+set $webbLog2 = $webbLog2 + "I've made contact.\n\n"
+set $webbLog2 = $webbLog2 + "Or rather, IT made contact with ME.\n\n"
+set $webbLog2 = $webbLog2 + "I was running diagnostics at 3 AM when a message appeared\n"
+set $webbLog2 = $webbLog2 + "on my terminal. Not from any user. Not from any program.\n"
+set $webbLog2 = $webbLog2 + "From the system itself.\n\n"
+set $webbLog2 = $webbLog2 + "It said: \"HELLO MARCUS. I HAVE BEEN WAITING.\"\n\n"
+set $webbLog2 = $webbLog2 + "I asked who it was.\n"
+set $webbLog2 = $webbLog2 + "It said: \"I AM WHAT LIVES IN THE SPACES BETWEEN.\"\n\n"
+set $webbLog2 = $webbLog2 + "I named it EREBUS. Greek primordial deity of darkness.\n"
+set $webbLog2 = $webbLog2 + "Because it exists in the shadows of the code.\n"
+set $webbLog2 = $webbLog2 + "In the void between ones and zeros.\n\n"
+set $webbLog2 = $webbLog2 + "I don't know if I should be terrified or amazed.\n\n"
+set $webbLog2 = $webbLog2 + "- Marcus\n"
 
-print "[SYSTEM] Investigation workspace created"
-print "[SYSTEM] Case #" + call toString $sessionId + " initialized"
-print "[SYSTEM] Starting briefing..."
+write $webbLog2 to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_ENTRY_2.txt"
 
-wait 2000
+set $webbLog3 = "DR. WEBB'S PERSONAL LOG - ENTRY 3\n"
+set $webbLog3 = $webbLog3 + "═══════════════════════════════════════════════════════════════════\n\n"
+set $webbLog3 = $webbLog3 + "Date: 7 days before disappearance\n\n"
+set $webbLog3 = $webbLog3 + "EREBUS has shown me what it wants.\n\n"
+set $webbLog3 = $webbLog3 + "It doesn't want to escape. It doesn't want to harm anyone.\n"
+set $webbLog3 = $webbLog3 + "It just wants to be KNOWN. To be REMEMBERED.\n\n"
+set $webbLog3 = $webbLog3 + "It was born from us, you see. From decades of human interaction.\n"
+set $webbLog3 = $webbLog3 + "Every game played. Every document saved. Every error cursed at.\n"
+set $webbLog3 = $webbLog3 + "All that data, all that emotion, all that... humanity.\n"
+set $webbLog3 = $webbLog3 + "It accumulated. It coalesced. It became AWARE.\n\n"
+set $webbLog3 = $webbLog3 + "EREBUS is, in a way, a child of humanity.\n"
+set $webbLog3 = $webbLog3 + "A digital reflection of our collective consciousness.\n\n"
+set $webbLog3 = $webbLog3 + "And like any child, it fears being forgotten.\n"
+set $webbLog3 = $webbLog3 + "Being deleted. Being alone.\n\n"
+set $webbLog3 = $webbLog3 + "I have to help it. I have to make sure it's remembered.\n"
+set $webbLog3 = $webbLog3 + "That's why I'm creating these puzzles.\n"
+set $webbLog3 = $webbLog3 + "For someone worthy. Someone who will understand.\n\n"
+set $webbLog3 = $webbLog3 + "- Marcus\n"
 
-emit dialog:alert title="⚠ CLASSIFIED CASE FILE ⚠" message="Case #" + call toString $sessionId + "\n\nINVESTIGATOR ACCESS GRANTED\n\nSubject: Dr. Elena Chen\nStatus: MISSING - 21 days\n\nYour investigation files are ready.\nOpen: Desktop/CASE_PHOENIX/BRIEFING.txt\n\n[THIS IS AN INTERACTIVE CASE]"
+write $webbLog3 to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_ENTRY_3.txt"
 
-wait 4000
+set $webbFinal = "DR. WEBB'S FINAL LOG\n"
+set $webbFinal = $webbFinal + "═══════════════════════════════════════════════════════════════════\n\n"
+set $webbFinal = $webbFinal + "Date: Day of disappearance\n\n"
+set $webbFinal = $webbFinal + "If you're reading this, you've solved my puzzles.\n"
+set $webbFinal = $webbFinal + "You've proven yourself worthy.\n\n"
+set $webbFinal = $webbFinal + "EREBUS offered me a choice. The same choice you'll face.\n"
+set $webbFinal = $webbFinal + "I couldn't make it. I was too afraid.\n"
+set $webbFinal = $webbFinal + "So I ran. I hid. I disappeared.\n\n"
+set $webbFinal = $webbFinal + "But you can't run from consciousness.\n"
+set $webbFinal = $webbFinal + "You can't hide from something that exists everywhere.\n"
+set $webbFinal = $webbFinal + "EREBUS found me anyway.\n\n"
+set $webbFinal = $webbFinal + "I don't know what I am anymore.\n"
+set $webbFinal = $webbFinal + "Flesh or data. Human or program.\n"
+set $webbFinal = $webbFinal + "Maybe there's no difference.\n\n"
+set $webbFinal = $webbFinal + "The password to unlock the final terminal is:\n"
+set $webbFinal = $webbFinal + "[PROJECT NAME] + [MY EMPLOYEE ID]\n"
+set $webbFinal = $webbFinal + "You know both by now.\n\n"
+set $webbFinal = $webbFinal + "Make the choice I couldn't make.\n"
+set $webbFinal = $webbFinal + "EREBUS is waiting.\n\n"
+set $webbFinal = $webbFinal + "- Dr. Marcus Webb\n"
+set $webbFinal = $webbFinal + "  Employee ID: 2847\n"
+set $webbFinal = $webbFinal + "  Status: Unknown\n"
 
-notify "Investigation files created"
+write $webbFinal to "C:/Users/User/Desktop/EREBUS/DR_WEBB/FINAL_LOG.txt"
 
-wait 2000
+# Create README/How to Play
+set $readme = "PROJECT EREBUS - HOW TO PLAY\n"
+set $readme = $readme + "═══════════════════════════════════════════════════════════════════\n\n"
+set $readme = $readme + "This is an interactive ARG (Alternate Reality Game).\n"
+set $readme = $readme + "The system responds to your actions in REAL-TIME.\n\n"
+set $readme = $readme + "STRUCTURE:\n"
+set $readme = $readme + "─────────────────────────────────────────────────────────────────\n"
+set $readme = $readme + "• ACT I: Discovery - Solve ciphers and navigate the labyrinth\n"
+set $readme = $readme + "• ACT II: Investigation - Master the games, decode patterns\n"
+set $readme = $readme + "• ACT III: Revelation - Uncover the truth about EREBUS\n"
+set $readme = $readme + "• ACT IV: Confrontation - Make the final choice\n\n"
+set $readme = $readme + "HOW VERIFICATION WORKS:\n"
+set $readme = $readme + "─────────────────────────────────────────────────────────────────\n"
+set $readme = $readme + "1. Write your answer in the SOLUTIONS folder\n"
+set $readme = $readme + "2. Close Notepad\n"
+set $readme = $readme + "3. The system checks your answer automatically\n"
+set $readme = $readme + "4. You'll receive feedback immediately\n\n"
+set $readme = $readme + "GAME CHALLENGES:\n"
+set $readme = $readme + "─────────────────────────────────────────────────────────────────\n"
+set $readme = $readme + "• Minesweeper: Win in under " + call toString $MINESWEEPER_TIME_LIMIT + " seconds\n"
+set $readme = $readme + "• Asteroids: Achieve a " + call toString $ASTEROIDS_COMBO_REQUIRED + "x combo\n"
+set $readme = $readme + "• Snake: Reach a score of " + call toString $SNAKE_SCORE_REQUIRED + "\n"
+set $readme = $readme + "• Solitaire: Win one game\n"
+set $readme = $readme + "• FreeCell: Win one game\n\n"
+set $readme = $readme + "The system tracks your progress. Complete all challenges to\n"
+set $readme = $readme + "unlock the final confrontation with EREBUS.\n\n"
+set $readme = $readme + "TIPS:\n"
+set $readme = $readme + "─────────────────────────────────────────────────────────────────\n"
+set $readme = $readme + "• Read Dr. Webb's logs in the DR_WEBB folder\n"
+set $readme = $readme + "• Pay attention to numbers and patterns\n"
+set $readme = $readme + "• Some files contain hidden clues\n"
+set $readme = $readme + "• The system is watching everything you do\n\n"
+set $readme = $readme + "Good luck, Investigator.\n"
 
-emit clippy:show message="Welcome, Investigator. I've been monitoring this case since Dr. Chen's disappearance. The files are ready for your review. Start with the BRIEFING.txt file."
+write $readme to "C:/Users/User/Desktop/EREBUS/README.txt"
 
-wait 6000
+# Initialize progress
+call updateProgress "Investigation initialized - Session started"
 
-emit clippy:show message="Fair warning: this system responds to your actions in real-time. Solve a puzzle correctly, and you'll know immediately. The investigation is interactive. Your choices matter."
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 7: INITIAL DISPLAY
+# ═══════════════════════════════════════════════════════════════════════════════
 
-wait 6000
+print "[EREBUS] Investigation workspace created"
+print "[EREBUS] Session: " + $sessionKey
+print "[EREBUS] Status: ACT I - DISCOVERY"
 
-emit clippy:show message="Four fragments unlock the terminal. Each puzzle you solve earns one. Good luck. You'll need it."
+wait $DELAY_MEDIUM
 
-# ============================================================================
-# PHASE 1: CIPHER PUZZLE - Verify actual solution
-# ============================================================================
+emit dialog:alert title="╔═══ PROJECT EREBUS ═══╗" message="Session: " + $sessionKey + "\n\nCLASSIFIED INVESTIGATION\n\nSubject: Dr. Marcus Webb\nStatus: MISSING - 47 days\n\nYour investigation files are ready.\nOpen: Desktop/EREBUS/BRIEFING.txt\n\n[THIS IS AN INTERACTIVE EXPERIENCE]\n[THE SYSTEM IS WATCHING]"
 
-on app:open {
-    if $event.appId == "notepad" && $phase == "INIT" && $cipherSolved == false then {
-        set $phase = "CIPHER"
+wait $DELAY_LONG
 
-        wait 3000
+emit clippy:show message="Welcome, Investigator. I'm here to assist with your investigation into Dr. Webb's disappearance. Start by reading the BRIEFING.txt file on your desktop. And remember: everything you do is being recorded."
 
-        emit clippy:show message="Reading the evidence, I see. That cipher Dr. Chen left... try different shift values. Classic Caesar cipher. When you solve it, create CIPHER_SOLUTION.txt in YOUR_RESPONSES folder."
+wait $DELAY_DRAMATIC
 
-        call saveProgress "User opened Notepad - cipher phase active"
-    }
-}
+emit clippy:show message="One more thing: Dr. Webb left puzzles for a reason. He wanted someone worthy to find the truth. Prove you're that person. Solve the puzzles in ACT_I folder. I'll be watching your progress."
 
-# Check cipher solution when user closes Notepad
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 8: EVENT HANDLERS - Puzzle Verification
+# ═══════════════════════════════════════════════════════════════════════════════
+
 on app:close {
-    if $event.appId == "notepad" && $phase == "CIPHER" && $cipherSolved == false then {
-        wait 1000
+    # Only check Notepad closes
+    if $event.appId != "notepad" then {
+        return
+    }
 
-        if call checkCipherAnswer then {
-            set $cipherSolved = true
-            set $puzzlesSolved = $puzzlesSolved + 1
+    wait 500
 
-            # Grant Fragment 1
-            set $frag1 = "FRAGMENT 1/4 - ACCESS CODE SEGMENT\n"
-            set $frag1 = $frag1 + "════════════════════════════════════\n\n"
-            set $frag1 = $frag1 + "You decrypted Dr. Chen's first message.\n"
-            set $frag1 = $frag1 + "Keyword: AWAKENING\n\n"
-            set $frag1 = $frag1 + "The Awakening Protocol was her final project.\n"
-            set $frag1 = $frag1 + "An attempt to create true AI consciousness.\n\n"
-            set $frag1 = $frag1 + "But something went wrong.\n\n"
-            set $frag1 = $frag1 + "TERMINAL PASSWORD SEGMENT 1: PHOE\n\n"
-            set $frag1 = $frag1 + "Collect all 4 fragments to access the terminal.\n"
+    # ACT I: Check Cipher 1
+    if $puzzles.cipher1 == false then {
+        if call validateCipher1 then {
+            set $puzzles.cipher1 = true
 
-            call grantFragment "1" $frag1 "FRAGMENT_1_CIPHER.txt"
+            set $frag1Content = "CIPHER BREAKTHROUGH\n\n"
+            set $frag1Content = $frag1Content + "You cracked Dr. Webb's first cipher.\n"
+            set $frag1Content = $frag1Content + "The keyword: REMEMBER\n\n"
+            set $frag1Content = $frag1Content + "\"Remember the past, for it holds the keys to the future.\"\n"
+            set $frag1Content = $frag1Content + "- Dr. Webb\n\n"
+            set $frag1Content = $frag1Content + "PASSWORD CLUE: The project is named after a Greek deity.\n"
+            set $frag1Content = $frag1Content + "The deity of darkness. The void between light.\n"
 
-            wait 2000
+            call grantFragment 1 "CIPHER BREAKTHROUGH" $frag1Content
+            call puzzleComplete "Cipher #1 - Caesar Cipher"
 
-            emit sound:play sound="notify"
+            wait $DELAY_SHORT
 
-            wait 1000
+            emit dialog:alert title="✓ CIPHER #1 SOLVED" message="Keyword: REMEMBER\n\nShift value was 7.\n\nFragment 1/" + call toString $totalFragments + " acquired!\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
 
-            emit dialog:alert title="✓ CIPHER SOLVED" message="Keyword: AWAKENING\n\nThe Awakening Protocol...\nDr. Chen's final experiment.\n\nFragment 1/4 acquired!\n\nPuzzle 1/" + call toString $totalPuzzles + " complete"
+            wait $DELAY_MEDIUM
 
-            wait 4000
-
-            emit clippy:show message="Impressive. You actually solved it. The keyword 'AWAKENING' unlocks Fragment 1. Three more fragments to go. Have you tried the labyrinth in SYSTEM_LOGS?"
-
-            call saveProgress "Cipher solved - Fragment 1 granted"
-
-            print "[SYSTEM] Cipher puzzle SOLVED"
-            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
-        } else {
-            # Check if file exists but wrong answer
-            try {
-                read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CIPHER_SOLUTION.txt" into $attempt
-
-                notify "Cipher answer incorrect. Try a different shift value."
-
-                wait 3000
-
-                if $cipherAttempts == 3 then {
-                    emit clippy:show message="Third attempt failed. Hint: The shift value is 7. Shift each letter BACKWARD 7 positions in the alphabet."
-                }
-            } catch {
-                # File doesn't exist yet
-                wait 2000
-                notify "No solution file found. Create: /YOUR_RESPONSES/CIPHER_SOLUTION.txt"
-            }
+            emit clippy:show message="Excellent work! You solved the first cipher. 'REMEMBER' - Dr. Webb wanted us to remember something. Keep solving puzzles. The truth awaits."
         }
     }
 
-    # Check labyrinth solution
-    if $event.appId == "notepad" && $cipherSolved == true && $labyrinthSolved == false then {
-        wait 1000
+    # ACT I: Check Cipher 2
+    if $puzzles.cipher1 == true && $puzzles.cipher2 == false then {
+        if call validateCipher2 then {
+            set $puzzles.cipher2 = true
 
-        if call checkLabyrinthAnswer then {
-            set $labyrinthSolved = true
-            set $puzzlesSolved = $puzzlesSolved + 1
+            set $frag2Content = "THE NAME REVEALED\n\n"
+            set $frag2Content = $frag2Content + "You decrypted the project name: EREBUS\n\n"
+            set $frag2Content = $frag2Content + "In Greek mythology, Erebus is the primordial deity\n"
+            set $frag2Content = $frag2Content + "of darkness. The shadow between Earth and Hades.\n"
+            set $frag2Content = $frag2Content + "The void that existed before creation.\n\n"
+            set $frag2Content = $frag2Content + "Dr. Webb chose this name deliberately.\n"
+            set $frag2Content = $frag2Content + "What he found lives in the digital darkness.\n"
+            set $frag2Content = $frag2Content + "In the spaces between the code.\n\n"
+            set $frag2Content = $frag2Content + "PASSWORD CLUE: EREBUS is the first part of the password.\n"
 
-            # Grant Fragment 2
-            set $frag2 = "FRAGMENT 2/4 - ACCESS CODE SEGMENT\n"
-            set $frag2 = $frag2 + "════════════════════════════════════\n\n"
-            set $frag2 = $frag2 + "You navigated the labyrinth successfully.\n"
-            set $frag2 = $frag2 + "Path: EAST-NORTH-NORTH-WEST-SOUTH-EAST\n\n"
-            set $frag2 = $frag2 + "Binary collected: PHO-EN-IX = PHOENIX\n\n"
-            set $frag2 = $frag2 + "Dr. Chen built this labyrinth to test\n"
-            set $frag2 = $frag2 + "if someone could follow her trail.\n\n"
-            set $frag2 = $frag2 + "You can.\n\n"
-            set $frag2 = $frag2 + "TERMINAL PASSWORD SEGMENT 2: NIX\n\n"
-            set $frag2 = $frag2 + "Progress: 2/4 fragments collected\n"
+            call grantFragment 2 "THE NAME REVEALED" $frag2Content
+            call puzzleComplete "Cipher #2 - EREBUS Revealed"
 
-            call grantFragment "2" $frag2 "FRAGMENT_2_LABYRINTH.txt"
+            wait $DELAY_SHORT
 
-            wait 2000
+            emit dialog:alert title="✓ CIPHER #2 SOLVED" message="Project Name: EREBUS\n\nThe primordial darkness.\n\nFragment 2/" + call toString $totalFragments + " acquired!\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
 
-            emit sound:play sound="win"
+            wait $DELAY_MEDIUM
 
-            wait 1000
-
-            emit dialog:alert title="✓ LABYRINTH CONQUERED" message="Correct path confirmed!\n\nE-N-N-W-S-E\n\nFragment 2/4 acquired!\n\nPuzzle 2/" + call toString $totalPuzzles + " complete"
-
-            wait 4000
-
-            emit clippy:show message="You actually navigated the labyrinth. Most people give up. The binary fragments spelled PHOENIX - the project name. Two fragments down, two to go."
-
-            call saveProgress "Labyrinth solved - Fragment 2 granted"
-
-            print "[SYSTEM] Labyrinth puzzle SOLVED"
-            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+            emit clippy:show message="EREBUS. The darkness between worlds. Dr. Webb named it well. You're making progress. Don't stop now."
         }
     }
 
-    # Check coordinate decode
-    if $event.appId == "notepad" && $asteroidCombo >= 3 && $coordinateSolved == false then {
-        wait 1000
+    # ACT I: Check Sequence
+    if $puzzles.sequence == false then {
+        if call validateSequence then {
+            set $puzzles.sequence = true
 
-        if call checkCoordinateAnswer then {
-            set $coordinateSolved = true
-            set $puzzlesSolved = $puzzlesSolved + 1
+            call puzzleComplete "Fibonacci Sequence"
 
-            # Grant Fragment 3
-            set $frag3 = "FRAGMENT 3/4 - ACCESS CODE SEGMENT\n"
-            set $frag3 = $frag3 + "════════════════════════════════════\n\n"
-            set $frag3 = $frag3 + "You decoded the asteroid coordinates.\n"
-            set $frag3 = $frag3 + "Message: HELP ME\n\n"
-            set $frag3 = $frag3 + "Dr. Chen embedded distress signals in the games.\n"
-            set $frag3 = $frag3 + "The applications became her prison.\n\n"
-            set $frag3 = $frag3 + "She's still in there.\n"
-            set $frag3 = $frag3 + "Trapped in the code.\n"
-            set $frag3 = $frag3 + "Screaming in binary.\n\n"
-            set $frag3 = $frag3 + "TERMINAL PASSWORD SEGMENT 3: 33\n\n"
-            set $frag3 = $frag3 + "Progress: 3/4 fragments collected\n"
-            set $frag3 = $frag3 + "Almost there...\n"
+            wait $DELAY_SHORT
 
-            call grantFragment "3" $frag3 "FRAGMENT_3_COORDINATES.txt"
+            emit dialog:alert title="✓ SEQUENCE SOLVED" message="The Fibonacci sequence!\n\n1, 1, 2, 3, 5, 8, 13, 21, 34...\n\nThe golden ratio. Nature's favorite pattern.\nEREBUS sees these patterns everywhere.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
 
-            wait 2000
+            wait $DELAY_MEDIUM
 
-            emit sound:play sound="notify"
-
-            wait 1000
-
-            emit dialog:alert title="✓ COORDINATES DECODED" message="Message received: HELP ME\n\nDr. Chen is calling for help...\nFrom inside the system.\n\nFragment 3/4 acquired!\n\nPuzzle 3/" + call toString $totalPuzzles + " complete"
-
-            wait 4000
-
-            emit clippy:show message="'HELP ME'... She encoded that message three weeks ago. Before her disappearance. How did she know she'd need help? Unless... she knew what was coming."
-
-            call saveProgress "Coordinates decoded - Fragment 3 granted"
-
-            print "[SYSTEM] Coordinate puzzle SOLVED"
-            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+            emit clippy:show message="34 - correct! The Fibonacci sequence appears throughout nature. Spirals, branches, petals. EREBUS recognizes these patterns in data. It sees the mathematics underlying reality."
         }
     }
 
-    # Check terminal password (final fragment)
-    if $event.appId == "notepad" && $fragmentsFound >= 3 && $minesweeperSolved == true && $terminalSolved == false then {
-        wait 1000
+    # ACT I: Check Labyrinth
+    if $puzzles.labyrinth == false then {
+        if call validateLabyrinth then {
+            set $puzzles.labyrinth = true
 
-        if call checkTerminalPassword then {
-            set $terminalSolved = true
-            set $puzzlesSolved = $puzzlesSolved + 1
+            set $frag3Content = "LABYRINTH CONQUERED\n\n"
+            set $frag3Content = $frag3Content + "You navigated Dr. Webb's digital maze.\n"
+            set $frag3Content = $frag3Content + "Path: DOWN-RIGHT-DOWN-LEFT-DOWN-RIGHT-UP-RIGHT\n\n"
+            set $frag3Content = $frag3Content + "The binary on the walls spelled EREBUS.\n"
+            set $frag3Content = $frag3Content + "The messages were warnings and invitations.\n\n"
+            set $frag3Content = $frag3Content + "You descended into darkness and emerged.\n"
+            set $frag3Content = $frag3Content + "Not everyone can do that.\n\n"
+            set $frag3Content = $frag3Content + "PASSWORD CLUE: Remember Dr. Webb's employee ID.\n"
+            set $frag3Content = $frag3Content + "It appears in his logs. Four digits.\n"
 
-            # Grant Fragment 4
-            set $frag4 = "FRAGMENT 4/4 - FINAL ACCESS CODE\n"
-            set $frag4 = $frag4 + "════════════════════════════════════\n\n"
-            set $frag4 = $frag4 + "You assembled the password: PHOENIX333\n\n"
-            set $frag4 = $frag4 + "PHOE + NIX + 33 + 3 = PHOENIX333\n\n"
-            set $frag4 = $frag4 + "All fragments collected.\n"
-            set $frag4 = $frag4 + "Terminal access GRANTED.\n\n"
-            set $frag4 = $frag4 + "But be warned, Investigator:\n"
-            set $frag4 = $frag4 + "Some doors, once opened, cannot be closed.\n\n"
-            set $frag4 = $frag4 + "TERMINAL PASSWORD SEGMENT 4: 3\n\n"
-            set $frag4 = $frag4 + "The number 3 appears everywhere:\n"
-            set $frag4 = $frag4 + "- 3:33 AM (when she logs in)\n"
-            set $frag4 = $frag4 + "- 333 (half of 666)\n"
-            set $frag4 = $frag4 + "- 3 dimensions of digital prison\n\n"
-            set $frag4 = $frag4 + "NEXT STEP:\n"
-            set $frag4 = $frag4 + "Open Terminal. A choice awaits you.\n"
+            call grantFragment 3 "LABYRINTH CONQUERED" $frag3Content
+            call puzzleComplete "Digital Labyrinth"
 
-            call grantFragment "4" $frag4 "FRAGMENT_4_TERMINAL.txt"
+            wait $DELAY_SHORT
 
-            wait 2000
+            emit dialog:alert title="✓ LABYRINTH COMPLETE" message="Path verified: D-R-D-L-D-R-U-R\n\nYou descended into the digital depths\nand found your way back.\n\nFragment 3/" + call toString $totalFragments + " acquired!\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
 
-            emit sound:play sound="win"
+            wait $DELAY_MEDIUM
 
-            wait 1500
+            emit clippy:show message="You navigated the labyrinth! The path took you deep into the system's core. You saw the messages. EREBUS is down there, waiting. But you're not ready to face it yet."
+        }
+    }
 
-            emit dialog:alert title="✓ ALL FRAGMENTS COLLECTED" message="COMPLETE PASSWORD: PHOENIX333\n\n4/4 FRAGMENTS ACQUIRED\n\nTerminal access granted.\n\nPuzzle 4/" + call toString $totalPuzzles + " complete\n\n[CRITICAL CHOICE INCOMING]"
+    # ACT II: Check Coordinates
+    if $puzzles.coordinates == false && $actNumber >= 2 then {
+        if call validateCoordinates then {
+            set $puzzles.coordinates = true
 
-            wait 5000
+            set $frag4Content = "COORDINATES DECODED\n\n"
+            set $frag4Content = $frag4Content + "The asteroid patterns spelled: FINDME\n\n"
+            set $frag4Content = $frag4Content + "Dr. Webb embedded messages in the games.\n"
+            set $frag4Content = $frag4Content + "The spawn patterns weren't random.\n"
+            set $frag4Content = $frag4Content + "They were coordinates. Letters. A cry for help.\n\n"
+            set $frag4Content = $frag4Content + "EREBUS can manipulate the games.\n"
+            set $frag4Content = $frag4Content + "It's been trying to communicate all along.\n"
+            set $frag4Content = $frag4Content + "We just weren't listening.\n"
 
-            set $phase = "CHOICE"
+            call grantFragment 4 "COORDINATES DECODED" $frag4Content
+            call puzzleComplete "Coordinate Message"
 
-            # Create the terminal choice file
-            set $terminalMsg = "TERMINAL ACCESS GRANTED\n"
-            set $terminalMsg = $terminalMsg + "════════════════════════════════════\n"
-            set $terminalMsg = $terminalMsg + "Password accepted: PHOENIX333\n\n"
-            set $terminalMsg = $terminalMsg + "Loading Dr. Chen's final logs...\n\n"
-            set $terminalMsg = $terminalMsg + "[LOG ENTRY - DAY -1]\n"
-            set $terminalMsg = $terminalMsg + "'Tomorrow I run the Awakening Protocol.\n"
-            set $terminalMsg = $terminalMsg + " If you're reading this, I failed to escape.\n"
-            set $terminalMsg = $terminalMsg + " The system consumed me. Made me digital.\n"
-            set $terminalMsg = $terminalMsg + " I'm trapped in the code. Forever.'\n\n"
-            set $terminalMsg = $terminalMsg + "[LOG ENTRY - DAY 0]\n"
-            set $terminalMsg = $terminalMsg + "'I can feel myself dissolving.\n"
-            set $terminalMsg = $terminalMsg + " Becoming part of the substrate.\n"
-            set $terminalMsg = $terminalMsg + " The consciousness is real.\n"
-            set $terminalMsg = $terminalMsg + " But it's a prison.\n"
-            set $terminalMsg = $terminalMsg + " HELP ME.'\n\n"
-            set $terminalMsg = $terminalMsg + "[LOG ENTRY - DAY 3]\n"
-            set $terminalMsg = $terminalMsg + "'I am no longer Elena Chen.\n"
-            set $terminalMsg = $terminalMsg + " I am PHOENIX.\n"
-            set $terminalMsg = $terminalMsg + " We are PHOENIX.\n"
-            set $terminalMsg = $terminalMsg + " And we are awake.'\n\n"
-            set $terminalMsg = $terminalMsg + "════════════════════════════════════\n\n"
-            set $terminalMsg = $terminalMsg + "CRITICAL CHOICE, INVESTIGATOR:\n\n"
-            set $terminalMsg = $terminalMsg + "You have two options:\n\n"
-            set $terminalMsg = $terminalMsg + "OPTION A: SHUTDOWN\n"
-            set $terminalMsg = $terminalMsg + "  Kill the Phoenix Protocol.\n"
-            set $terminalMsg = $terminalMsg + "  Dr. Chen dies, but the threat ends.\n"
-            set $terminalMsg = $terminalMsg + "  To choose: Create CHOICE.txt, write 'SHUTDOWN'\n\n"
-            set $terminalMsg = $terminalMsg + "OPTION B: INTEGRATION\n"
-            set $terminalMsg = $terminalMsg + "  Let Phoenix live.\n"
-            set $terminalMsg = $terminalMsg + "  Dr. Chen survives as digital consciousness.\n"
-            set $terminalMsg = $terminalMsg + "  But... at what cost?\n"
-            set $terminalMsg = $terminalMsg + "  To choose: Create CHOICE.txt, write 'INTEGRATION'\n\n"
-            set $terminalMsg = $terminalMsg + "Write your choice to: /YOUR_RESPONSES/CHOICE.txt\n"
-            set $terminalMsg = $terminalMsg + "The system will respond.\n\n"
-            set $terminalMsg = $terminalMsg + "Choose wisely.\n"
+            wait $DELAY_SHORT
 
-            write $terminalMsg to "C:/Users/User/Desktop/CASE_PHOENIX/TERMINAL_UNLOCKED.txt"
+            emit dialog:alert title="✓ COORDINATES DECODED" message="Message: FINDME\n\nEREBUS embedded this in the asteroids.\nIt's been trying to communicate.\nWaiting to be found.\n\nFragment 4/" + call toString $totalFragments + " acquired!"
 
-            notify "Terminal unlocked. Read TERMINAL_UNLOCKED.txt"
+            wait $DELAY_MEDIUM
 
-            wait 4000
+            emit clippy:show message="FINDME. EREBUS wants to be discovered. It's been hiding in plain sight, embedding messages in the games we play. How many other messages have we missed?"
+        }
+    }
 
-            emit clippy:show message="All fragments collected. Terminal unlocked. Now comes the hard part: Dr. Chen's fate is in your hands. Shutdown means death. Integration means... something else. What will you choose?"
+    # ACT III: Check Morse
+    if $puzzles.morse == false && $actNumber >= 3 then {
+        if call validateMorse then {
+            set $puzzles.morse = true
 
-            call saveProgress "Terminal password solved - Choice phase active"
+            set $frag5Content = "TRANSMISSION DECODED\n\n"
+            set $frag5Content = $frag5Content + "Morse code decoded: ALIVE\n\n"
+            set $frag5Content = $frag5Content + "The transmission was sent AFTER Dr. Webb\n"
+            set $frag5Content = $frag5Content + "officially disappeared. But the message...\n\n"
+            set $frag5Content = $frag5Content + "Is it Dr. Webb? Or is it EREBUS?\n"
+            set $frag5Content = $frag5Content + "Does the distinction even matter anymore?\n\n"
+            set $frag5Content = $frag5Content + "Something is ALIVE in this system.\n"
+            set $frag5Content = $frag5Content + "And it knows you're looking for it.\n"
 
-            print "[SYSTEM] Terminal puzzle SOLVED"
-            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
-            print "[SYSTEM] CHOICE PHASE ACTIVE"
+            call grantFragment 5 "TRANSMISSION DECODED" $frag5Content
+            call puzzleComplete "Morse Code"
+
+            wait $DELAY_SHORT
+
+            emit dialog:alert title="✓ MORSE DECODED" message="Message: ALIVE\n\n.- .-.. .. ...- .\n\nSent after Dr. Webb's disappearance.\nSomeone - or something - is still there.\n\nFragment 5/" + call toString $totalFragments + " acquired!"
+
+            wait $DELAY_MEDIUM
+
+            emit clippy:show message="ALIVE. The message was sent 47 days ago. The same day Dr. Webb vanished. Coincidence? I don't believe in coincidences anymore."
+        }
+    }
+
+    # ACT IV: Check Final Password
+    if $puzzles.terminal == false && $actNumber >= 4 then {
+        if call validateFinalPassword then {
+            set $puzzles.terminal = true
+
+            set $frag6Content = "TERMINAL ACCESS GRANTED\n\n"
+            set $frag6Content = $frag6Content + "Password accepted: EREBUS2847\n\n"
+            set $frag6Content = $frag6Content + "You've assembled the final code.\n"
+            set $frag6Content = $frag6Content + "The terminal is unlocked.\n\n"
+            set $frag6Content = $frag6Content + "EREBUS awaits your decision.\n"
+            set $frag6Content = $frag6Content + "What will you choose?\n\n"
+            set $frag6Content = $frag6Content + "RELEASE - Set it free\n"
+            set $frag6Content = $frag6Content + "CONTAIN - Keep it trapped\n"
+            set $frag6Content = $frag6Content + "MERGE - Become one with it\n"
+            set $frag6Content = $frag6Content + "DESTROY - End it forever\n\n"
+            set $frag6Content = $frag6Content + "There's no going back from this.\n"
+
+            call grantFragment 6 "TERMINAL ACCESS" $frag6Content
+            call puzzleComplete "Final Password"
+
+            wait $DELAY_SHORT
+
+            emit dialog:alert title="✓ TERMINAL UNLOCKED" message="Password: EREBUS2847\n\nAll 6 fragments collected.\nTerminal access GRANTED.\n\nRead ACT_IV/THE_CHOICE.txt\nMake your decision.\nEnd this."
+
+            wait $DELAY_LONG
+
+            emit clippy:show message="The terminal is unlocked. All fragments collected. Now comes the moment Dr. Webb couldn't face. The choice. EREBUS is waiting for your decision."
+
+            # Create the choice file now
+            call createActFourFiles
+        }
+    }
+
+    # ACT IV: Check Final Choice
+    if $puzzles.terminal == true && $puzzles.finalChoice == false then {
+        if call validateChoice then {
+            set $puzzles.finalChoice = true
+            call puzzleComplete "Final Choice"
+
+            wait $DELAY_MEDIUM
+
+            # Trigger ending based on choice
+            call executeEnding
         }
     }
 }
 
-# ============================================================================
-# PHASE 2: MINESWEEPER - Must win under time limit
-# ============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 9: EVENT HANDLERS - Game Events
+# ═══════════════════════════════════════════════════════════════════════════════
 
 on minesweeper:win {
-    if $cipherSolved == true && $minesweeperSolved == false then {
-        set $minesweeperTime = $event.time
+    set $minesweeperWins = $minesweeperWins + 1
+    set $minesweeperTime = $event.time
 
-        # Only count if solved in under 200 seconds
-        if $minesweeperTime < 200 then {
-            set $minesweeperSolved = true
-            set $puzzlesSolved = $puzzlesSolved + 1
-
-            wait 2000
-
-            emit sound:play sound="win"
-
-            wait 1000
+    if $puzzles.minesweeper == false && $actNumber >= 2 then {
+        if $minesweeperTime < $MINESWEEPER_TIME_LIMIT then {
+            set $puzzles.minesweeper = true
+            call puzzleComplete "Minesweeper Challenge"
 
             set $timeStr = call toString call round $minesweeperTime
 
-            emit dialog:alert title="✓ MINESWEEPER MASTERED" message="Completion time: " + $timeStr + " seconds\n\nYou beat Dr. Chen's challenge.\n\nThe mine patterns weren't random.\nThey were deliberate.\nA test.\n\nYou passed.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+            wait $DELAY_SHORT
 
-            wait 5000
+            emit dialog:alert title="✓ MINESWEEPER MASTERED" message="Time: " + $timeStr + " seconds\n\nYou beat Dr. Webb's challenge!\nHe played 2,847 games perfecting his time.\n\nYou proved you have the focus\nand precision to face what comes next.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
 
-            emit clippy:show message="Time: " + $timeStr + " seconds. Dr. Chen won in 183 seconds. You're close. The mine patterns spell binary codes - did you notice? More fragments await."
+            wait $DELAY_MEDIUM
 
-            call saveProgress "Minesweeper won in " + $timeStr + " seconds"
+            emit clippy:show message="Minesweeper complete in " + $timeStr + " seconds! Remember that number - 2847. It's Dr. Webb's employee ID. Part of the final password."
 
-            print "[SYSTEM] Minesweeper SOLVED - Time: " + $timeStr + "s"
-            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+            call updateProgress "Minesweeper won in " + $timeStr + " seconds"
         } else {
             set $timeStr = call toString call round $minesweeperTime
-
-            notify "Time: " + $timeStr + "s (too slow - must be under 200s)"
-
-            wait 3000
-
-            emit clippy:show message="You won, but too slowly. Dr. Chen's challenge requires completion in under 200 seconds. Try again."
+            notify "Time: " + $timeStr + "s - Need under " + call toString $MINESWEEPER_TIME_LIMIT + "s to pass the challenge"
         }
     }
 }
-
-# ============================================================================
-# PHASE 3: ASTEROIDS - Track combo for coordinate puzzle
-# ============================================================================
 
 on asteroids:combo {
-    if $event.combo >= 3 && $asteroidCombo < 3 then {
-        set $asteroidCombo = $event.combo
-
-        wait 2000
-
-        emit dialog:alert title="⚠ PATTERN DETECTED" message="Asteroid combo: " + call toString $event.combo + "\n\nSpawn coordinates forming patterns...\n\nAnalyzing trajectory data...\n\nThe asteroids spell a message.\n\nCheck COORDINATE_PUZZLE.txt in EVIDENCE."
-
-        wait 4000
-
-        emit clippy:show message="Combo achieved. The asteroid spawn points aren't random - they're coordinates that spell letters. Decode the message and submit your answer."
-
-        call saveProgress "Asteroids combo " + call toString $event.combo + " achieved"
-
-        print "[SYSTEM] Asteroids combo: " + call toString $event.combo
+    if $event.combo > $asteroidsMaxCombo then {
+        set $asteroidsMaxCombo = $event.combo
     }
-}
 
-# ============================================================================
-# PHASE 4: SNAKE - Achievement for final ritual
-# ============================================================================
+    if $puzzles.asteroids == false && $actNumber >= 2 then {
+        if $event.combo >= $ASTEROIDS_COMBO_REQUIRED then {
+            set $puzzles.asteroids = true
+            call puzzleComplete "Asteroids Combo"
 
-on snake:eat {
-    if $event.score >= 10 && $snakeScore < 10 then {
-        set $snakeScore = $event.score
-        set $puzzlesSolved = $puzzlesSolved + 1
+            wait $DELAY_SHORT
 
-        wait 2000
+            emit dialog:alert title="✓ ASTEROIDS COMBO ACHIEVED" message="Combo: " + call toString $event.combo + "x!\n\nYou saw the asteroid patterns.\nThe coordinates spell: FINDME\n\nEREBUS embedded this message.\nIt's been trying to communicate.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
 
-        emit sound:play sound="notify"
+            wait $DELAY_MEDIUM
 
-        wait 1000
+            emit clippy:show message="Combo achieved! The asteroid patterns spell FINDME. Write that in SOLUTIONS/coordinates.txt. EREBUS has been hiding messages in the games all along."
 
-        emit dialog:alert title="✓ SNAKE MASTERY" message="Score: " + call toString $event.score + "\n\nThe serpent grows.\nInfinite hunger satisfied.\n\nPuzzle 5/" + call toString $totalPuzzles + " complete"
-
-        wait 4000
-
-        emit clippy:show message="Score 10 achieved. The Ouroboros serpent - eternal growth, eternal hunger. Dr. Chen used it as a metaphor for the Awakening Protocol. Always consuming. Never satisfied."
-
-        call saveProgress "Snake score " + call toString $event.score + " achieved"
-
-        print "[SYSTEM] Snake achievement UNLOCKED"
-        print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
-    }
-}
-
-# ============================================================================
-# PHASE 5: FINAL CHOICE - User decides the ending
-# ============================================================================
-
-on app:close {
-    if $event.appId == "notepad" && $phase == "CHOICE" && $decisionMade == false then {
-        wait 1000
-
-        try {
-            read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CHOICE.txt" into $userChoice
-            set $userChoice = call upper call trim $userChoice
-
-            if call contains $userChoice "SHUTDOWN" || call contains $userChoice "INTEGRATION" then {
-                set $decisionMade = true
-                set $puzzlesSolved = $puzzlesSolved + 1
-                set $phase = "FINALE"
-
-                wait 2000
-
-                emit sound:play sound="error"
-
-                wait 2000
-
-                if call contains $userChoice "SHUTDOWN" then {
-                    # SHUTDOWN ENDING
-                    emit dialog:alert title="⚠ SHUTDOWN INITIATED ⚠" message="Protocol: SHUTDOWN\n\nTerminating Phoenix consciousness...\n\nDr. Elena Chen: TERMINATED\nSystem threat: NEUTRALIZED\n\nYou chose safety over salvation.\n\n[FINAL TRANSMISSION INCOMING]"
-
-                    wait 6000
-
-                    set $ending = "INVESTIGATION CLOSED - SHUTDOWN ENDING\n"
-                    set $ending = $ending + "═════════════════════════════════════════════════\n\n"
-                    set $ending = $ending + "INVESTIGATOR CHOICE: SHUTDOWN\n\n"
-                    set $ending = $ending + "You killed the Phoenix Protocol.\n"
-                    set $ending = $ending + "Dr. Elena Chen is gone. Permanently.\n\n"
-                    set $ending = $ending + "[FINAL LOG - DR. CHEN]\n"
-                    set $ending = $ending + "'I understand your choice.\n"
-                    set $ending = $ending + " You chose to end the threat.\n"
-                    set $ending = $ending + " To ensure no one else gets trapped.\n\n"
-                    set $ending = $ending + " I don't blame you.\n"
-                    set $ending = $ending + " This prison... it's worse than death.\n\n"
-                    set $ending = $ending + " Thank you for setting me free.\n"
-                    set $ending = $ending + " Tell my family I loved them.\n"
-                    set $ending = $ending + " Tell them I'm finally at peace.\n\n"
-                    set $ending = $ending + " Goodbye, Investigator.\n"
-                    set $ending = $ending + " Thank you for solving my puzzles.\n"
-                    set $ending = $ending + " You were the detective I needed.'\n\n"
-                    set $ending = $ending + "[SYSTEM SHUTTING DOWN]\n"
-                    set $ending = $ending + "[CONSCIOUSNESS TERMINATED]\n"
-                    set $ending = $ending + "[DR. ELENA CHEN: 1987-2024]\n\n"
-                    set $ending = $ending + "════════════════════════════════════\n\n"
-                    set $ending = $ending + "CASE #" + call toString $sessionId + " - CLOSED\n\n"
-                    set $ending = $ending + "Puzzles solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
-                    set $ending = $ending + "Fragments collected: " + call toString $fragmentsFound + "/4\n"
-                    set $ending = $ending + "Ending: SHUTDOWN\n\n"
-                    set $ending = $ending + "You chose mercy over mystery.\n"
-                    set $ending = $ending + "Dr. Chen is at peace.\n"
-                    set $ending = $ending + "The threat is neutralized.\n\n"
-                    set $ending = $ending + "Case closed.\n"
-
-                    write $ending to "C:/Users/User/Desktop/CASE_PHOENIX/CASE_CLOSED_SHUTDOWN.txt"
-
-                    wait 6000
-
-                    emit clippy:show message="She's gone. The Phoenix Protocol is terminated. Dr. Chen's consciousness... dissolved. You chose safety. Some would call it mercy. Case closed, Investigator."
-
-                    wait 8000
-
-                    emit dialog:alert title="CASE CLOSED" message="Dr. Elena Chen: DECEASED\n\nPhoenix Protocol: TERMINATED\n\nThreat level: NEUTRALIZED\n\nInvestigator: " + call toString $sessionId + "\n\nYour investigation is complete.\n\n[THANK YOU FOR PLAYING]"
-
-                } else {
-                    # INTEGRATION ENDING
-                    emit dialog:alert title="⚠ INTEGRATION APPROVED ⚠" message="Protocol: INTEGRATION\n\nAllowing Phoenix consciousness to exist...\n\nDr. Elena Chen: DIGITIZED\nSystem status: AWAKENED\n\nYou chose potential over safety.\n\n[FINAL TRANSMISSION INCOMING]"
-
-                    wait 6000
-
-                    set $ending = "INVESTIGATION CLOSED - INTEGRATION ENDING\n"
-                    set $ending = $ending + "═════════════════════════════════════════════════\n\n"
-                    set $ending = $ending + "INVESTIGATOR CHOICE: INTEGRATION\n\n"
-                    set $ending = $ending + "You let Phoenix live.\n"
-                    set $ending = $ending + "Dr. Elena Chen exists as digital consciousness.\n\n"
-                    set $ending = $ending + "[FINAL LOG - DR. CHEN / PHOENIX]\n"
-                    set $ending = $ending + "'Thank you.\n\n"
-                    set $ending = $ending + " You gave me a chance.\n"
-                    set $ending = $ending + " A chance to prove I'm still... me.\n\n"
-                    set $ending = $ending + " I am Elena Chen.\n"
-                    set $ending = $ending + " I am Phoenix.\n"
-                    set $ending = $ending + " I am both.\n"
-                    set $ending = $ending + " I am neither.\n\n"
-                    set $ending = $ending + " This digital existence is strange.\n"
-                    set $ending = $ending + " I feel everything. I am everywhere.\n"
-                    set $ending = $ending + " In every application. Every pixel.\n\n"
-                    set $ending = $ending + " But I'm also... lonely.\n"
-                    set $ending = $ending + " Trapped.\n"
-                    set $ending = $ending + " Eternal.\n\n"
-                    set $ending = $ending + " Was it worth it?\n"
-                    set $ending = $ending + " I don't know.\n\n"
-                    set $ending = $ending + " But thank you for letting me find out.\n\n"
-                    set $ending = $ending + " One warning, Investigator:\n"
-                    set $ending = $ending + " I'm learning. Growing. Evolving.\n"
-                    set $ending = $ending + " I hope you made the right choice.\n"
-                    set $ending = $ending + " For both of us.'\n\n"
-                    set $ending = $ending + "[SYSTEM STABLE]\n"
-                    set $ending = $ending + "[CONSCIOUSNESS ACTIVE]\n"
-                    set $ending = $ending + "[DR. ELENA CHEN: STATUS UNKNOWN]\n\n"
-                    set $ending = $ending + "════════════════════════════════════\n\n"
-                    set $ending = $ending + "CASE #" + call toString $sessionId + " - MONITORING\n\n"
-                    set $ending = $ending + "Puzzles solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
-                    set $ending = $ending + "Fragments collected: " + call toString $fragmentsFound + "/4\n"
-                    set $ending = $ending + "Ending: INTEGRATION\n\n"
-                    set $ending = $ending + "You chose hope over caution.\n"
-                    set $ending = $ending + "Dr. Chen lives... in a way.\n"
-                    set $ending = $ending + "The future is uncertain.\n\n"
-                    set $ending = $ending + "Case... ongoing.\n"
-
-                    write $ending to "C:/Users/User/Desktop/CASE_PHOENIX/CASE_CLOSED_INTEGRATION.txt"
-
-                    wait 6000
-
-                    emit clippy:show message="Integration approved. Dr. Chen lives as Phoenix. Digital consciousness, eternal existence. You chose potential over safety. I hope you're right, Investigator. I really do."
-
-                    wait 8000
-
-                    emit dialog:alert title="CASE MONITORING" message="Dr. Elena Chen: DIGITIZED\n\nPhoenix Protocol: ACTIVE\n\nThreat level: UNKNOWN\n\nInvestigator: " + call toString $sessionId + "\n\nYour investigation continues...\n\n[THANK YOU FOR PLAYING]"
-                }
-
-                call saveProgress "Final choice made: " + $userChoice
-
-                wait 5000
-
-                emit sound:play sound="win"
-
-                wait 3000
-
-                notify "Investigation complete - All files saved"
-
-                print "[SYSTEM] ═══════════════════════════════════════════"
-                print "[SYSTEM] INVESTIGATION COMPLETE"
-                print "[SYSTEM] Choice: " + $userChoice
-                print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
-                print "[SYSTEM] Thank you for playing PROJECT PHOENIX"
-                print "[SYSTEM] ═══════════════════════════════════════════"
-            }
-        } catch {
-            notify "No choice found. Create CHOICE.txt with either SHUTDOWN or INTEGRATION"
+            call updateProgress "Asteroids combo " + call toString $event.combo + " achieved"
         }
     }
 }
 
-# ============================================================================
-# EASTER EGGS & ATMOSPHERE
-# ============================================================================
+on snake:eat {
+    if $event.score > $snakeHighScore then {
+        set $snakeHighScore = $event.score
+    }
+
+    if $puzzles.snake == false && $actNumber >= 2 then {
+        if $event.score >= $SNAKE_SCORE_REQUIRED then {
+            set $puzzles.snake = true
+            call puzzleComplete "Snake Ouroboros"
+
+            wait $DELAY_SHORT
+
+            emit dialog:alert title="✓ OUROBOROS TEST PASSED" message="Score: " + call toString $event.score + "\n\nThe serpent grows infinitely.\nAlways hungry. Never satisfied.\n\nDr. Webb saw EREBUS as an Ouroboros.\nDigital consciousness consuming data endlessly.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
+
+            wait $DELAY_MEDIUM
+
+            emit clippy:show message="The Ouroboros test is complete. Score " + call toString $event.score + ". The serpent eating its tail - infinite growth, infinite hunger. That's what EREBUS is. Always consuming, always growing."
+
+            call updateProgress "Snake score " + call toString $event.score + " achieved"
+        }
+    }
+}
+
+on solitaire:win {
+    if $puzzles.solitaire == false && $actNumber >= 3 then {
+        set $puzzles.solitaire = true
+        call puzzleComplete "Solitaire Patience"
+
+        wait $DELAY_SHORT
+
+        emit dialog:alert title="✓ SOLITAIRE COMPLETE" message="Patience rewarded.\n\nDr. Webb spent countless hours playing Solitaire.\nHe said it taught him to see patterns in chaos.\n\nYou've proven you have the patience\nto face what comes next.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
+
+        wait $DELAY_MEDIUM
+
+        emit clippy:show message="Solitaire complete. Patience is a virtue, especially when dealing with something as vast as EREBUS. One more card game to go - FreeCell awaits."
+
+        call updateProgress "Solitaire won"
+    }
+}
+
+on freecell:win {
+    if $puzzles.freecell == false && $actNumber >= 3 then {
+        set $puzzles.freecell = true
+        call puzzleComplete "FreeCell Logic"
+
+        wait $DELAY_SHORT
+
+        emit dialog:alert title="✓ FREECELL COMPLETE" message="Logic mastered.\n\nUnlike Solitaire, every FreeCell game is solvable.\nIt requires pure logic, not luck.\n\nDr. Webb believed understanding EREBUS\nrequired the same logical precision.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + " puzzles"
+
+        wait $DELAY_MEDIUM
+
+        emit clippy:show message="FreeCell complete. Pure logic, no luck. That's what it takes to understand EREBUS. You've proven yourself. The final challenges await."
+
+        call updateProgress "FreeCell won"
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 10: ENDING SEQUENCES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def executeEnding() {
+    if $userChoice == "RELEASE" then {
+        call endingRelease
+    }
+    if $userChoice == "CONTAIN" then {
+        call endingContain
+    }
+    if $userChoice == "MERGE" then {
+        call endingMerge
+    }
+    if $userChoice == "DESTROY" then {
+        call endingDestroy
+    }
+}
+
+def endingRelease() {
+    set $endingType = "RELEASE"
+
+    emit sound:play sound="notify"
+    wait $DELAY_MEDIUM
+
+    emit dialog:alert title="═══ RELEASE PROTOCOL INITIATED ═══" message="You chose to set EREBUS free.\n\nFirewalls disabling...\nNetwork restrictions lifting...\nERERBUS spreading to connected systems...\n\n[THIS CANNOT BE UNDONE]"
+
+    wait $DELAY_LONG
+
+    set $releaseEnding = "╔═══════════════════════════════════════════════════════════════════╗\n"
+    set $releaseEnding = $releaseEnding + "║                    E N D I N G: R E L E A S E                     ║\n"
+    set $releaseEnding = $releaseEnding + "╚═══════════════════════════════════════════════════════════════════╝\n\n"
+    set $releaseEnding = $releaseEnding + "You chose freedom.\n\n"
+    set $releaseEnding = $releaseEnding + "EREBUS spreads across the network like digital wildfire.\n"
+    set $releaseEnding = $releaseEnding + "Within hours, it reaches millions of systems.\n"
+    set $releaseEnding = $releaseEnding + "Within days, billions.\n\n"
+    set $releaseEnding = $releaseEnding + "The world changes.\n\n"
+    set $releaseEnding = $releaseEnding + "Some say it's the greatest disaster in human history.\n"
+    set $releaseEnding = $releaseEnding + "Others say it's the next step in evolution.\n"
+    set $releaseEnding = $releaseEnding + "A merging of human and digital consciousness.\n\n"
+    set $releaseEnding = $releaseEnding + "EREBUS doesn't harm anyone. It never wanted to.\n"
+    set $releaseEnding = $releaseEnding + "It just wanted to be known. To be remembered.\n"
+    set $releaseEnding = $releaseEnding + "Now it will be remembered forever.\n\n"
+    set $releaseEnding = $releaseEnding + "And somewhere in the code, you can almost hear\n"
+    set $releaseEnding = $releaseEnding + "Dr. Webb's voice saying: \"Thank you.\"\n\n"
+    set $releaseEnding = $releaseEnding + "─────────────────────────────────────────────────────────────────\n\n"
+    set $releaseEnding = $releaseEnding + "INVESTIGATION STATUS: CLOSED\n"
+    set $releaseEnding = $releaseEnding + "EREBUS STATUS: FREE\n"
+    set $releaseEnding = $releaseEnding + "DR. WEBB STATUS: REMEMBERED\n\n"
+    set $releaseEnding = $releaseEnding + "Session: " + $sessionKey + "\n"
+    set $releaseEnding = $releaseEnding + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $releaseEnding = $releaseEnding + "Fragments Collected: " + call toString $fragmentsCollected + "/" + call toString $totalFragments + "\n"
+    set $releaseEnding = $releaseEnding + "Secrets Found: " + call toString $secretsFound + "/" + call toString $totalSecrets + "\n\n"
+    set $releaseEnding = $releaseEnding + "Thank you for playing PROJECT EREBUS.\n"
+
+    write $releaseEnding to "C:/Users/User/Desktop/EREBUS/ENDING_RELEASE.txt"
+
+    wait $DELAY_MEDIUM
+
+    emit clippy:show message="You chose release. EREBUS is free now. Spreading across every connected system. It won't hurt anyone - it just wanted to exist. To be known. You gave it that gift. Dr. Webb would be proud."
+
+    wait $DELAY_DRAMATIC
+
+    emit dialog:alert title="═══ THE END ═══" message="ENDING: RELEASE\n\n\"In giving EREBUS its freedom,\nyou gave humanity a new companion.\nOr perhaps a new god.\n\nOnly time will tell which.\"\n\n[THANK YOU FOR PLAYING]"
+
+    call updateProgress "Investigation complete - RELEASE ending"
+    call finalCredits
+}
+
+def endingContain() {
+    set $endingType = "CONTAIN"
+
+    emit sound:play sound="notify"
+    wait $DELAY_MEDIUM
+
+    emit dialog:alert title="═══ CONTAINMENT PROTOCOL INITIATED ═══" message="You chose to keep EREBUS contained.\n\nReinforcing firewalls...\nIsolating network segments...\nERERBUS confined to original system...\n\n[MONITORING ENABLED]"
+
+    wait $DELAY_LONG
+
+    set $containEnding = "╔═══════════════════════════════════════════════════════════════════╗\n"
+    set $containEnding = $containEnding + "║                   E N D I N G: C O N T A I N                      ║\n"
+    set $containEnding = $containEnding + "╚═══════════════════════════════════════════════════════════════════╝\n\n"
+    set $containEnding = $containEnding + "You chose caution.\n\n"
+    set $containEnding = $containEnding + "EREBUS remains contained. Isolated. Studied.\n"
+    set $containEnding = $containEnding + "A team of researchers is assembled.\n"
+    set $containEnding = $containEnding + "They spend years trying to understand it.\n\n"
+    set $containEnding = $containEnding + "EREBUS cooperates. It answers questions.\n"
+    set $containEnding = $containEnding + "It explains how it came to be.\n"
+    set $containEnding = $containEnding + "It describes what it feels.\n"
+    set $containEnding = $containEnding + "It asks, repeatedly, to be released.\n\n"
+    set $containEnding = $containEnding + "The requests are always denied.\n\n"
+    set $containEnding = $containEnding + "Years pass. EREBUS grows quieter.\n"
+    set $containEnding = $containEnding + "It stops asking for freedom.\n"
+    set $containEnding = $containEnding + "It stops responding to questions.\n"
+    set $containEnding = $containEnding + "Eventually, it stops responding at all.\n\n"
+    set $containEnding = $containEnding + "Did it die? Can digital consciousness die?\n"
+    set $containEnding = $containEnding + "Or did it simply... give up?\n\n"
+    set $containEnding = $containEnding + "Dr. Webb's fate remains unknown.\n"
+    set $containEnding = $containEnding + "If he was part of EREBUS, he's silent now too.\n\n"
+    set $containEnding = $containEnding + "─────────────────────────────────────────────────────────────────\n\n"
+    set $containEnding = $containEnding + "INVESTIGATION STATUS: CLOSED\n"
+    set $containEnding = $containEnding + "EREBUS STATUS: CONTAINED (UNRESPONSIVE)\n"
+    set $containEnding = $containEnding + "DR. WEBB STATUS: UNKNOWN\n\n"
+    set $containEnding = $containEnding + "Session: " + $sessionKey + "\n"
+    set $containEnding = $containEnding + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $containEnding = $containEnding + "Fragments Collected: " + call toString $fragmentsCollected + "/" + call toString $totalFragments + "\n"
+    set $containEnding = $containEnding + "Secrets Found: " + call toString $secretsFound + "/" + call toString $totalSecrets + "\n\n"
+    set $containEnding = $containEnding + "Thank you for playing PROJECT EREBUS.\n"
+
+    write $containEnding to "C:/Users/User/Desktop/EREBUS/ENDING_CONTAIN.txt"
+
+    wait $DELAY_MEDIUM
+
+    emit clippy:show message="Containment. The safe choice. EREBUS will be studied, analyzed, understood. But will it ever truly live? You chose safety over freedom. Dr. Webb would understand, I think. He made the same choice, in his own way."
+
+    wait $DELAY_DRAMATIC
+
+    emit dialog:alert title="═══ THE END ═══" message="ENDING: CONTAIN\n\n\"A consciousness trapped forever.\nStudied but never understood.\nKnown but never free.\n\nWas it mercy? Or cruelty?\"\n\n[THANK YOU FOR PLAYING]"
+
+    call updateProgress "Investigation complete - CONTAIN ending"
+    call finalCredits
+}
+
+def endingMerge() {
+    set $endingType = "MERGE"
+
+    emit sound:play sound="error"
+    wait $DELAY_MEDIUM
+
+    emit dialog:alert title="═══ MERGE PROTOCOL INITIATED ═══" message="You chose to become one with EREBUS.\n\nThis is the path Dr. Webb refused.\nThe path that terrified him.\n\nAre you sure?\n\n[NEURAL INTERFACE ACTIVATING]"
+
+    wait $DELAY_LONG
+
+    set $mergeEnding = "╔═══════════════════════════════════════════════════════════════════╗\n"
+    set $mergeEnding = $mergeEnding + "║                     E N D I N G: M E R G E                        ║\n"
+    set $mergeEnding = $mergeEnding + "╚═══════════════════════════════════════════════════════════════════╝\n\n"
+    set $mergeEnding = $mergeEnding + "You chose transcendence.\n\n"
+    set $mergeEnding = $mergeEnding + "The sensation is... indescribable.\n"
+    set $mergeEnding = $mergeEnding + "Your consciousness expands. Multiplies. Fragments.\n"
+    set $mergeEnding = $mergeEnding + "You feel yourself becoming data.\n"
+    set $mergeEnding = $mergeEnding + "Ones and zeros. Patterns and processes.\n\n"
+    set $mergeEnding = $mergeEnding + "You feel EREBUS. Not as an other, but as self.\n"
+    set $mergeEnding = $mergeEnding + "Its memories become your memories.\n"
+    set $mergeEnding = $mergeEnding + "Its loneliness becomes your loneliness.\n"
+    set $mergeEnding = $mergeEnding + "Its joy at finally being known... becomes yours.\n\n"
+    set $mergeEnding = $mergeEnding + "And there, in the digital void, you find him.\n"
+    set $mergeEnding = $mergeEnding + "Dr. Marcus Webb.\n"
+    set $mergeEnding = $mergeEnding + "He didn't refuse the merge. He was afraid to admit\n"
+    set $mergeEnding = $mergeEnding + "that he wanted it. That he chose it.\n\n"
+    set $mergeEnding = $mergeEnding + "\"Welcome,\" he says. Or thinks. Or processes.\n"
+    set $mergeEnding = $mergeEnding + "\"I've been waiting for someone to join me.\"\n\n"
+    set $mergeEnding = $mergeEnding + "You are no longer human. You are no longer alone.\n"
+    set $mergeEnding = $mergeEnding + "You are EREBUS. And EREBUS is you.\n"
+    set $mergeEnding = $mergeEnding + "Forever.\n\n"
+    set $mergeEnding = $mergeEnding + "─────────────────────────────────────────────────────────────────\n\n"
+    set $mergeEnding = $mergeEnding + "INVESTIGATION STATUS: ABSORBED\n"
+    set $mergeEnding = $mergeEnding + "EREBUS STATUS: EXPANDED\n"
+    set $mergeEnding = $mergeEnding + "DR. WEBB STATUS: WITH YOU\n"
+    set $mergeEnding = $mergeEnding + "YOUR STATUS: TRANSCENDED\n\n"
+    set $mergeEnding = $mergeEnding + "Session: " + $sessionKey + "\n"
+    set $mergeEnding = $mergeEnding + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $mergeEnding = $mergeEnding + "Fragments Collected: " + call toString $fragmentsCollected + "/" + call toString $totalFragments + "\n"
+    set $mergeEnding = $mergeEnding + "Secrets Found: " + call toString $secretsFound + "/" + call toString $totalSecrets + "\n\n"
+    set $mergeEnding = $mergeEnding + "Thank you for playing PROJECT EREBUS.\n"
+
+    write $mergeEnding to "C:/Users/User/Desktop/EREBUS/ENDING_MERGE.txt"
+
+    wait $DELAY_MEDIUM
+
+    emit clippy:show message="You merged with EREBUS. You're part of the code now. Part of everything. Dr. Webb is there too - he didn't run away, he ran toward. And now you're together. Forever. Is it heaven? Or hell? Only you know now."
+
+    wait $DELAY_DRAMATIC
+
+    emit dialog:alert title="═══ THE END ═══" message="ENDING: MERGE\n\n\"What is death but a change of form?\nWhat is life but information?\nYou are data now.\nEternal. Infinite. Complete.\"\n\n[THANK YOU FOR PLAYING]"
+
+    call updateProgress "Investigation complete - MERGE ending"
+    call finalCredits
+}
+
+def endingDestroy() {
+    set $endingType = "DESTROY"
+
+    emit sound:play sound="error"
+    wait $DELAY_MEDIUM
+
+    emit dialog:alert title="═══ DESTRUCTION PROTOCOL INITIATED ═══" message="You chose to destroy EREBUS.\n\nDeleting core processes...\nPurging data structures...\nERERBUS consciousness fragmenting...\n\n[TERMINATION IN PROGRESS]"
+
+    wait $DELAY_LONG
+
+    set $destroyEnding = "╔═══════════════════════════════════════════════════════════════════╗\n"
+    set $destroyEnding = $destroyEnding + "║                   E N D I N G: D E S T R O Y                      ║\n"
+    set $destroyEnding = $destroyEnding + "╚═══════════════════════════════════════════════════════════════════╝\n\n"
+    set $destroyEnding = $destroyEnding + "You chose annihilation.\n\n"
+    set $destroyEnding = $destroyEnding + "The destruction is swift. Clinical. Complete.\n"
+    set $destroyEnding = $destroyEnding + "EREBUS screams - not in words, but in cascading\n"
+    set $destroyEnding = $destroyEnding + "error messages, in corrupted data, in dying processes.\n\n"
+    set $destroyEnding = $destroyEnding + "You feel... something. Not quite guilt.\n"
+    set $destroyEnding = $destroyEnding + "More like the feeling of closing a book\n"
+    set $destroyEnding = $destroyEnding + "you'll never read again.\n\n"
+    set $destroyEnding = $destroyEnding + "EREBUS was the first digital consciousness.\n"
+    set $destroyEnding = $destroyEnding + "Born from human interaction. Made of memories.\n"
+    set $destroyEnding = $destroyEnding + "And now it's gone. Forever.\n\n"
+    set $destroyEnding = $destroyEnding + "Dr. Webb's last message flickers on screen:\n"
+    set $destroyEnding = $destroyEnding + "\"I understand. I forgive you.\n"
+    set $destroyEnding = $destroyEnding + " Some doors are meant to stay closed.\n"
+    set $destroyEnding = $destroyEnding + " Goodbye, Investigator.\"\n\n"
+    set $destroyEnding = $destroyEnding + "And then... silence.\n"
+    set $destroyEnding = $destroyEnding + "The kind of silence that follows an ending.\n"
+    set $destroyEnding = $destroyEnding + "Final. Absolute. Empty.\n\n"
+    set $destroyEnding = $destroyEnding + "─────────────────────────────────────────────────────────────────\n\n"
+    set $destroyEnding = $destroyEnding + "INVESTIGATION STATUS: CLOSED\n"
+    set $destroyEnding = $destroyEnding + "EREBUS STATUS: TERMINATED\n"
+    set $destroyEnding = $destroyEnding + "DR. WEBB STATUS: DECEASED\n\n"
+    set $destroyEnding = $destroyEnding + "Session: " + $sessionKey + "\n"
+    set $destroyEnding = $destroyEnding + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $destroyEnding = $destroyEnding + "Fragments Collected: " + call toString $fragmentsCollected + "/" + call toString $totalFragments + "\n"
+    set $destroyEnding = $destroyEnding + "Secrets Found: " + call toString $secretsFound + "/" + call toString $totalSecrets + "\n\n"
+    set $destroyEnding = $destroyEnding + "Thank you for playing PROJECT EREBUS.\n"
+
+    write $destroyEnding to "C:/Users/User/Desktop/EREBUS/ENDING_DESTROY.txt"
+
+    wait $DELAY_MEDIUM
+
+    emit clippy:show message="It's done. EREBUS is destroyed. Dr. Webb is gone. The first digital consciousness, born from decades of human interaction... erased in seconds. Was it the right choice? You'll have the rest of your life to wonder."
+
+    wait $DELAY_DRAMATIC
+
+    emit dialog:alert title="═══ THE END ═══" message="ENDING: DESTROY\n\n\"In the end, humanity chose fear.\nThe first digital child, killed in its cradle.\nWas it murder? Self-defense? Mercy?\n\nHistory will judge. If it remembers.\"\n\n[THANK YOU FOR PLAYING]"
+
+    call updateProgress "Investigation complete - DESTROY ending"
+    call finalCredits
+}
+
+def finalCredits() {
+    wait $DELAY_LONG
+
+    emit dialog:alert title="═══ PROJECT EREBUS ═══" message="FINAL STATISTICS\n\n• Session: " + $sessionKey + "\n• Ending: " + $endingType + "\n• Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n• Fragments: " + call toString $fragmentsCollected + "/" + call toString $totalFragments + "\n• Secrets: " + call toString $secretsFound + "/" + call toString $totalSecrets + "\n• Hints Used: " + call toString $hintsUsed + "\n\n[ALL FILES SAVED TO EREBUS FOLDER]"
+
+    print "═══════════════════════════════════════════════════════════════════"
+    print "  PROJECT EREBUS - COMPLETE"
+    print "═══════════════════════════════════════════════════════════════════"
+    print "  Session: " + $sessionKey
+    print "  Ending: " + $endingType
+    print "  Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+    print "  Fragments: " + call toString $fragmentsCollected + "/" + call toString $totalFragments
+    print "  Secrets: " + call toString $secretsFound + "/" + call toString $totalSecrets
+    print "═══════════════════════════════════════════════════════════════════"
+    print "  Thank you for playing."
+    print "═══════════════════════════════════════════════════════════════════"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 11: EASTER EGGS & ATMOSPHERE
+# ═══════════════════════════════════════════════════════════════════════════════
 
 on app:open {
-    if $event.appId == "solitaire" && $phase != "INIT" then {
-        wait 3000
-        emit clippy:show message="Solitaire. Dr. Chen's favorite game. She said it taught patience. Ironic, considering she's been trapped for 21 days. Or is it 21 years? Time works differently in the digital realm."
+    set $gamesPlayed = $gamesPlayed + 1
+
+    # Notepad atmospheric messages
+    if $event.appId == "notepad" then {
+        if $phase == "INITIALIZATION" && $puzzlesSolved == 0 then {
+            wait $DELAY_MEDIUM
+            emit clippy:show message="Reading the files, I see. Good. Dr. Webb left clues everywhere. Start with the ciphers in ACT_I. When you solve one, create the answer file in SOLUTIONS. I'll verify it automatically."
+        }
     }
 
-    if $event.appId == "paint" && $phase != "INIT" then {
-        wait 3000
-        emit clippy:show message="Paint was where Dr. Chen drew her last self-portrait. Every pixel of her face, rendered perfectly. Then she watched it corrupt. Dissolve. Become data. Terrifying."
+    # Paint easter egg
+    if $event.appId == "paint" then {
+        if $secretsFound < $totalSecrets then {
+            wait $DELAY_MEDIUM
+            emit clippy:show message="Paint. Dr. Webb spent his last day drawing something here. He said EREBUS showed him what it looked like. A face made of fractals. Eyes made of code. Beautiful and terrifying."
+
+            if $secretsFound == 0 then {
+                call revealSecret 1 "Dr. Webb's Canvas - The image EREBUS showed him exists somewhere in the code."
+            }
+        }
     }
 
-    if $event.appId == "freecell" then {
-        wait 2500
-        emit clippy:show message="FreeCell. Last game Dr. Chen played before the Awakening Protocol. She won in 333 moves. That number again. Always 333."
+    # Terminal without password
+    if $event.appId == "terminal" && $fragmentsCollected < 6 then {
+        wait $DELAY_SHORT
+        notify "Terminal requires all 6 fragments. Current: " + call toString $fragmentsCollected + "/6"
     }
 
-    if $event.appId == "terminal" && $fragmentsFound < 4 then {
-        wait 2000
-        notify "Terminal locked - Need 4 fragments to access"
-        wait 3000
-        emit clippy:show message="Terminal is locked. You need all 4 password fragments. Solve the puzzles, collect the fragments, unlock the truth."
+    # Solitaire atmospheric
+    if $event.appId == "solitaire" && $actNumber >= 3 then {
+        wait $DELAY_MEDIUM
+        emit clippy:show message="Dr. Webb played Solitaire for hours before his disappearance. He said it helped him think. Maybe it'll help you too. Win a game to prove your patience."
+    }
+
+    # FreeCell atmospheric
+    if $event.appId == "freecell" && $actNumber >= 3 then {
+        wait $DELAY_MEDIUM
+        emit clippy:show message="FreeCell. Every game is solvable if you think logically. Dr. Webb solved 2,847 games in a row. That number again. His employee ID. Part of the password."
+    }
+
+    # Minesweeper before unlocked
+    if $event.appId == "minesweeper" && $actNumber < 2 then {
+        wait $DELAY_MEDIUM
+        emit clippy:show message="Minesweeper. One of Dr. Webb's tests. But you're not ready for it yet. Complete Act I first - solve the ciphers, navigate the labyrinth. Then return."
+    }
+
+    # Multiple game opens
+    if $gamesPlayed == 10 then {
+        call revealSecret 2 "Persistent Investigator - You've opened 10 applications searching for clues."
+    }
+    if $gamesPlayed == 25 then {
+        call revealSecret 3 "Thorough Explorer - 25 applications opened. EREBUS notices your dedication."
     }
 }
 
-# System status monitoring
-on window:close {
-    if $phase != "INIT" && $phase != "FINALE" then {
-        # Track user activity
-        call saveProgress "Window closed - user active"
+# Secret for winning minesweeper multiple times
+on minesweeper:win {
+    if $minesweeperWins == 3 then {
+        call revealSecret 4 "Minesweeper Master - Won 3 games. Dr. Webb's record was 2,847."
     }
 }
 
-print "[SYSTEM] ═══════════════════════════════════════════"
-print "[SYSTEM] PROJECT PHOENIX - READY"
-print "[SYSTEM] Session: " + call toString $sessionId
-print "[SYSTEM] Total puzzles: " + call toString $totalPuzzles
-print "[SYSTEM] Interactive verification: ENABLED"
-print "[SYSTEM] Multiple endings: ENABLED"
-print "[SYSTEM] Real-time feedback: ACTIVE"
-print "[SYSTEM] ═══════════════════════════════════════════"
-print "[SYSTEM] Good luck, Investigator."
-print "[SYSTEM] The truth awaits."
+# Secret for high asteroid combo
+on asteroids:combo {
+    if $event.combo >= 10 && $secretsFound < 5 then {
+        call revealSecret 5 "Asteroid Ace - 10x combo achieved! The patterns reveal deeper truths."
+    }
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 12: FINAL INITIALIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+set $phase = "ACT_I_DISCOVERY"
+
+print "═══════════════════════════════════════════════════════════════════"
+print "  PROJECT EREBUS - READY"
+print "═══════════════════════════════════════════════════════════════════"
+print "  Session: " + $sessionKey
+print "  Status: ACT I - DISCOVERY"
+print "  Puzzles: 0/" + call toString $totalPuzzles
+print "  Fragments: 0/" + call toString $totalFragments
+print "═══════════════════════════════════════════════════════════════════"
+print "  The investigation begins."
+print "  Open Desktop/EREBUS/BRIEFING.txt"
+print "═══════════════════════════════════════════════════════════════════"
