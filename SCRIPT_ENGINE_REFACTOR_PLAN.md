@@ -531,14 +531,120 @@ The total lines are similar to the original, but now properly separated into tes
 
 ---
 
-## Questions for User Before Implementation
+## Autoexec Script Feature
 
-1. **Feature flag approach?** Should we add a config to toggle between old/new engine during development?
+### Overview
 
-2. **TypeScript?** Would you like this refactor to use TypeScript for better type safety? The AST would particularly benefit.
+RetroScript programs can optionally run automatically on system boot, without requiring the Script Runner app. This is controlled at the server/deployment level.
 
-3. **Testing framework?** Do you have a preferred testing framework (Jest, Mocha, Vitest)?
+### Autoexec File Locations (checked in order)
 
-4. **Priority on bug fixes?** Should we prioritize fixing the foreach/function freeze issues first, or proceed with full modularization?
+1. `C:/Windows/autoexec.retro` - System-level startup script
+2. `C:/Scripts/autoexec.retro` - User scripts folder
+3. `C:/Users/User/autoexec.retro` - User home folder
 
-5. **ScriptRunner changes?** Should we also plan improvements to ScriptRunner.js (syntax highlighting based on real tokens, debugger breakpoints, etc.)?
+### Implementation
+
+```javascript
+// core/script/AutoexecLoader.js
+import FileSystemManager from '../FileSystemManager.js';
+import ScriptEngine from './ScriptEngine.js';
+import EventBus from '../EventBus.js';
+
+const AUTOEXEC_PATHS = [
+  'C:/Windows/autoexec.retro',
+  'C:/Scripts/autoexec.retro',
+  'C:/Users/User/autoexec.retro'
+];
+
+export async function runAutoexec() {
+  for (const path of AUTOEXEC_PATHS) {
+    try {
+      const exists = FileSystemManager.exists(path);
+      if (exists) {
+        console.log(`[AutoexecLoader] Found autoexec script: ${path}`);
+        EventBus.emit('autoexec:start', { path });
+
+        const result = await ScriptEngine.runFile(path);
+
+        if (result.success) {
+          console.log(`[AutoexecLoader] Autoexec completed successfully`);
+          EventBus.emit('autoexec:complete', { path, result });
+        } else {
+          console.error(`[AutoexecLoader] Autoexec failed:`, result.error);
+          EventBus.emit('autoexec:error', { path, error: result.error });
+        }
+
+        return result; // Only run first found autoexec
+      }
+    } catch (error) {
+      console.error(`[AutoexecLoader] Error checking ${path}:`, error);
+    }
+  }
+
+  console.log('[AutoexecLoader] No autoexec.retro found');
+  return null;
+}
+```
+
+### Boot Sequence Integration
+
+The autoexec script runs after all core systems are initialized but before the desktop is fully interactive:
+
+```javascript
+// In index.js initializeOS()
+
+// === Phase 5.5: Run Autoexec Script ===
+console.log('[IlluminatOS!] Phase 5.5: Autoexec Scripts');
+onProgress(95, 'Running startup scripts...');
+await initComponent('Autoexec', async () => {
+  const { runAutoexec } = await import('./core/script/AutoexecLoader.js');
+  await runAutoexec();
+});
+```
+
+### Server-Level Configuration
+
+Site owners can place an `autoexec.retro` file in the virtual filesystem to run custom scripts on boot:
+
+```javascript
+// Example: Pre-populate filesystem with autoexec
+FileSystemManager.writeFile('C:/Windows/autoexec.retro', `
+# IlluminatOS Startup Script
+# This runs automatically when the site loads
+
+print Welcome to IlluminatOS!
+notify System initialized successfully
+
+# Example: Auto-launch an app
+# launch notepad with file="C:/Users/User/readme.txt"
+
+# Example: Play startup sound
+play notify
+`);
+```
+
+### Safety Considerations
+
+1. **Timeout**: Autoexec scripts have a 10-second timeout (shorter than normal)
+2. **Error handling**: Failures don't prevent boot completion
+3. **No user interaction**: Dialogs (prompt, confirm) are skipped in autoexec mode
+4. **Logging**: All autoexec output is logged to console for debugging
+
+---
+
+## Implementation Status
+
+**Status: APPROVED - Beginning Implementation**
+
+The modular architecture will be implemented in the following order:
+1. Foundation (errors, safety limits)
+2. Lexer and tokens
+3. AST node classes
+4. Parser
+5. Environment (extract existing)
+6. Interpreter with visitor pattern
+7. Builtins (split into modules)
+8. Main ScriptEngine coordinator
+9. Autoexec loader
+10. Boot sequence integration
