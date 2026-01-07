@@ -66,7 +66,7 @@ set $timeStarted = call now
 
 # Create directory structure
 print "[EREBUS] Establishing secure directories..."
-call sleep 300
+wait 300
 
 try { mkdir "C:/Users/User/Desktop/EREBUS" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/.hidden" } catch {}
@@ -77,7 +77,7 @@ try { mkdir "C:/Users/User/Desktop/EREBUS/TRANSMISSIONS" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/FRAGMENTS" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/TERMINAL" } catch {}
 
-call sleep 200
+wait 200
 print "[EREBUS] Directories established."
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1343,7 +1343,7 @@ on app:paint:ready {
     if $secret_paint == 0 then {
         set $secret_paint = 1
         print "[EREBUS] Paint opened - leaving a message"
-        call sleep 2000
+        wait 2000
         notify "EREBUS: 'Creativity noted. The system appreciates art.'"
     }
 }
@@ -1351,7 +1351,7 @@ on app:paint:ready {
 # React to Terminal usage
 on app:terminal:ready {
     print "[EREBUS] Terminal detected"
-    call sleep 1000
+    wait 1000
     notify "EREBUS: 'Command line access detected. Interesting.'"
 }
 
@@ -1359,7 +1359,7 @@ on app:terminal:ready {
 on app:calculator:ready {
     print "[EREBUS] Calculator opened"
     if $p_sequence == 0 then {
-        call sleep 1500
+        wait 1500
         notify "EREBUS: 'Numbers hold patterns. 1, 1, 2, 3, 5, 8...'"
     }
 }
@@ -1424,7 +1424,7 @@ on system:idle {
 # INITIALIZATION COMPLETE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-call sleep 500
+wait 500
 
 print "╔══════════════════════════════════════════════════════════════╗"
 print "║          PROJECT EREBUS - INITIALIZATION COMPLETE            ║"
