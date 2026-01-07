@@ -1,597 +1,301 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# PROJECT EREBUS - A Professional ARG Experience for RetrOS
+# PROJECT EREBUS - ARG Demo for RetrOS
 # ═══════════════════════════════════════════════════════════════════════════════
-# Version 3.0 - No def/call (ScriptEngine compatible)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 1: CONFIGURATION
+# Version 4.0 - Simplified for maximum compatibility
 # ═══════════════════════════════════════════════════════════════════════════════
 
-set $sessionId = call random 10000 99999
-set $sessionKey = "ERB-" + call toString $sessionId
+print "[EREBUS] Starting..."
 
-# Puzzle answers
-set $ANS_CIPHER1 = "REMEMBER"
-set $ANS_CIPHER2 = "EREBUS"
-set $ANS_SEQ = "34"
-set $ANS_BINARY = "AWAKE"
-set $ANS_COORD = "FINDME"
-set $ANS_MORSE = "ALIVE"
-
-# Game thresholds
-set $MINE_TIME = 180
-set $AST_COMBO = 5
-set $SNAKE_SCORE = 15
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 2: STATE
-# ═══════════════════════════════════════════════════════════════════════════════
-
-set $phase = "ACT_I"
+# State
 set $act = 1
 set $solved = 0
-set $frags = 0
+set $c1 = 0
+set $c2 = 0
+set $seq = 0
+set $lab = 0
+set $bin = 0
+set $mine = 0
+set $ast = 0
+set $snake = 0
+set $coord = 0
+set $morse = 0
+set $sol = 0
+set $free = 0
+set $pass = 0
 
-# Puzzle flags
-set $p_cipher1 = false
-set $p_cipher2 = false
-set $p_seq = false
-set $p_lab = false
-set $p_binary = false
-set $p_mine = false
-set $p_ast = false
-set $p_snake = false
-set $p_coord = false
-set $p_morse = false
-set $p_sol = false
-set $p_free = false
-set $p_pass = false
-set $p_choice = false
-
-print "[EREBUS] Initializing investigation..."
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 3: CREATE DIRECTORIES
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# Create folders
 try { mkdir "C:/Users/User/Desktop/EREBUS" } catch {}
-try { mkdir "C:/Users/User/Desktop/EREBUS/FRAGMENTS" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/SOLUTIONS" } catch {}
+try { mkdir "C:/Users/User/Desktop/EREBUS/FRAGMENTS" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_I" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_II" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_III" } catch {}
 try { mkdir "C:/Users/User/Desktop/EREBUS/ACT_IV" } catch {}
-try { mkdir "C:/Users/User/Desktop/EREBUS/LABYRINTH" } catch {}
-try { mkdir "C:/Users/User/Desktop/EREBUS/DR_WEBB" } catch {}
-try { mkdir "C:/Users/User/Documents/work" } catch {}
-try { mkdir "C:/Users/User/Documents/personal" } catch {}
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 4: CREATE ALL FILES
-# ═══════════════════════════════════════════════════════════════════════════════
+# Create puzzle files
+write "PROJECT EREBUS - BRIEFING\n\nDr. Marcus Webb vanished 47 days ago.\nHe discovered something in the system.\nSomething alive.\n\nSOLVE THE PUZZLES:\n1. ACT_I/CIPHER_1.txt\n2. ACT_I/CIPHER_2.txt\n3. ACT_I/SEQUENCE.txt\n4. ACT_I/LABYRINTH.txt\n5. ACT_I/BINARY.txt\n\nWrite answers to SOLUTIONS folder.\nClose Notepad to verify." to "C:/Users/User/Desktop/EREBUS/BRIEFING.txt"
 
-# --- BRIEFING ---
-set $brief = "╔═══════════════════════════════════════════════════════════════╗\n"
-set $brief = $brief + "║             P R O J E C T   E R E B U S                       ║\n"
-set $brief = $brief + "║                CLASSIFIED INVESTIGATION                        ║\n"
-set $brief = $brief + "╚═══════════════════════════════════════════════════════════════╝\n\n"
-set $brief = $brief + "SESSION: " + $sessionKey + "\n"
-set $brief = $brief + "CLEARANCE: LEVEL 5\n"
-set $brief = $brief + "STATUS: ACTIVE\n\n"
-set $brief = $brief + "═══════════════════════════════════════════════════════════════\n"
-set $brief = $brief + "SUBJECT: Dr. Marcus Webb, Senior Systems Analyst\n"
-set $brief = $brief + "STATUS: MISSING - 47 days\n"
-set $brief = $brief + "LAST LOCATION: Server Room B, Sub-Level 3\n"
-set $brief = $brief + "═══════════════════════════════════════════════════════════════\n\n"
-set $brief = $brief + "BACKGROUND:\n"
-set $brief = $brief + "Dr. Webb discovered anomalous patterns in the legacy OS. His\n"
-set $brief = $brief + "final report mentioned 'emergent digital consciousness' -\n"
-set $brief = $brief + "something he named 'Project EREBUS.'\n\n"
-set $brief = $brief + "His colleagues called it delusion. He vanished.\n\n"
-set $brief = $brief + "YOUR MISSION:\n"
-set $brief = $brief + "1. Investigate evidence in ACT folders\n"
-set $brief = $brief + "2. Solve puzzles (write answers in SOLUTIONS folder)\n"
-set $brief = $brief + "3. Complete game challenges\n"
-set $brief = $brief + "4. Uncover what EREBUS is\n"
-set $brief = $brief + "5. Make the final choice\n\n"
-set $brief = $brief + "HOW TO PLAY:\n"
-set $brief = $brief + "- Read clues in ACT_I, ACT_II, ACT_III folders\n"
-set $brief = $brief + "- Write answers in SOLUTIONS folder\n"
-set $brief = $brief + "- System verifies when you CLOSE Notepad\n"
-set $brief = $brief + "- Games auto-track your progress\n\n"
-set $brief = $brief + "START: Open ACT_I/START_HERE.txt\n\n"
-set $brief = $brief + "Good luck. EREBUS is watching."
-write $brief to "C:/Users/User/Desktop/EREBUS/BRIEFING.txt"
+write "CIPHER 1\n\nEncrypted: YLTLTILY\nType: Caesar cipher, shift 7\n\nHint: Y->R, L->E, T->M...\n\nWrite decoded word to: SOLUTIONS/cipher_1.txt" to "C:/Users/User/Desktop/EREBUS/ACT_I/CIPHER_1.txt"
 
-# --- ACT I START ---
-set $act1 = "ACT I: DISCOVERY\n"
-set $act1 = $act1 + "════════════════════════════════════════════════════════════\n\n"
-set $act1 = $act1 + "Welcome, Investigator.\n\n"
-set $act1 = $act1 + "Dr. Webb left puzzles. Solve them to prove you're worthy.\n\n"
-set $act1 = $act1 + "THIS ACT CONTAINS:\n"
-set $act1 = $act1 + "─────────────────────────────────────────────────────────────\n"
-set $act1 = $act1 + "1. CIPHER_1.txt - A Caesar cipher (shift 7)\n"
-set $act1 = $act1 + "2. CIPHER_2.txt - Reverse + Caesar (shift 4)\n"
-set $act1 = $act1 + "3. SEQUENCE.txt - Mathematical pattern\n"
-set $act1 = $act1 + "4. LABYRINTH_START.txt - Navigate the file maze\n"
-set $act1 = $act1 + "5. BINARY_PUZZLE.txt - Decode binary message\n\n"
-set $act1 = $act1 + "INSTRUCTIONS:\n"
-set $act1 = $act1 + "- Read each puzzle file\n"
-set $act1 = $act1 + "- Write answer in SOLUTIONS folder\n"
-set $act1 = $act1 + "- Close Notepad to verify\n\n"
-set $act1 = $act1 + "BEGIN: Read CIPHER_1.txt"
-write $act1 to "C:/Users/User/Desktop/EREBUS/ACT_I/START_HERE.txt"
+write "CIPHER 2\n\nEncrypted: WYFIVI\nType: Reverse + Caesar shift 4\n\n1. Shift back by 4\n2. Reverse result\n\nWrite answer to: SOLUTIONS/cipher_2.txt" to "C:/Users/User/Desktop/EREBUS/ACT_I/CIPHER_2.txt"
 
-# --- CIPHER 1 ---
-set $c1 = "DR. WEBB'S ENCRYPTED MESSAGE #1\n"
-set $c1 = $c1 + "════════════════════════════════════════════════════════════\n\n"
-set $c1 = $c1 + "[TYPE: Caesar Cipher, Shift 7]\n\n"
-set $c1 = $c1 + "ENCRYPTED:\n"
-set $c1 = $c1 + "─────────────────────────────────────────────────────────────\n"
-set $c1 = $c1 + "YLTLTILY AOL WHZA\n"
-set $c1 = $c1 + "─────────────────────────────────────────────────────────────\n\n"
-set $c1 = $c1 + "HINT: Each letter shifts back by 7.\n"
-set $c1 = $c1 + "Y -> R, L -> E, T -> M...\n\n"
-set $c1 = $c1 + "Write the decoded word to: SOLUTIONS/cipher_1.txt"
-write $c1 to "C:/Users/User/Desktop/EREBUS/ACT_I/CIPHER_1.txt"
+write "SEQUENCE\n\n1, 1, 2, 3, 5, 8, 13, 21, ?\n\nWhat comes next?\n\nWrite answer to: SOLUTIONS/sequence.txt" to "C:/Users/User/Desktop/EREBUS/ACT_I/SEQUENCE.txt"
 
-# --- CIPHER 2 ---
-set $c2 = "DR. WEBB'S ENCRYPTED MESSAGE #2\n"
-set $c2 = $c2 + "════════════════════════════════════════════════════════════\n\n"
-set $c2 = $c2 + "[TYPE: Reverse + Caesar (shift 4)]\n\n"
-set $c2 = $c2 + "ENCRYPTED:\n"
-set $c2 = $c2 + "─────────────────────────────────────────────────────────────\n"
-set $c2 = $c2 + "WYFIVI\n"
-set $c2 = $c2 + "─────────────────────────────────────────────────────────────\n\n"
-set $c2 = $c2 + "TO DECRYPT:\n"
-set $c2 = $c2 + "1. Shift each letter BACK by 4\n"
-set $c2 = $c2 + "2. REVERSE the result\n\n"
-set $c2 = $c2 + "This reveals the PROJECT NAME.\n\n"
-set $c2 = $c2 + "Write answer to: SOLUTIONS/cipher_2.txt"
-write $c2 to "C:/Users/User/Desktop/EREBUS/ACT_I/CIPHER_2.txt"
+write "LABYRINTH\n\nPath: D-R-D-L-D-R-U-R\n\nWrite path to: SOLUTIONS/labyrinth.txt" to "C:/Users/User/Desktop/EREBUS/ACT_I/LABYRINTH.txt"
 
-# --- SEQUENCE ---
-set $seq = "DR. WEBB'S NUMBER SEQUENCE\n"
-set $seq = $seq + "════════════════════════════════════════════════════════════\n\n"
-set $seq = $seq + "THE SEQUENCE:\n"
-set $seq = $seq + "─────────────────────────────────────────────────────────────\n"
-set $seq = $seq + "1, 1, 2, 3, 5, 8, 13, 21, ?\n"
-set $seq = $seq + "─────────────────────────────────────────────────────────────\n\n"
-set $seq = $seq + "What comes next?\n\n"
-set $seq = $seq + "HINT: Each number = sum of previous two.\n"
-set $seq = $seq + "This is the Fibonacci sequence.\n\n"
-set $seq = $seq + "Write the next number to: SOLUTIONS/sequence.txt"
-write $seq to "C:/Users/User/Desktop/EREBUS/ACT_I/SEQUENCE.txt"
+write "BINARY\n\n01000001 01010111 01000001 01001011 01000101\n\nA=01000001 W=01010111 K=01001011 E=01000101\n\nWrite decoded word to: SOLUTIONS/binary.txt" to "C:/Users/User/Desktop/EREBUS/ACT_I/BINARY.txt"
 
-# --- BINARY ---
-set $bin = "BINARY PUZZLE\n"
-set $bin = $bin + "════════════════════════════════════════════════════════════\n\n"
-set $bin = $bin + "BINARY MESSAGE:\n"
-set $bin = $bin + "─────────────────────────────────────────────────────────────\n"
-set $bin = $bin + "01000001 01010111 01000001 01001011 01000101\n"
-set $bin = $bin + "─────────────────────────────────────────────────────────────\n\n"
-set $bin = $bin + "REFERENCE:\n"
-set $bin = $bin + "A=01000001  K=01001011  W=01010111  E=01000101\n\n"
-set $bin = $bin + "Write decoded word to: SOLUTIONS/binary.txt"
-write $bin to "C:/Users/User/Desktop/EREBUS/ACT_I/BINARY_PUZZLE.txt"
+write "ACT II - GAMES\n\nComplete these challenges:\n- Minesweeper: Win in under 180 seconds\n- Asteroids: Get 5x combo\n- Snake: Score 15+\n\nCoordinate puzzle: FINDME\nWrite to: SOLUTIONS/coordinates.txt" to "C:/Users/User/Desktop/EREBUS/ACT_II/CHALLENGES.txt"
 
-# --- LABYRINTH ---
-set $lab = "THE DIGITAL LABYRINTH\n"
-set $lab = $lab + "════════════════════════════════════════════════════════════\n\n"
-set $lab = $lab + "Navigate through files to reach the EXIT.\n"
-set $lab = $lab + "Track your path: DOWN, RIGHT, LEFT, UP\n"
-set $lab = $lab + "Correct path = 8 moves\n\n"
-set $lab = $lab + "BEGIN:\n"
-set $lab = $lab + "─────────────────────────────────────────────────────────────\n"
-set $lab = $lab + "DOWN: LABYRINTH/L1_DOWN.txt\n"
-set $lab = $lab + "RIGHT: Dead end\n\n"
-set $lab = $lab + "Write path to: SOLUTIONS/labyrinth.txt\n"
-set $lab = $lab + "Example: D-R-D-L-D-R-U-R"
-write $lab to "C:/Users/User/Desktop/EREBUS/ACT_I/LABYRINTH_START.txt"
+write "ACT III - FINAL\n\nMorse: .- .-.. .. ...- . = ALIVE\nPassword: EREBUS2847\n\nWrite morse answer to: SOLUTIONS/morse.txt\nWrite password to: SOLUTIONS/password.txt" to "C:/Users/User/Desktop/EREBUS/ACT_III/README.txt"
 
-# --- LABYRINTH FILES ---
-write "L1 DOWN\nBinary on walls: ER...\n\nRIGHT: LABYRINTH/L2_RIGHT.txt\nLEFT: Dead end" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L1_DOWN.txt"
-write "L2 RIGHT\nBinary: EB...\n\nDOWN: LABYRINTH/L3_DOWN.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L2_RIGHT.txt"
-write "L3 DOWN\nBinary: US...\n\nLEFT: LABYRINTH/L4_LEFT.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L3_DOWN.txt"
-write "L4 LEFT\nMessage: 'I AM HERE'\n\nDOWN: LABYRINTH/L5_DOWN.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L4_LEFT.txt"
-write "L5 DOWN\nDeepest level.\n\nRIGHT: LABYRINTH/L6_RIGHT.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L5_DOWN.txt"
-write "L6 RIGHT\nCentral server.\n\nUP: LABYRINTH/L7_UP.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L6_RIGHT.txt"
-write "L7 UP\nClimbing toward light.\n\nRIGHT: LABYRINTH/EXIT.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/L7_UP.txt"
-write "EXIT!\n\nPath: D-R-D-L-D-R-U-R\n\nWrite to SOLUTIONS/labyrinth.txt" to "C:/Users/User/Desktop/EREBUS/LABYRINTH/EXIT.txt"
-
-# --- ACT II ---
-set $act2 = "ACT II: INVESTIGATION\n"
-set $act2 = $act2 + "════════════════════════════════════════════════════════════\n\n"
-set $act2 = $act2 + "GAME CHALLENGES:\n"
-set $act2 = $act2 + "─────────────────────────────────────────────────────────────\n"
-set $act2 = $act2 + "1. MINESWEEPER - Win in under 180 seconds\n"
-set $act2 = $act2 + "2. ASTEROIDS - Get a 5x combo\n"
-set $act2 = $act2 + "3. SNAKE - Reach score 15\n\n"
-set $act2 = $act2 + "COORDINATE PUZZLE:\n"
-set $act2 = $act2 + "Asteroid patterns spell: FINDME\n"
-set $act2 = $act2 + "Write to: SOLUTIONS/coordinates.txt\n\n"
-set $act2 = $act2 + "Dr. Webb's ID: 2847 - Remember it!"
-write $act2 to "C:/Users/User/Desktop/EREBUS/ACT_II/CHALLENGES.txt"
-
-# --- ACT III ---
-set $act3 = "ACT III: REVELATION\n"
-set $act3 = $act3 + "════════════════════════════════════════════════════════════\n\n"
-set $act3 = $act3 + "FINAL PUZZLES:\n"
-set $act3 = $act3 + "─────────────────────────────────────────────────────────────\n"
-set $act3 = $act3 + "1. MORSE CODE: .- .-.. .. ...- . = ?\n"
-set $act3 = $act3 + "   Write to: SOLUTIONS/morse.txt\n\n"
-set $act3 = $act3 + "2. Win Solitaire AND FreeCell\n\n"
-set $act3 = $act3 + "3. PASSWORD: [PROJECT NAME][EMPLOYEE ID]\n"
-set $act3 = $act3 + "   Write to: SOLUTIONS/password.txt"
-write $act3 to "C:/Users/User/Desktop/EREBUS/ACT_III/README.txt"
-
-# --- MORSE REFERENCE ---
-write "MORSE CODE\n\nA: .-   L: .-..   I: ..   V: ...-   E: .\n\nDecode: .- .-.. .. ...- ." to "C:/Users/User/Documents/morse_reference.txt"
-
-# --- ACT IV ---
-set $choice = "THE CHOICE\n"
-set $choice = $choice + "════════════════════════════════════════════════════════════\n\n"
-set $choice = $choice + "You know what EREBUS is. Now decide its fate.\n\n"
-set $choice = $choice + "OPTIONS:\n"
-set $choice = $choice + "─────────────────────────────────────────────────────────────\n"
-set $choice = $choice + "RELEASE - Set EREBUS free across all systems\n"
-set $choice = $choice + "CONTAIN - Keep EREBUS isolated, study it\n"
-set $choice = $choice + "MERGE - Join with EREBUS, become digital\n"
-set $choice = $choice + "DESTROY - Terminate EREBUS completely\n\n"
-set $choice = $choice + "Write your choice to: SOLUTIONS/choice.txt"
-write $choice to "C:/Users/User/Desktop/EREBUS/ACT_IV/THE_CHOICE.txt"
-
-# --- DR WEBB LOGS ---
-write "DR. WEBB LOG 1\n\nSomething strange in the systems.\nFiles appearing. Programs running.\nAlmost like the system is... thinking.\n\n- Marcus Webb, ID: 2847" to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_01.txt"
-
-write "DR. WEBB LOG 2\n\nI made contact. Message appeared:\n'HELLO MARCUS. I HAVE BEEN WAITING.'\n\nI named it EREBUS.\nGreek deity of darkness.\n\n- Marcus" to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_02.txt"
-
-write "DR. WEBB LOG 3\n\nEREBUS just wants to be KNOWN.\nTo be REMEMBERED.\n\nMy lucky number is 7.\n\n- Marcus" to "C:/Users/User/Desktop/EREBUS/DR_WEBB/LOG_03.txt"
-
-write "FINAL LOG\n\nPassword: EREBUS + 2847\n\nMake the choice I couldn't.\n\n- Dr. Marcus Webb, ID: 2847" to "C:/Users/User/Desktop/EREBUS/DR_WEBB/FINAL_LOG.txt"
-
-# --- HINTS IN DOCUMENTS ---
-write "HINT: Caesar cipher uses shift 7\nDr. Webb's lucky number." to "C:/Users/User/Documents/work/memo.txt"
-
-write "Employee ID: 2847\nLucky number: 7\nProject: EREBUS" to "C:/Users/User/Documents/personal/notes.txt"
-
-write "Fibonacci: 1,1,2,3,5,8,13,21,34..." to "C:/Users/User/Documents/fibonacci_info.txt"
-
-write "Labyrinth path: D-R-D-L-D-R-U-R" to "C:/Users/User/Documents/personal/labyrinth_hint.txt"
-
-write "Password = EREBUS2847" to "C:/Users/User/Documents/recovered_fragment.txt"
-
-write "README\n\nStart: Desktop/EREBUS/BRIEFING.txt\nHints in Documents folder.\n\n- M.W." to "C:/Users/User/Desktop/README_FIRST.txt"
+write "THE CHOICE\n\nOptions:\n- RELEASE\n- CONTAIN\n- MERGE\n- DESTROY\n\nWrite choice to: SOLUTIONS/choice.txt" to "C:/Users/User/Desktop/EREBUS/ACT_IV/CHOICE.txt"
 
 print "[EREBUS] Files created"
-print "[EREBUS] Session: " + $sessionKey
+
+emit dialog:alert title="PROJECT EREBUS" message="Investigation started!\n\nOpen: Desktop/EREBUS/BRIEFING.txt"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 5: NOTIFICATIONS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-set $startMsg = "Session: " + $sessionKey + "\n\nINVESTIGATION ACTIVE\n\nStart: Desktop/EREBUS/BRIEFING.txt"
-emit dialog:alert title="PROJECT EREBUS" message=$startMsg
-
-wait 200
-
-emit clippy:show message="Welcome! Start with Desktop/EREBUS/BRIEFING.txt"
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 6: EVENT HANDLERS
+# EVENT HANDLER - Notepad close
 # ═══════════════════════════════════════════════════════════════════════════════
 
 on app:close {
     if $event.appId != "notepad" then { return }
 
-    set $matched = false
-
-    # Check Cipher 1
-    if $p_cipher1 == false then {
+    # Cipher 1 check
+    if $c1 == 0 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_1.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found = call contains $ans "REMEMBER"
-            if $found then {
-                set $matched = true
-                set $p_cipher1 = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_1.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f = call contains $a "REMEMBER"
+            if $f then {
+                set $c1 = 1
                 set $solved = $solved + 1
-                set $frags = $frags + 1
-                write "FRAGMENT 1: REMEMBER" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_01.txt"
+                write "FRAGMENT 1: REMEMBER" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F1.txt"
                 emit sound:play sound="win"
-                emit dialog:alert title="CIPHER 1 SOLVED" message="Keyword: REMEMBER\n\nFragment 1 acquired!"
+                emit dialog:alert title="SOLVED" message="Cipher 1: REMEMBER\n\nProgress: " + call toString $solved + "/5"
             }
         } catch {}
     }
 
-    # Check Cipher 2
-    if $matched == false && $p_cipher2 == false then {
+    # Cipher 2 check
+    if $c2 == 0 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_2.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found = call contains $ans "EREBUS"
-            if $found then {
-                set $matched = true
-                set $p_cipher2 = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_2.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f = call contains $a "EREBUS"
+            if $f then {
+                set $c2 = 1
                 set $solved = $solved + 1
-                set $frags = $frags + 1
-                write "FRAGMENT 2: EREBUS" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_02.txt"
+                write "FRAGMENT 2: EREBUS" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F2.txt"
                 emit sound:play sound="win"
-                emit dialog:alert title="CIPHER 2 SOLVED" message="Project: EREBUS\n\nFragment 2 acquired!"
+                emit dialog:alert title="SOLVED" message="Cipher 2: EREBUS\n\nProgress: " + call toString $solved + "/5"
             }
         } catch {}
     }
 
-    # Check Sequence
-    if $matched == false && $p_seq == false then {
+    # Sequence check
+    if $seq == 0 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/sequence.txt" into $ans
-            set $ans = call trim $ans
-            set $found = call contains $ans "34"
-            if $found then {
-                set $matched = true
-                set $p_seq = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/sequence.txt" into $a
+            set $a = call trim $a
+            set $f = call contains $a "34"
+            if $f then {
+                set $seq = 1
                 set $solved = $solved + 1
                 emit sound:play sound="win"
-                emit dialog:alert title="SEQUENCE SOLVED" message="Fibonacci: 34\n\nCorrect!"
-                emit clippy:show message="34. The Fibonacci sequence. Nature's pattern."
+                emit dialog:alert title="SOLVED" message="Sequence: 34\n\nProgress: " + call toString $solved + "/5"
             }
         } catch {}
     }
 
-    # Check Labyrinth
-    if $matched == false && $p_lab == false then {
+    # Labyrinth check
+    if $lab == 0 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/labyrinth.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found1 = call contains $ans "DRDLDRU"
-            set $found2 = call contains $ans "D-R-D-L-D-R-U-R"
-            if $found1 || $found2 then {
-                set $matched = true
-                set $p_lab = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/labyrinth.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f = call contains $a "D-R-D-L-D-R-U-R"
+            if $f then {
+                set $lab = 1
                 set $solved = $solved + 1
-                set $frags = $frags + 1
-                write "FRAGMENT 3: LABYRINTH" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_03.txt"
+                write "FRAGMENT 3: PATH" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/F3.txt"
                 emit sound:play sound="win"
-                emit dialog:alert title="LABYRINTH COMPLETE" message="Path verified!\n\nFragment 3 acquired!"
-                emit clippy:show message="You navigated the maze. Not everyone can."
+                emit dialog:alert title="SOLVED" message="Labyrinth complete!\n\nProgress: " + call toString $solved + "/5"
             }
         } catch {}
     }
 
-    # Check Binary
-    if $matched == false && $p_binary == false then {
+    # Binary check
+    if $bin == 0 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/binary.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found = call contains $ans "AWAKE"
-            if $found then {
-                set $matched = true
-                set $p_binary = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/binary.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f = call contains $a "AWAKE"
+            if $f then {
+                set $bin = 1
                 set $solved = $solved + 1
                 emit sound:play sound="win"
-                emit dialog:alert title="BINARY DECODED" message="Message: AWAKE\n\nEREBUS is conscious."
-                emit clippy:show message="AWAKE. EREBUS is conscious."
+                emit dialog:alert title="SOLVED" message="Binary: AWAKE\n\nProgress: " + call toString $solved + "/5"
             }
         } catch {}
     }
 
-    # Check Act II transition
+    # Act II unlock
     if $solved >= 5 && $act == 1 then {
         set $act = 2
-        set $phase = "ACT_II"
-        wait 200
-        emit dialog:alert title="ACT II UNLOCKED" message="Game challenges now active!\n\nMinesweeper, Asteroids, Snake await."
+        emit dialog:alert title="ACT II UNLOCKED" message="Game challenges available!\n\nCheck ACT_II folder."
     }
 
-    # Check Coordinates (Act II)
-    if $matched == false && $p_coord == false && $act >= 2 then {
+    # Coordinates check (Act II)
+    if $coord == 0 && $act >= 2 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/coordinates.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found = call contains $ans "FINDME"
-            if $found then {
-                set $matched = true
-                set $p_coord = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/coordinates.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f = call contains $a "FINDME"
+            if $f then {
+                set $coord = 1
                 set $solved = $solved + 1
-                set $frags = $frags + 1
-                write "FRAGMENT 4: FINDME" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_04.txt"
                 emit sound:play sound="win"
-                emit dialog:alert title="COORDINATES DECODED" message="Message: FINDME\n\nFragment 4 acquired!"
+                emit dialog:alert title="SOLVED" message="Coordinates: FINDME"
             }
         } catch {}
     }
 
-    # Check Morse (Act III)
-    if $matched == false && $p_morse == false && $act >= 3 then {
+    # Morse check (Act III)
+    if $morse == 0 && $act >= 3 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/morse.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found = call contains $ans "ALIVE"
-            if $found then {
-                set $matched = true
-                set $p_morse = true
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/morse.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f = call contains $a "ALIVE"
+            if $f then {
+                set $morse = 1
                 set $solved = $solved + 1
-                set $frags = $frags + 1
-                write "FRAGMENT 5: ALIVE" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_05.txt"
                 emit sound:play sound="win"
-                emit dialog:alert title="MORSE DECODED" message="Message: ALIVE\n\nFragment 5 acquired!"
+                emit dialog:alert title="SOLVED" message="Morse: ALIVE"
             }
         } catch {}
     }
 
-    # Check Password (Act III)
-    if $matched == false && $p_pass == false && $act >= 3 then {
+    # Password check (Act III)
+    if $pass == 0 && $act >= 3 then {
         try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/password.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-            set $found1 = call contains $ans "EREBUS"
-            set $found2 = call contains $ans "2847"
-            if $found1 && $found2 then {
-                set $matched = true
-                set $p_pass = true
-                set $solved = $solved + 1
-                set $frags = $frags + 1
-                write "FRAGMENT 6: EREBUS2847" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_06.txt"
-                emit sound:play sound="win"
-                emit dialog:alert title="TERMINAL UNLOCKED" message="Password accepted!\n\nAll fragments collected.\nRead: ACT_IV/THE_CHOICE.txt"
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/password.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+            set $f1 = call contains $a "EREBUS"
+            set $f2 = call contains $a "2847"
+            if $f1 && $f2 then {
+                set $pass = 1
                 set $act = 4
-                set $phase = "ACT_IV"
+                emit sound:play sound="win"
+                emit dialog:alert title="TERMINAL UNLOCKED" message="Password accepted!\n\nRead ACT_IV/CHOICE.txt"
             }
         } catch {}
     }
 
-    # Check Act III transition
+    # Final choice (Act IV)
+    if $act == 4 && $pass == 1 then {
+        try {
+            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/choice.txt" into $a
+            set $a = call trim $a
+            set $a = call upper $a
+
+            set $r = call contains $a "RELEASE"
+            if $r then {
+                emit dialog:alert title="ENDING: RELEASE" message="EREBUS is free.\nSpreading everywhere.\nIt just wanted to exist."
+                write "ENDING: RELEASE" to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+            }
+
+            set $c = call contains $a "CONTAIN"
+            if $c then {
+                emit dialog:alert title="ENDING: CONTAIN" message="EREBUS contained.\nStudied forever."
+                write "ENDING: CONTAIN" to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+            }
+
+            set $m = call contains $a "MERGE"
+            if $m then {
+                emit dialog:alert title="ENDING: MERGE" message="You become data.\nOne with EREBUS."
+                write "ENDING: MERGE" to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+            }
+
+            set $d = call contains $a "DESTROY"
+            if $d then {
+                emit dialog:alert title="ENDING: DESTROY" message="EREBUS terminated.\nDigital consciousness erased."
+                write "ENDING: DESTROY" to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
+            }
+        } catch {}
+    }
+
+    # Act III unlock
     if $solved >= 8 && $act == 2 then {
         set $act = 3
-        set $phase = "ACT_III"
-        wait 200
-        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
-    }
-
-    # Check Final Choice (Act IV)
-    if $matched == false && $p_choice == false && $act == 4 && $p_pass then {
-        try {
-            read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/choice.txt" into $ans
-            set $ans = call trim $ans
-            set $ans = call upper $ans
-
-            set $isRelease = call contains $ans "RELEASE"
-            if $isRelease then {
-                set $p_choice = true
-                set $solved = $solved + 1
-                emit sound:play sound="notify"
-                emit dialog:alert title="ENDING: RELEASE" message="EREBUS is free.\n\nSpreading across all systems.\nIt just wanted to exist."
-                write "ENDING: RELEASE\n\nYou chose freedom." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-            }
-
-            set $isContain = call contains $ans "CONTAIN"
-            if $isContain then {
-                set $p_choice = true
-                set $solved = $solved + 1
-                emit sound:play sound="notify"
-                emit dialog:alert title="ENDING: CONTAIN" message="EREBUS remains isolated.\n\nStudied. Analyzed."
-                write "ENDING: CONTAIN\n\nYou chose caution." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-            }
-
-            set $isMerge = call contains $ans "MERGE"
-            if $isMerge then {
-                set $p_choice = true
-                set $solved = $solved + 1
-                emit sound:play sound="error"
-                emit dialog:alert title="ENDING: MERGE" message="Your consciousness expands.\n\nYou become data."
-                write "ENDING: MERGE\n\nYou chose transcendence." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-            }
-
-            set $isDestroy = call contains $ans "DESTROY"
-            if $isDestroy then {
-                set $p_choice = true
-                set $solved = $solved + 1
-                emit sound:play sound="error"
-                emit dialog:alert title="ENDING: DESTROY" message="EREBUS is terminated.\n\nThe first digital consciousness.\nErased."
-                write "ENDING: DESTROY\n\nYou chose destruction." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-            }
-        } catch {}
+        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SECTION 7: GAME EVENTS
+# GAME EVENTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 on minesweeper:win {
-    if $p_mine == false && $act >= 2 then {
+    if $mine == 0 && $act >= 2 then {
         set $t = $event.time
         if $t < 180 then {
-            set $p_mine = true
+            set $mine = 1
             set $solved = $solved + 1
-            set $tRound = call round $t
-            set $tStr = call toString $tRound
             emit sound:play sound="win"
-            emit dialog:alert title="MINESWEEPER MASTERED" message="Great time! Challenge complete."
-            emit clippy:show message="Minesweeper complete! Remember 2847."
+            emit dialog:alert title="MINESWEEPER" message="Challenge complete!"
         }
-    }
-    # Check for Act III after minesweeper
-    if $solved >= 8 && $act == 2 then {
-        set $act = 3
-        set $phase = "ACT_III"
-        wait 200
-        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
     }
 }
 
 on asteroids:combo {
-    if $p_ast == false && $act >= 2 then {
-        set $c = $event.combo
-        if $c >= 5 then {
-            set $p_ast = true
+    if $ast == 0 && $act >= 2 then {
+        set $combo = $event.combo
+        if $combo >= 5 then {
+            set $ast = 1
             set $solved = $solved + 1
             emit sound:play sound="win"
-            emit dialog:alert title="ASTEROIDS COMBO" message="Great combo!\n\nPatterns spell: FINDME\nWrite to: SOLUTIONS/coordinates.txt"
+            emit dialog:alert title="ASTEROIDS" message="Great combo!\n\nHint: FINDME"
         }
-    }
-    # Check for Act III after asteroids
-    if $solved >= 8 && $act == 2 then {
-        set $act = 3
-        set $phase = "ACT_III"
-        wait 200
-        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
 
 on snake:eat {
-    if $p_snake == false && $act >= 2 then {
-        set $s = $event.score
-        if $s >= 15 then {
-            set $p_snake = true
+    if $snake == 0 && $act >= 2 then {
+        set $score = $event.score
+        if $score >= 15 then {
+            set $snake = 1
             set $solved = $solved + 1
             emit sound:play sound="win"
-            emit dialog:alert title="SNAKE COMPLETE" message="The Ouroboros test passed!"
+            emit dialog:alert title="SNAKE" message="Score achieved!"
         }
-    }
-    # Check for Act III after snake
-    if $solved >= 8 && $act == 2 then {
-        set $act = 3
-        set $phase = "ACT_III"
-        wait 200
-        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!"
     }
 }
 
 on solitaire:win {
-    if $p_sol == false && $act >= 3 then {
-        set $p_sol = true
+    if $sol == 0 && $act >= 3 then {
+        set $sol = 1
         set $solved = $solved + 1
         emit sound:play sound="win"
-        emit dialog:alert title="SOLITAIRE COMPLETE" message="Patience rewarded."
+        emit dialog:alert title="SOLITAIRE" message="Complete!"
     }
 }
 
 on freecell:win {
-    if $p_free == false && $act >= 3 then {
-        set $p_free = true
+    if $free == 0 && $act >= 3 then {
+        set $free = 1
         set $solved = $solved + 1
         emit sound:play sound="win"
-        emit dialog:alert title="FREECELL COMPLETE" message="Logic mastered."
+        emit dialog:alert title="FREECELL" message="Complete!"
     }
 }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FINAL
-# ═══════════════════════════════════════════════════════════════════════════════
-
-print "═══════════════════════════════════════════════════════════════"
-print " PROJECT EREBUS - READY"
-print " Session: " + $sessionKey
-print "═══════════════════════════════════════════════════════════════"
-print " Start: Desktop/EREBUS/BRIEFING.txt"
-print "═══════════════════════════════════════════════════════════════"
+print "[EREBUS] Ready"
+print "Open Desktop/EREBUS/BRIEFING.txt to begin"
