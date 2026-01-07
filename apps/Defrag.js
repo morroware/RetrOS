@@ -4,6 +4,7 @@
  */
 
 import AppBase from './AppBase.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Defrag extends AppBase {
     constructor() {
@@ -391,6 +392,13 @@ class Defrag extends AppBase {
         this.setButtonStates(false);
         this.updateProgress(100);
         this.updateStatus(`Analysis complete. ${this.fragmentedPercent}% fragmentation found.`);
+
+        // Emit analysis complete event
+        this.emitAppEvent('analysis:complete', {
+            drive: this.selectedDrive,
+            fragmentation: this.fragmentedPercent,
+            totalBlocks: this.blocks.length
+        });
     }
 
     async defragment() {
@@ -401,6 +409,12 @@ class Defrag extends AppBase {
         this.processedBlocks = 0;
         this.updateStatus('Starting defragmentation...');
         this.setButtonStates(true);
+
+        // Emit defrag started event
+        this.emitAppEvent('defrag:start', {
+            drive: this.selectedDrive,
+            fragmentation: this.fragmentedPercent
+        });
 
         const fragmentedBlocks = this.blocks.filter(b => b.state === 'fragmented');
         const emptyBlocks = this.blocks.filter(b => b.state === 'empty');
@@ -467,6 +481,12 @@ class Defrag extends AppBase {
             this.updateFragmentationDisplay();
             this.updateStatus('Defragmentation complete! Drive is now optimized.');
             this.updateProgress(100);
+
+            // Emit defrag complete event
+            this.emitAppEvent('defrag:complete', {
+                drive: this.selectedDrive,
+                optimizedBlocks: fragmentedBlocks.length + usedBlocks.length
+            });
         }
 
         this.isRunning = false;
@@ -483,10 +503,19 @@ class Defrag extends AppBase {
     }
 
     stop() {
+        const wasRunning = this.isRunning;
         this.isRunning = false;
         this.isPaused = false;
         this.setButtonStates(false);
         this.updateStatus('Defragmentation stopped.');
+
+        // Emit stop event if it was running
+        if (wasRunning) {
+            this.emitAppEvent('defrag:stopped', {
+                drive: this.selectedDrive,
+                progress: parseInt(this.getElement('#progressText')?.textContent) || 0
+            });
+        }
     }
 
     setButtonStates(running) {

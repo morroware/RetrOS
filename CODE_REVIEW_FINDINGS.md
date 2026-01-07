@@ -317,13 +317,39 @@ The codebase demonstrates several professional patterns:
 
 ---
 
-## 9. Conclusion
+## 9. Improvements Made
+
+### Commit 1: Event Emission & Utility Builtins
+- **Clock.js**: Added alarm, stopwatch, and timer events
+- **Calendar.js**: Added date selection, month change, and event CRUD events
+- **Winamp.js**: Added play, pause, stop, and track change events
+- **SystemBuiltins.js**: Added `sleep()`, `wait()`, `getFocusedWindow()`, `emitEvent()`
+
+### Commit 2: Additional App Events
+- **Defrag.js**: Added analysis and defragmentation lifecycle events
+- **FindFiles.js**: Added search operation events, fixed EventBus import
+- **HelpSystem.js**: Added topic navigation events
+
+## 10. Remaining Recommendations
+
+### Lower Priority Items
+Apps still without custom events (less critical for automation):
+- Doom, Zork, ChatRoom, HyperCard
+
+### Future Enhancements
+1. Add event schemas for all custom app events
+2. Consider adding `registerQuery()` support to more apps for script inspection
+3. Add standardized error events across all apps
+
+## 11. Conclusion
 
 The RetrOS script engine and event system are **production-ready**. The core infrastructure is sound, explaining why Minesweeper and other games work correctly with scripting.
 
-**Action Items:**
-1. Add event emission to 10 apps currently missing it
-2. Standardize game event patterns
-3. Consider adding event schemas for app-specific events
+**Completed:**
+- ✅ Added events to 6 apps (Clock, Calendar, Winamp, Defrag, FindFiles, HelpSystem)
+- ✅ Added utility builtins (sleep, wait, getFocusedWindow, emitEvent)
+- ✅ Verified game event patterns are standardized
+- ✅ Verified all apps have proper cleanup in onClose()
+- ✅ Fixed FindFiles to use SemanticEventBus
 
 The project demonstrates professional-grade software engineering with clean architecture, comprehensive testing support, and extensible design.
