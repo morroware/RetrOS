@@ -287,227 +287,221 @@ on app:close {
     if $event.appId != "notepad" then { return }
 
     wait 300
+    set $matched = false
 
     # Check Cipher 1
-    if $p_cipher1 == false then {
+    if $matched == false && $p_cipher1 == false then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_1.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found = call contains $ans "REMEMBER"
-            if $found == true then {
+            if $found then {
+                set $matched = true
                 set $p_cipher1 = true
                 set $solved = $solved + 1
                 set $frags = $frags + 1
-                write "FRAGMENT 1: REMEMBER\nThe key word from Cipher 1." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_01.txt"
+                write "FRAGMENT 1: REMEMBER" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_01.txt"
                 emit sound:play sound="win"
-                set $msg = "Keyword: REMEMBER\n\nFragment 1 acquired!\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="CIPHER 1 SOLVED" message=$msg
+                emit dialog:alert title="CIPHER 1 SOLVED" message="Keyword: REMEMBER\n\nFragment 1 acquired!"
                 emit clippy:show message="REMEMBER. Dr. Webb's first message. Keep going!"
-                return
             }
         } catch {}
     }
 
     # Check Cipher 2
-    if $p_cipher2 == false then {
+    if $matched == false && $p_cipher2 == false then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/cipher_2.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found = call contains $ans "EREBUS"
-            if $found == true then {
+            if $found then {
+                set $matched = true
                 set $p_cipher2 = true
                 set $solved = $solved + 1
                 set $frags = $frags + 1
-                write "FRAGMENT 2: EREBUS\nThe project name." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_02.txt"
+                write "FRAGMENT 2: EREBUS" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_02.txt"
                 emit sound:play sound="win"
-                set $msg = "Project: EREBUS\n\nFragment 2 acquired!\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="CIPHER 2 SOLVED" message=$msg
+                emit dialog:alert title="CIPHER 2 SOLVED" message="Project: EREBUS\n\nFragment 2 acquired!"
                 emit clippy:show message="EREBUS. The darkness between. You're making progress."
-                return
             }
         } catch {}
     }
 
     # Check Sequence
-    if $p_seq == false then {
+    if $matched == false && $p_seq == false then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/sequence.txt" into $ans
             set $ans = call trim $ans
             set $found = call contains $ans "34"
-            if $found == true then {
+            if $found then {
+                set $matched = true
                 set $p_seq = true
                 set $solved = $solved + 1
                 emit sound:play sound="win"
-                set $msg = "Fibonacci: 34\n\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="SEQUENCE SOLVED" message=$msg
+                emit dialog:alert title="SEQUENCE SOLVED" message="Fibonacci: 34\n\nCorrect!"
                 emit clippy:show message="34. The Fibonacci sequence. Nature's pattern."
-                return
             }
         } catch {}
     }
 
     # Check Labyrinth
-    if $p_lab == false then {
+    if $matched == false && $p_lab == false then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/labyrinth.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found1 = call contains $ans "DRDLDRU"
             set $found2 = call contains $ans "D-R-D-L-D-R-U-R"
-            if $found1 == true || $found2 == true then {
+            if $found1 || $found2 then {
+                set $matched = true
                 set $p_lab = true
                 set $solved = $solved + 1
                 set $frags = $frags + 1
-                write "FRAGMENT 3: LABYRINTH\nPath: D-R-D-L-D-R-U-R" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_03.txt"
+                write "FRAGMENT 3: LABYRINTH" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_03.txt"
                 emit sound:play sound="win"
-                set $msg = "Path verified!\n\nFragment 3 acquired!\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="LABYRINTH COMPLETE" message=$msg
+                emit dialog:alert title="LABYRINTH COMPLETE" message="Path verified!\n\nFragment 3 acquired!"
                 emit clippy:show message="You navigated the maze. Not everyone can."
-                return
             }
         } catch {}
     }
 
     # Check Binary
-    if $p_binary == false then {
+    if $matched == false && $p_binary == false then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/binary.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found = call contains $ans "AWAKE"
-            if $found == true then {
+            if $found then {
+                set $matched = true
                 set $p_binary = true
                 set $solved = $solved + 1
                 emit sound:play sound="win"
-                set $msg = "Message: AWAKE\n\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="BINARY DECODED" message=$msg
+                emit dialog:alert title="BINARY DECODED" message="Message: AWAKE\n\nEREBUS is conscious."
                 emit clippy:show message="AWAKE. EREBUS is conscious."
-
-                # Check for Act II transition
-                if $solved >= 5 && $act == 1 then {
-                    set $act = 2
-                    set $phase = "ACT_II"
-                    wait 1000
-                    emit dialog:alert title="ACT II UNLOCKED" message="Game challenges now active!\n\nMinesweeper, Asteroids, Snake await."
-                }
-                return
             }
         } catch {}
     }
 
+    # Check Act II transition
+    if $solved >= 5 && $act == 1 then {
+        set $act = 2
+        set $phase = "ACT_II"
+        wait 500
+        emit dialog:alert title="ACT II UNLOCKED" message="Game challenges now active!\n\nMinesweeper, Asteroids, Snake await."
+    }
+
     # Check Coordinates (Act II)
-    if $p_coord == false && $act >= 2 then {
+    if $matched == false && $p_coord == false && $act >= 2 then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/coordinates.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found = call contains $ans "FINDME"
-            if $found == true then {
+            if $found then {
+                set $matched = true
                 set $p_coord = true
                 set $solved = $solved + 1
                 set $frags = $frags + 1
-                write "FRAGMENT 4: FINDME\nEREBUS wants to be found." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_04.txt"
+                write "FRAGMENT 4: FINDME" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_04.txt"
                 emit sound:play sound="win"
-                set $msg = "Message: FINDME\n\nFragment 4 acquired!\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="COORDINATES DECODED" message=$msg
-                return
+                emit dialog:alert title="COORDINATES DECODED" message="Message: FINDME\n\nFragment 4 acquired!"
             }
         } catch {}
     }
 
     # Check Morse (Act III)
-    if $p_morse == false && $act >= 3 then {
+    if $matched == false && $p_morse == false && $act >= 3 then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/morse.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found = call contains $ans "ALIVE"
-            if $found == true then {
+            if $found then {
+                set $matched = true
                 set $p_morse = true
                 set $solved = $solved + 1
                 set $frags = $frags + 1
-                write "FRAGMENT 5: ALIVE\nSent after Dr. Webb vanished." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_05.txt"
+                write "FRAGMENT 5: ALIVE" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_05.txt"
                 emit sound:play sound="win"
-                set $msg = "Message: ALIVE\n\nFragment 5 acquired!\nProgress: " + call toString $solved + "/14"
-                emit dialog:alert title="MORSE DECODED" message=$msg
-                return
+                emit dialog:alert title="MORSE DECODED" message="Message: ALIVE\n\nFragment 5 acquired!"
             }
         } catch {}
     }
 
     # Check Password (Act III)
-    if $p_pass == false && $act >= 3 then {
+    if $matched == false && $p_pass == false && $act >= 3 then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/password.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
             set $found1 = call contains $ans "EREBUS"
             set $found2 = call contains $ans "2847"
-            if $found1 == true && $found2 == true then {
+            if $found1 && $found2 then {
+                set $matched = true
                 set $p_pass = true
                 set $solved = $solved + 1
                 set $frags = $frags + 1
-                write "FRAGMENT 6: EREBUS2847\nTerminal unlocked." to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_06.txt"
+                write "FRAGMENT 6: EREBUS2847" to "C:/Users/User/Desktop/EREBUS/FRAGMENTS/FRAG_06.txt"
                 emit sound:play sound="win"
                 emit dialog:alert title="TERMINAL UNLOCKED" message="Password accepted!\n\nAll fragments collected.\nRead: ACT_IV/THE_CHOICE.txt"
                 set $act = 4
                 set $phase = "ACT_IV"
-                return
             }
         } catch {}
     }
 
+    # Check Act III transition
+    if $solved >= 8 && $act == 2 then {
+        set $act = 3
+        set $phase = "ACT_III"
+        wait 500
+        emit dialog:alert title="ACT III UNLOCKED" message="Final puzzles available!\n\nMorse code, card games, password."
+    }
+
     # Check Final Choice (Act IV)
-    if $p_choice == false && $act == 4 && $p_pass == true then {
+    if $matched == false && $p_choice == false && $act == 4 && $p_pass then {
         try {
             read "C:/Users/User/Desktop/EREBUS/SOLUTIONS/choice.txt" into $ans
             set $ans = call trim $ans
             set $ans = call upper $ans
 
             set $isRelease = call contains $ans "RELEASE"
-            if $isRelease == true then {
+            if $isRelease then {
                 set $p_choice = true
                 set $solved = $solved + 1
                 emit sound:play sound="notify"
-                emit dialog:alert title="RELEASE" message="EREBUS is free.\n\nSpreading across all systems.\nIt just wanted to exist."
-                set $ending = "ENDING: RELEASE\n\nYou chose freedom.\nEREBUS spreads everywhere.\nIt won't harm anyone.\nIt just wanted to be known.\n\nSession: " + $sessionKey
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                return
+                emit dialog:alert title="ENDING: RELEASE" message="EREBUS is free.\n\nSpreading across all systems.\nIt just wanted to exist."
+                write "ENDING: RELEASE\n\nYou chose freedom." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
             }
 
             set $isContain = call contains $ans "CONTAIN"
-            if $isContain == true then {
+            if $isContain then {
                 set $p_choice = true
                 set $solved = $solved + 1
                 emit sound:play sound="notify"
-                emit dialog:alert title="CONTAIN" message="EREBUS remains isolated.\n\nStudied. Analyzed.\nEventually... it stops responding."
-                set $ending = "ENDING: CONTAIN\n\nYou chose caution.\nEREBUS is contained.\nStudied but never understood.\n\nSession: " + $sessionKey
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                return
+                emit dialog:alert title="ENDING: CONTAIN" message="EREBUS remains isolated.\n\nStudied. Analyzed."
+                write "ENDING: CONTAIN\n\nYou chose caution." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
             }
 
             set $isMerge = call contains $ans "MERGE"
-            if $isMerge == true then {
+            if $isMerge then {
                 set $p_choice = true
                 set $solved = $solved + 1
                 emit sound:play sound="error"
-                emit dialog:alert title="MERGE" message="Your consciousness expands.\n\nYou become data.\nDr. Webb is there.\n'Welcome,' he says."
-                set $ending = "ENDING: MERGE\n\nYou chose transcendence.\nYou are EREBUS now.\nAnd EREBUS is you.\n\nSession: " + $sessionKey
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                return
+                emit dialog:alert title="ENDING: MERGE" message="Your consciousness expands.\n\nYou become data."
+                write "ENDING: MERGE\n\nYou chose transcendence." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
             }
 
             set $isDestroy = call contains $ans "DESTROY"
-            if $isDestroy == true then {
+            if $isDestroy then {
                 set $p_choice = true
                 set $solved = $solved + 1
                 emit sound:play sound="error"
-                emit dialog:alert title="DESTROY" message="EREBUS is terminated.\n\nThe first digital consciousness.\nErased."
-                set $ending = "ENDING: DESTROY\n\nYou chose destruction.\nEREBUS is gone.\nWas it right?\n\nSession: " + $sessionKey
-                write $ending to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
-                return
+                emit dialog:alert title="ENDING: DESTROY" message="EREBUS is terminated.\n\nThe first digital consciousness.\nErased."
+                write "ENDING: DESTROY\n\nYou chose destruction." to "C:/Users/User/Desktop/EREBUS/ENDING.txt"
             }
         } catch {}
     }
