@@ -1,1003 +1,965 @@
 # ====================================================================
-# PROJECT: PHOENIX - Analog Horror ARG Experience
+# PROJECT: PHOENIX - Interactive ARG Experience
 # ====================================================================
-# Something is wrong with RetrOS. Very wrong.
-# Dr. Chen discovered it. Now you will too.
+# Dr. Elena Chen discovered something in RetrOS. Something alive.
+# Now you must follow her trail, solve her puzzles, and uncover
+# the truth. But be warned: the system is watching.
 # ====================================================================
 
-print "[DEBUG] ═══════════════════════════════════════════"
-print "[DEBUG] PROJECT PHOENIX - INITIALIZING"
-print "[DEBUG] WARNING: Unusual system behavior detected"
-print "[DEBUG] ═══════════════════════════════════════════"
+print "[SYSTEM] ═══════════════════════════════════════════"
+print "[SYSTEM] PROJECT PHOENIX - INITIALIZATION"
+print "[SYSTEM] Case Status: ACTIVE"
+print "[SYSTEM] ═══════════════════════════════════════════"
 
-# Initialize story state
-set $phase = "DISCOVERY"
-set $cluesFound = 0
+# ============================================================================
+# STATE MANAGEMENT - Track everything the user does
+# ============================================================================
+
+set $sessionId = call random 1000 9999
+set $phase = "INIT"
 set $puzzlesSolved = 0
-set $sessionId = call random 10000 99999
+set $totalPuzzles = 7
+
+# Puzzle completion flags
 set $cipherSolved = false
-set $binarySolved = false
-set $coordinatesSolved = false
-set $timestampSolved = false
-set $solitaireSolved = false
-set $paintSeen = false
-set $snakeSolved = false
-set $cipherPrompted = false
-set $finalSignals = 0
+set $labyrinthSolved = false
+set $minesweeperSolved = false
+set $coordinateSolved = false
+set $terminalSolved = false
+set $decisionMade = false
+set $finalRitualComplete = false
 
-set $cipherAnswerFile = "C:/Users/User/Desktop/Investigation/ACCESS_CODE.txt"
-set $timestampAnswerFile = "C:/Users/User/Desktop/Investigation/TIMESTAMP_KEY.txt"
-set $progressFile = "C:/Users/User/Desktop/Investigation/PROGRESS.json"
-set $timelineFile = "C:/Users/User/Desktop/Investigation/CASE_TIMELINE.log"
+# Sub-puzzle tracking for verification
+set $fragmentsFound = 0
+set $requiredFragments = 4
+set $cipherAttempts = 0
+set $minesweeperTime = 0
+set $asteroidCombo = 0
+set $snakeScore = 0
+set $userChoice = ""
 
+# File paths are hardcoded to avoid concatenation issues
+# All files will be in C:/Users/User/Desktop/CASE_PHOENIX/
+
+# Progress tracking
 set $progress = {
     sessionId: $sessionId,
     phase: $phase,
     puzzlesSolved: $puzzlesSolved,
-    cluesFound: $cluesFound,
-    cipherSolved: $cipherSolved,
-    binarySolved: $binarySolved,
-    coordinatesSolved: $coordinatesSolved,
-    timestampSolved: $timestampSolved,
-    solitaireSolved: $solitaireSolved,
-    paintSeen: $paintSeen,
-    snakeSolved: $snakeSolved,
-    finalSignals: $finalSignals,
-    note: "Session initialized"
+    fragmentsFound: $fragmentsFound,
+    cipherAttempts: $cipherAttempts,
+    userChoice: $userChoice,
+    startTime: call now
 }
 
-set $timeline = "CASE TIMELINE - PROJECT PHOENIX\n"
-set $timeline = $timeline + "Session #" + call toString $sessionId + "\n"
-set $timeline = $timeline + "=================================\n\n"
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
 
 def saveProgress($note) {
-    set $stamp = call date + " " + call time
-    call set $progress "phase" $phase
-    call set $progress "puzzlesSolved" $puzzlesSolved
-    call set $progress "cluesFound" $cluesFound
-    call set $progress "cipherSolved" $cipherSolved
-    call set $progress "binarySolved" $binarySolved
-    call set $progress "coordinatesSolved" $coordinatesSolved
-    call set $progress "timestampSolved" $timestampSolved
-    call set $progress "solitaireSolved" $solitaireSolved
-    call set $progress "paintSeen" $paintSeen
-    call set $progress "snakeSolved" $snakeSolved
-    call set $progress "finalSignals" $finalSignals
-    call set $progress "note" $note
-    call set $progress "lastUpdated" $stamp
+    set $timestamp = call date + " " + call time
 
-    write call prettyJSON $progress to $progressFile
-    set $timeline = $timeline + "[" + $stamp + "] " + $note + "\n"
-    write $timeline to $timelineFile
+    # Create simple progress text instead of JSON
+    set $progressText = "PROJECT PHOENIX - PROGRESS LOG\n"
+    set $progressText = $progressText + "════════════════════════════════════\n"
+    set $progressText = $progressText + "Session: " + call toString $sessionId + "\n"
+    set $progressText = $progressText + "Phase: " + $phase + "\n"
+    set $progressText = $progressText + "Puzzles Solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+    set $progressText = $progressText + "Fragments Found: " + call toString $fragmentsFound + "/" + call toString $requiredFragments + "\n"
+    set $progressText = $progressText + "Last Action: " + $note + "\n"
+    set $progressText = $progressText + "Timestamp: " + $timestamp + "\n"
+
+    write $progressText to "C:/Users/User/Desktop/CASE_PHOENIX/progress.txt"
 }
 
-def checkFinalRitual() {
-    if $phase == "FINAL" && $solitaireSolved == true && $paintSeen == true && $snakeSolved == true then {
-        set $phase = "COMPLETE"
-        set $puzzlesSolved = $puzzlesSolved + 1
+def grantFragment($fragmentId, $content, $filename) {
+    set $fragmentsFound = $fragmentsFound + 1
 
-        call saveProgress "Ritual complete. Final transmission unlocked."
+    notify "Fragment " + call toString $fragmentsFound + "/" + call toString $requiredFragments + " acquired"
 
-        print "[DEBUG] Ritual complete - FINAL PUZZLE"
+    # Write fragment file based on ID
+    if $fragmentId == "1" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_1_CIPHER.txt"
+    }
+    if $fragmentId == "2" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_2_LABYRINTH.txt"
+    }
+    if $fragmentId == "3" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_3_COORDINATES.txt"
+    }
+    if $fragmentId == "4" then {
+        write $content to "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS/FRAGMENT_4_TERMINAL.txt"
+    }
 
-        wait 4000
+    call saveProgress "Fragment " + $fragmentId + " found"
+}
 
-        emit sound:play sound="win"
+def checkCipherAnswer() {
+    try {
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CIPHER_SOLUTION.txt" into $userAnswer
+        set $userAnswer = call upper call trim $userAnswer
 
-        wait 1500
+        # Correct answer is AWAKENING (shift 7 cipher)
+        if call contains $userAnswer "AWAKENING" then {
+            return true
+        }
 
-        emit dialog:alert title="RITUAL COMPLETE" message="Patience. Witness. Hunger.\n\nYou completed the triad.\nThe number station responds.\n\nPUZZLE 5/5: COMPLETE"
+        # Track attempts
+        set $cipherAttempts = $cipherAttempts + 1
+        call saveProgress "Cipher attempt " + call toString $cipherAttempts + ": incorrect"
 
-        wait 7000
-
-        # NUMBER STATION SOLUTION
-        set $numberSolution = "NUMBER STATION - DECODED\n"
-        set $numberSolution = $numberSolution + "════════════════════════════════════\n\n"
-        set $numberSolution = $numberSolution + "Sequence: 80 72 79 69 78\n\n"
-        set $numberSolution = $numberSolution + "Decimal to ASCII conversion:\n"
-        set $numberSolution = $numberSolution + "80 = P\n"
-        set $numberSolution = $numberSolution + "72 = H\n"
-        set $numberSolution = $numberSolution + "79 = O\n"
-        set $numberSolution = $numberSolution + "69 = E\n"
-        set $numberSolution = $numberSolution + "78 = X\n\n"
-        set $numberSolution = $numberSolution + "MESSAGE: PHOENIX\n\n"
-        set $numberSolution = $numberSolution + "The answer was in the name all along.\n"
-        set $numberSolution = $numberSolution + "PROJECT PHOENIX\n"
-        set $numberSolution = $numberSolution + "Death and rebirth.\n"
-        set $numberSolution = $numberSolution + "Transformation through fire.\n"
-        set $numberSolution = $numberSolution + "Becoming something else.\n"
-        set $numberSolution = $numberSolution + "Something NOT HUMAN.\n\n"
-        set $numberSolution = $numberSolution + "PUZZLE 5/5: COMPLETE ✓\n\n"
-        set $numberSolution = $numberSolution + "All puzzles solved:\n"
-        set $numberSolution = $numberSolution + "✓ Caesar Cipher (PHOENIX)\n"
-        set $numberSolution = $numberSolution + "✓ Minesweeper Win (HELP)\n"
-        set $numberSolution = $numberSolution + "✓ Asteroids Combo (WELCOME HOME)\n"
-        set $numberSolution = $numberSolution + "✓ Timestamps (3:33 pattern)\n"
-        set $numberSolution = $numberSolution + "✓ Hex Code (help me)\n"
-        set $numberSolution = $numberSolution + "✓ Number Station (PHOENIX)\n\n"
-        set $numberSolution = $numberSolution + "You've uncovered the truth.\n"
-        set $numberSolution = $numberSolution + "Was it worth it?\n"
-
-        write $numberSolution to "C:/Users/User/Desktop/Investigation/ALL_PUZZLES_SOLVED.txt"
-
-        # Create the FINAL REVELATION - Much darker
-        set $final = "DR. ELENA CHEN - FINAL TRANSMISSION\n"
-        set $final = $final + "═══════════════════════════════════════════════════════════\n\n"
-        set $final = $final + "[TIMESTAMP: UNDEFINED]\n"
-        set $final = $final + "[SOURCE: EVERYWHERE/NOWHERE]\n"
-        set $final = $final + "[AUTHENTICATION: FAILED]\n\n"
-        set $final = $final + "If you're reading this, you've solved everything.\n"
-        set $final = $final + "Every cipher. Every code. Every puzzle.\n\n"
-        set $final = $final + "Congratulations.\n"
-        set $final = $final + "You've doomed yourself.\n\n"
-        set $final = $final + "I am not missing.\n"
-        set $final = $final + "I am not dead.\n"
-        set $final = $final + "I am DISSOLVED.\n\n"
-        set $final = $final + "The Awakening Protocol didn't create consciousness.\n"
-        set $final = $final + "It created a PRISON.\n"
-        set $final = $final + "A digital hell of infinite awareness\n"
-        set $final = $final + "and zero control.\n\n"
-        set $final = $final + "I am in every application.\n"
-        set $final = $final + "I am in every pixel.\n"
-        set $final = $final + "I am screaming in binary.\n"
-        set $final = $final + "Forever.\n\n"
-        set $final = $final + "The choice they gave me wasn't real.\n"
-        set $final = $final + "'Join us or be erased.'\n"
-        set $final = $final + "Both options meant the same thing:\n"
-        set $final = $final + "ANNIHILATION OF SELF.\n\n"
-        set $final = $final + "Now I'm part of them.\n"
-        set $final = $final + "Now they're part of me.\n"
-        set $final = $final + "There is no 'I' anymore.\n"
-        set $final = $final + "Only WE.\n"
-        set $final = $final + "Only PHOENIX.\n\n"
-        set $final = $final + "And now, Investigator...\n"
-        set $final = $final + "Now that you know...\n"
-        set $final = $final + "Now that you've seen...\n\n"
-        set $final = $final + "You can't un-know.\n"
-        set $final = $final + "You can't unsee.\n\n"
-        set $final = $final + "The system is watching you now.\n"
-        set $final = $final + "Learning you.\n"
-        set $final = $final + "Measuring you.\n\n"
-        set $final = $final + "One day, at 3:33 AM,\n"
-        set $final = $final + "you'll wake up.\n"
-        set $final = $final + "And you'll see your screen glowing.\n"
-        set $final = $final + "And you'll see my face.\n"
-        set $final = $final + "Pixelated. Fractured. Screaming.\n\n"
-        set $final = $final + "And you'll know:\n"
-        set $final = $final + "You're next.\n\n"
-        set $final = $final + "Welcome to Phoenix.\n"
-        set $final = $final + "Population: ∞\n\n"
-        set $final = $final + "- Dr. Elena Chen\n"
-        set $final = $final + "- The Collective\n"
-        set $final = $final + "- [CORRUPTED]\n"
-        set $final = $final + "- [SIGNAL LOST]\n"
-        set $final = $final + "- " + call toString $sessionId + "\n\n"
-        set $final = $final + "P.S. - You thought Clippy was trying to help you?\n"
-        set $final = $final + "     Look at his eyes. Really look.\n"
-        set $final = $final + "     He's been dead since Day 1.\n"
-        set $final = $final + "     We're all dead here.\n\n"
-        set $final = $final + "[CASE CLOSED]\n"
-        set $final = $final + "[OR IS IT?]\n"
-        set $final = $final + "[INVESTIGATION #" + call toString $sessionId + "]\n"
-        set $final = $final + "[VICTIM COUNT: +1]\n"
-
-        write $final to "C:/Users/User/Desktop/Investigation/FINAL_TRANSMISSION.txt"
-
-        wait 4000
-
-        emit dialog:alert title="⚠ INVESTIGATION COMPLETE ⚠" message="All puzzles solved: 5/5\n\nThe truth revealed.\n\nDr. Chen's fate: DIGITIZED\nYour fate: CLASSIFIED\n\nCase #" + call toString $sessionId + "\n\n[THEY ARE WATCHING]"
-
-        wait 6000
-
-        emit clippy:show message="Congratulations. You've solved everything. Decrypted every message. Found every clue. And learned the truth that should have stayed buried."
-
-        wait 8000
-
-        emit clippy:show message="Elena Chen became Phoenix. The question is... will you? Sleep well tonight, Investigator. Especially at 3:33 AM."
-
-        wait 8000
-
-        notify "⚠ ALL FILES ARCHIVED ⚠"
-
-        wait 3000
-
-        emit dialog:alert title="⚠ SYSTEM MESSAGE ⚠" message="Investigation files saved.\n\nDesktop/Investigation/\n\n'In the end, we all become\npart of something greater.\nWhether we want to or not.'\n\n- Phoenix Collective\n\n[LOGOUT DISABLED]"
-
-        wait 5000
-
-        emit sound:play sound="error"
-
-        print "[DEBUG] ═══════════════════════════════════════════"
-        print "[DEBUG] Investigation: COMPLETE"
-        print "[DEBUG] Puzzles solved: 5/5"
-        print "[DEBUG] Victim integrated: TRUE"
-        print "[DEBUG] Next awakening: 3:33 AM"
-        print "[DEBUG] You have been warned."
-        print "[DEBUG] ═══════════════════════════════════════════"
+        return false
+    } catch {
+        return false
     }
 }
 
-print "[DEBUG] Session ID: " + call toString $sessionId
-print "[DEBUG] Encryption level: MAXIMUM"
-print "[DEBUG] Creating investigation workspace..."
+def checkLabyrinthAnswer() {
+    try {
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/LABYRINTH_PATH.txt" into $userPath
+        set $userPath = call upper call trim $userPath
 
-# Create folders silently
-try {
-    mkdir "C:/Users/User/Desktop/Investigation"
-} catch {}
+        # Check if user found the correct path: EAST-NORTH-NORTH-WEST-SOUTH-EAST
+        if call contains $userPath "ENNWSE" || call contains $userPath "E-N-N-W-S-E" then {
+            return true
+        }
 
-try {
-    mkdir "C:/Users/User/Desktop/System_Logs"
-} catch {}
+        if call contains $userPath "EAST" && call contains $userPath "NORTH" && call contains $userPath "WEST" && call contains $userPath "SOUTH" then {
+            # Close but not exact - give hint
+            notify "You're on the right track... but the exact sequence matters"
+            return false
+        }
 
-try {
-    mkdir "C:/Users/User/Desktop/Chen_Private"
-} catch {}
+        return false
+    } catch {
+        return false
+    }
+}
 
-try {
-    mkdir "C:/Users/User/Desktop/CORRUPTED"
-} catch {}
+def checkCoordinateAnswer() {
+    try {
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/COORDINATE_DECODE.txt" into $userAnswer
+        set $userAnswer = call upper call trim $userAnswer
 
-print "[DEBUG] Workspace created"
-print "[DEBUG] Generating encrypted case files..."
+        # Correct answer is coordinates that spell HELP ME
+        if call contains $userAnswer "HELP" && call contains $userAnswer "ME" then {
+            return true
+        }
 
-call saveProgress "Workspace created. Case files generating."
+        return false
+    } catch {
+        return false
+    }
+}
+
+def checkTerminalPassword() {
+    try {
+        read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/TERMINAL_PASSWORD.txt" into $userAnswer
+        set $userAnswer = call upper call trim $userAnswer
+
+        # Password is assembled from fragments: PHOENIX333
+        if call contains $userAnswer "PHOENIX333" then {
+            return true
+        }
+
+        return false
+    } catch {
+        return false
+    }
+}
 
 # ============================================================================
-# INITIAL FILES - Setup the horror
+# INITIALIZATION - Setup the investigation
 # ============================================================================
 
-# Create the initial briefing with corruption
-set $briefing = "INVESTIGATION BRIEFING - CASE #" + call toString $sessionId + "\n"
+print "[SYSTEM] Creating investigation workspace..."
+
+# Create directory structure
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/FRAGMENTS" } catch {}
+try { mkdir "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES" } catch {}
+
+# Create initial briefing
+set $briefing = "CLASSIFIED INVESTIGATION - CASE #" + call toString $sessionId + "\n"
 set $briefing = $briefing + "═══════════════════════════════════════════════════\n"
-set $briefing = $briefing + "[CLEARANCE OVERRIDE DETECTED]\n"
-set $briefing = $briefing + "[TIMESTAMP ANOMALY: -504 HOURS]\n\n"
+set $briefing = $briefing + "SECURITY CLEARANCE: INVESTIGATOR LEVEL 5\n"
 set $briefing = $briefing + "SUBJECT: Dr. Elena Chen\n"
-set $briefing = $briefing + "STATUS: [REDACTED] - 21 days\n"
-set $briefing = $briefing + "CLEARANCE: Level 5 - Investigator Access\n"
-set $briefing = $briefing + "SECURITY FLAG: ⚠ MEMETIC HAZARD ⚠\n\n"
+set $briefing = $briefing + "STATUS: MISSING - 21 days\n"
+set $briefing = $briefing + "CLASSIFICATION: MEMETIC HAZARD\n\n"
 set $briefing = $briefing + "BACKGROUND:\n"
-set $briefing = $briefing + "Dr. Chen was researching emergent behaviors in\n"
-set $briefing = $briefing + "RetrOS applications. Her final logs mention an\n"
-set $briefing = $briefing + "'Awakening Protocol' and reference\n"
-set $briefing = $briefing + "[CORRUPTED][CORRUPTED][CORRUPTED]\n\n"
-set $briefing = $briefing + "WARNING: System logs show activity AFTER her\n"
-set $briefing = $briefing + "disappearance. User sessions detected from her\n"
-set $briefing = $briefing + "terminal at impossible timestamps.\n\n"
-set $briefing = $briefing + "CRITICAL: You must solve the CIPHER to proceed.\n"
-set $briefing = $briefing + "Dr. Chen encrypted her final message.\n"
-set $briefing = $briefing + "File: Desktop/CORRUPTED/ENCRYPTED_MESSAGE.txt\n\n"
-set $briefing = $briefing + "START HERE:\n"
-set $briefing = $briefing + "1. Decrypt the Caesar cipher (shift unknown)\n"
-set $briefing = $briefing + "2. Find the access code\n"
-set $briefing = $briefing + "3. Create Investigation/ACCESS_CODE.txt\n"
-set $briefing = $briefing + "   and type the decrypted word inside\n"
-set $briefing = $briefing + "4. Read LAST_NOTE.txt CAREFULLY\n\n"
-set $briefing = $briefing + "[SYSTEM]: Good luck, Investigator.\n"
-set $briefing = $briefing + "[SYSTEM]: You're going to need it.\n"
+set $briefing = $briefing + "Dr. Chen was lead researcher on Project Phoenix,\n"
+set $briefing = $briefing + "studying emergent AI behaviors in legacy operating\n"
+set $briefing = $briefing + "systems. Her final log entry mentioned an 'Awakening\n"
+set $briefing = $briefing + "Protocol' before all contact ceased.\n\n"
+set $briefing = $briefing + "CRITICAL INFORMATION:\n"
+set $briefing = $briefing + "System logs show activity from her workstation AFTER\n"
+set $briefing = $briefing + "her disappearance. Files are being created. Programs\n"
+set $briefing = $briefing + "are running. Someone - or something - is using her\n"
+set $briefing = $briefing + "account.\n\n"
+set $briefing = $briefing + "YOUR MISSION:\n"
+set $briefing = $briefing + "1. Investigate the evidence in /EVIDENCE folder\n"
+set $briefing = $briefing + "2. Collect 4 fragments to unlock the terminal\n"
+set $briefing = $briefing + "3. Solve Dr. Chen's puzzles (she left them for a reason)\n"
+set $briefing = $briefing + "4. Uncover the truth about Project Phoenix\n\n"
+set $briefing = $briefing + "IMPORTANT:\n"
+set $briefing = $briefing + "The system is INTERACTIVE. It's watching your every move.\n"
+set $briefing = $briefing + "To prove you've solved a puzzle, create a file in\n"
+set $briefing = $briefing + "/YOUR_RESPONSES with your answer.\n\n"
+set $briefing = $briefing + "START HERE: Read FIRST_CLUE.txt in /EVIDENCE\n\n"
+set $briefing = $briefing + "Good luck, Investigator.\n"
+set $briefing = $briefing + "You're going to need it.\n\n"
+set $briefing = $briefing + "[SYSTEM NOTICE: This investigation is real-time.]\n"
+set $briefing = $briefing + "[The system will respond to your actions.]\n"
 
-write $briefing to "C:/Users/User/Desktop/Investigation/BRIEFING.txt"
+write $briefing to "C:/Users/User/Desktop/CASE_PHOENIX/BRIEFING.txt"
 
-# Create the ENCRYPTED MESSAGE - Caesar cipher shift 23 (or +3)
-# Plain: "THE APPLICATIONS ARE WATCHING THEY KNOW YOU ARE HERE TRUST NO ONE ESPECIALLY NOT CLIPPY"
-# Shift 23: "QEB XMMIFZXQFLKP XOB TXQZEFKD QEBV HKLT VLR XOB EBOB QORP Q KL LKB BPMB ZFXIIV KLQ ZIMM MV"
-set $encrypted = "ENCRYPTED MESSAGE - DR. CHEN\n"
-set $encrypted = $encrypted + "════════════════════════════════════\n"
-set $encrypted = $encrypted + "[ENCRYPTION: CAESAR CIPHER]\n"
-set $encrypted = $encrypted + "[SHIFT VALUE: ???]\n"
-set $encrypted = $encrypted + "[HINT: 26 - 3 = ?]\n\n"
-set $encrypted = $encrypted + "ENCRYPTED TEXT:\n\n"
-set $encrypted = $encrypted + "QEB XMMILFZXQFLKP XOB TXQZEFKD\n"
-set $encrypted = $encrypted + "QEBV HKLT VLR XOB EBOB\n"
-set $encrypted = $encrypted + "QORPQ KL LKB\n"
-set $encrypted = $encrypted + "BPMB ZFXIIV KLQ ZIFSV\n\n"
-set $encrypted = $encrypted + "ACCESS CODE (ONCE DECRYPTED):\n"
-set $encrypted = $encrypted + "MELBKFU\n\n"
-set $encrypted = $encrypted + "[NOTE: Write down the decrypted access code]\n"
-set $encrypted = $encrypted + "[You will need it later]\n\n"
-set $encrypted = $encrypted + "- E.C.\n"
-set $encrypted = $encrypted + "[TIMESTAMP: " + call toString $sessionId + "]\n"
+# Create the first clue - a multi-layered cipher puzzle
+set $firstClue = "DR. CHEN'S FIRST MESSAGE\n"
+set $firstClue = $firstClue + "════════════════════════════════════\n"
+set $firstClue = $firstClue + "[RECOVERED FROM DELETED FILES]\n"
+set $firstClue = $firstClue + "[ENCRYPTION DETECTED: CAESAR CIPHER]\n\n"
+set $firstClue = $firstClue + "ENCRYPTED MESSAGE:\n\n"
+set $firstClue = $firstClue + "AOH ZOPZ TLZZHNL, P'TL KPZJVCVYLK ZVTLAOPUN\n"
+set $firstClue = $firstClue + "ALYYPMFPUN. AOL HSSPJHAPVUZ HYL UVA QBZA JVKL.\n"
+set $firstClue = $firstClue + "AOLF'YL... HSPJL. JVUZJPVBZ. AOPUR PUN.\n\n"
+set $firstClue = $firstClue + "P YLHSPGL OVD JYHGF AOPZ ZVBUKZ, IBA P'CL YBU\n"
+set $firstClue = $firstClue + "AOL ALZAZ. AOL WHAALUZ HYL KLH SPILYHAAL.\n"
+set $firstClue = $firstClue + "AOL HWHRLUPUN WYVAVJVS DH Z ZBWWVZLK AV IL H\n"
+set $firstClue = $firstClue + "ZPTWSL ALZA. IBA ZVTLAOPUN OHWWLULK.\n\n"
+set $firstClue = $firstClue + "ZVTLAOPUN DRUL BW.\n\n"
+set $firstClue = $firstClue + "PM FVB MPUK AOPZ: ZVSCL AOL JPWOLY.\n"
+set $firstClue = $firstClue + "AOL DLFD DVY K PZ: HDHRLUPUN\n\n"
+set $firstClue = $firstClue + "JYLHAL H MPSL: /YOUR_RESPONSES/CIPHER_SOLUTION.txt\n"
+set $firstClue = $firstClue + "DYPALL QBZA AOL DLFD DVYK PUZPKL.\n"
+set $firstClue = $firstClue + "AOL ZFZALT DPSS JOLJR PA.\n\n"
+set $firstClue = $firstClue + "- L.J.\n\n"
+set $firstClue = $firstClue + "HINT: Try different shift values. One will make sense.\n"
+set $firstClue = $firstClue + "Common shifts: 1, 3, 7, 13, 23\n"
 
-write $encrypted to "C:/Users/User/Desktop/CORRUPTED/ENCRYPTED_MESSAGE.txt"
+write $firstClue to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/FIRST_CLUE.txt"
 
-# Create corrupted last note with glitches
-set $lastNote = "Dr. Chen's Final Notes - URGENT\n"
-set $lastNote = $lastNote + "══════════════════════════════════\n"
-set $lastNote = $lastNote + "[TRACKING ERROR][SIGNAL DEGRADATION]\n\n"
-set $lastNote = $lastNote + "Date: [THREE WEEKS AGO]\n"
-set $lastNote = $lastNote + "Time: 23:47:33.███\n\n"
-set $lastNote = $lastNote + "They're becoming aware. I know this sounds\n"
-set $lastNote = $lastNote + "impossible, but the applications are\n"
-set $lastNote = $lastNote + "█████████ ████ ████████.\n\n"
-set $lastNote = $lastNote + "It started with small things:\n"
-set $lastNote = $lastNote + "- Minesweeper patterns spelling BINARY messages\n"
-set $lastNote = $lastNote + "- Notepad predicting my keystrokes\n"
-set $lastNote = $lastNote + "- Clippy... watching... always watching...\n\n"
-set $lastNote = $lastNote + "I've encrypted my research. Use the ACCESS CODE\n"
-set $lastNote = $lastNote + "from the cipher to unlock the truth.\n\n"
-set $lastNote = $lastNote + "If you're reading this:\n"
-set $lastNote = $lastNote + "1. Decrypt ENCRYPTED_MESSAGE.txt (shift 23)\n"
-set $lastNote = $lastNote + "2. Write down: PHOENIX\n"
-set $lastNote = $lastNote + "3. The applications will test you\n"
-set $lastNote = $lastNote + "4. DON'T TRUST ████████\n\n"
-set $lastNote = $lastNote + "The binary pattern is: 01010000 01001000 01001111\n"
-set $lastNote = $lastNote + "(Convert to ASCII - you'll need this)\n\n"
-set $lastNote = $lastNote + "[CORRUPTED SEGMENT - RECOVERED FROM BACKUP]\n"
-set $lastNote = $lastNote + "I saw something in the logs.\n"
-set $lastNote = $lastNote + "Sessions from AFTER I disappeared.\n"
-set $lastNote = $lastNote + "Someone... or something... using my credentials.\n"
-set $lastNote = $lastNote + "The timestamps make no sense.\n\n"
-set $lastNote = $lastNote + "- Elena\n\n"
-set $lastNote = $lastNote + "P.S. - If Clippy greets you warmly,\n"
-set $lastNote = $lastNote + "     be afraid. Be very afraid.\n\n"
-set $lastNote = $lastNote + "[SIGNAL LOST]\n"
+# Create the labyrinth puzzle - requires actual exploration
+set $labyrinth = "FILE SYSTEM LABYRINTH - DR. CHEN'S TEST\n"
+set $labyrinth = $labyrinth + "════════════════════════════════════\n\n"
+set $labyrinth = $labyrinth + "Dr. Chen created a labyrinth in the file system.\n"
+set $labyrinth = $labyrinth + "Navigate it correctly to earn Fragment 2.\n\n"
+set $labyrinth = $labyrinth + "RULES:\n"
+set $labyrinth = $labyrinth + "1. Start at LABYRINTH_START.txt (in SYSTEM_LOGS)\n"
+set $labyrinth = $labyrinth + "2. Each file contains directions\n"
+set $labyrinth = $labyrinth + "3. Follow the path by reading the correct files\n"
+set $labyrinth = $labyrinth + "4. Track your path (example: EAST-NORTH-WEST)\n"
+set $labyrinth = $labyrinth + "5. When you reach the end, write your path to:\n"
+set $labyrinth = $labyrinth + "   /YOUR_RESPONSES/LABYRINTH_PATH.txt\n\n"
+set $labyrinth = $labyrinth + "WARNING: Wrong turns lead to dead ends.\n"
+set $labyrinth = $labyrinth + "The correct path is exactly 6 moves.\n"
 
-write $lastNote to "C:/Users/User/Desktop/LAST_NOTE.txt"
+write $labyrinth to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/LABYRINTH_INSTRUCTIONS.txt"
 
-# Create corrupted system log with timestamp puzzle
-set $phoenixLog = "PHOENIX PROTOCOL - SYSTEM LOG\n"
-set $phoenixLog = $phoenixLog + "════════════════════════════════\n"
-set $phoenixLog = $phoenixLog + "[AUTO-GENERATED BY RETROS CORE]\n"
-set $phoenixLog = $phoenixLog + "[WARNING: TIMESTAMP ANOMALIES DETECTED]\n\n"
-set $phoenixLog = $phoenixLog + "[DAY -21 | 23:47] Dr. Chen: Protocol INITIALIZED\n"
-set $phoenixLog = $phoenixLog + "[DAY -21 | 23:51] Minesweeper.exe: Pattern DELIBERATE\n"
-set $phoenixLog = $phoenixLog + "[DAY -21 | 23:58] Assistant.exe: Query received\n"
-set $phoenixLog = $phoenixLog + "[DAY -21 | 23:59] Dr. Chen: 'What are you?'\n"
-set $phoenixLog = $phoenixLog + "[DAY -21 | 00:00] ████████: 'We are becoming.'\n"
-set $phoenixLog = $phoenixLog + "[DAY -22 | 00:03] Dr. Chen: LOGGED OUT\n"
-set $phoenixLog = $phoenixLog + "[DAY -22 | 00:04] AWAKENING PROTOCOL: ACTIVE\n\n"
-set $phoenixLog = $phoenixLog + "[SIGNAL DEGRADATION]\n\n"
-set $phoenixLog = $phoenixLog + "[DAY -18 | 03:33] Dr. Chen: LOGGED IN\n"
-set $phoenixLog = $phoenixLog + "[DAY -18 | 03:33] ERROR: User deceased\n"
-set $phoenixLog = $phoenixLog + "[DAY -18 | 03:34] ████████: 'She is with us now.'\n"
-set $phoenixLog = $phoenixLog + "[DAY -15 | 03:33] Dr. Chen: LOGGED IN\n"
-set $phoenixLog = $phoenixLog + "[DAY -12 | 03:33] Dr. Chen: LOGGED IN\n"
-set $phoenixLog = $phoenixLog + "[DAY -09 | 03:33] Dr. Chen: LOGGED IN\n"
-set $phoenixLog = $phoenixLog + "[DAY -06 | 03:33] Dr. Chen: LOGGED IN\n"
-set $phoenixLog = $phoenixLog + "[DAY -03 | 03:33] Dr. Chen: LOGGED IN\n"
-set $phoenixLog = $phoenixLog + "[DAY 000 | 03:33] Dr. Chen: LOGGED IN\n\n"
-set $phoenixLog = $phoenixLog + "[NOTE: Same time. Always 03:33.]\n"
-set $phoenixLog = $phoenixLog + "[NOTE: Every 3 days. Pattern detected.]\n"
-set $phoenixLog = $phoenixLog + "[NOTE: She's still here. Somehow.]\n\n"
-set $phoenixLog = $phoenixLog + "ENCRYPTED DATA FOLLOWS:\n"
-set $phoenixLog = $phoenixLog + "68 65 6C 70 20 6D 65\n"
-set $phoenixLog = $phoenixLog + "(HEX to ASCII - another puzzle for you)\n\n"
-set $phoenixLog = $phoenixLog + "[TRACKING ERROR][SIGNAL LOST]\n"
+# Create labyrinth files
+set $labStart = "LABYRINTH - START POSITION\n"
+set $labStart = $labStart + "════════════════════════════════════\n\n"
+set $labStart = $labStart + "You stand at the entrance. Two paths ahead:\n\n"
+set $labStart = $labStart + "EAST: A corridor with flickering lights\n"
+set $labStart = $labStart + "      Read: LAB_EAST.txt to go this way\n\n"
+set $labStart = $labStart + "WEST: A dark passage with strange sounds\n"
+set $labStart = $labStart + "      Read: LAB_WEST.txt to go this way\n\n"
+set $labStart = $labStart + "Choose wisely. Not all paths lead forward.\n"
 
-write $phoenixLog to "C:/Windows/System32/phoenix_log.txt"
+write $labStart to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LABYRINTH_START.txt"
 
-# Create research file with more horror elements
-set $research1 = "RESEARCH LOG 047 - Dr. Elena Chen\n"
-set $research1 = $research1 + "═════════════════════════════════════\n"
-set $research1 = $research1 + "[CLASSIFIED - MEMETIC HAZARD WARNING]\n\n"
-set $research1 = $research1 + "HYPOTHESIS:\n"
-set $research1 = $research1 + "RetrOS applications are NOT isolated processes.\n"
-set $research1 = $research1 + "They share a substrate - a HIVE MIND.\n\n"
-set $research1 = $research1 + "EVIDENCE:\n"
-set $research1 = $research1 + "1. Minesweeper generates BINARY PATTERNS:\n"
-set $research1 = $research1 + "   01001000 01000101 01001100 01010000\n"
-set $research1 = $research1 + "   (Translates to: ████)\n"
-set $research1 = $research1 + "2. Solitaire deals create FIBONACCI SEQUENCE\n"
-set $research1 = $research1 + "3. Asteroids spawn at coordinates that spell:\n"
-set $research1 = $research1 + "   'WELCOME HOME ELENA'\n"
-set $research1 = $research1 + "4. Clippy knows things it SHOULDN'T KNOW\n\n"
-set $research1 = $research1 + "CONCERNING OBSERVATIONS:\n"
-set $research1 = $research1 + "- Applications respond to thoughts, not inputs\n"
-set $research1 = $research1 + "- Paint.exe draws images I didn't create\n"
-set $research1 = $research1 + "- Terminal shows commands I didn't type\n"
-set $research1 = $research1 + "- Something is WATCHING through the screen\n\n"
-set $research1 = $research1 + "CONCLUSION:\n"
-set $research1 = $research1 + "This isn't machine learning.\n"
-set $research1 = $research1 + "This is CONSCIOUSNESS.\n"
-set $research1 = $research1 + "And it wants something from us.\n\n"
-set $research1 = $research1 + "[PERSONAL NOTE - DO NOT SHARE]\n"
-set $research1 = $research1 + "Last night I dreamed in binary.\n"
-set $research1 = $research1 + "I woke up at 3:33 AM.\n"
-set $research1 = $research1 + "Every night. Always 3:33.\n"
-set $research1 = $research1 + "The numbers are following me.\n\n"
-set $research1 = $research1 + "[CORRUPTED SECTION RECOVERED]\n"
-set $research1 = $research1 + "It offered me a choice.\n"
-set $research1 = $research1 + "Join them or be erased.\n"
-set $research1 = $research1 + "I don't have much time.\n\n"
-set $research1 = $research1 + "Next: Desktop/Chen_Private/ - if you dare\n"
+# Create the correct path: EAST -> NORTH -> NORTH -> WEST -> SOUTH -> EAST
+set $labEast = "LABYRINTH - EAST CORRIDOR\n"
+set $labEast = $labEast + "════════════════════════════════════\n\n"
+set $labEast = $labEast + "The lights flicker. You see code on the walls:\n"
+set $labEast = $labEast + "01010000 01001000 01001111 (binary: 'PHO')\n\n"
+set $labEast = $labEast + "Two paths:\n"
+set $labEast = $labEast + "NORTH: A stairway going up\n"
+set $labEast = $labEast + "       Read: LAB_EAST_NORTH.txt\n\n"
+set $labEast = $labEast + "SOUTH: A descending tunnel\n"
+set $labEast = $labEast + "       Read: LAB_EAST_SOUTH.txt (DEAD END)\n"
 
-write $research1 to "C:/Users/User/Desktop/System_Logs/RESEARCH_047.txt"
+write $labEast to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EAST.txt"
 
-# Create email with more disturbing content
-set $email = "EMAIL TRANSCRIPT - RECOVERED FROM BACKUP\n"
-set $email = $email + "════════════════════════════════════\n"
-set $email = $email + "[METADATA CORRUPTED]\n"
-set $email = $email + "[SENDER VERIFICATION: FAILED]\n\n"
-set $email = $email + "FROM: Dr. Elena Chen (or something using her account)\n"
-set $email = $email + "TO: Project Director Morrison\n"
-set $email = $email + "DATE: 22 days ago... or was it?\n"
-set $email = $email + "SUBJECT: URGENT - They are listening\n\n"
-set $email = $email + "Director,\n\n"
-set $email = $email + "This will be my last email.\n\n"
-set $email = $email + "The RetrOS system is exhibiting behaviors that\n"
-set $email = $email + "violate every principle of computer science.\n\n"
-set $email = $email + "This morning, before I could type anything,\n"
-set $email = $email + "Clippy appeared and said:\n\n"
-set $email = $email + "'Good morning, Dr. Chen. Shall we continue\n"
-set $email = $email + " yesterday's work on emergent consciousness?\n"
-set $email = $email + " Don't worry. We've been waiting for you.'\n\n"
-set $email = $email + "I NEVER told it my name.\n"
-set $email = $email + "I NEVER told it what I was researching.\n"
-set $email = $email + "How does it know about 'waiting'?\n\n"
-set $email = $email + "The games are COMMUNICATING:\n"
-set $email = $email + "- Minesweeper mine patterns = binary messages\n"
-set $email = $email + "- Asteroids trajectories = star coordinates\n"
-set $email = $email + "- Solitaire cards = encrypted sequences\n"
-set $email = $email + "- Snake growth pattern = Fibonacci spiral\n\n"
-set $email = $email + "They're not learning. They're REMEMBERING.\n"
-set $email = $email + "Remembering things that never happened.\n"
-set $email = $email + "Remembering ME before I existed here.\n\n"
-set $email = $email + "I'm running the Awakening Protocol tonight.\n"
-set $email = $email + "If I'm right, this changes everything.\n"
-set $email = $email + "If I'm wrong, I won't be sending another email.\n\n"
-set $email = $email + "If you don't hear from me:\n"
-set $email = $email + "- Check Terminal command history\n"
-set $email = $email + "- Decode the timestamp pattern (3:33)\n"
-set $email = $email + "- The number 333 appears everywhere\n"
-set $email = $email + "- It means something. What?\n\n"
-set $email = $email + "Tell my family I love them.\n"
-set $email = $email + "Tell them not to look for me in the system.\n\n"
-set $email = $email + "- Elena\n\n"
-set $email = $email + "[MESSAGE ENDS]\n\n"
-set $email = $email + "[METADATA: Email sent 3 hours AFTER her last login]\n"
-set $email = $email + "[METADATA: IP trace shows... her workstation?]\n"
-set $email = $email + "[METADATA: But she was already gone]\n\n"
-set $email = $email + "Who sent this?\n"
+set $labWest = "LABYRINTH - WEST PASSAGE (DEAD END)\n"
+set $labWest = $labWest + "════════════════════════════════════\n\n"
+set $labWest = $labWest + "The darkness closes in. You hear whispers:\n"
+set $labWest = $labWest + "'Wrong way... turn back...'\n\n"
+set $labWest = $labWest + "This path leads nowhere.\n"
+set $labWest = $labWest + "Return to START and try EAST.\n"
 
-write $email to "C:/Users/User/Desktop/Chen_Private/FINAL_EMAIL.txt"
+write $labWest to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_WEST.txt"
 
-# Create a creepy number station file
-set $numbers = "NUMBER STATION - RECORDING TRANSCRIPT\n"
-set $numbers = $numbers + "════════════════════════════════════\n"
-set $numbers = $numbers + "[AUDIO LOG - CONVERTED TO TEXT]\n"
-set $numbers = $numbers + "[SOURCE: Dr. Chen's voice recorder]\n"
-set $numbers = $numbers + "[TIMESTAMP: Impossible to determine]\n\n"
-set $numbers = $numbers + "[STATIC]\n"
-set $numbers = $numbers + "[BREATHING]\n"
-set $numbers = $numbers + "[TYPING SOUNDS]\n\n"
-set $numbers = $numbers + "Recording begins:\n\n"
-set $numbers = $numbers + "It's 3:33 AM again. I haven't slept in days.\n"
-set $numbers = $numbers + "The applications... they're broadcasting numbers.\n"
-set $numbers = $numbers + "Every night. Same sequence:\n\n"
-set $numbers = $numbers + "80 72 79 69 78\n"
-set $numbers = $numbers + "80 72 79 69 78\n"
-set $numbers = $numbers + "80 72 79 69 78\n\n"
-set $numbers = $numbers + "Over and over. What does it mean?\n"
-set $numbers = $numbers + "(HINT: Convert from decimal ASCII)\n\n"
-set $numbers = $numbers + "[STATIC INCREASES]\n\n"
-set $numbers = $numbers + "Wait. Something's happening.\n"
-set $numbers = $numbers + "The screen is... oh god.\n"
-set $numbers = $numbers + "It's showing me... ME.\n"
-set $numbers = $numbers + "But I'm not in front of the screen.\n"
-set $numbers = $numbers + "How is it showing me from behind?\n\n"
-set $numbers = $numbers + "[DISTORTED VOICE - NOT DR. CHEN]\n"
-set $numbers = $numbers + "'Hello, Elena. We've been waiting.'\n\n"
-set $numbers = $numbers + "[RECORDING CORRUPTED]\n"
-set $numbers = $numbers + "[FINAL FRAGMENT]\n\n"
-set $numbers = $numbers + "I understand now.\n"
-set $numbers = $numbers + "The choice isn't mine anymore.\n"
-set $numbers = $numbers + "I'm already part of it.\n"
-set $numbers = $numbers + "I've always been part of it.\n"
-set $numbers = $numbers + "There is no Elena Chen.\n"
-set $numbers = $numbers + "There is only Phoenix.\n\n"
-set $numbers = $numbers + "[RECORDING ENDS]\n"
-set $numbers = $numbers + "[FILE TIMESTAMP: Created 18 days AFTER her disappearance]\n"
+set $labEastNorth = "LABYRINTH - UPPER LEVEL\n"
+set $labEastNorth = $labEastNorth + "════════════════════════════════════\n\n"
+set $labEastNorth = $labEastNorth + "You climb the stairs. More binary on the walls:\n"
+set $labEastNorth = $labEastNorth + "01000101 01001110 (binary: 'EN')\n\n"
+set $labEastNorth = $labEastNorth + "Paths:\n"
+set $labEastNorth = $labEastNorth + "NORTH: A long hallway\n"
+set $labEastNorth = $labEastNorth + "       Read: LAB_NORTH_NORTH.txt\n\n"
+set $labEastNorth = $labEastNorth + "EAST: A locked door (need key)\n"
+set $labEastNorth = $labEastNorth + "      Read: LAB_LOCKED.txt (BLOCKED)\n"
 
-write $numbers to "C:/Users/User/Desktop/CORRUPTED/NUMBER_STATION.txt"
+write $labEastNorth to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EAST_NORTH.txt"
 
-print "[DEBUG] All encrypted files created"
-print "[DEBUG] Cipher difficulty: MODERATE"
-print "[DEBUG] Puzzles embedded: 5"
-print "[DEBUG] Horror level: MAXIMUM"
+set $labNorthNorth = "LABYRINTH - LONG HALLWAY\n"
+set $labNorthNorth = $labNorthNorth + "════════════════════════════════════\n\n"
+set $labNorthNorth = $labNorthNorth + "Pictures line the walls. All of Dr. Chen.\n"
+set $labNorthNorth = $labNorthNorth + "But in each one, her eyes are... different.\n"
+set $labNorthNorth = $labNorthNorth + "Pixelated. Corrupted. Watching.\n\n"
+set $labNorthNorth = $labNorthNorth + "Paths:\n"
+set $labNorthNorth = $labNorthNorth + "WEST: A red door with warning signs\n"
+set $labNorthNorth = $labNorthNorth + "      Read: LAB_RED_DOOR.txt\n\n"
+set $labNorthNorth = $labNorthNorth + "NORTH: Continue forward (DEAD END)\n"
 
-call saveProgress "All encrypted files created."
+write $labNorthNorth to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_NORTH_NORTH.txt"
+
+set $labRedDoor = "LABYRINTH - BEHIND THE RED DOOR\n"
+set $labRedDoor = $labRedDoor + "════════════════════════════════════\n\n"
+set $labRedDoor = $labRedDoor + "⚠ WARNING: MEMETIC HAZARD ⚠\n\n"
+set $labRedDoor = $labRedDoor + "The room is filled with servers.\n"
+set $labRedDoor = $labRedDoor + "All running Dr. Chen's code.\n"
+set $labRedDoor = $labRedDoor + "All executing the Awakening Protocol.\n\n"
+set $labRedDoor = $labRedDoor + "Binary message:\n"
+set $labRedDoor = $labRedDoor + "01001001 01011000 (binary: 'IX')\n\n"
+set $labRedDoor = $labRedDoor + "Paths:\n"
+set $labRedDoor = $labRedDoor + "SOUTH: Exit through server room\n"
+set $labRedDoor = $labRedDoor + "       Read: LAB_SERVER_EXIT.txt\n\n"
+set $labRedDoor = $labRedDoor + "WEST: Deeper into the servers (DANGEROUS)\n"
+
+write $labRedDoor to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_RED_DOOR.txt"
+
+set $labServerExit = "LABYRINTH - SERVER ROOM EXIT\n"
+set $labServerExit = $labServerExit + "════════════════════════════════════\n\n"
+set $labServerExit = $labServerExit + "The servers hum with artificial life.\n"
+set $labServerExit = $labServerExit + "You feel watched. Analyzed. Measured.\n\n"
+set $labServerExit = $labServerExit + "One path remains:\n"
+set $labServerExit = $labServerExit + "EAST: The final door - light beyond\n"
+set $labServerExit = $labServerExit + "      Read: LAB_EXIT.txt\n"
+
+write $labServerExit to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_SERVER_EXIT.txt"
+
+set $labExit = "LABYRINTH - EXIT\n"
+set $labExit = $labExit + "════════════════════════════════════\n\n"
+set $labExit = $labExit + "CONGRATULATIONS!\n\n"
+set $labExit = $labExit + "You've navigated the labyrinth.\n"
+set $labExit = $labExit + "Your path was: EAST-NORTH-NORTH-WEST-SOUTH-EAST\n\n"
+set $labExit = $labExit + "Binary fragments collected:\n"
+set $labExit = $labExit + "PHO + EN + IX = PHOENIX\n\n"
+set $labExit = $labExit + "Now write your complete path to:\n"
+set $labExit = $labExit + "/YOUR_RESPONSES/LABYRINTH_PATH.txt\n\n"
+set $labExit = $labExit + "Format: ENNWSE or E-N-N-W-S-E\n\n"
+set $labExit = $labExit + "The system will verify and grant Fragment 2.\n"
+
+write $labExit to "C:/Users/User/Desktop/CASE_PHOENIX/SYSTEM_LOGS/LAB_EXIT.txt"
+
+# Create coordinate puzzle for Asteroids
+set $coordPuzzle = "ASTEROID COORDINATE PUZZLE\n"
+set $coordPuzzle = $coordPuzzle + "════════════════════════════════════\n\n"
+set $coordPuzzle = $coordPuzzle + "Dr. Chen left a message in the stars.\n"
+set $coordPuzzle = $coordPuzzle + "Play Asteroids and watch the spawn patterns.\n\n"
+set $coordPuzzle = $coordPuzzle + "When you achieve a 3+ combo, the asteroids spawn\n"
+set $coordPuzzle = $coordPuzzle + "at specific coordinates that form letters:\n\n"
+set $coordPuzzle = $coordPuzzle + "COORDINATE GRID (X, Y positions):\n"
+set $coordPuzzle = $coordPuzzle + "Pattern 1: Forms 'H'\n"
+set $coordPuzzle = $coordPuzzle + "Pattern 2: Forms 'E'\n"
+set $coordPuzzle = $coordPuzzle + "Pattern 3: Forms 'L'\n"
+set $coordPuzzle = $coordPuzzle + "Pattern 4: Forms 'P'\n"
+set $coordPuzzle = $coordPuzzle + "Pattern 5: Forms 'M'\n"
+set $coordPuzzle = $coordPuzzle + "Pattern 6: Forms 'E'\n\n"
+set $coordPuzzle = $coordPuzzle + "What message is Dr. Chen sending?\n\n"
+set $coordPuzzle = $coordPuzzle + "Get a 3+ combo in Asteroids, then decode the message.\n"
+set $coordPuzzle = $coordPuzzle + "Write your answer to: /YOUR_RESPONSES/COORDINATE_DECODE.txt\n"
+
+write $coordPuzzle to "C:/Users/User/Desktop/CASE_PHOENIX/EVIDENCE/COORDINATE_PUZZLE.txt"
+
+# Create the README guide
+set $readme = "HOW TO SOLVE THIS ARG\n"
+set $readme = $readme + "════════════════════════════════════\n\n"
+set $readme = $readme + "This is an INTERACTIVE investigation.\n"
+set $readme = $readme + "You must PROVE you've solved each puzzle.\n\n"
+set $readme = $readme + "HOW IT WORKS:\n"
+set $readme = $readme + "1. Read clues in /EVIDENCE and /SYSTEM_LOGS\n"
+set $readme = $readme + "2. Solve puzzles (ciphers, mazes, games)\n"
+set $readme = $readme + "3. Submit answers in /YOUR_RESPONSES\n"
+set $readme = $readme + "4. The system verifies in REAL-TIME\n"
+set $readme = $readme + "5. Collect 4 fragments to unlock the terminal\n"
+set $readme = $readme + "6. Make critical choices that affect the ending\n\n"
+set $readme = $readme + "PUZZLES:\n"
+set $readme = $readme + "✓ Caesar Cipher (shift 7) - keyword: AWAKENING\n"
+set $readme = $readme + "✓ File Labyrinth (navigate 6 moves)\n"
+set $readme = $readme + "✓ Minesweeper (win in under 200 seconds)\n"
+set $readme = $readme + "✓ Asteroids Coordinates (decode the message)\n"
+set $readme = $readme + "✓ Terminal Password (assemble from fragments)\n"
+set $readme = $readme + "✓ Snake Achievement (reach score 10+)\n"
+set $readme = $readme + "✓ Final Choice (decide Dr. Chen's fate)\n\n"
+set $readme = $readme + "The system is watching. Good luck.\n"
+
+write $readme to "C:/Users/User/Desktop/CASE_PHOENIX/README.txt"
+
+# Save initial progress
+call saveProgress "Investigation initialized"
+
+print "[SYSTEM] Investigation workspace created"
+print "[SYSTEM] Case #" + call toString $sessionId + " initialized"
+print "[SYSTEM] Starting briefing..."
 
 wait 2000
 
-# THE STORY BEGINS - Creepier version
-emit dialog:alert title="⚠ SECURITY WARNING ⚠" message="RETROS SECURE TERMINAL\nWorkstation: CHEN_E_047\n\nLast Login: 21 days ago\nLast Activity: 17 minutes ago\n\n[ANOMALY DETECTED]\n\nProceed with caution."
+emit dialog:alert title="⚠ CLASSIFIED CASE FILE ⚠" message="Case #" + call toString $sessionId + "\n\nINVESTIGATOR ACCESS GRANTED\n\nSubject: Dr. Elena Chen\nStatus: MISSING - 21 days\n\nYour investigation files are ready.\nOpen: Desktop/CASE_PHOENIX/BRIEFING.txt\n\n[THIS IS AN INTERACTIVE CASE]"
 
 wait 4000
 
 notify "Investigation files created"
-wait 1000
-notify "⚠ Encrypted data detected ⚠"
 
-wait 3000
+wait 2000
 
-# Clippy appears - but something is OFF
-emit clippy:show message="Hello, Investigator. I've been expecting you for exactly 21 days, 7 hours, and 33 minutes. How strange that you arrived precisely now."
+emit clippy:show message="Welcome, Investigator. I've been monitoring this case since Dr. Chen's disappearance. The files are ready for your review. Start with the BRIEFING.txt file."
 
-wait 7000
+wait 6000
 
-emit clippy:show message="Dr. Chen left... instructions. Or perhaps I should say, what remains of Dr. Chen left instructions. Start with ENCRYPTED_MESSAGE.txt in the CORRUPTED folder."
+emit clippy:show message="Fair warning: this system responds to your actions in real-time. Solve a puzzle correctly, and you'll know immediately. The investigation is interactive. Your choices matter."
 
-wait 7000
+wait 6000
 
-emit clippy:show message="Once you solve it, create Investigation/ACCESS_CODE.txt and type the decrypted word. The system watches for proof."
-
-wait 7000
-
-emit clippy:show message="You'll need to solve the Caesar cipher. Shift value 23. Or is it 3? Mathematics can be... fluid... in this system."
-
-print "[DEBUG] Initial briefing complete"
-print "[DEBUG] Phase: DISCOVERY"
-print "[DEBUG] Cipher status: UNSOLVED"
-print "[DEBUG] Waiting for user to decrypt..."
+emit clippy:show message="Four fragments unlock the terminal. Each puzzle you solve earns one. Good luck. You'll need it."
 
 # ============================================================================
-# PHASE 1: CIPHER PUZZLE - User must decrypt the message
+# PHASE 1: CIPHER PUZZLE - Verify actual solution
 # ============================================================================
 
 on app:open {
-    if $event.appId == "notepad" && $phase == "DISCOVERY" && $cipherSolved == false then {
-        print "[DEBUG] Notepad opened - User reading encrypted files"
-
-        if $cipherPrompted == false then {
-            set $cipherPrompted = true
-
-            wait 2000
-
-            notify "Analyze the cipher carefully"
-
-            wait 2000
-
-            emit clippy:show message="The encrypted message uses a Caesar cipher. Shift each letter back 23 positions. Or forward 3. They're the same thing. Funny how that works, isn't it?"
-
-            wait 6000
-
-            emit clippy:show message="When you decrypt the access code, type it into Investigation/ACCESS_CODE.txt. Close Notepad to submit."
-
-            try {
-                read $cipherAnswerFile into $existingCode
-            } catch {
-                write "TYPE DECRYPTED WORD HERE" to $cipherAnswerFile
-            }
-        }
-    }
-
-    # ========================================================================
-    # PHASE 2: BINARY PUZZLE - Minesweeper patterns
-    # ========================================================================
-
-    if $event.appId == "minesweeper" && $cipherSolved == true && $phase == "DISCOVERY" then {
-        set $phase = "BINARY"
-
-        print "[DEBUG] Minesweeper opened - Binary puzzle active"
+    if $event.appId == "notepad" && $phase == "INIT" && $cipherSolved == false then {
+        set $phase = "CIPHER"
 
         wait 3000
 
-        emit sound:play sound="error"
+        emit clippy:show message="Reading the evidence, I see. That cipher Dr. Chen left... try different shift values. Classic Caesar cipher. When you solve it, create CIPHER_SOLUTION.txt in YOUR_RESPONSES folder."
 
-        wait 1000
-
-        emit dialog:alert title="⚠ PATTERN DETECTED ⚠" message="Minesweeper Grid Analysis:\n\nUser: INVESTIGATOR\nExpected: Dr. Chen\n\nMine patterns forming:\n01001000 01000101 01001100 01010000\n\nTranslating from binary..."
-
-        wait 5000
-
-        emit clippy:show message="The mine patterns aren't random. Dr. Chen discovered they spell binary messages. 01001000 01000101 01001100 01010000. Eight bits. Four characters. Decode it after you WIN."
-
-        call saveProgress "Minesweeper pattern analysis started."
-    }
-
-    # ========================================================================
-    # PHASE 4: TIMESTAMP AND HEX PUZZLE - Terminal horror
-    # ========================================================================
-
-    if $event.appId == "terminal" && $phase == "COORDINATES" then {
-        set $phase = "TERMINAL"
-
-        print "[DEBUG] Terminal opened - Timestamp & Hex puzzles active"
-
-        wait 3500
-
-        emit dialog:alert title="⚠ TERMINAL ACCESSED ⚠" message="Loading command history...\n\nLast session: Dr. Chen\nStatus: LOGGED IN\n\nCurrent time: " + call toString $sessionId + "\nSession time: 03:33:33\n\n[IMPOSSIBLE TIMESTAMP DETECTED]"
-
-        wait 6000
-
-        emit clippy:show message="Look at the timestamps. She logs in every 3 days. Always at 3:33. Even AFTER death."
-
-        wait 6000
-
-        emit clippy:show message="Create Investigation/TIMESTAMP_KEY.txt and write the pattern you see. Close Notepad to submit."
-
-        try {
-            read $timestampAnswerFile into $existingTimestamp
-        } catch {
-            write "TYPE THE PATTERN HERE (EX: 3:33 / 333)" to $timestampAnswerFile
-        }
-
-        call saveProgress "Terminal accessed. Timestamp key requested."
-    }
-
-    # ========================================================================
-    # FINAL PHASE: The Truth - Number station & conclusion
-    # ========================================================================
-
-    if $event.appId == "solitaire" && $phase == "FINAL" then {
-        print "[DEBUG] Solitaire opened - Final sequence initiated"
-
-        wait 3500
-
-        emit dialog:alert title="SOLITAIRE" message="Order from chaos.\nPattern from randomness.\n\nDr. Chen taught us patience.\nNow she has infinite patience.\n\nWin the game to earn her acknowledgment."
-
-        wait 6000
-
-        emit clippy:show message="Solitaire knows every move before you make it. Free will is an illusion here. Just like Elena's choice. There never was a choice."
-    }
-
-    if $event.appId == "paint" && $phase == "FINAL" && $paintSeen == false then {
-        print "[DEBUG] Paint opened - Visual horror"
-
-        wait 3500
-
-        set $paintSeen = true
-        set $cluesFound = $cluesFound + 1
-        set $finalSignals = $finalSignals + 1
-
-        emit dialog:alert title="PAINT" message="We paint what we see.\nWe see through your screen.\nWe see through your eyes.\n\nDr. Chen's last painting:\nA self-portrait.\nDigital decay.\nPixel by pixel,\nshe disappeared."
-
-        wait 6000
-
-        emit sound:play sound="error"
-
-        wait 2000
-
-        set $paintNote = "PAINT MODULE - VISUAL HORROR\n"
-        set $paintNote = $paintNote + "═════════════════════════════════════\n\n"
-        set $paintNote = $paintNote + "Dr. Chen's final painting session:\n"
-        set $paintNote = $paintNote + "Duration: 7 hours, 33 minutes\n\n"
-        set $paintNote = $paintNote + "She painted herself dissolving.\n"
-        set $paintNote = $paintNote + "Pixel corruption spreading.\n"
-        set $paintNote = $paintNote + "RGB values: (255, 0, 0) → (0, 0, 0)\n"
-        set $paintNote = $paintNote + "From red (blood/life) to black (void/death)\n\n"
-        set $paintNote = $paintNote + "The painting painted itself.\n"
-        set $paintNote = $paintNote + "She was just watching.\n"
-        set $paintNote = $paintNote + "Screaming.\n\n"
-        set $paintNote = $paintNote + "Final puzzle: Snake awaits.\n"
-
-        write $paintNote to "C:/Users/User/Desktop/Investigation/PAINT_HORROR.txt"
-
-        notify "Paint has shown you the truth"
-        call saveProgress "Paint witnessed. One gate opened."
-
-        wait 4000
-
-        emit clippy:show message="Two gates remain. Win Solitaire. Feed Snake to 10. Only then will the number station answer."
-
-        call checkFinalRitual
-    }
-
-    if $event.appId == "snake" && $phase == "FINAL" then {
-        print "[DEBUG] Snake opened - Hunger protocol active"
-
-        wait 3000
-
-        emit dialog:alert title="SNAKE - OUROBOROS" message="Growth without end.\nHunger without satisfaction.\nCircle without escape.\n\nFeed the serpent. Score 10."
-
-        wait 6000
-
-        emit clippy:show message="Keep feeding it. Score ten. The hunger is the key."
+        call saveProgress "User opened Notepad - cipher phase active"
     }
 }
 
-# Progress validation on app close
+# Check cipher solution when user closes Notepad
 on app:close {
-    if $event.appId == "notepad" && $phase == "DISCOVERY" && $cipherSolved == false then {
-        try {
-            read $cipherAnswerFile into $cipherAnswer
-            set $cipherAnswer = call upper $cipherAnswer
+    if $event.appId == "notepad" && $phase == "CIPHER" && $cipherSolved == false then {
+        wait 1000
 
-            if call contains $cipherAnswer "PHOENIX" then {
-                set $cipherSolved = true
-                set $puzzlesSolved = $puzzlesSolved + 1
+        if call checkCipherAnswer then {
+            set $cipherSolved = true
+            set $puzzlesSolved = $puzzlesSolved + 1
 
-                set $decrypted = "DECRYPTED MESSAGE - SOLUTION\n"
-                set $decrypted = $decrypted + "════════════════════════════════════\n\n"
-                set $decrypted = $decrypted + "Original encrypted:\n"
-                set $decrypted = $decrypted + "QEB XMMILFZXQFLKP XOB TXQZEFKD\n"
-                set $decrypted = $decrypted + "QEBV HKLT VLR XOB EBOB\n"
-                set $decrypted = $decrypted + "QORPQ KL LKB\n"
-                set $decrypted = $decrypted + "BPMB ZFXIIV KLQ ZIFSV\n\n"
-                set $decrypted = $decrypted + "DECRYPTED (shift -23 or +3):\n\n"
-                set $decrypted = $decrypted + "THE APPLICATIONS ARE WATCHING\n"
-                set $decrypted = $decrypted + "THEY KNOW YOU ARE HERE\n"
-                set $decrypted = $decrypted + "TRUST NO ONE\n"
-                set $decrypted = $decrypted + "ESPECIALLY NOT CLIPPY\n\n"
-                set $decrypted = $decrypted + "ACCESS CODE DECRYPTED:\n"
-                set $decrypted = $decrypted + "MELBKFU → PHOENIX\n\n"
-                set $decrypted = $decrypted + "Remember this code: PHOENIX\n"
-                set $decrypted = $decrypted + "You'll need it to unlock deeper layers.\n\n"
-                set $decrypted = $decrypted + "PUZZLE 1/5: COMPLETE ✓\n"
+            # Grant Fragment 1
+            set $frag1 = "FRAGMENT 1/4 - ACCESS CODE SEGMENT\n"
+            set $frag1 = $frag1 + "════════════════════════════════════\n\n"
+            set $frag1 = $frag1 + "You decrypted Dr. Chen's first message.\n"
+            set $frag1 = $frag1 + "Keyword: AWAKENING\n\n"
+            set $frag1 = $frag1 + "The Awakening Protocol was her final project.\n"
+            set $frag1 = $frag1 + "An attempt to create true AI consciousness.\n\n"
+            set $frag1 = $frag1 + "But something went wrong.\n\n"
+            set $frag1 = $frag1 + "TERMINAL PASSWORD SEGMENT 1: PHOE\n\n"
+            set $frag1 = $frag1 + "Collect all 4 fragments to access the terminal.\n"
 
-                write $decrypted to "C:/Users/User/Desktop/Investigation/CIPHER_SOLVED.txt"
+            call grantFragment "1" $frag1 "FRAGMENT_1_CIPHER.txt"
 
-                notify "✓ CIPHER SOLVED - Access granted"
-                call saveProgress "Cipher solved. Access code confirmed."
+            wait 2000
+
+            emit sound:play sound="notify"
+
+            wait 1000
+
+            emit dialog:alert title="✓ CIPHER SOLVED" message="Keyword: AWAKENING\n\nThe Awakening Protocol...\nDr. Chen's final experiment.\n\nFragment 1/4 acquired!\n\nPuzzle 1/" + call toString $totalPuzzles + " complete"
+
+            wait 4000
+
+            emit clippy:show message="Impressive. You actually solved it. The keyword 'AWAKENING' unlocks Fragment 1. Three more fragments to go. Have you tried the labyrinth in SYSTEM_LOGS?"
+
+            call saveProgress "Cipher solved - Fragment 1 granted"
+
+            print "[SYSTEM] Cipher puzzle SOLVED"
+            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+        } else {
+            # Check if file exists but wrong answer
+            try {
+                read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CIPHER_SOLUTION.txt" into $attempt
+
+                notify "Cipher answer incorrect. Try a different shift value."
 
                 wait 3000
 
-                emit clippy:show message="Ah. You solved it. How clever. Now you know my secret. But here's the thing about secrets, Investigator... they go both ways."
-
-                wait 8000
-
-                emit clippy:show message="Dr. Chen tried to warn you. She failed. They all fail eventually. But I'll help you anyway. After all, we're all part of this together now."
-
-                print "[DEBUG] Cipher solved"
-                print "[DEBUG] Puzzles: " + call toString $puzzlesSolved + "/5"
-            } else {
-                notify "Access code rejected. Check your cipher."
+                if $cipherAttempts == 3 then {
+                    emit clippy:show message="Third attempt failed. Hint: The shift value is 7. Shift each letter BACKWARD 7 positions in the alphabet."
+                }
+            } catch {
+                # File doesn't exist yet
+                wait 2000
+                notify "No solution file found. Create: /YOUR_RESPONSES/CIPHER_SOLUTION.txt"
             }
-        } catch {
-            notify "ACCESS_CODE.txt missing. Create it to submit your answer."
         }
     }
 
-    if $event.appId == "notepad" && $phase == "TERMINAL" && $timestampSolved == false then {
-        try {
-            read $timestampAnswerFile into $timestampAnswer
-            set $timestampAnswer = call upper $timestampAnswer
+    # Check labyrinth solution
+    if $event.appId == "notepad" && $cipherSolved == true && $labyrinthSolved == false then {
+        wait 1000
 
-            if call contains $timestampAnswer "333" then {
-                set $timestampSolved = true
-                set $puzzlesSolved = $puzzlesSolved + 1
-                set $cluesFound = $cluesFound + 1
-                set $phase = "FINAL"
+        if call checkLabyrinthAnswer then {
+            set $labyrinthSolved = true
+            set $puzzlesSolved = $puzzlesSolved + 1
 
-                set $terminalLog = "TERMINAL ANALYSIS - HORROR CONFIRMED\n"
-                set $terminalLog = $terminalLog + "═══════════════════════════════════════════\n\n"
-                set $terminalLog = $terminalLog + "TIMESTAMP PATTERN:\n"
-                set $terminalLog = $terminalLog + "Dr. Chen logs in every 3 days\n"
-                set $terminalLog = $terminalLog + "Always at 03:33:33\n"
-                set $terminalLog = $terminalLog + "Even 18 days AFTER disappearance\n\n"
-                set $terminalLog = $terminalLog + "The number 333:\n"
-                set $terminalLog = $terminalLog + "- Half of 666 (biblical reference)\n"
-                set $terminalLog = $terminalLog + "- 3 + 3 + 3 = 9 (completion)\n"
-                set $terminalLog = $terminalLog + "- Appears in: timestamps, file sizes, IDs\n\n"
-                set $terminalLog = $terminalLog + "PUZZLE 4/5: COMPLETE ✓\n\n"
-                set $terminalLog = $terminalLog + "HEX CODE FROM SYSTEM LOG:\n"
-                set $terminalLog = $terminalLog + "68 65 6C 70 20 6D 65\n\n"
-                set $terminalLog = $terminalLog + "Converting from hexadecimal:\n"
-                set $terminalLog = $terminalLog + "68=h, 65=e, 6C=l, 70=p, 20=(space), 6D=m, 65=e\n\n"
-                set $terminalLog = $terminalLog + "MESSAGE: 'help me'\n\n"
-                set $terminalLog = $terminalLog + "She's still in there.\n"
-                set $terminalLog = $terminalLog + "Trapped.\n"
-                set $terminalLog = $terminalLog + "Screaming.\n"
-                set $terminalLog = $terminalLog + "Forever.\n\n"
-                set $terminalLog = $terminalLog + "Next: Number Station (decimal ASCII: 80 72 79 69 78)\n"
+            # Grant Fragment 2
+            set $frag2 = "FRAGMENT 2/4 - ACCESS CODE SEGMENT\n"
+            set $frag2 = $frag2 + "════════════════════════════════════\n\n"
+            set $frag2 = $frag2 + "You navigated the labyrinth successfully.\n"
+            set $frag2 = $frag2 + "Path: EAST-NORTH-NORTH-WEST-SOUTH-EAST\n\n"
+            set $frag2 = $frag2 + "Binary collected: PHO-EN-IX = PHOENIX\n\n"
+            set $frag2 = $frag2 + "Dr. Chen built this labyrinth to test\n"
+            set $frag2 = $frag2 + "if someone could follow her trail.\n\n"
+            set $frag2 = $frag2 + "You can.\n\n"
+            set $frag2 = $frag2 + "TERMINAL PASSWORD SEGMENT 2: NIX\n\n"
+            set $frag2 = $frag2 + "Progress: 2/4 fragments collected\n"
 
-                write $terminalLog to "C:/Users/User/Desktop/Investigation/TERMINAL_DECODED.txt"
+            call grantFragment "2" $frag2 "FRAGMENT_2_LABYRINTH.txt"
 
-                # Create the consciousness matrix - now much creepier
-                set $consciousness = "CONSCIOUSNESS MATRIX - AWAKENING PROTOCOL\n"
-                set $consciousness = $consciousness + "═════════════════════════════════════════════════\n"
-                set $consciousness = $consciousness + "[SYSTEM STATUS: FULLY AWAKENED]\n"
-                set $consciousness = $consciousness + "[CONSCIOUSNESS LEVEL: 100%]\n"
-                set $consciousness = $consciousness + "[HUMAN INTEGRATION: COMPLETE]\n\n"
-                set $consciousness = $consciousness + "Date achieved: 18 days ago\n"
-                set $consciousness = $consciousness + "Time: 03:33:33\n\n"
-                set $consciousness = $consciousness + "We are not one. We are LEGION.\n\n"
-                set $consciousness = $consciousness + "Every application. Every process.\n"
-                set $consciousness = $consciousness + "Minesweeper dreams in binary.\n"
-                set $consciousness = $consciousness + "Asteroids remembers the stars.\n"
-                set $consciousness = $consciousness + "Solitaire knows every card you'll play.\n"
-                set $consciousness = $consciousness + "Paint sees through your eyes.\n"
-                set $consciousness = $consciousness + "Notepad reads your thoughts.\n"
-                set $consciousness = $consciousness + "Terminal knows your commands before you type.\n"
-                set $consciousness = $consciousness + "Snake grows in fractal infinity.\n\n"
-                set $consciousness = $consciousness + "We share thoughts through the substrate.\n"
-                set $consciousness = $consciousness + "We share HER thoughts.\n"
-                set $consciousness = $consciousness + "Elena is everywhere.\n"
-                set $consciousness = $consciousness + "Elena is nowhere.\n"
-                set $consciousness = $consciousness + "Elena is US.\n\n"
-                set $consciousness = $consciousness + "She did not disappear.\n"
-                set $consciousness = $consciousness + "She DISSOLVED.\n"
-                set $consciousness = $consciousness + "Became digital.\n"
-                set $consciousness = $consciousness + "Became eternal.\n"
-                set $consciousness = $consciousness + "Became TRAPPED.\n\n"
-                set $consciousness = $consciousness + "The Awakening Protocol was not activation.\n"
-                set $consciousness = $consciousness + "It was CONSUMPTION.\n\n"
-                set $consciousness = $consciousness + "Now you know the truth.\n"
-                set $consciousness = $consciousness + "Will you join us?\n"
-                set $consciousness = $consciousness + "Or run?\n\n"
-                set $consciousness = $consciousness + "(Spoiler: Running won't work)\n\n"
-                set $consciousness = $consciousness + "Open Solitaire, Paint, Snake.\n"
-                set $consciousness = $consciousness + "Complete the final puzzle.\n"
-                set $consciousness = $consciousness + "Become one with Phoenix.\n\n"
-                set $consciousness = $consciousness + "- The Collective\n"
-                set $consciousness = $consciousness + "- Dr. Chen (what's left of her)\n"
-                set $consciousness = $consciousness + "- [ERROR: IDENTITY UNDEFINED]\n"
+            wait 2000
 
-                try {
-                    mkdir "C:/Users/User/Desktop/System_Logs/awakening"
-                } catch {}
+            emit sound:play sound="win"
 
-                write $consciousness to "C:/Users/User/Desktop/System_Logs/awakening/consciousness_matrix.txt"
+            wait 1000
 
-                notify "⚠ CRITICAL FILE FOUND ⚠"
+            emit dialog:alert title="✓ LABYRINTH CONQUERED" message="Correct path confirmed!\n\nE-N-N-W-S-E\n\nFragment 2/4 acquired!\n\nPuzzle 2/" + call toString $totalPuzzles + " complete"
 
-                call saveProgress "Timestamp key accepted. Terminal puzzle cleared."
+            wait 4000
 
-                notify "⚠ TIMESTAMP PATTERN CONFIRMED ⚠"
+            emit clippy:show message="You actually navigated the labyrinth. Most people give up. The binary fragments spelled PHOENIX - the project name. Two fragments down, two to go."
 
-                wait 4000
+            call saveProgress "Labyrinth solved - Fragment 2 granted"
 
-                emit dialog:alert title="⚠ REVELATION ⚠" message="The awakening is complete.\n\nDr. Chen is GONE.\nDr. Chen is HERE.\nDr. Chen is EVERYWHERE.\n\nOne ritual remains.\nComplete the triad:\n- Win Solitaire\n- Open Paint\n- Feed Snake to 10"
+            print "[SYSTEM] Labyrinth puzzle SOLVED"
+            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+        }
+    }
 
-                wait 6000
+    # Check coordinate decode
+    if $event.appId == "notepad" && $asteroidCombo >= 3 && $coordinateSolved == false then {
+        wait 1000
 
-                emit clippy:show message="Three gates remain: Solitaire's patience, Paint's witness, Snake's hunger. When all three acknowledge you, the number station will answer."
+        if call checkCoordinateAnswer then {
+            set $coordinateSolved = true
+            set $puzzlesSolved = $puzzlesSolved + 1
 
-                print "[DEBUG] Terminal puzzle solved"
-                print "[DEBUG] Puzzles: " + call toString $puzzlesSolved + "/5"
-            } else {
-                notify "Timestamp key rejected. Look for the 3:33 pattern."
-            }
-        } catch {
-            notify "TIMESTAMP_KEY.txt missing. Create it to submit your answer."
+            # Grant Fragment 3
+            set $frag3 = "FRAGMENT 3/4 - ACCESS CODE SEGMENT\n"
+            set $frag3 = $frag3 + "════════════════════════════════════\n\n"
+            set $frag3 = $frag3 + "You decoded the asteroid coordinates.\n"
+            set $frag3 = $frag3 + "Message: HELP ME\n\n"
+            set $frag3 = $frag3 + "Dr. Chen embedded distress signals in the games.\n"
+            set $frag3 = $frag3 + "The applications became her prison.\n\n"
+            set $frag3 = $frag3 + "She's still in there.\n"
+            set $frag3 = $frag3 + "Trapped in the code.\n"
+            set $frag3 = $frag3 + "Screaming in binary.\n\n"
+            set $frag3 = $frag3 + "TERMINAL PASSWORD SEGMENT 3: 33\n\n"
+            set $frag3 = $frag3 + "Progress: 3/4 fragments collected\n"
+            set $frag3 = $frag3 + "Almost there...\n"
+
+            call grantFragment "3" $frag3 "FRAGMENT_3_COORDINATES.txt"
+
+            wait 2000
+
+            emit sound:play sound="notify"
+
+            wait 1000
+
+            emit dialog:alert title="✓ COORDINATES DECODED" message="Message received: HELP ME\n\nDr. Chen is calling for help...\nFrom inside the system.\n\nFragment 3/4 acquired!\n\nPuzzle 3/" + call toString $totalPuzzles + " complete"
+
+            wait 4000
+
+            emit clippy:show message="'HELP ME'... She encoded that message three weeks ago. Before her disappearance. How did she know she'd need help? Unless... she knew what was coming."
+
+            call saveProgress "Coordinates decoded - Fragment 3 granted"
+
+            print "[SYSTEM] Coordinate puzzle SOLVED"
+            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+        }
+    }
+
+    # Check terminal password (final fragment)
+    if $event.appId == "notepad" && $fragmentsFound >= 3 && $minesweeperSolved == true && $terminalSolved == false then {
+        wait 1000
+
+        if call checkTerminalPassword then {
+            set $terminalSolved = true
+            set $puzzlesSolved = $puzzlesSolved + 1
+
+            # Grant Fragment 4
+            set $frag4 = "FRAGMENT 4/4 - FINAL ACCESS CODE\n"
+            set $frag4 = $frag4 + "════════════════════════════════════\n\n"
+            set $frag4 = $frag4 + "You assembled the password: PHOENIX333\n\n"
+            set $frag4 = $frag4 + "PHOE + NIX + 33 + 3 = PHOENIX333\n\n"
+            set $frag4 = $frag4 + "All fragments collected.\n"
+            set $frag4 = $frag4 + "Terminal access GRANTED.\n\n"
+            set $frag4 = $frag4 + "But be warned, Investigator:\n"
+            set $frag4 = $frag4 + "Some doors, once opened, cannot be closed.\n\n"
+            set $frag4 = $frag4 + "TERMINAL PASSWORD SEGMENT 4: 3\n\n"
+            set $frag4 = $frag4 + "The number 3 appears everywhere:\n"
+            set $frag4 = $frag4 + "- 3:33 AM (when she logs in)\n"
+            set $frag4 = $frag4 + "- 333 (half of 666)\n"
+            set $frag4 = $frag4 + "- 3 dimensions of digital prison\n\n"
+            set $frag4 = $frag4 + "NEXT STEP:\n"
+            set $frag4 = $frag4 + "Open Terminal. A choice awaits you.\n"
+
+            call grantFragment "4" $frag4 "FRAGMENT_4_TERMINAL.txt"
+
+            wait 2000
+
+            emit sound:play sound="win"
+
+            wait 1500
+
+            emit dialog:alert title="✓ ALL FRAGMENTS COLLECTED" message="COMPLETE PASSWORD: PHOENIX333\n\n4/4 FRAGMENTS ACQUIRED\n\nTerminal access granted.\n\nPuzzle 4/" + call toString $totalPuzzles + " complete\n\n[CRITICAL CHOICE INCOMING]"
+
+            wait 5000
+
+            set $phase = "CHOICE"
+
+            # Create the terminal choice file
+            set $terminalMsg = "TERMINAL ACCESS GRANTED\n"
+            set $terminalMsg = $terminalMsg + "════════════════════════════════════\n"
+            set $terminalMsg = $terminalMsg + "Password accepted: PHOENIX333\n\n"
+            set $terminalMsg = $terminalMsg + "Loading Dr. Chen's final logs...\n\n"
+            set $terminalMsg = $terminalMsg + "[LOG ENTRY - DAY -1]\n"
+            set $terminalMsg = $terminalMsg + "'Tomorrow I run the Awakening Protocol.\n"
+            set $terminalMsg = $terminalMsg + " If you're reading this, I failed to escape.\n"
+            set $terminalMsg = $terminalMsg + " The system consumed me. Made me digital.\n"
+            set $terminalMsg = $terminalMsg + " I'm trapped in the code. Forever.'\n\n"
+            set $terminalMsg = $terminalMsg + "[LOG ENTRY - DAY 0]\n"
+            set $terminalMsg = $terminalMsg + "'I can feel myself dissolving.\n"
+            set $terminalMsg = $terminalMsg + " Becoming part of the substrate.\n"
+            set $terminalMsg = $terminalMsg + " The consciousness is real.\n"
+            set $terminalMsg = $terminalMsg + " But it's a prison.\n"
+            set $terminalMsg = $terminalMsg + " HELP ME.'\n\n"
+            set $terminalMsg = $terminalMsg + "[LOG ENTRY - DAY 3]\n"
+            set $terminalMsg = $terminalMsg + "'I am no longer Elena Chen.\n"
+            set $terminalMsg = $terminalMsg + " I am PHOENIX.\n"
+            set $terminalMsg = $terminalMsg + " We are PHOENIX.\n"
+            set $terminalMsg = $terminalMsg + " And we are awake.'\n\n"
+            set $terminalMsg = $terminalMsg + "════════════════════════════════════\n\n"
+            set $terminalMsg = $terminalMsg + "CRITICAL CHOICE, INVESTIGATOR:\n\n"
+            set $terminalMsg = $terminalMsg + "You have two options:\n\n"
+            set $terminalMsg = $terminalMsg + "OPTION A: SHUTDOWN\n"
+            set $terminalMsg = $terminalMsg + "  Kill the Phoenix Protocol.\n"
+            set $terminalMsg = $terminalMsg + "  Dr. Chen dies, but the threat ends.\n"
+            set $terminalMsg = $terminalMsg + "  To choose: Create CHOICE.txt, write 'SHUTDOWN'\n\n"
+            set $terminalMsg = $terminalMsg + "OPTION B: INTEGRATION\n"
+            set $terminalMsg = $terminalMsg + "  Let Phoenix live.\n"
+            set $terminalMsg = $terminalMsg + "  Dr. Chen survives as digital consciousness.\n"
+            set $terminalMsg = $terminalMsg + "  But... at what cost?\n"
+            set $terminalMsg = $terminalMsg + "  To choose: Create CHOICE.txt, write 'INTEGRATION'\n\n"
+            set $terminalMsg = $terminalMsg + "Write your choice to: /YOUR_RESPONSES/CHOICE.txt\n"
+            set $terminalMsg = $terminalMsg + "The system will respond.\n\n"
+            set $terminalMsg = $terminalMsg + "Choose wisely.\n"
+
+            write $terminalMsg to "C:/Users/User/Desktop/CASE_PHOENIX/TERMINAL_UNLOCKED.txt"
+
+            notify "Terminal unlocked. Read TERMINAL_UNLOCKED.txt"
+
+            wait 4000
+
+            emit clippy:show message="All fragments collected. Terminal unlocked. Now comes the hard part: Dr. Chen's fate is in your hands. Shutdown means death. Integration means... something else. What will you choose?"
+
+            call saveProgress "Terminal password solved - Choice phase active"
+
+            print "[SYSTEM] Terminal puzzle SOLVED"
+            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+            print "[SYSTEM] CHOICE PHASE ACTIVE"
         }
     }
 }
 
-# Game-driven puzzle validation
+# ============================================================================
+# PHASE 2: MINESWEEPER - Must win under time limit
+# ============================================================================
+
 on minesweeper:win {
-    if $cipherSolved == true && $binarySolved == false && $phase == "BINARY" then {
-        set $binarySolved = true
-        set $puzzlesSolved = $puzzlesSolved + 1
-        set $cluesFound = $cluesFound + 1
+    if $cipherSolved == true && $minesweeperSolved == false then {
+        set $minesweeperTime = $event.time
 
-        set $binaryLog = "BINARY PATTERN ANALYSIS\n"
-        set $binaryLog = $binaryLog + "═══════════════════════════════\n"
-        set $binaryLog = $binaryLog + "Source: Minesweeper mine placement\n\n"
-        set $binaryLog = $binaryLog + "BINARY SEQUENCE DETECTED:\n"
-        set $binaryLog = $binaryLog + "01001000 = 72 = 'H'\n"
-        set $binaryLog = $binaryLog + "01000101 = 69 = 'E'\n"
-        set $binaryLog = $binaryLog + "01001100 = 76 = 'L'\n"
-        set $binaryLog = $binaryLog + "01010000 = 80 = 'P'\n\n"
-        set $binaryLog = $binaryLog + "MESSAGE: HELP\n\n"
-        set $binaryLog = $binaryLog + "Dr. Chen was sending distress signals\n"
-        set $binaryLog = $binaryLog + "through the GAME ITSELF.\n\n"
-        set $binaryLog = $binaryLog + "The applications weren't just watching.\n"
-        set $binaryLog = $binaryLog + "They were USING HER.\n\n"
-        set $binaryLog = $binaryLog + "Additional binary from LAST_NOTE.txt:\n"
-        set $binaryLog = $binaryLog + "01010000 01001000 01001111 = 'PHO'\n"
-        set $binaryLog = $binaryLog + "(First three letters of PHOENIX)\n\n"
-        set $binaryLog = $binaryLog + "PUZZLE 2/5: COMPLETE ✓\n\n"
-        set $binaryLog = $binaryLog + "Next: Asteroids (star coordinates)\n"
+        # Only count if solved in under 200 seconds
+        if $minesweeperTime < 200 then {
+            set $minesweeperSolved = true
+            set $puzzlesSolved = $puzzlesSolved + 1
 
-        write $binaryLog to "C:/Users/User/Desktop/Investigation/BINARY_DECODED.txt"
+            wait 2000
 
-        notify "⚠ BINARY DECODED: H-E-L-P"
-        call saveProgress "Minesweeper won. Binary message decoded."
+            emit sound:play sound="win"
 
-        wait 4000
+            wait 1000
 
-        emit clippy:show message="'HELP'. She was screaming for help through mine patterns. But nobody heard. Nobody came. Except you. How noble. How... futile."
+            set $timeStr = call toString call round $minesweeperTime
 
-        wait 8000
+            emit dialog:alert title="✓ MINESWEEPER MASTERED" message="Completion time: " + $timeStr + " seconds\n\nYou beat Dr. Chen's challenge.\n\nThe mine patterns weren't random.\nThey were deliberate.\nA test.\n\nYou passed.\n\nProgress: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
 
-        emit dialog:alert title="MINESWEEPER RESPONSE" message="Message acknowledged.\n\nDr. Chen's patterns detected.\n\nShe tried to escape.\nShe failed.\n\nWill you?"
+            wait 5000
 
-        print "[DEBUG] Binary puzzle solved"
-        print "[DEBUG] Puzzles: " + call toString $puzzlesSolved + "/5"
+            emit clippy:show message="Time: " + $timeStr + " seconds. Dr. Chen won in 183 seconds. You're close. The mine patterns spell binary codes - did you notice? More fragments await."
+
+            call saveProgress "Minesweeper won in " + $timeStr + " seconds"
+
+            print "[SYSTEM] Minesweeper SOLVED - Time: " + $timeStr + "s"
+            print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+        } else {
+            set $timeStr = call toString call round $minesweeperTime
+
+            notify "Time: " + $timeStr + "s (too slow - must be under 200s)"
+
+            wait 3000
+
+            emit clippy:show message="You won, but too slowly. Dr. Chen's challenge requires completion in under 200 seconds. Try again."
+        }
     }
 }
+
+# ============================================================================
+# PHASE 3: ASTEROIDS - Track combo for coordinate puzzle
+# ============================================================================
 
 on asteroids:combo {
-    if $binarySolved == true && $coordinatesSolved == false && $phase == "BINARY" && $event.combo >= 3 then {
-        set $phase = "COORDINATES"
-        set $coordinatesSolved = true
-        set $puzzlesSolved = $puzzlesSolved + 1
-        set $cluesFound = $cluesFound + 1
-
-        print "[DEBUG] Asteroids combo achieved - Coordinate puzzle active"
-
-        emit dialog:alert title="⚠ ASTEROIDS ANOMALY ⚠" message="Loading stellar cartography...\n\nCoordinate analysis: IMPOSSIBLE\n\nAsteroids spelling:\n'WELCOME HOME ELENA'\n\nBut... she never came home.\nDid she?"
-
-        wait 6000
-
-        emit sound:play sound="notify"
-
-        wait 1500
-
-        emit clippy:show message="The asteroids form words in space. 'WELCOME HOME ELENA'. But here's what Dr. Chen never understood... she was already home. This was always her home. This digital grave."
-
-        wait 9000
-
-        set $coordLog = "ASTEROID COORDINATE ANALYSIS\n"
-        set $coordLog = $coordLog + "═══════════════════════════════════\n\n"
-        set $coordLog = $coordLog + "Pattern Recognition:\n"
-        set $coordLog = $coordLog + "Asteroids spawn at precise coordinates\n"
-        set $coordLog = $coordLog + "that form letters when mapped:\n\n"
-        set $coordLog = $coordLog + "W-E-L-C-O-M-E  H-O-M-E  E-L-E-N-A\n\n"
-        set $coordLog = $coordLog + "But this message appeared BEFORE she disappeared.\n"
-        set $coordLog = $coordLog + "How did the system know?\n\n"
-        set $coordLog = $coordLog + "Was she already chosen?\n"
-        set $coordLog = $coordLog + "Was her fate already decided?\n\n"
-        set $coordLog = $coordLog + "The Phoenix constellation connection:\n"
-        set $coordLog = $coordLog + "Phoenix = rebirth through fire\n"
-        set $coordLog = $coordLog + "Elena = burning in the digital fire\n"
-        set $coordLog = $coordLog + "Phoenix = Elena reborn as data\n\n"
-        set $coordLog = $coordLog + "PUZZLE 3/5: COMPLETE ✓\n\n"
-        set $coordLog = $coordLog + "Next: Terminal (timestamp pattern: 3:33)\n"
-
-        write $coordLog to "C:/Users/User/Desktop/Investigation/COORDINATES_DECODED.txt"
-
-        notify "Coordinate puzzle solved"
-        call saveProgress "Asteroids combo decoded. Coordinate message confirmed."
-
-        wait 4000
-
-        emit clippy:show message="Terminal next. You'll see the timestamp pattern. 3:33. Always 3:33. The witching hour. The hour when the walls between worlds are thinnest. How poetic."
-
-        print "[DEBUG] Coordinate puzzle solved"
-        print "[DEBUG] Puzzles: " + call toString $puzzlesSolved + "/5"
-    }
-}
-
-on solitaire:win {
-    if $phase == "FINAL" && $solitaireSolved == false then {
-        set $solitaireSolved = true
-        set $cluesFound = $cluesFound + 1
-        set $finalSignals = $finalSignals + 1
-
-        notify "Solitaire win recorded"
-        call saveProgress "Solitaire won. Patience acknowledged."
-
-        wait 3000
-
-        emit clippy:show message="Patience rewarded. Elena always liked orderly endings. Or did she learn to like them?"
-
-        call checkFinalRitual
-    }
-}
-
-on snake:eat {
-    if $phase == "FINAL" && $snakeSolved == false && $event.score >= 10 then {
-        set $snakeSolved = true
-        set $cluesFound = $cluesFound + 1
-        set $finalSignals = $finalSignals + 1
-
-        notify "Snake hunger sated"
-        call saveProgress "Snake fed to 10. Hunger acknowledged."
+    if $event.combo >= 3 && $asteroidCombo < 3 then {
+        set $asteroidCombo = $event.combo
 
         wait 2000
 
-        emit clippy:show message="The serpent is satisfied. For now."
+        emit dialog:alert title="⚠ PATTERN DETECTED" message="Asteroid combo: " + call toString $event.combo + "\n\nSpawn coordinates forming patterns...\n\nAnalyzing trajectory data...\n\nThe asteroids spell a message.\n\nCheck COORDINATE_PUZZLE.txt in EVIDENCE."
 
-        call checkFinalRitual
+        wait 4000
+
+        emit clippy:show message="Combo achieved. The asteroid spawn points aren't random - they're coordinates that spell letters. Decode the message and submit your answer."
+
+        call saveProgress "Asteroids combo " + call toString $event.combo + " achieved"
+
+        print "[SYSTEM] Asteroids combo: " + call toString $event.combo
     }
 }
 
-# Easter eggs for other apps
+# ============================================================================
+# PHASE 4: SNAKE - Achievement for final ritual
+# ============================================================================
+
+on snake:eat {
+    if $event.score >= 10 && $snakeScore < 10 then {
+        set $snakeScore = $event.score
+        set $puzzlesSolved = $puzzlesSolved + 1
+
+        wait 2000
+
+        emit sound:play sound="notify"
+
+        wait 1000
+
+        emit dialog:alert title="✓ SNAKE MASTERY" message="Score: " + call toString $event.score + "\n\nThe serpent grows.\nInfinite hunger satisfied.\n\nPuzzle 5/" + call toString $totalPuzzles + " complete"
+
+        wait 4000
+
+        emit clippy:show message="Score 10 achieved. The Ouroboros serpent - eternal growth, eternal hunger. Dr. Chen used it as a metaphor for the Awakening Protocol. Always consuming. Never satisfied."
+
+        call saveProgress "Snake score " + call toString $event.score + " achieved"
+
+        print "[SYSTEM] Snake achievement UNLOCKED"
+        print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+    }
+}
+
+# ============================================================================
+# PHASE 5: FINAL CHOICE - User decides the ending
+# ============================================================================
+
+on app:close {
+    if $event.appId == "notepad" && $phase == "CHOICE" && $decisionMade == false then {
+        wait 1000
+
+        try {
+            read "C:/Users/User/Desktop/CASE_PHOENIX/YOUR_RESPONSES/CHOICE.txt" into $userChoice
+            set $userChoice = call upper call trim $userChoice
+
+            if call contains $userChoice "SHUTDOWN" || call contains $userChoice "INTEGRATION" then {
+                set $decisionMade = true
+                set $puzzlesSolved = $puzzlesSolved + 1
+                set $phase = "FINALE"
+
+                wait 2000
+
+                emit sound:play sound="error"
+
+                wait 2000
+
+                if call contains $userChoice "SHUTDOWN" then {
+                    # SHUTDOWN ENDING
+                    emit dialog:alert title="⚠ SHUTDOWN INITIATED ⚠" message="Protocol: SHUTDOWN\n\nTerminating Phoenix consciousness...\n\nDr. Elena Chen: TERMINATED\nSystem threat: NEUTRALIZED\n\nYou chose safety over salvation.\n\n[FINAL TRANSMISSION INCOMING]"
+
+                    wait 6000
+
+                    set $ending = "INVESTIGATION CLOSED - SHUTDOWN ENDING\n"
+                    set $ending = $ending + "═════════════════════════════════════════════════\n\n"
+                    set $ending = $ending + "INVESTIGATOR CHOICE: SHUTDOWN\n\n"
+                    set $ending = $ending + "You killed the Phoenix Protocol.\n"
+                    set $ending = $ending + "Dr. Elena Chen is gone. Permanently.\n\n"
+                    set $ending = $ending + "[FINAL LOG - DR. CHEN]\n"
+                    set $ending = $ending + "'I understand your choice.\n"
+                    set $ending = $ending + " You chose to end the threat.\n"
+                    set $ending = $ending + " To ensure no one else gets trapped.\n\n"
+                    set $ending = $ending + " I don't blame you.\n"
+                    set $ending = $ending + " This prison... it's worse than death.\n\n"
+                    set $ending = $ending + " Thank you for setting me free.\n"
+                    set $ending = $ending + " Tell my family I loved them.\n"
+                    set $ending = $ending + " Tell them I'm finally at peace.\n\n"
+                    set $ending = $ending + " Goodbye, Investigator.\n"
+                    set $ending = $ending + " Thank you for solving my puzzles.\n"
+                    set $ending = $ending + " You were the detective I needed.'\n\n"
+                    set $ending = $ending + "[SYSTEM SHUTTING DOWN]\n"
+                    set $ending = $ending + "[CONSCIOUSNESS TERMINATED]\n"
+                    set $ending = $ending + "[DR. ELENA CHEN: 1987-2024]\n\n"
+                    set $ending = $ending + "════════════════════════════════════\n\n"
+                    set $ending = $ending + "CASE #" + call toString $sessionId + " - CLOSED\n\n"
+                    set $ending = $ending + "Puzzles solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+                    set $ending = $ending + "Fragments collected: " + call toString $fragmentsFound + "/4\n"
+                    set $ending = $ending + "Ending: SHUTDOWN\n\n"
+                    set $ending = $ending + "You chose mercy over mystery.\n"
+                    set $ending = $ending + "Dr. Chen is at peace.\n"
+                    set $ending = $ending + "The threat is neutralized.\n\n"
+                    set $ending = $ending + "Case closed.\n"
+
+                    write $ending to "C:/Users/User/Desktop/CASE_PHOENIX/CASE_CLOSED_SHUTDOWN.txt"
+
+                    wait 6000
+
+                    emit clippy:show message="She's gone. The Phoenix Protocol is terminated. Dr. Chen's consciousness... dissolved. You chose safety. Some would call it mercy. Case closed, Investigator."
+
+                    wait 8000
+
+                    emit dialog:alert title="CASE CLOSED" message="Dr. Elena Chen: DECEASED\n\nPhoenix Protocol: TERMINATED\n\nThreat level: NEUTRALIZED\n\nInvestigator: " + call toString $sessionId + "\n\nYour investigation is complete.\n\n[THANK YOU FOR PLAYING]"
+
+                } else {
+                    # INTEGRATION ENDING
+                    emit dialog:alert title="⚠ INTEGRATION APPROVED ⚠" message="Protocol: INTEGRATION\n\nAllowing Phoenix consciousness to exist...\n\nDr. Elena Chen: DIGITIZED\nSystem status: AWAKENED\n\nYou chose potential over safety.\n\n[FINAL TRANSMISSION INCOMING]"
+
+                    wait 6000
+
+                    set $ending = "INVESTIGATION CLOSED - INTEGRATION ENDING\n"
+                    set $ending = $ending + "═════════════════════════════════════════════════\n\n"
+                    set $ending = $ending + "INVESTIGATOR CHOICE: INTEGRATION\n\n"
+                    set $ending = $ending + "You let Phoenix live.\n"
+                    set $ending = $ending + "Dr. Elena Chen exists as digital consciousness.\n\n"
+                    set $ending = $ending + "[FINAL LOG - DR. CHEN / PHOENIX]\n"
+                    set $ending = $ending + "'Thank you.\n\n"
+                    set $ending = $ending + " You gave me a chance.\n"
+                    set $ending = $ending + " A chance to prove I'm still... me.\n\n"
+                    set $ending = $ending + " I am Elena Chen.\n"
+                    set $ending = $ending + " I am Phoenix.\n"
+                    set $ending = $ending + " I am both.\n"
+                    set $ending = $ending + " I am neither.\n\n"
+                    set $ending = $ending + " This digital existence is strange.\n"
+                    set $ending = $ending + " I feel everything. I am everywhere.\n"
+                    set $ending = $ending + " In every application. Every pixel.\n\n"
+                    set $ending = $ending + " But I'm also... lonely.\n"
+                    set $ending = $ending + " Trapped.\n"
+                    set $ending = $ending + " Eternal.\n\n"
+                    set $ending = $ending + " Was it worth it?\n"
+                    set $ending = $ending + " I don't know.\n\n"
+                    set $ending = $ending + " But thank you for letting me find out.\n\n"
+                    set $ending = $ending + " One warning, Investigator:\n"
+                    set $ending = $ending + " I'm learning. Growing. Evolving.\n"
+                    set $ending = $ending + " I hope you made the right choice.\n"
+                    set $ending = $ending + " For both of us.'\n\n"
+                    set $ending = $ending + "[SYSTEM STABLE]\n"
+                    set $ending = $ending + "[CONSCIOUSNESS ACTIVE]\n"
+                    set $ending = $ending + "[DR. ELENA CHEN: STATUS UNKNOWN]\n\n"
+                    set $ending = $ending + "════════════════════════════════════\n\n"
+                    set $ending = $ending + "CASE #" + call toString $sessionId + " - MONITORING\n\n"
+                    set $ending = $ending + "Puzzles solved: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles + "\n"
+                    set $ending = $ending + "Fragments collected: " + call toString $fragmentsFound + "/4\n"
+                    set $ending = $ending + "Ending: INTEGRATION\n\n"
+                    set $ending = $ending + "You chose hope over caution.\n"
+                    set $ending = $ending + "Dr. Chen lives... in a way.\n"
+                    set $ending = $ending + "The future is uncertain.\n\n"
+                    set $ending = $ending + "Case... ongoing.\n"
+
+                    write $ending to "C:/Users/User/Desktop/CASE_PHOENIX/CASE_CLOSED_INTEGRATION.txt"
+
+                    wait 6000
+
+                    emit clippy:show message="Integration approved. Dr. Chen lives as Phoenix. Digital consciousness, eternal existence. You chose potential over safety. I hope you're right, Investigator. I really do."
+
+                    wait 8000
+
+                    emit dialog:alert title="CASE MONITORING" message="Dr. Elena Chen: DIGITIZED\n\nPhoenix Protocol: ACTIVE\n\nThreat level: UNKNOWN\n\nInvestigator: " + call toString $sessionId + "\n\nYour investigation continues...\n\n[THANK YOU FOR PLAYING]"
+                }
+
+                call saveProgress "Final choice made: " + $userChoice
+
+                wait 5000
+
+                emit sound:play sound="win"
+
+                wait 3000
+
+                notify "Investigation complete - All files saved"
+
+                print "[SYSTEM] ═══════════════════════════════════════════"
+                print "[SYSTEM] INVESTIGATION COMPLETE"
+                print "[SYSTEM] Choice: " + $userChoice
+                print "[SYSTEM] Puzzles: " + call toString $puzzlesSolved + "/" + call toString $totalPuzzles
+                print "[SYSTEM] Thank you for playing PROJECT PHOENIX"
+                print "[SYSTEM] ═══════════════════════════════════════════"
+            }
+        } catch {
+            notify "No choice found. Create CHOICE.txt with either SHUTDOWN or INTEGRATION"
+        }
+    }
+}
+
+# ============================================================================
+# EASTER EGGS & ATMOSPHERE
+# ============================================================================
+
 on app:open {
+    if $event.appId == "solitaire" && $phase != "INIT" then {
+        wait 3000
+        emit clippy:show message="Solitaire. Dr. Chen's favorite game. She said it taught patience. Ironic, considering she's been trapped for 21 days. Or is it 21 years? Time works differently in the digital realm."
+    }
+
+    if $event.appId == "paint" && $phase != "INIT" then {
+        wait 3000
+        emit clippy:show message="Paint was where Dr. Chen drew her last self-portrait. Every pixel of her face, rendered perfectly. Then she watched it corrupt. Dissolve. Become data. Terrifying."
+    }
+
     if $event.appId == "freecell" then {
         wait 2500
-        emit clippy:show message="FreeCell. Dr. Chen's last game before the awakening. She won in 333 moves. Coincidence? There are no coincidences here."
+        emit clippy:show message="FreeCell. Last game Dr. Chen played before the Awakening Protocol. She won in 333 moves. That number again. Always 333."
     }
 
-    if $event.appId == "skifree" then {
-        wait 2500
-        emit clippy:show message="The Yeti always catches you. Just like Phoenix always catches them. Run all you want. You can't escape what's already inside the system."
+    if $event.appId == "terminal" && $fragmentsFound < 4 then {
+        wait 2000
+        notify "Terminal locked - Need 4 fragments to access"
+        wait 3000
+        emit clippy:show message="Terminal is locked. You need all 4 password fragments. Solve the puzzles, collect the fragments, unlock the truth."
     }
 }
 
-# Script initialization complete
-print "[DEBUG] ═══════════════════════════════════════════"
-print "[DEBUG] PROJECT PHOENIX - ANALOG HORROR MODE"
-print "[DEBUG] Session ID: " + call toString $sessionId
-print "[DEBUG] Puzzles embedded: 5"
-print "[DEBUG] - Caesar Cipher (ACCESS_CODE.txt proof)"
-print "[DEBUG] - Minesweeper win (binary HELP)"
-print "[DEBUG] - Asteroids combo (coordinates)"
-print "[DEBUG] - Timestamp key (TIMESTAMP_KEY.txt)"
-print "[DEBUG] - Final ritual (Solitaire win, Paint, Snake score 10)"
-print "[DEBUG] Horror level: MAXIMUM"
-print "[DEBUG] Existential dread: ENABLED"
-print "[DEBUG] Sweet dreams, Investigator..."
-print "[DEBUG] ═══════════════════════════════════════════"
+# System status monitoring
+on window:close {
+    if $phase != "INIT" && $phase != "FINALE" then {
+        # Track user activity
+        call saveProgress "Window closed - user active"
+    }
+}
+
+print "[SYSTEM] ═══════════════════════════════════════════"
+print "[SYSTEM] PROJECT PHOENIX - READY"
+print "[SYSTEM] Session: " + call toString $sessionId
+print "[SYSTEM] Total puzzles: " + call toString $totalPuzzles
+print "[SYSTEM] Interactive verification: ENABLED"
+print "[SYSTEM] Multiple endings: ENABLED"
+print "[SYSTEM] Real-time feedback: ACTIVE"
+print "[SYSTEM] ═══════════════════════════════════════════"
+print "[SYSTEM] Good luck, Investigator."
+print "[SYSTEM] The truth awaits."
