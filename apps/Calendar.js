@@ -6,6 +6,7 @@
 
 import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Calendar extends AppBase {
     constructor() {
@@ -249,6 +250,12 @@ class Calendar extends AppBase {
         this.setInstanceState('currentYear', year);
         this.setInstanceState('selectedDate', null);
         this.renderCalendar();
+
+        // Emit month changed event
+        this.emitAppEvent('month:changed', {
+            month: month,
+            year: year
+        });
     }
 
     goToToday() {
@@ -260,6 +267,7 @@ class Calendar extends AppBase {
     }
 
     selectDate(date) {
+        const previousDate = this.getInstanceState('selectedDate');
         this.setInstanceState('selectedDate', date);
 
         // Update UI
@@ -268,6 +276,12 @@ class Calendar extends AppBase {
         });
 
         this.updateEventsList();
+
+        // Emit date selected event
+        this.emitAppEvent('date:selected', {
+            date: date,
+            previousDate: previousDate
+        });
     }
 
     // --- Events Management ---
@@ -417,6 +431,13 @@ class Calendar extends AppBase {
         this.hideEventDialog();
         this.renderCalendar();
         this.playSound('click');
+
+        // Emit event saved/created event
+        if (editingId) {
+            this.emitAppEvent('event:updated', { eventId: editingId, title, date, time });
+        } else {
+            this.emitAppEvent('event:created', { title, date, time, color });
+        }
     }
 
     deleteEvent() {
@@ -431,6 +452,9 @@ class Calendar extends AppBase {
         this.hideEventDialog();
         this.renderCalendar();
         this.playSound('click');
+
+        // Emit event deleted event
+        this.emitAppEvent('event:deleted', { eventId: editingId });
     }
 
     // --- Storage ---

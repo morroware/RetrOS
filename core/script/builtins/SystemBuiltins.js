@@ -3,6 +3,52 @@
  */
 
 export function registerSystemBuiltins(interpreter) {
+    // Sleep/delay function - pause script execution
+    interpreter.registerBuiltin('sleep', async (ms) => {
+        const milliseconds = Number(ms) || 0;
+        if (milliseconds > 0 && milliseconds <= 30000) { // Max 30 seconds
+            await new Promise(resolve => setTimeout(resolve, milliseconds));
+        }
+        return milliseconds;
+    });
+
+    // Wait alias for sleep
+    interpreter.registerBuiltin('wait', async (ms) => {
+        const milliseconds = Number(ms) || 0;
+        if (milliseconds > 0 && milliseconds <= 30000) {
+            await new Promise(resolve => setTimeout(resolve, milliseconds));
+        }
+        return milliseconds;
+    });
+
+    // Get focused window info
+    interpreter.registerBuiltin('getFocusedWindow', () => {
+        const StateManager = interpreter.context.StateManager;
+        if (StateManager) {
+            const windows = StateManager.getState('windows') || [];
+            const focused = windows.find(w => !w.minimized);
+            if (focused) {
+                return {
+                    id: focused.id,
+                    title: focused.title,
+                    minimized: focused.minimized || false,
+                    maximized: focused.maximized || false
+                };
+            }
+        }
+        return null;
+    });
+
+    // Emit custom event from script
+    interpreter.registerBuiltin('emitEvent', (eventName, payload = {}) => {
+        const EventBus = interpreter.context.EventBus;
+        if (EventBus && typeof eventName === 'string') {
+            EventBus.emit(eventName, payload);
+            return true;
+        }
+        return false;
+    });
+
     // Window management
     interpreter.registerBuiltin('getWindows', () => {
         const WindowManager = interpreter.context.WindowManager;
