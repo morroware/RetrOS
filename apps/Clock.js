@@ -8,6 +8,7 @@
  */
 
 import AppBase from './AppBase.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Clock extends AppBase {
     constructor() {
@@ -349,6 +350,13 @@ class Clock extends AppBase {
         textEl.textContent = alarm.label || 'ALARM!';
         alertEl.classList.add('active');
 
+        // Emit alarm triggered event
+        this.emitAppEvent('alarm:triggered', {
+            alarmId: alarm.id,
+            label: alarm.label,
+            time: `${alarm.hour}:${String(alarm.minute).padStart(2, '0')} ${alarm.ampm}`
+        });
+
         this.playSound('notify');
 
         // Also play repeated beeps
@@ -369,6 +377,9 @@ class Clock extends AppBase {
         this.getElement('#alarmAlert').classList.remove('active');
         const beepInterval = this.getInstanceState('beepInterval');
         if (beepInterval) clearInterval(beepInterval);
+
+        // Emit alarm dismissed event
+        this.emitAppEvent('alarm:dismissed', {});
     }
 
     loadAlarms() {
@@ -400,6 +411,12 @@ class Clock extends AppBase {
             this.setInstanceState('stopwatchRunning', false);
             this.getElement('#swStart').textContent = '▶ Start';
             this.getElement('#swLap').disabled = true;
+
+            // Emit stopwatch stopped event
+            this.emitAppEvent('stopwatch:stopped', {
+                time: this.getInstanceState('stopwatchTime'),
+                laps: this.getInstanceState('stopwatchLaps').length
+            });
         } else {
             // Start
             const startTime = Date.now() - this.getInstanceState('stopwatchTime');
@@ -413,6 +430,9 @@ class Clock extends AppBase {
             this.setInstanceState('stopwatchRunning', true);
             this.getElement('#swStart').textContent = '⏸ Stop';
             this.getElement('#swLap').disabled = false;
+
+            // Emit stopwatch started event
+            this.emitAppEvent('stopwatch:started', {});
         }
     }
 
@@ -422,6 +442,13 @@ class Clock extends AppBase {
         laps.push(time);
         this.setInstanceState('stopwatchLaps', laps);
         this.updateLapList();
+
+        // Emit lap recorded event
+        this.emitAppEvent('stopwatch:lap', {
+            lapNumber: laps.length,
+            time: time,
+            formatted: this.formatStopwatchTime(time)
+        });
     }
 
     resetStopwatch() {
@@ -581,6 +608,11 @@ class Clock extends AppBase {
 
         this.setInstanceState('timerRunning', false);
         this.getElement('#timerStart').textContent = '▶ Start';
+
+        // Emit timer complete event
+        this.emitAppEvent('timer:complete', {
+            initialTime: this.getInstanceState('timerInitial')
+        });
 
         // Play alarm sound
         this.playSound('notify');

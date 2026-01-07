@@ -4,6 +4,7 @@
  */
 
 import AppBase from './AppBase.js';
+import EventBus from '../core/SemanticEventBus.js';
 
 class Winamp extends AppBase {
     constructor() {
@@ -413,6 +414,14 @@ class Winamp extends AppBase {
         this.isPlaying = true;
         this.getElement('#btnPlay')?.classList.add('active');
 
+        // Emit play event
+        this.emitAppEvent('play', {
+            trackIndex: this.currentTrack,
+            title: track.title,
+            artist: track.artist,
+            duration: track.duration
+        });
+
         // Update time
         this.timeInterval = setInterval(() => {
             this.currentTime++;
@@ -442,18 +451,32 @@ class Winamp extends AppBase {
         this.isPlaying = false;
         this.getElement('#btnPlay')?.classList.remove('active');
 
+        // Emit pause event
+        this.emitAppEvent('pause', {
+            trackIndex: this.currentTrack,
+            currentTime: this.currentTime
+        });
+
         if (this.timeInterval) {
             clearInterval(this.timeInterval);
         }
     }
 
     stop() {
+        const wasPlaying = this.isPlaying;
         this.pause();
         this.currentTime = 0;
         this.updateTimeDisplay();
 
         const seekBar = this.getElement('#seekBar');
         if (seekBar) seekBar.value = 0;
+
+        // Emit stop event only if it was playing
+        if (wasPlaying) {
+            this.emitAppEvent('stop', {
+                trackIndex: this.currentTrack
+            });
+        }
     }
 
     next() {
@@ -468,6 +491,16 @@ class Winamp extends AppBase {
 
         this.updatePlaylistHighlight();
         this.updateTitleScroll();
+
+        // Emit track changed event
+        const track = this.playlist[this.currentTrack];
+        this.emitAppEvent('track:changed', {
+            trackIndex: this.currentTrack,
+            title: track.title,
+            artist: track.artist,
+            direction: 'next'
+        });
+
         this.play();
     }
 
@@ -476,6 +509,16 @@ class Winamp extends AppBase {
         this.currentTrack = (this.currentTrack - 1 + this.playlist.length) % this.playlist.length;
         this.updatePlaylistHighlight();
         this.updateTitleScroll();
+
+        // Emit track changed event
+        const track = this.playlist[this.currentTrack];
+        this.emitAppEvent('track:changed', {
+            trackIndex: this.currentTrack,
+            title: track.title,
+            artist: track.artist,
+            direction: 'prev'
+        });
+
         this.play();
     }
 
