@@ -69,7 +69,8 @@ def saveProgress($note) {
     call set $progress "lastAction" $note
     call set $progress "timestamp" $timestamp
 
-    write call prettyJSON $progress to $caseDir + "/progress.json"
+    set $progressJSON = call prettyJSON $progress
+    write $progressJSON to $caseDir + "/progress.json"
 }
 
 def grantFragment($fragmentId, $content, $filename) {
