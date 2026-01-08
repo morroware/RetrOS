@@ -1,13 +1,16 @@
 /**
- * Video Player App
- * Full-featured video player with MP4/WebM support
+ * Media Player App (Video Player)
+ * Full-featured media player with video AND audio support
  *
  * Features:
- * - Play video files from URLs or local paths
+ * - Play video files (MP4, WebM, OGG)
+ * - Play audio files (MP3, WAV, OGG, FLAC)
+ * - Audio visualizer for music
  * - Playlist management
- * - Volume control
+ * - Volume control with mute
  * - Seek/progress bar
- * - Fullscreen support
+ * - Fullscreen support (video)
+ * - Shuffle and repeat modes
  * - Scriptable via RetroScript
  * - Emits events for ARG integration
  */
@@ -21,23 +24,21 @@ class VideoPlayer extends AppBase {
     constructor() {
         super({
             id: 'videoplayer',
-            name: 'Video Player',
-            icon: '📺',
-            width: 640,
-            height: 520,
+            name: 'Media Player',
+            icon: '🎬',
+            width: 480,
+            height: 580,
             resizable: true,
             singleton: false,
             category: 'multimedia'
         });
 
-        // Default playlist with sample videos
-        this.defaultPlaylist = [
-            {
-                name: 'Sample Video',
-                src: 'assets/videos/sample.mp4',
-                duration: null
-            }
-        ];
+        // Audio file extensions
+        this.audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac', '.wma'];
+        this.videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+
+        // Default playlist
+        this.defaultPlaylist = [];
 
         // Register semantic event commands for scriptability
         this.registerCommands();
@@ -45,329 +46,272 @@ class VideoPlayer extends AppBase {
     }
 
     /**
+     * Detect if file is audio or video
+     */
+    isAudioFile(src) {
+        const lower = src.toLowerCase();
+        return this.audioExtensions.some(ext => lower.endsWith(ext));
+    }
+
+    /**
      * Register commands for script control
      */
     registerCommands() {
-        // Play current video or resume
         this.registerCommand('play', () => {
-            const video = this.getInstanceState('video');
-            if (video) {
-                video.play();
-                this.setInstanceState('playing', true);
-                EventBus.emit('videoplayer:play', {
-                    appId: this.id,
-                    windowId: this.getCurrentWindowId(),
-                    video: this.getInstanceState('currentVideo'),
-                    currentTime: video.currentTime,
-                    timestamp: Date.now()
-                });
+            const media = this.getInstanceState('mediaElement');
+            if (media) {
+                media.play();
                 return { success: true };
             }
-            return { success: false, error: 'No video loaded' };
+            return { success: false, error: 'No media loaded' };
         });
 
-        // Pause playback
         this.registerCommand('pause', () => {
-            const video = this.getInstanceState('video');
-            if (video) {
-                video.pause();
-                this.setInstanceState('playing', false);
-                EventBus.emit('videoplayer:pause', {
-                    appId: this.id,
-                    windowId: this.getCurrentWindowId(),
-                    currentTime: video.currentTime,
-                    timestamp: Date.now()
-                });
+            const media = this.getInstanceState('mediaElement');
+            if (media) {
+                media.pause();
                 return { success: true };
             }
-            return { success: false, error: 'No video loaded' };
+            return { success: false, error: 'No media loaded' };
         });
 
-        // Stop playback
         this.registerCommand('stop', () => {
-            const video = this.getInstanceState('video');
-            if (video) {
-                video.pause();
-                video.currentTime = 0;
-                this.setInstanceState('playing', false);
-                EventBus.emit('videoplayer:stop', {
-                    appId: this.id,
-                    windowId: this.getCurrentWindowId(),
-                    timestamp: Date.now()
-                });
-                return { success: true };
-            }
-            return { success: false, error: 'No video loaded' };
+            this.stop();
+            return { success: true };
         });
 
-        // Load and play a video by URL
         this.registerCommand('load', (src, name) => {
             if (src) {
-                this.loadVideo(src, name || src.split('/').pop());
+                this.loadMedia(src, name || src.split('/').pop());
                 return { success: true };
             }
             return { success: false, error: 'No source provided' };
         });
 
-        // Next video
         this.registerCommand('next', () => {
-            const playlist = this.getInstanceState('playlist') || [];
-            const currentVideo = this.getInstanceState('currentVideo') || 0;
-            const nextVideo = (currentVideo + 1) % playlist.length;
-            this.playVideo(nextVideo);
-            return { success: true, video: nextVideo };
+            this.next();
+            return { success: true };
         });
 
-        // Previous video
         this.registerCommand('previous', () => {
-            const playlist = this.getInstanceState('playlist') || [];
-            const currentVideo = this.getInstanceState('currentVideo') || 0;
-            const prevVideo = currentVideo === 0 ? playlist.length - 1 : currentVideo - 1;
-            this.playVideo(prevVideo);
-            return { success: true, video: prevVideo };
+            this.prev();
+            return { success: true };
         });
 
-        // Set volume (0-100)
         this.registerCommand('setVolume', (volume) => {
             const vol = Math.max(0, Math.min(100, parseInt(volume))) / 100;
-            this.setInstanceState('volume', vol);
-            const video = this.getInstanceState('video');
-            if (video) video.volume = vol;
-            EventBus.emit('videoplayer:volume:changed', {
-                appId: this.id,
-                volume: vol,
-                timestamp: Date.now()
-            });
+            this.setVolume(vol * 100);
             return { success: true, volume: vol };
         });
 
-        // Seek to position (in seconds)
         this.registerCommand('seek', (position) => {
-            const video = this.getInstanceState('video');
-            if (video) {
-                video.currentTime = Math.max(0, Math.min(video.duration || 0, position));
-                EventBus.emit('videoplayer:seek', {
-                    appId: this.id,
-                    position: video.currentTime,
-                    timestamp: Date.now()
-                });
-                return { success: true, position: video.currentTime };
+            const media = this.getInstanceState('mediaElement');
+            if (media) {
+                media.currentTime = Math.max(0, Math.min(media.duration || 0, position));
+                return { success: true, position: media.currentTime };
             }
-            return { success: false, error: 'No video loaded' };
+            return { success: false, error: 'No media loaded' };
         });
 
-        // Toggle fullscreen
         this.registerCommand('fullscreen', () => {
             this.toggleFullscreen();
             return { success: true };
         });
 
-        // Play specific video by index
-        this.registerCommand('playVideo', (index) => {
-            const playlist = this.getInstanceState('playlist') || [];
-            const videoIndex = parseInt(index);
-            if (videoIndex >= 0 && videoIndex < playlist.length) {
-                this.playVideo(videoIndex);
-                return { success: true, video: videoIndex };
-            }
-            return { success: false, error: 'Invalid video index' };
+        this.registerCommand('mute', () => {
+            this.toggleMute();
+            return { success: true };
         });
 
-        // Mute/unmute
-        this.registerCommand('mute', () => {
-            const video = this.getInstanceState('video');
-            if (video) {
-                video.muted = !video.muted;
-                this.setInstanceState('muted', video.muted);
-                EventBus.emit('videoplayer:mute', {
-                    appId: this.id,
-                    muted: video.muted,
-                    timestamp: Date.now()
-                });
-                return { success: true, muted: video.muted };
-            }
-            return { success: false, error: 'No video loaded' };
+        this.registerCommand('shuffle', () => {
+            this.toggleShuffle();
+            return { success: true };
+        });
+
+        this.registerCommand('repeat', () => {
+            this.toggleRepeat();
+            return { success: true };
         });
     }
 
-    /**
-     * Register queries for script inspection
-     */
     registerQueries() {
-        // Get current playback state
         this.registerQuery('getState', () => {
-            const video = this.getInstanceState('video');
+            const media = this.getInstanceState('mediaElement');
             return {
                 playing: this.getInstanceState('playing'),
-                currentVideo: this.getInstanceState('currentVideo'),
-                currentTime: video ? video.currentTime : 0,
-                duration: video ? video.duration : 0,
+                currentIndex: this.getInstanceState('currentIndex'),
+                currentTime: media ? media.currentTime : 0,
+                duration: media ? media.duration : 0,
                 volume: this.getInstanceState('volume'),
                 muted: this.getInstanceState('muted'),
-                loop: this.getInstanceState('loop'),
-                fullscreen: this.getInstanceState('fullscreen')
+                loop: this.getInstanceState('repeat'),
+                shuffle: this.getInstanceState('shuffle'),
+                isAudio: this.getInstanceState('isAudio')
             };
         });
 
-        // Get playlist
         this.registerQuery('getPlaylist', () => {
             return { playlist: this.getInstanceState('playlist') || [] };
         });
 
-        // Get current video info
-        this.registerQuery('getCurrentVideo', () => {
+        this.registerQuery('getCurrentMedia', () => {
             const playlist = this.getInstanceState('playlist') || [];
-            const currentVideo = this.getInstanceState('currentVideo') || 0;
-            const video = playlist[currentVideo];
+            const currentIndex = this.getInstanceState('currentIndex') || 0;
             return {
-                index: currentVideo,
-                video: video || null
+                index: currentIndex,
+                media: playlist[currentIndex] || null
             };
         });
     }
 
     onOpen(params = {}) {
-        // Load saved playlist or use default
-        const savedPlaylist = StorageManager.get('videoPlayerPlaylist');
+        const savedPlaylist = StorageManager.get('mediaPlayerPlaylist2');
         const playlist = savedPlaylist || this.defaultPlaylist;
-        this.setInstanceState('playlist', playlist);
-        this.setInstanceState('currentVideo', 0);
-        this.setInstanceState('playing', false);
-        this.setInstanceState('currentTime', 0);
-        this.setInstanceState('duration', 0);
-        this.setInstanceState('volume', SoundSystem.getVolume());
-        this.setInstanceState('video', null);
-        this.setInstanceState('loop', false);
-        this.setInstanceState('muted', false);
-        this.setInstanceState('fullscreen', false);
 
-        // Check for launch parameters (file to play)
+        this.setInstanceState('playlist', playlist);
+        this.setInstanceState('currentIndex', 0);
+        this.setInstanceState('playing', false);
+        this.setInstanceState('volume', SoundSystem.getVolume());
+        this.setInstanceState('muted', false);
+        this.setInstanceState('repeat', false);
+        this.setInstanceState('shuffle', false);
+        this.setInstanceState('isAudio', false);
+        this.setInstanceState('mediaElement', null);
+        this.setInstanceState('audioContext', null);
+        this.setInstanceState('analyser', null);
+
         if (params.src) {
-            setTimeout(() => this.loadVideo(params.src, params.name), 100);
+            setTimeout(() => this.loadMedia(params.src, params.name), 100);
         }
 
-        const videoItems = playlist.map((video, i) => `
-            <div class="video-playlist-item" data-video="${i}">
-                <span class="video-icon">🎬</span>
-                <span class="video-name">${this.escapeHtml(video.name)}</span>
-                <span class="video-duration">${video.duration ? this.formatTime(video.duration) : '--:--'}</span>
-                <button class="video-remove" data-remove="${i}" title="Remove">x</button>
-            </div>
-        `).join('');
+        const playlistHtml = this.renderPlaylist(playlist);
 
         return `
-            <div class="video-player">
-                <div class="video-container">
-                    <video id="videoElement" class="video-element">
-                        <source src="" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="video-overlay" id="videoOverlay">
-                        <div class="video-overlay-text">Click to play or load a video</div>
+            <div class="media-player-pro">
+                <!-- Display Area -->
+                <div class="mp-display">
+                    <div class="mp-video-container" id="videoContainer">
+                        <video id="videoElement" class="mp-video"></video>
+                        <audio id="audioElement" class="mp-audio"></audio>
+                    </div>
+                    <div class="mp-visualizer" id="visualizerContainer">
+                        <canvas id="visualizerCanvas" class="mp-visualizer-canvas"></canvas>
+                        <div class="mp-audio-info" id="audioInfo">
+                            <div class="mp-audio-icon">♫</div>
+                            <div class="mp-now-playing" id="nowPlaying">No media loaded</div>
+                        </div>
+                    </div>
+                    <div class="mp-overlay" id="overlay">
+                        <div class="mp-overlay-icon">▶</div>
+                        <div class="mp-overlay-text">Drop files or click + to add media</div>
                     </div>
                 </div>
 
-                <div class="video-progress-container">
-                    <input type="range" class="video-progress" id="progressBar"
-                           min="0" max="100" value="0" step="0.1">
-                    <div class="video-time-display">
+                <!-- Info Bar -->
+                <div class="mp-info-bar">
+                    <div class="mp-title" id="titleDisplay">Ready</div>
+                    <div class="mp-time">
                         <span id="currentTime">0:00</span>
-                        <span>/</span>
+                        <span class="mp-time-sep">/</span>
                         <span id="totalTime">0:00</span>
                     </div>
                 </div>
 
-                <div class="video-controls">
-                    <button class="video-btn" id="btnPrev" title="Previous">|<</button>
-                    <button class="video-btn video-btn-large" id="btnPlay" title="Play">></button>
-                    <button class="video-btn" id="btnStop" title="Stop">[]</button>
-                    <button class="video-btn" id="btnNext" title="Next">>|</button>
-                    <div class="video-volume-container">
-                        <span class="volume-icon" id="volumeIcon">Vol</span>
-                        <input type="range" class="video-volume" id="volumeSlider"
-                               min="0" max="100" value="${Math.round(this.getInstanceState('volume') * 100)}">
-                    </div>
-                    <button class="video-btn video-btn-small" id="btnLoop" title="Loop">Loop</button>
-                    <button class="video-btn video-btn-small" id="btnFullscreen" title="Fullscreen">[ ]</button>
-                </div>
-
-                <div class="video-playlist-header">
-                    <span>Playlist</span>
-                    <div class="playlist-buttons">
-                        <button class="playlist-btn" id="btnAddUrl" title="Add from URL">+URL</button>
-                        <button class="playlist-btn" id="btnAddFile" title="Add from file">+File</button>
-                        <button class="playlist-btn" id="btnClear" title="Clear playlist">Clear</button>
+                <!-- Progress Bar -->
+                <div class="mp-progress-wrapper">
+                    <div class="mp-progress-track" id="progressTrack">
+                        <div class="mp-progress-fill" id="progressFill"></div>
+                        <div class="mp-progress-handle" id="progressHandle"></div>
                     </div>
                 </div>
 
-                <div class="video-playlist" id="playlist">${videoItems}</div>
+                <!-- Controls -->
+                <div class="mp-controls">
+                    <div class="mp-controls-left">
+                        <button class="mp-btn mp-btn-small" id="btnShuffle" title="Shuffle">
+                            <span class="mp-btn-icon">⤭</span>
+                        </button>
+                    </div>
+                    <div class="mp-controls-center">
+                        <button class="mp-btn" id="btnPrev" title="Previous">
+                            <span class="mp-btn-icon">⏮</span>
+                        </button>
+                        <button class="mp-btn mp-btn-play" id="btnPlay" title="Play">
+                            <span class="mp-btn-icon" id="playIcon">▶</span>
+                        </button>
+                        <button class="mp-btn" id="btnStop" title="Stop">
+                            <span class="mp-btn-icon">⏹</span>
+                        </button>
+                        <button class="mp-btn" id="btnNext" title="Next">
+                            <span class="mp-btn-icon">⏭</span>
+                        </button>
+                    </div>
+                    <div class="mp-controls-right">
+                        <button class="mp-btn mp-btn-small" id="btnRepeat" title="Repeat">
+                            <span class="mp-btn-icon">🔁</span>
+                        </button>
+                    </div>
+                </div>
 
-                <div class="video-status" id="status">Ready - Double-click a video to play</div>
+                <!-- Volume -->
+                <div class="mp-volume-bar">
+                    <button class="mp-btn mp-btn-tiny" id="btnMute" title="Mute">
+                        <span class="mp-btn-icon" id="volumeIcon">🔊</span>
+                    </button>
+                    <div class="mp-volume-track" id="volumeTrack">
+                        <div class="mp-volume-fill" id="volumeFill" style="width: ${this.getInstanceState('volume') * 100}%"></div>
+                    </div>
+                    <button class="mp-btn mp-btn-tiny" id="btnFullscreen" title="Fullscreen">
+                        <span class="mp-btn-icon">⛶</span>
+                    </button>
+                </div>
+
+                <!-- Playlist -->
+                <div class="mp-playlist-section">
+                    <div class="mp-playlist-header">
+                        <span class="mp-playlist-title">Playlist</span>
+                        <div class="mp-playlist-actions">
+                            <button class="mp-btn mp-btn-tiny" id="btnAddFile" title="Add Files">+</button>
+                            <button class="mp-btn mp-btn-tiny" id="btnAddUrl" title="Add URL">🌐</button>
+                            <button class="mp-btn mp-btn-tiny" id="btnClear" title="Clear">🗑</button>
+                        </div>
+                    </div>
+                    <div class="mp-playlist" id="playlist">${playlistHtml}</div>
+                </div>
             </div>
         `;
     }
 
+    renderPlaylist(playlist) {
+        if (!playlist || playlist.length === 0) {
+            return '<div class="mp-playlist-empty">Playlist is empty</div>';
+        }
+        return playlist.map((item, i) => {
+            const isAudio = this.isAudioFile(item.src);
+            const icon = isAudio ? '♫' : '🎬';
+            return `
+                <div class="mp-playlist-item" data-index="${i}">
+                    <span class="mp-item-icon">${icon}</span>
+                    <span class="mp-item-name">${this.escapeHtml(item.name)}</span>
+                    <span class="mp-item-duration">${item.duration ? this.formatTime(item.duration) : '--:--'}</span>
+                    <button class="mp-item-remove" data-remove="${i}">×</button>
+                </div>
+            `;
+        }).join('');
+    }
+
     onMount() {
         const videoEl = this.getElement('#videoElement');
-        this.setInstanceState('video', videoEl);
+        const audioEl = this.getElement('#audioElement');
 
-        // Video element event listeners
-        this.addHandler(videoEl, 'loadedmetadata', () => {
-            this.setInstanceState('duration', videoEl.duration);
-            this.updateTotalTime(videoEl.duration);
-            const playlist = this.getInstanceState('playlist');
-            const currentVideo = this.getInstanceState('currentVideo');
-            if (playlist[currentVideo]) {
-                playlist[currentVideo].duration = videoEl.duration;
-                this.setInstanceState('playlist', playlist);
-                this.savePlaylist();
-            }
-            EventBus.emit('videoplayer:loaded', {
-                appId: this.id,
-                windowId: this.getCurrentWindowId(),
-                duration: videoEl.duration,
-                timestamp: Date.now()
-            });
-        });
-
-        this.addHandler(videoEl, 'timeupdate', () => {
-            this.setInstanceState('currentTime', videoEl.currentTime);
-            this.updateProgress(videoEl.currentTime, videoEl.duration);
-            EventBus.emit('videoplayer:timeupdate', {
-                appId: this.id,
-                currentTime: videoEl.currentTime,
-                duration: videoEl.duration
-            });
-        });
-
-        this.addHandler(videoEl, 'ended', () => {
-            this.onVideoEnded();
-        });
-
-        this.addHandler(videoEl, 'error', (e) => {
-            const playlist = this.getInstanceState('playlist');
-            const currentVideo = this.getInstanceState('currentVideo');
-            const videoInfo = playlist[currentVideo];
-            this.setStatus(`Error loading: ${videoInfo?.name || 'video'}`);
-            this.setInstanceState('playing', false);
-            this.updatePlayButton();
-            EventBus.emit('videoplayer:error', {
-                appId: this.id,
-                windowId: this.getCurrentWindowId(),
-                error: 'Failed to load video',
-                timestamp: Date.now()
-            });
-        });
-
-        this.addHandler(videoEl, 'play', () => {
-            this.setInstanceState('playing', true);
-            this.updatePlayButton();
-            this.hideOverlay();
-        });
-
-        this.addHandler(videoEl, 'pause', () => {
-            this.setInstanceState('playing', false);
-            this.updatePlayButton();
+        // Setup media element event handlers
+        [videoEl, audioEl].forEach(el => {
+            this.addHandler(el, 'loadedmetadata', () => this.onMediaLoaded());
+            this.addHandler(el, 'timeupdate', () => this.onTimeUpdate());
+            this.addHandler(el, 'ended', () => this.onMediaEnded());
+            this.addHandler(el, 'play', () => this.onPlay());
+            this.addHandler(el, 'pause', () => this.onPause());
+            this.addHandler(el, 'error', () => this.onError());
         });
 
         // Control buttons
@@ -375,46 +319,130 @@ class VideoPlayer extends AppBase {
         this.addHandler(this.getElement('#btnStop'), 'click', () => this.stop());
         this.addHandler(this.getElement('#btnPrev'), 'click', () => this.prev());
         this.addHandler(this.getElement('#btnNext'), 'click', () => this.next());
-        this.addHandler(this.getElement('#btnLoop'), 'click', () => this.toggleLoop());
+        this.addHandler(this.getElement('#btnShuffle'), 'click', () => this.toggleShuffle());
+        this.addHandler(this.getElement('#btnRepeat'), 'click', () => this.toggleRepeat());
+        this.addHandler(this.getElement('#btnMute'), 'click', () => this.toggleMute());
         this.addHandler(this.getElement('#btnFullscreen'), 'click', () => this.toggleFullscreen());
 
-        // Click on video to play/pause
-        this.addHandler(this.getElement('.video-container'), 'click', () => this.togglePlay());
-
-        // Progress bar
-        this.addHandler(this.getElement('#progressBar'), 'input', (e) => this.seek(e.target.value));
+        // Progress bar interaction
+        const progressTrack = this.getElement('#progressTrack');
+        this.addHandler(progressTrack, 'click', (e) => this.seekToPosition(e));
+        this.addHandler(progressTrack, 'mousedown', (e) => this.startDragging(e, 'progress'));
 
         // Volume control
-        this.addHandler(this.getElement('#volumeSlider'), 'input', (e) => this.setVolume(e.target.value));
-        this.addHandler(this.getElement('#volumeIcon'), 'click', () => this.toggleMute());
+        const volumeTrack = this.getElement('#volumeTrack');
+        this.addHandler(volumeTrack, 'click', (e) => this.setVolumeFromPosition(e));
 
         // Playlist buttons
-        this.addHandler(this.getElement('#btnAddUrl'), 'click', () => this.showAddUrlDialog());
         this.addHandler(this.getElement('#btnAddFile'), 'click', () => this.showFileDialog());
+        this.addHandler(this.getElement('#btnAddUrl'), 'click', () => this.showAddUrlDialog());
         this.addHandler(this.getElement('#btnClear'), 'click', () => this.clearPlaylist());
 
-        // Playlist item clicks
+        // Click on display to play/pause
+        this.addHandler(this.getElement('.mp-display'), 'click', () => this.togglePlay());
+
+        // Bind playlist events
         this.bindPlaylistEvents();
 
-        // Listen for volume changes from SoundSystem
-        this.onEvent(Events.VOLUME_CHANGE, ({ volume }) => this.onVolumeChanged(volume));
+        // Setup audio visualizer
+        this.setupVisualizer();
 
-        // Update UI state
-        this.updateLoopButton();
+        // Listen for volume changes
+        this.onEvent(Events.VOLUME_CHANGE, ({ volume }) => {
+            this.setInstanceState('volume', volume);
+            this.updateVolumeUI();
+        });
+
+        // Apply initial volume
+        this.updateVolumeUI();
+    }
+
+    setupVisualizer() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+
+            this.setInstanceState('audioContext', audioContext);
+            this.setInstanceState('analyser', analyser);
+        } catch (e) {
+            console.log('Audio visualizer not available');
+        }
+    }
+
+    connectVisualizer(mediaElement) {
+        const audioContext = this.getInstanceState('audioContext');
+        const analyser = this.getInstanceState('analyser');
+
+        if (!audioContext || !analyser) return;
+
+        try {
+            // Resume audio context if suspended
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const source = audioContext.createMediaElementSource(mediaElement);
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            this.setInstanceState('audioSource', source);
+            this.startVisualizerAnimation();
+        } catch (e) {
+            // Source might already be connected
+        }
+    }
+
+    startVisualizerAnimation() {
+        const canvas = this.getElement('#visualizerCanvas');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const analyser = this.getInstanceState('analyser');
+        if (!analyser) return;
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const draw = () => {
+            if (!this.getInstanceState('playing')) return;
+
+            requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
+
+                // Gradient color based on height
+                const hue = (i / bufferLength) * 120 + 120; // Green to cyan
+                ctx.fillStyle = `hsl(${hue}, 80%, ${50 + (dataArray[i] / 255) * 30}%)`;
+
+                ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+                x += barWidth;
+            }
+        };
+
+        draw();
     }
 
     bindPlaylistEvents() {
-        this.getElements('.video-playlist-item').forEach(el => {
+        this.getElements('.mp-playlist-item').forEach(el => {
             this.addHandler(el, 'dblclick', () => {
-                const videoIndex = parseInt(el.dataset.video);
-                this.playVideo(videoIndex);
+                const index = parseInt(el.dataset.index);
+                this.playMedia(index);
             });
         });
 
-        this.getElements('.video-remove').forEach(el => {
+        this.getElements('.mp-item-remove').forEach(el => {
             this.addHandler(el, 'click', (e) => {
                 e.stopPropagation();
-                this.removeVideo(parseInt(el.dataset.remove));
+                this.removeMedia(parseInt(el.dataset.remove));
             });
         });
     }
@@ -432,308 +460,366 @@ class VideoPlayer extends AppBase {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
-    togglePlay() {
-        const video = this.getInstanceState('video');
-        if (video && video.src) {
-            if (video.paused) {
-                video.play().catch(e => this.setStatus('Playback error'));
-            } else {
-                video.pause();
-            }
-        } else {
-            // No video loaded, try to play first from playlist
-            const playlist = this.getInstanceState('playlist');
-            if (playlist && playlist.length > 0) {
-                this.playVideo(0);
-            }
-        }
+    getActiveMediaElement() {
+        return this.getInstanceState('isAudio')
+            ? this.getElement('#audioElement')
+            : this.getElement('#videoElement');
     }
 
-    loadVideo(src, name = null) {
-        const video = this.getInstanceState('video');
-        if (!video) return;
+    loadMedia(src, name = null) {
+        const isAudio = this.isAudioFile(src);
+        const mediaName = name || src.split('/').pop().replace(/\.[^/.]+$/, '');
 
-        const videoName = name || src.split('/').pop();
-
-        // Add to playlist if not already there
         const playlist = this.getInstanceState('playlist');
-        let videoIndex = playlist.findIndex(v => v.src === src);
-        if (videoIndex === -1) {
-            playlist.push({ name: videoName, src, duration: null });
-            videoIndex = playlist.length - 1;
+        let index = playlist.findIndex(m => m.src === src);
+
+        if (index === -1) {
+            playlist.push({ name: mediaName, src, duration: null, isAudio });
+            index = playlist.length - 1;
             this.setInstanceState('playlist', playlist);
             this.refreshPlaylist();
             this.savePlaylist();
         }
 
-        this.playVideo(videoIndex);
+        this.playMedia(index);
     }
 
-    playVideo(videoIndex) {
+    playMedia(index) {
         const playlist = this.getInstanceState('playlist');
-        if (!playlist || videoIndex < 0 || videoIndex >= playlist.length) return;
+        if (!playlist || index < 0 || index >= playlist.length) return;
 
-        const video = this.getInstanceState('video');
-        const videoInfo = playlist[videoIndex];
+        const item = playlist[index];
+        const isAudio = this.isAudioFile(item.src);
 
-        this.setInstanceState('currentVideo', videoIndex);
-        this.setStatus(`Loading: ${videoInfo.name}`);
-        this.updateCurrentTitle(videoInfo.name);
-        this.updatePlaylistHighlight(videoIndex);
+        this.setInstanceState('currentIndex', index);
+        this.setInstanceState('isAudio', isAudio);
 
-        video.src = videoInfo.src;
-        video.load();
+        // Get the correct media element
+        const videoEl = this.getElement('#videoElement');
+        const audioEl = this.getElement('#audioElement');
+        const videoContainer = this.getElement('#videoContainer');
+        const visualizer = this.getElement('#visualizerContainer');
+        const overlay = this.getElement('#overlay');
 
-        video.play()
-            .then(() => {
-                this.setStatus(`Now playing: ${videoInfo.name}`);
-                this.hideOverlay();
-                EventBus.emit('videoplayer:playing', {
-                    appId: this.id,
-                    windowId: this.getCurrentWindowId(),
-                    video: videoInfo,
-                    index: videoIndex,
-                    timestamp: Date.now()
-                });
-            })
-            .catch(e => {
-                this.setStatus('Click to play (browser policy)');
-            });
+        // Hide overlay
+        if (overlay) overlay.style.display = 'none';
+
+        // Show appropriate display
+        if (isAudio) {
+            videoEl.style.display = 'none';
+            videoContainer.style.display = 'none';
+            visualizer.style.display = 'flex';
+            audioEl.src = item.src;
+            audioEl.volume = this.getInstanceState('volume');
+            this.setInstanceState('mediaElement', audioEl);
+
+            // Try to connect visualizer
+            if (!this.getInstanceState('audioSource')) {
+                this.connectVisualizer(audioEl);
+            }
+
+            audioEl.play().catch(e => this.setTitle('Click to play'));
+        } else {
+            audioEl.style.display = 'none';
+            visualizer.style.display = 'none';
+            videoContainer.style.display = 'flex';
+            videoEl.style.display = 'block';
+            videoEl.src = item.src;
+            videoEl.volume = this.getInstanceState('volume');
+            this.setInstanceState('mediaElement', videoEl);
+            videoEl.play().catch(e => this.setTitle('Click to play'));
+        }
+
+        this.setTitle(item.name);
+        this.getElement('#nowPlaying').textContent = item.name;
+        this.updatePlaylistHighlight(index);
+
+        EventBus.emit('videoplayer:playing', {
+            appId: this.id,
+            media: item,
+            index,
+            isAudio,
+            timestamp: Date.now()
+        });
+    }
+
+    togglePlay() {
+        const media = this.getActiveMediaElement();
+        if (media && media.src) {
+            if (media.paused) {
+                media.play().catch(() => {});
+            } else {
+                media.pause();
+            }
+        } else {
+            const playlist = this.getInstanceState('playlist');
+            if (playlist && playlist.length > 0) {
+                this.playMedia(0);
+            }
+        }
     }
 
     stop() {
-        const video = this.getInstanceState('video');
-        if (video) {
-            video.pause();
-            video.currentTime = 0;
-            this.setInstanceState('playing', false);
-            this.updatePlayButton();
-            this.updateProgress(0, 0);
-            this.setStatus('Stopped');
-            EventBus.emit('videoplayer:stop', {
-                appId: this.id,
-                windowId: this.getCurrentWindowId(),
-                timestamp: Date.now()
-            });
+        const media = this.getActiveMediaElement();
+        if (media) {
+            media.pause();
+            media.currentTime = 0;
         }
+        this.setInstanceState('playing', false);
+        this.updatePlayButton();
+        this.updateProgress(0, 0);
+        this.setTitle('Stopped');
+
+        EventBus.emit('videoplayer:stop', {
+            appId: this.id,
+            timestamp: Date.now()
+        });
     }
 
     prev() {
         this.playSound('click');
-        let videoIndex = this.getInstanceState('currentVideo') - 1;
         const playlist = this.getInstanceState('playlist');
-        if (videoIndex < 0) {
-            videoIndex = playlist.length - 1;
-        }
-        this.playVideo(videoIndex);
+        let index = this.getInstanceState('currentIndex') - 1;
+        if (index < 0) index = playlist.length - 1;
+        this.playMedia(index);
     }
 
     next() {
         this.playSound('click');
         const playlist = this.getInstanceState('playlist');
-        let videoIndex = this.getInstanceState('currentVideo') + 1;
-        if (videoIndex >= playlist.length) {
-            videoIndex = 0;
+        const shuffle = this.getInstanceState('shuffle');
+        let index;
+
+        if (shuffle) {
+            index = Math.floor(Math.random() * playlist.length);
+        } else {
+            index = this.getInstanceState('currentIndex') + 1;
+            if (index >= playlist.length) index = 0;
         }
-        this.playVideo(videoIndex);
+        this.playMedia(index);
     }
 
-    onVideoEnded() {
-        const loop = this.getInstanceState('loop');
+    // Event handlers
+    onMediaLoaded() {
+        const media = this.getActiveMediaElement();
+        if (!media) return;
+
         const playlist = this.getInstanceState('playlist');
-        const currentVideo = this.getInstanceState('currentVideo');
+        const currentIndex = this.getInstanceState('currentIndex');
+
+        if (playlist[currentIndex]) {
+            playlist[currentIndex].duration = media.duration;
+            this.setInstanceState('playlist', playlist);
+            this.refreshPlaylist();
+            this.savePlaylist();
+        }
+
+        this.updateProgress(0, media.duration);
+        this.getElement('#totalTime').textContent = this.formatTime(media.duration);
+
+        EventBus.emit('videoplayer:loaded', {
+            appId: this.id,
+            duration: media.duration,
+            timestamp: Date.now()
+        });
+    }
+
+    onTimeUpdate() {
+        const media = this.getActiveMediaElement();
+        if (!media) return;
+
+        this.updateProgress(media.currentTime, media.duration);
+        this.getElement('#currentTime').textContent = this.formatTime(media.currentTime);
+
+        EventBus.emit('videoplayer:timeupdate', {
+            appId: this.id,
+            currentTime: media.currentTime,
+            duration: media.duration
+        });
+    }
+
+    onMediaEnded() {
+        const repeat = this.getInstanceState('repeat');
+        const shuffle = this.getInstanceState('shuffle');
+        const playlist = this.getInstanceState('playlist');
+        const currentIndex = this.getInstanceState('currentIndex');
 
         EventBus.emit('videoplayer:ended', {
             appId: this.id,
-            windowId: this.getCurrentWindowId(),
-            video: playlist[currentVideo],
-            index: currentVideo,
+            media: playlist[currentIndex],
+            index: currentIndex,
             timestamp: Date.now()
         });
 
-        if (loop) {
-            // Replay current video
-            this.playVideo(currentVideo);
-        } else if (currentVideo < playlist.length - 1) {
-            // Play next video
-            this.playVideo(currentVideo + 1);
+        if (repeat) {
+            this.playMedia(currentIndex);
+        } else if (shuffle) {
+            const nextIndex = Math.floor(Math.random() * playlist.length);
+            this.playMedia(nextIndex);
+        } else if (currentIndex < playlist.length - 1) {
+            this.playMedia(currentIndex + 1);
         } else {
-            // End of playlist
             this.stop();
-            this.setStatus('Playlist ended');
             EventBus.emit('videoplayer:playlist:ended', {
                 appId: this.id,
-                windowId: this.getCurrentWindowId(),
                 timestamp: Date.now()
             });
         }
     }
 
-    seek(percent) {
-        const video = this.getInstanceState('video');
-        if (video && video.duration) {
-            video.currentTime = (percent / 100) * video.duration;
+    onPlay() {
+        this.setInstanceState('playing', true);
+        this.updatePlayButton();
+
+        // Start visualizer if audio
+        if (this.getInstanceState('isAudio')) {
+            this.startVisualizerAnimation();
         }
+    }
+
+    onPause() {
+        this.setInstanceState('playing', false);
+        this.updatePlayButton();
+    }
+
+    onError() {
+        this.setTitle('Error loading media');
+        EventBus.emit('videoplayer:error', {
+            appId: this.id,
+            error: 'Failed to load media',
+            timestamp: Date.now()
+        });
+    }
+
+    // UI Updates
+    updatePlayButton() {
+        const icon = this.getElement('#playIcon');
+        const playing = this.getInstanceState('playing');
+        if (icon) {
+            icon.textContent = playing ? '⏸' : '▶';
+        }
+    }
+
+    updateProgress(current, duration) {
+        const fill = this.getElement('#progressFill');
+        const handle = this.getElement('#progressHandle');
+
+        if (fill && duration) {
+            const percent = (current / duration) * 100;
+            fill.style.width = `${percent}%`;
+            if (handle) handle.style.left = `${percent}%`;
+        }
+    }
+
+    updateVolumeUI() {
+        const volume = this.getInstanceState('volume');
+        const muted = this.getInstanceState('muted');
+        const fill = this.getElement('#volumeFill');
+        const icon = this.getElement('#volumeIcon');
+
+        if (fill) {
+            fill.style.width = `${(muted ? 0 : volume) * 100}%`;
+        }
+
+        if (icon) {
+            if (muted || volume === 0) icon.textContent = '🔇';
+            else if (volume < 0.3) icon.textContent = '🔈';
+            else if (volume < 0.7) icon.textContent = '🔉';
+            else icon.textContent = '🔊';
+        }
+    }
+
+    updatePlaylistHighlight(index) {
+        this.getElements('.mp-playlist-item').forEach((el, i) => {
+            el.classList.toggle('active', i === index);
+        });
+    }
+
+    setTitle(text) {
+        const el = this.getElement('#titleDisplay');
+        if (el) el.textContent = text;
+    }
+
+    // Seek and Volume
+    seekToPosition(e) {
+        const media = this.getActiveMediaElement();
+        const track = this.getElement('#progressTrack');
+        if (!media || !track || !media.duration) return;
+
+        const rect = track.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        media.currentTime = percent * media.duration;
+    }
+
+    startDragging(e, type) {
+        // Could implement drag-to-seek here
+    }
+
+    setVolumeFromPosition(e) {
+        const track = this.getElement('#volumeTrack');
+        if (!track) return;
+
+        const rect = track.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        this.setVolume(percent * 100);
     }
 
     setVolume(value) {
         const volume = value / 100;
         this.setInstanceState('volume', volume);
+        this.setInstanceState('muted', false);
 
-        const video = this.getInstanceState('video');
-        if (video) {
-            video.volume = volume;
+        const media = this.getActiveMediaElement();
+        if (media) {
+            media.volume = volume;
+            media.muted = false;
         }
 
-        this.updateVolumeDisplay(volume);
+        this.updateVolumeUI();
     }
 
     toggleMute() {
-        const video = this.getInstanceState('video');
-        if (video) {
-            video.muted = !video.muted;
-            this.setInstanceState('muted', video.muted);
-            this.updateVolumeIcon();
-        }
+        const muted = !this.getInstanceState('muted');
+        this.setInstanceState('muted', muted);
+
+        const media = this.getActiveMediaElement();
+        if (media) media.muted = muted;
+
+        this.updateVolumeUI();
     }
 
-    toggleLoop() {
-        const loop = !this.getInstanceState('loop');
-        this.setInstanceState('loop', loop);
-        const video = this.getInstanceState('video');
-        if (video) {
-            video.loop = loop;
-        }
-        this.updateLoopButton();
+    toggleShuffle() {
+        const shuffle = !this.getInstanceState('shuffle');
+        this.setInstanceState('shuffle', shuffle);
+        this.getElement('#btnShuffle')?.classList.toggle('active', shuffle);
+        this.playSound('click');
+    }
+
+    toggleRepeat() {
+        const repeat = !this.getInstanceState('repeat');
+        this.setInstanceState('repeat', repeat);
+        this.getElement('#btnRepeat')?.classList.toggle('active', repeat);
         this.playSound('click');
     }
 
     toggleFullscreen() {
-        const container = this.getElement('.video-container');
-        if (!container) return;
+        const container = this.getElement('#videoContainer');
+        if (!container || this.getInstanceState('isAudio')) return;
 
         if (!document.fullscreenElement) {
-            container.requestFullscreen?.() ||
-            container.webkitRequestFullscreen?.() ||
-            container.msRequestFullscreen?.();
-            this.setInstanceState('fullscreen', true);
+            container.requestFullscreen?.();
         } else {
-            document.exitFullscreen?.() ||
-            document.webkitExitFullscreen?.() ||
-            document.msExitFullscreen?.();
-            this.setInstanceState('fullscreen', false);
-        }
-
-        EventBus.emit('videoplayer:fullscreen', {
-            appId: this.id,
-            fullscreen: this.getInstanceState('fullscreen'),
-            timestamp: Date.now()
-        });
-    }
-
-    onVolumeChanged(volume) {
-        this.setInstanceState('volume', volume);
-        this.updateVolumeDisplay(volume);
-        const slider = this.getElement('#volumeSlider');
-        if (slider) {
-            slider.value = Math.round(volume * 100);
+            document.exitFullscreen?.();
         }
     }
 
-    // UI Update Methods
-    updatePlayButton() {
-        const btn = this.getElement('#btnPlay');
-        if (btn) {
-            btn.textContent = this.getInstanceState('playing') ? '||' : '>';
-            btn.title = this.getInstanceState('playing') ? 'Pause' : 'Play';
-        }
-    }
-
-    updateProgress(currentTime, duration) {
-        const progressBar = this.getElement('#progressBar');
-        const currentTimeEl = this.getElement('#currentTime');
-
-        if (progressBar && duration) {
-            progressBar.value = (currentTime / duration) * 100;
-        }
-        if (currentTimeEl) {
-            currentTimeEl.textContent = this.formatTime(currentTime);
-        }
-    }
-
-    updateTotalTime(duration) {
-        const totalTimeEl = this.getElement('#totalTime');
-        if (totalTimeEl) {
-            totalTimeEl.textContent = this.formatTime(duration);
-        }
-    }
-
-    updateCurrentTitle(title) {
-        this.setStatus(`Now playing: ${title}`);
-    }
-
-    updateVolumeDisplay(volume) {
-        const slider = this.getElement('#volumeSlider');
-        if (slider) {
-            slider.value = Math.round(volume * 100);
-        }
-        this.updateVolumeIcon();
-    }
-
-    updateVolumeIcon() {
-        const icon = this.getElement('#volumeIcon');
-        const video = this.getInstanceState('video');
-        const muted = video?.muted || this.getInstanceState('muted');
-        const volume = this.getInstanceState('volume');
-
-        if (icon) {
-            if (muted || volume === 0) icon.textContent = 'Mute';
-            else icon.textContent = 'Vol';
-        }
-    }
-
-    updateLoopButton() {
-        const btn = this.getElement('#btnLoop');
-        if (btn) {
-            btn.classList.toggle('active', this.getInstanceState('loop'));
-        }
-    }
-
-    updatePlaylistHighlight(videoIndex) {
-        this.getElements('.video-playlist-item').forEach((el, i) => {
-            el.classList.toggle('playing', i === videoIndex);
-            el.classList.toggle('active', i === videoIndex);
-        });
-    }
-
-    hideOverlay() {
-        const overlay = this.getElement('#videoOverlay');
-        if (overlay) {
-            overlay.style.display = 'none';
-        }
-    }
-
-    showOverlay() {
-        const overlay = this.getElement('#videoOverlay');
-        if (overlay) {
-            overlay.style.display = 'flex';
-        }
-    }
-
-    setStatus(message) {
-        const statusEl = this.getElement('#status');
-        if (statusEl) {
-            statusEl.textContent = message;
-        }
-    }
-
-    // Playlist Management
+    // Playlist management
     async showAddUrlDialog() {
-        const url = await this.prompt('Enter video URL (MP4, WebM, OGG):', '', 'Add URL');
+        const url = await this.prompt('Enter media URL:', '', 'Add URL');
         if (url) {
-            const name = await this.prompt('Enter video name:', url.split('/').pop().replace(/\.[^/.]+$/, ''), 'Video Name');
-            if (name) {
-                this.addVideo({ name, src: url, duration: null });
+            const name = await this.prompt('Enter name:', url.split('/').pop().replace(/\.[^/.]+$/, ''), 'Name');
+            if (name !== null) {
+                this.addMedia({ name: name || 'Untitled', src: url, duration: null });
             }
         }
     }
@@ -741,14 +827,13 @@ class VideoPlayer extends AppBase {
     showFileDialog() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'video/*';
+        input.accept = 'audio/*,video/*';
         input.multiple = true;
 
         input.addEventListener('change', (e) => {
-            const files = e.target.files;
-            for (const file of files) {
+            for (const file of e.target.files) {
                 const url = URL.createObjectURL(file);
-                this.addVideo({
+                this.addMedia({
                     name: file.name.replace(/\.[^/.]+$/, ''),
                     src: url,
                     duration: null,
@@ -760,89 +845,80 @@ class VideoPlayer extends AppBase {
         input.click();
     }
 
-    addVideo(video) {
+    addMedia(item) {
         const playlist = this.getInstanceState('playlist');
-        playlist.push(video);
+        playlist.push(item);
         this.setInstanceState('playlist', playlist);
         this.savePlaylist();
         this.refreshPlaylist();
-        this.setStatus(`Added: ${video.name}`);
 
         EventBus.emit('videoplayer:playlist:add', {
             appId: this.id,
-            video: video,
+            media: item,
             timestamp: Date.now()
         });
     }
 
-    removeVideo(index) {
+    removeMedia(index) {
         const playlist = this.getInstanceState('playlist');
-        const currentVideo = this.getInstanceState('currentVideo');
+        const currentIndex = this.getInstanceState('currentIndex');
 
-        if (index === currentVideo && this.getInstanceState('playing')) {
+        if (index === currentIndex && this.getInstanceState('playing')) {
             this.stop();
         }
 
         playlist.splice(index, 1);
         this.setInstanceState('playlist', playlist);
 
-        if (currentVideo >= playlist.length) {
-            this.setInstanceState('currentVideo', Math.max(0, playlist.length - 1));
-        } else if (index < currentVideo) {
-            this.setInstanceState('currentVideo', currentVideo - 1);
+        if (currentIndex >= playlist.length) {
+            this.setInstanceState('currentIndex', Math.max(0, playlist.length - 1));
+        } else if (index < currentIndex) {
+            this.setInstanceState('currentIndex', currentIndex - 1);
         }
 
         this.savePlaylist();
         this.refreshPlaylist();
-        this.setStatus('Video removed');
     }
 
     async clearPlaylist() {
-        if (await this.confirm('Clear entire playlist?', 'Clear Playlist')) {
+        if (await this.confirm('Clear entire playlist?')) {
             this.stop();
             this.setInstanceState('playlist', []);
-            this.setInstanceState('currentVideo', 0);
+            this.setInstanceState('currentIndex', 0);
             this.savePlaylist();
             this.refreshPlaylist();
-            this.showOverlay();
-            this.setStatus('Playlist cleared');
+
+            // Show overlay
+            const overlay = this.getElement('#overlay');
+            if (overlay) overlay.style.display = 'flex';
         }
     }
 
     refreshPlaylist() {
         const playlist = this.getInstanceState('playlist');
         const playlistEl = this.getElement('#playlist');
-
         if (!playlistEl) return;
 
-        playlistEl.innerHTML = playlist.map((video, i) => `
-            <div class="video-playlist-item ${i === this.getInstanceState('currentVideo') ? 'active' : ''}" data-video="${i}">
-                <span class="video-icon">🎬</span>
-                <span class="video-name">${this.escapeHtml(video.name)}</span>
-                <span class="video-duration">${video.duration ? this.formatTime(video.duration) : '--:--'}</span>
-                <button class="video-remove" data-remove="${i}" title="Remove">x</button>
-            </div>
-        `).join('');
-
-        // Rebind event handlers
+        playlistEl.innerHTML = this.renderPlaylist(playlist);
         this.bindPlaylistEvents();
+        this.updatePlaylistHighlight(this.getInstanceState('currentIndex'));
     }
 
     savePlaylist() {
         const playlist = this.getInstanceState('playlist');
-        const saveable = playlist.filter(v => !v.isBlob);
-        StorageManager.set('videoPlayerPlaylist', saveable);
+        const saveable = playlist.filter(m => !m.isBlob);
+        StorageManager.set('mediaPlayerPlaylist2', saveable);
     }
 
     onClose() {
-        const video = this.getInstanceState('video');
-        if (video) {
-            video.pause();
-            video.src = '';
-        }
+        const videoEl = this.getElement('#videoElement');
+        const audioEl = this.getElement('#audioElement');
+
+        if (videoEl) { videoEl.pause(); videoEl.src = ''; }
+        if (audioEl) { audioEl.pause(); audioEl.src = ''; }
+
         EventBus.emit('videoplayer:closed', {
             appId: this.id,
-            windowId: this.getCurrentWindowId(),
             timestamp: Date.now()
         });
     }
