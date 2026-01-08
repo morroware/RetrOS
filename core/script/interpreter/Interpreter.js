@@ -616,6 +616,42 @@ export class Interpreter {
         }
     }
 
+    async visitVideoStatement(stmt) {
+        const EventBus = this.context.EventBus;
+        const CommandBus = this.context.CommandBus;
+        if (!EventBus && !CommandBus) return;
+
+        // Resolve the source (can be literal or variable)
+        const source = await this.visitExpression(stmt.source);
+
+        // Resolve options
+        const options = {};
+        for (const [key, valueExpr] of Object.entries(stmt.options)) {
+            options[key] = await this.visitExpression(valueExpr);
+        }
+
+        // Launch VideoPlayer app with the video source
+        if (CommandBus) {
+            await CommandBus.execute('app:launch', {
+                appId: 'videoplayer',
+                params: {
+                    src: source,
+                    name: options.name || source.split('/').pop(),
+                    volume: options.volume,
+                    loop: options.loop || false,
+                    fullscreen: options.fullscreen || false
+                }
+            });
+        }
+
+        // Also emit a video play event for scripts listening
+        EventBus.emit('videoplayer:requested', {
+            src: source,
+            options: options,
+            timestamp: Date.now()
+        });
+    }
+
     async visitCommandStatement(stmt) {
         // Generic command execution - could be used for extensibility
         if (stmt.command) {

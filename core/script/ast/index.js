@@ -40,6 +40,7 @@ export {
     NotifyStatement,
     PlayStatement,
     StopStatement,
+    VideoStatement,
     CommandStatement
 } from './nodes/Statements.js';
 

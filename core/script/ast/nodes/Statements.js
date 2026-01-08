@@ -492,6 +492,23 @@ export class StopStatement extends Statement {
 }
 
 /**
+ * Video statement - play video file
+ * video "path/to/file.mp4"
+ * video "movie.mp4" volume=0.5 loop=true fullscreen=true
+ */
+export class VideoStatement extends Statement {
+    constructor(source, options, location) {
+        super('Video', location);
+        this.source = source;  // Expression for video path/variable
+        this.options = options || {};  // { volume, loop, fullscreen }
+    }
+
+    accept(visitor) {
+        return visitor.visitVideoStatement(this);
+    }
+}
+
+/**
  * Command statement - generic command execution
  */
 export class CommandStatement extends Statement {
@@ -538,5 +555,6 @@ export default {
     NotifyStatement,
     PlayStatement,
     StopStatement,
+    VideoStatement,
     CommandStatement
 };

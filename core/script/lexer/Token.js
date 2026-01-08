@@ -69,9 +69,10 @@ export const TokenType = {
     PROMPT: 'PROMPT',
     NOTIFY: 'NOTIFY',
 
-    // Keywords - Sound
+    // Keywords - Sound/Media
     PLAY: 'PLAY',
     STOP: 'STOP',
+    VIDEO: 'VIDEO',
 
     // Literals
     NUMBER: 'NUMBER',
@@ -187,9 +188,10 @@ export const KEYWORDS = {
     'prompt': TokenType.PROMPT,
     'notify': TokenType.NOTIFY,
 
-    // Sound
+    // Sound/Media
     'play': TokenType.PLAY,
     'stop': TokenType.STOP,
+    'video': TokenType.VIDEO,
 
     // Literals
     'true': TokenType.TRUE,

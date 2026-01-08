@@ -139,6 +139,8 @@ export class Parser {
                 return this.parsePlayStatement();
             case TokenType.STOP:
                 return this.parseStopStatement();
+            case TokenType.VIDEO:
+                return this.parseVideoStatement();
             case TokenType.VARIABLE:
                 // Check for assignment: $var = value
                 if (this.checkNext(TokenType.ASSIGN)) {
@@ -711,6 +713,43 @@ export class Parser {
         }
 
         return new AST.StopStatement(source, location);
+    }
+
+    /**
+     * Parse video statement: play video file
+     * Syntax:
+     *   video "assets/videos/movie.mp4"       - play video file
+     *   video $videoPath                      - play from variable
+     *   video "movie.mp4" volume=0.5 loop=true fullscreen=true - with options
+     */
+    parseVideoStatement() {
+        const location = this.getLocation();
+        this.advance(); // consume 'video'
+
+        // Parse source - can be string (path) or variable
+        let source;
+        if (this.check(TokenType.STRING)) {
+            source = new AST.LiteralExpression(this.advance().value, location);
+        } else if (this.check(TokenType.VARIABLE)) {
+            source = new AST.VariableExpression(this.advance().value, location);
+        } else {
+            throw this.error('Expected video file path or variable after "video"');
+        }
+
+        // Parse optional key=value options (volume, loop, fullscreen)
+        const options = {};
+        while (!this.isStatementEnd()) {
+            if (this.check(TokenType.IDENTIFIER)) {
+                const key = this.advance().value;
+                if (this.match(TokenType.ASSIGN)) {
+                    options[key] = this.parseExpression();
+                }
+            } else {
+                break;
+            }
+        }
+
+        return new AST.VideoStatement(source, options, location);
     }
 
     /**
