@@ -30,6 +30,7 @@ import Asteroids from './Asteroids.js';
 import Doom from './Doom.js';
 import Solitaire from './Solitaire.js';
 import MediaPlayer from './MediaPlayer.js';
+import VideoPlayer from './VideoPlayer.js';
 import Browser from './Browser.js';
 import ControlPanel from './ControlPanel.js';
 import AdminPanel from './AdminPanel.js';
@@ -152,6 +153,7 @@ class AppRegistryClass {
         // --- Multimedia ---
         this.registerAll([
             new MediaPlayer(),
+            new VideoPlayer(),
             new Winamp(),
         ]);
 

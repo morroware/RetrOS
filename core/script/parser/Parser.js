@@ -137,6 +137,10 @@ export class Parser {
                 return this.parseNotifyStatement();
             case TokenType.PLAY:
                 return this.parsePlayStatement();
+            case TokenType.STOP:
+                return this.parseStopStatement();
+            case TokenType.VIDEO:
+                return this.parseVideoStatement();
             case TokenType.VARIABLE:
                 // Check for assignment: $var = value
                 if (this.checkNext(TokenType.ASSIGN)) {
@@ -642,18 +646,110 @@ export class Parser {
     }
 
     /**
-     * Parse play statement: play sound
+     * Parse play statement: play sound/file with optional options
+     * Syntax:
+     *   play click                           - play predefined sound type
+     *   play "assets/sounds/music.mp3"       - play MP3 file
+     *   play $soundVar                       - play from variable
+     *   play "music.mp3" volume=0.5 loop=true - with options
      */
     parsePlayStatement() {
         const location = this.getLocation();
         this.advance(); // consume 'play'
 
-        if (!this.check(TokenType.IDENTIFIER)) {
-            throw this.error('Expected sound name after "play"');
+        // Parse source - can be identifier (sound type), string (path), or variable
+        let source;
+        if (this.check(TokenType.IDENTIFIER)) {
+            // Sound type like: play click
+            source = new AST.LiteralExpression(this.advance().value, location);
+        } else if (this.check(TokenType.STRING)) {
+            // File path like: play "assets/sounds/music.mp3"
+            source = new AST.LiteralExpression(this.advance().value, location);
+        } else if (this.check(TokenType.VARIABLE)) {
+            // Variable like: play $soundFile
+            source = new AST.VariableExpression(this.advance().value, location);
+        } else {
+            throw this.error('Expected sound name, file path, or variable after "play"');
         }
-        const sound = this.advance().value;
 
-        return new AST.PlayStatement(sound, location);
+        // Parse optional key=value options (volume, loop)
+        const options = {};
+        while (!this.isStatementEnd()) {
+            if (this.check(TokenType.IDENTIFIER)) {
+                const key = this.advance().value;
+                if (this.match(TokenType.ASSIGN)) {
+                    options[key] = this.parseExpression();
+                }
+            } else {
+                break;
+            }
+        }
+
+        return new AST.PlayStatement(source, options, location);
+    }
+
+    /**
+     * Parse stop statement: stop audio playback
+     * Syntax:
+     *   stop                    - stop all audio
+     *   stop "music.mp3"        - stop specific audio
+     *   stop $audioVar          - stop audio from variable
+     */
+    parseStopStatement() {
+        const location = this.getLocation();
+        this.advance(); // consume 'stop'
+
+        // Optional source - if omitted, stops all audio
+        let source = null;
+        if (!this.isStatementEnd()) {
+            if (this.check(TokenType.STRING)) {
+                source = new AST.LiteralExpression(this.advance().value, location);
+            } else if (this.check(TokenType.VARIABLE)) {
+                source = new AST.VariableExpression(this.advance().value, location);
+            } else if (this.check(TokenType.IDENTIFIER)) {
+                // Allow identifier like: stop music
+                source = new AST.LiteralExpression(this.advance().value, location);
+            }
+        }
+
+        return new AST.StopStatement(source, location);
+    }
+
+    /**
+     * Parse video statement: play video file
+     * Syntax:
+     *   video "assets/videos/movie.mp4"       - play video file
+     *   video $videoPath                      - play from variable
+     *   video "movie.mp4" volume=0.5 loop=true fullscreen=true - with options
+     */
+    parseVideoStatement() {
+        const location = this.getLocation();
+        this.advance(); // consume 'video'
+
+        // Parse source - can be string (path) or variable
+        let source;
+        if (this.check(TokenType.STRING)) {
+            source = new AST.LiteralExpression(this.advance().value, location);
+        } else if (this.check(TokenType.VARIABLE)) {
+            source = new AST.VariableExpression(this.advance().value, location);
+        } else {
+            throw this.error('Expected video file path or variable after "video"');
+        }
+
+        // Parse optional key=value options (volume, loop, fullscreen)
+        const options = {};
+        while (!this.isStatementEnd()) {
+            if (this.check(TokenType.IDENTIFIER)) {
+                const key = this.advance().value;
+                if (this.match(TokenType.ASSIGN)) {
+                    options[key] = this.parseExpression();
+                }
+            } else {
+                break;
+            }
+        }
+
+        return new AST.VideoStatement(source, options, location);
     }
 
     /**

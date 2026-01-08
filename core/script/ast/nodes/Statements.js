@@ -458,17 +458,53 @@ export class NotifyStatement extends Statement {
 }
 
 /**
- * Play statement - play sound
+ * Play statement - play sound or audio file
  * play soundName
+ * play "path/to/file.mp3"
+ * play "music.mp3" volume=0.5 loop=true
  */
 export class PlayStatement extends Statement {
-    constructor(sound, location) {
+    constructor(source, options, location) {
         super('Play', location);
-        this.sound = sound;
+        this.source = source;  // Can be identifier (sound type) or expression (path/variable)
+        this.options = options || {};  // { volume, loop }
     }
 
     accept(visitor) {
         return visitor.visitPlayStatement(this);
+    }
+}
+
+/**
+ * Stop statement - stop audio playback
+ * stop           - stops all audio
+ * stop "file.mp3" - stops specific audio
+ */
+export class StopStatement extends Statement {
+    constructor(source, location) {
+        super('Stop', location);
+        this.source = source;  // null for stop all, or expression for specific source
+    }
+
+    accept(visitor) {
+        return visitor.visitStopStatement(this);
+    }
+}
+
+/**
+ * Video statement - play video file
+ * video "path/to/file.mp4"
+ * video "movie.mp4" volume=0.5 loop=true fullscreen=true
+ */
+export class VideoStatement extends Statement {
+    constructor(source, options, location) {
+        super('Video', location);
+        this.source = source;  // Expression for video path/variable
+        this.options = options || {};  // { volume, loop, fullscreen }
+    }
+
+    accept(visitor) {
+        return visitor.visitVideoStatement(this);
     }
 }
 
@@ -518,5 +554,7 @@ export default {
     PromptStatement,
     NotifyStatement,
     PlayStatement,
+    StopStatement,
+    VideoStatement,
     CommandStatement
 };

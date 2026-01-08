@@ -103,6 +103,20 @@ export const Events = {
     AUDIO_LOADED: 'audio:loaded',
     AUDIO_TIME_UPDATE: 'audio:timeupdate',
 
+    // Video playback events (for VideoPlayer app)
+    VIDEO_PLAY: 'videoplayer:play',
+    VIDEO_PAUSE: 'videoplayer:pause',
+    VIDEO_STOP: 'videoplayer:stop',
+    VIDEO_ENDED: 'videoplayer:ended',
+    VIDEO_LOADED: 'videoplayer:loaded',
+    VIDEO_ERROR: 'videoplayer:error',
+    VIDEO_SEEK: 'videoplayer:seek',
+    VIDEO_TIME_UPDATE: 'videoplayer:timeupdate',
+    VIDEO_FULLSCREEN: 'videoplayer:fullscreen',
+    VIDEO_PLAYING: 'videoplayer:playing',
+    VIDEO_PLAYLIST_ADD: 'videoplayer:playlist:add',
+    VIDEO_PLAYLIST_ENDED: 'videoplayer:playlist:ended',
+
     // State events
     STATE_CHANGE: 'state:change',
 
