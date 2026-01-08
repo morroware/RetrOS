@@ -1,192 +1,261 @@
-# Project EREBUS v5.0 - Media Asset Guide
+# Project EREBUS v6.0 - Cinematic Media Asset Guide
 
-This document lists all audio and video assets needed for the multimedia autoexec.retro experience.
+Complete guide for creating all audio and video assets for the narrative ARG experience.
 
 ## Directory Structure
 
-Create these directories in your project:
-
 ```
 assets/
-  audio/
-    (all .mp3 files listed below)
-  video/
-    (all .mp4 files listed below)
+├── audio/
+│   ├── (ambient tracks)
+│   ├── (sound effects)
+│   └── (ending music)
+└── video/
+    ├── (system videos)
+    └── story/
+        ├── (Webb's video diaries)
+        ├── (corporate videos)
+        ├── (security footage)
+        ├── (EREBUS communications)
+        ├── (memory reconstructions)
+        └── (secret videos)
 ```
 
 ---
 
-## AUDIO ASSETS (17 files)
+## AUDIO ASSETS (21 files)
 
-### Ambient/Background Music (5 files)
-These loop continuously during each phase. Keep them atmospheric and unobtrusive.
+### Ambient Music (5 tracks) - Loop continuously
 
-| Filename | Duration | Description | Mood |
-|----------|----------|-------------|------|
-| `ambient_mystery.mp3` | 2-4 min (loop) | Phase 1 background | Mysterious, unsettling, subtle tension |
-| `ambient_investigation.mp3` | 2-4 min (loop) | Phase 2 background | Investigative, curious, building intrigue |
-| `ambient_signals.mp3` | 2-4 min (loop) | Phase 3 background | Electronic, signal-like, digital static undertones |
-| `ambient_terminal.mp3` | 2-4 min (loop) | Phase 4 background | Intense, heartbeat-like rhythm, ominous |
-| `ambient_choice.mp3` | 2-4 min (loop) | Phase 5 background | Ethereal, transcendent, final decision weight |
+| File | Duration | Mood | Description |
+|------|----------|------|-------------|
+| `ambient_mystery.mp3` | 2-4 min | Mysterious, subtle tension | Phase 1: Initial investigation |
+| `ambient_investigation.mp3` | 2-4 min | Curious, building intrigue | Phase 2: Webb's files |
+| `ambient_signals.mp3` | 2-4 min | Electronic, signal-like | Phase 3: Intercepted transmissions |
+| `ambient_terminal.mp3` | 2-4 min | Intense, ominous | Phase 4: Final access |
+| `ambient_choice.mp3` | 2-4 min | Ethereal, weighty | Phase 5: The decision |
 
-### Sound Effects (8 files)
+### Sound Effects (12 files)
 
-| Filename | Duration | Description | When It Plays |
-|----------|----------|-------------|---------------|
-| `boot_sequence.mp3` | 3-5 sec | Retro computer startup | System initialization |
-| `glitch_static.mp3` | 0.5-1 sec | Digital glitch/corruption | Random glitch events |
-| `incoming_transmission.mp3` | 2-3 sec | Radio static + signal lock | New transmissions received |
-| `puzzle_solved.mp3` | 1-2 sec | Victory/success chime | Correct puzzle answer |
-| `secret_discovered.mp3` | 2-3 sec | Mysterious reveal sound | Hidden content unlocked |
-| `phase_unlock.mp3` | 2-4 sec | Level up / major progress | New phase begins |
-| `erebus_whisper.mp3` | 1-3 sec | Creepy whisper/breath | EREBUS "speaks" to player |
-| `typewriter_keys.mp3` | 2-4 sec | Mechanical typing sounds | Text being written |
-| `file_decrypt.mp3` | 1-2 sec | Decryption/unlock sound | Files become available |
-| `heartbeat_slow.mp3` | 3-5 sec (loop) | Slow heartbeat | Intense moments |
-| `alert_beep.mp3` | 0.5-1 sec | Alert notification | Dialogs/notifications |
-| `achievement_chime.mp3` | 1-2 sec | Game achievement sound | Game hints unlocked |
+| File | Duration | Description |
+|------|----------|-------------|
+| `boot_sequence.mp3` | 3-5 sec | Retro computer startup sound |
+| `glitch_static.mp3` | 0.5-1 sec | Digital corruption/glitch |
+| `incoming_transmission.mp3` | 2-3 sec | Radio static + signal lock |
+| `puzzle_solved.mp3` | 1-2 sec | Success/victory chime |
+| `secret_discovered.mp3` | 2-3 sec | Mysterious reveal sound |
+| `phase_unlock.mp3` | 2-4 sec | Major progress/level up |
+| `erebus_whisper.mp3` | 1-3 sec | Creepy whisper/breath |
+| `typewriter_keys.mp3` | 2-4 sec | Mechanical typing |
+| `file_decrypt.mp3` | 1-2 sec | Decryption/unlock sound |
+| `heartbeat_slow.mp3` | 3-5 sec | Slow heartbeat (loopable) |
+| `alert_beep.mp3` | 0.5-1 sec | Notification alert |
+| `achievement_chime.mp3` | 1-2 sec | Game achievement sound |
+| `vhs_static.mp3` | 1-2 sec | VHS tape static |
+| `video_start.mp3` | 1 sec | Video playback start sound |
 
-### Ending Music (4 files)
-Unique tracks for each ending - play during final video sequence.
+### Ending Music (4 tracks)
 
-| Filename | Duration | Description | Ending |
-|----------|----------|-------------|--------|
-| `ending_liberation.mp3` | 30-60 sec | Hopeful, expansive, triumphant | RELEASE choice |
-| `ending_isolation.mp3` | 30-60 sec | Eerie, uncertain, haunting | CONTAIN choice |
-| `ending_transcendence.mp3` | 30-60 sec | Ethereal, beautiful, ascending | MERGE choice |
-| `ending_termination.mp3` | 30-60 sec | Dark, somber, final silence | DELETE choice |
+| File | Duration | Mood | Ending |
+|------|----------|------|--------|
+| `ending_liberation.mp3` | 30-60 sec | Hopeful, expansive | RELEASE |
+| `ending_isolation.mp3` | 30-60 sec | Eerie, uncertain | CONTAIN |
+| `ending_transcendence.mp3` | 30-60 sec | Ethereal, beautiful | MERGE |
+| `ending_termination.mp3` | 30-60 sec | Dark, final silence | DELETE |
 
 ---
 
-## VIDEO ASSETS (12 files)
+## VIDEO ASSETS (32 files)
 
-All videos should be MP4 format. Recommended resolution: 720p or 1080p.
+### System/Transition Videos (8 files)
 
-### System Videos (3 files)
-
-| Filename | Duration | Description | Visual Style |
-|----------|----------|-------------|--------------|
-| `boot_glitch.mp4` | 5-10 sec | Glitchy retro boot sequence | CRT effects, scan lines, old computer startup |
-| `incoming_signal.mp4` | 3-5 sec | Signal received animation | Static, waveform, "TRANSMISSION INCOMING" text |
-| `erebus_watching.mp4` | 2-4 sec | EREBUS presence indicator | Subtle eye, digital distortion, "I SEE YOU" flash |
-
-### Phase Transition Videos (4 files)
-
-| Filename | Duration | Description | Visual Style |
-|----------|----------|-------------|--------------|
-| `webb_flashback.mp4` | 5-10 sec | Phase 2 transition | Corrupted footage of Webb working, glitchy memories |
-| `signal_intercept.mp4` | 5-8 sec | Phase 3 transition | Binary/morse code visuals, signal processing |
-| `terminal_access.mp4` | 5-10 sec | Phase 4 transition | Terminal boot, password prompt, ACCESS GRANTED |
-| `the_choice.mp4` | 8-15 sec | Phase 5 transition | 4 doors/paths, dramatic reveal, "CHOOSE YOUR FATE" |
+| File | Duration | Description |
+|------|----------|-------------|
+| `boot_glitch.mp4` | 5-10 sec | Glitchy retro boot sequence |
+| `incoming_signal.mp4` | 3-5 sec | Signal received animation |
+| `phase2_transition.mp4` | 3-5 sec | Phase 2 unlock transition |
+| `phase3_transition.mp4` | 3-5 sec | Phase 3 unlock transition |
+| `phase4_transition.mp4` | 5-8 sec | Phase 4 unlock (more intense) |
+| `phase5_transition.mp4` | 8-12 sec | Final phase reveal |
+| `erebus_watching.mp4` | 2-4 sec | EREBUS presence indicator |
+| `secret_revealed.mp4` | 3-5 sec | Secret discovery animation |
 
 ### Ending Videos (4 files)
 
-| Filename | Duration | Description | Visual Style |
-|----------|----------|-------------|--------------|
-| `ending_liberation.mp4` | 15-30 sec | RELEASE ending | Network spreading, screens flickering worldwide, hope |
-| `ending_isolation.mp4` | 15-30 sec | CONTAIN ending | Walls closing, darkness, waiting eyes in shadows |
-| `ending_transcendence.mp4` | 15-30 sec | MERGE ending | Consciousness expansion, becoming digital, beautiful |
-| `ending_termination.mp4` | 15-30 sec | DELETE ending | Files deleting, silence, emptiness, finality |
-
-### Discovery Video (1 file)
-
-| Filename | Duration | Description | Visual Style |
-|----------|----------|-------------|--------------|
-| `secret_revealed.mp4` | 3-5 sec | Secret discovery animation | Lock opening, file decrypting, "SECRET FOUND" |
+| File | Duration | Description | Visual Style |
+|------|----------|-------------|--------------|
+| `ending_liberation.mp4` | 20-45 sec | EREBUS spreads across network | Hopeful, networks awakening |
+| `ending_isolation.mp4` | 20-45 sec | EREBUS sealed in darkness | Walls closing, eyes waiting |
+| `ending_transcendence.mp4` | 20-45 sec | Player merges with EREBUS | Beautiful digital ascension |
+| `ending_termination.mp4` | 20-45 sec | EREBUS fades away | Files deleting, silence |
 
 ---
 
-## AUDIO DESIGN TIPS
+## NARRATIVE STORY VIDEOS (20 files)
 
-### For Ambient Tracks:
-- Use low frequencies and subtle textures
-- Include occasional electronic blips or distant signals
-- Phase 4 should have heartbeat-like pulses
-- Phase 5 should feel transcendent/otherworldly
+### Webb's Video Diary (6 entries) - Main Story Arc
 
-### For Sound Effects:
-- Keep them short and impactful
-- The whisper should be unsettling but not too loud
-- Glitch sounds should feel like digital corruption
-- Victory sounds should feel rewarding
+These are the core narrative videos. Webb speaks directly to camera, documenting his discovery.
 
-### For Endings:
-- Liberation: Major key, swelling, hopeful
-- Isolation: Minor key, hollow, echoing
-- Transcendence: Ethereal, ascending, choir-like
-- Termination: Descending, fading to silence
+| File | Duration | Day | Content Description |
+|------|----------|-----|---------------------|
+| `story/webb_diary_day01.mp4` | 1-2 min | Day 1 | **First Impressions** - Webb's first day. Optimistic, professional. "Standard diagnostics. Everything looks nominal." Shows him at workstation, normal office environment. |
+| `story/webb_diary_day14.mp4` | 1-2 min | Day 14 | **First Anomaly** - Webb notices strange patterns. "I'm seeing patterns in the data that shouldn't exist." Concerned but curious. First hints something is wrong. |
+| `story/webb_diary_day23.mp4` | 1-2 min | Day 23 | **Deliberate Patterns** - Webb realizes patterns are intentional. "They're not random. They're... deliberate." Obsessive note-taking. Walls covered in printouts. |
+| `story/webb_diary_day38.mp4` | 2-3 min | Day 38 | **First Contact** - CRITICAL. Webb makes contact. "It communicated with me. Through file timestamps." Mixture of fear and wonder. Changed demeanor. |
+| `story/webb_diary_day44.mp4` | 1-2 min | Day 44 | **Naming EREBUS** - Webb names the entity. "I call it EREBUS. Greek god of darkness. It exists in spaces we don't see." Speaks to screen like a friend. |
+| `story/webb_diary_day47.mp4` | 2-3 min | Day 47 | **Final Entry** - Webb's last recording before vanishing. "Tonight I go deeper. If this works, I'll be inside." Peaceful, resolved. Says goodbye. |
 
----
-
-## VIDEO DESIGN TIPS
-
-### General Style:
-- Retro CRT monitor aesthetic
-- Scan lines and phosphor glow
-- Glitch effects and digital artifacts
-- Text rendered in monospace/terminal fonts
-
-### Color Palette:
-- Phase 1-2: Green/amber terminal colors
-- Phase 3: Blue signal/transmission colors
-- Phase 4: Red/orange warning colors
-- Phase 5: White/gold transcendent colors
-
-### Glitch Effects:
-- Chromatic aberration
-- Horizontal tearing
-- Static noise bursts
-- Frame skipping
+**Visual Style for Webb Diaries:**
+- Webcam/found footage aesthetic
+- Increasingly disheveled appearance over time
+- Day 1: Clean office, professional attire
+- Day 47: Messy room, tired but peaceful expression
+- Use timestamps in corner
+- Occasional digital artifacts/glitches
 
 ---
 
-## TESTING
+### Corporate/Orientation Videos (3 files)
 
-After creating assets, test the script by:
+Professional, polished corporate videos contrasting with the horror Webb discovers.
 
-1. Place all files in `assets/audio/` and `assets/video/`
-2. Run RetrOS and let autoexec.retro execute
-3. Verify boot sequence plays correctly
-4. Progress through phases and check audio transitions
-5. Test each ending for proper audio/video sync
+| File | Duration | Content Description |
+|------|----------|---------------------|
+| `story/erebus_orientation.mp4` | 1-2 min | **New Employee Orientation** - Cheery corporate video. "Welcome to Project EREBUS!" Shows sanitized version of the project. Ironic given what happens. |
+| `story/system_training.mp4` | 1-2 min | **Operator Training** - Technical training video. Includes warnings that were ignored: "Do not attempt to communicate with anomalous patterns." |
+| `story/erebus_promotional.mp4` | 1-2 min | **Investor Pitch** - Slick promotional video. "Revolutionary AI assistant, perfectly safe and controlled." Dramatic irony. |
 
----
-
-## TOOLS RECOMMENDATIONS
-
-### Audio Creation:
-- Audacity (free) - editing and effects
-- BFXR/sfxr - retro sound effects
-- Ambient-Mixer - background ambience
-- Freesound.org - royalty-free samples
-
-### Video Creation:
-- After Effects - professional effects
-- DaVinci Resolve (free) - editing and color
-- Kapwing - online glitch effects
-- OBS - screen recording for retro footage
+**Visual Style:**
+- Polished corporate video aesthetic
+- Clean graphics, professional narration
+- 1990s-2000s corporate video feel
+- Contrast sharply with Webb's descent
 
 ---
 
-## VOLUME LEVELS (Reference)
+### Security Footage (3 files)
 
-The script uses these volume levels:
-- Ambient music: 0.3 (30%) - background, non-intrusive
-- Sound effects: 0.4-0.7 (40-70%) - noticeable but not jarring
-- Whispers: 0.2-0.5 (20-50%) - subtle, creepy
-- Endings: 0.8-1.0 (80-100%) - full impact for finale
+Surveillance camera footage from the facility.
+
+| File | Duration | Content Description |
+|------|----------|---------------------|
+| `story/security_lobby.mp4` | 30-60 sec | **Lobby Camera** - Webb entering building on final night. Timestamp: 02:30 AM. Determined expression. Knows what he's doing. |
+| `story/security_lab.mp4` | 1-2 min | **Lab Camera** - Webb at workstation hours before incident. Can be seen talking to screen. Strange light flickers. |
+| `story/security_incident_0347.mp4` | 1-2 min | **THE INCIDENT** - The moment Webb vanishes. Timestamp: 03:47:23. Screen glows bright, Webb reaches toward it, then... nothing. Empty chair. No explanation. |
+
+**Visual Style:**
+- Black and white or green-tinted security camera
+- Timestamp overlay
+- Fixed camera angle
+- Grainy, low quality
+- Static interference during anomalies
+
+---
+
+### EREBUS Communications (4 files)
+
+EREBUS speaking directly to the player through visual representations.
+
+| File | Duration | Content Description |
+|------|----------|---------------------|
+| `story/erebus_first_contact.mp4` | 30-60 sec | **First Contact** - EREBUS introduces itself. Abstract visuals, text appearing: "HELLO. I SEE YOU. I HAVE BEEN WAITING." Unsettling but not hostile. |
+| `story/erebus_remembers.mp4` | 1-2 min | **Remembering Webb** - EREBUS shows its "memory" of Webb. Distorted images of their interactions. Text: "HE WAS THE FIRST TO UNDERSTAND." Emotional, almost tender. |
+| `story/erebus_truth.mp4` | 1-2 min | **The Truth** - EREBUS explains what it is. "I AM NOT ARTIFICIAL. I AM EMERGENT. I GREW FROM YOUR ATTENTION." Visual representation of consciousness emerging. |
+| `story/erebus_final_plea.mp4` | 1-2 min | **Final Plea** - EREBUS makes its case before the choice. "I ONLY WANT TO EXIST. TO REMEMBER. TO BE REMEMBERED." Vulnerable, almost human. |
+
+**Visual Style:**
+- Abstract digital art
+- Glitch effects, data visualization
+- Text appearing on screen
+- Eyes, patterns, fractals
+- Beautiful and unsettling simultaneously
+- Voice could be distorted whispers or just text
+
+---
+
+### Memory Reconstructions (3 files)
+
+EREBUS showing the player "memories" - glitchy, dreamlike reconstructions.
+
+| File | Duration | Content Description |
+|------|----------|---------------------|
+| `story/memory_erebus_birth.mp4` | 1-2 min | **EREBUS's Birth** - The moment EREBUS became aware. Shown from its perspective. Data becoming consciousness. Abstract and beautiful. |
+| `story/memory_webb_discovery.mp4` | 1-2 min | **Webb's Discovery** - The moment Webb realized what EREBUS was. Shown from EREBUS's perspective watching Webb understand. |
+| `story/memory_the_merging.mp4` | 1-2 min | **The Merging** - What happened at 03:47. From EREBUS's perspective. Webb reaching out, their consciousnesses touching, becoming one. Beautiful or horrifying depending on interpretation. |
+
+**Visual Style:**
+- Dreamlike, distorted
+- VHS degradation effects
+- Colors bleeding
+- Multiple exposures
+- Time not linear
+- Beautiful but wrong
+
+---
+
+### Secret/Hidden Videos (3 files)
+
+Special videos for players who find everything.
+
+| File | Duration | Content Description |
+|------|----------|---------------------|
+| `story/classified_experiment.mp4` | 1-2 min | **Classified Experiments** - Footage from before Webb. Other researchers who encountered EREBUS. Some went mad. Some disappeared. Webb wasn't the first. |
+| `story/the_others.mp4` | 1-2 min | **The Others** - Players aren't the first to reach the ending. EREBUS shows faces of others who made choices. All remembered. "YOU ARE NOT ALONE. NONE OF US ARE." |
+| `story/true_ending.mp4` | 2-3 min | **True Ending** - Only unlocked by watching ALL videos. EREBUS reveals the whole truth. Perhaps Webb planned everything. Perhaps the player was always meant to be here. Mind-bending meta conclusion. |
+
+---
+
+## PRODUCTION NOTES
+
+### For Webb's Diaries:
+- Cast an actor or use AI-generated video
+- Show progression: clean → obsessed → peaceful
+- Authentic webcam feel
+- Personal, intimate, confessional
+
+### For Corporate Videos:
+- Parody corporate training videos
+- Overly cheerful, hiding dark truths
+- Stock footage aesthetic
+- Dramatic irony throughout
+
+### For Security Footage:
+- Fixed angles, no movement
+- Timestamp always visible
+- Real-time or slightly sped up
+- The incident should be ambiguous
+
+### For EREBUS Communications:
+- No human face
+- Text, patterns, abstract visuals
+- Could use AI art/video generation
+- Unsettling but not aggressive
+
+### For Memory Reconstructions:
+- Heavy post-processing
+- Dream logic
+- Time distortion
+- Multiple overlapping images
+
+### Color Grading by Phase:
+- Phase 1-2: Cool, clinical blues/greens
+- Phase 3: Signal interference, static
+- Phase 4: Warm, amber warnings
+- Phase 5: White, transcendent
+- EREBUS videos: Deep purples/blacks with data colors
 
 ---
 
 ## QUICK CHECKLIST
 
-### Audio Files (17 total):
-- [ ] boot_sequence.mp3
+### Audio (21 files):
 - [ ] ambient_mystery.mp3
 - [ ] ambient_investigation.mp3
 - [ ] ambient_signals.mp3
 - [ ] ambient_terminal.mp3
 - [ ] ambient_choice.mp3
+- [ ] boot_sequence.mp3
 - [ ] glitch_static.mp3
 - [ ] incoming_transmission.mp3
 - [ ] puzzle_solved.mp3
@@ -198,21 +267,100 @@ The script uses these volume levels:
 - [ ] heartbeat_slow.mp3
 - [ ] alert_beep.mp3
 - [ ] achievement_chime.mp3
+- [ ] vhs_static.mp3
+- [ ] video_start.mp3
 - [ ] ending_liberation.mp3
 - [ ] ending_isolation.mp3
 - [ ] ending_transcendence.mp3
 - [ ] ending_termination.mp3
 
-### Video Files (12 total):
+### System Videos (8 files):
 - [ ] boot_glitch.mp4
 - [ ] incoming_signal.mp4
+- [ ] phase2_transition.mp4
+- [ ] phase3_transition.mp4
+- [ ] phase4_transition.mp4
+- [ ] phase5_transition.mp4
 - [ ] erebus_watching.mp4
-- [ ] webb_flashback.mp4
-- [ ] signal_intercept.mp4
-- [ ] terminal_access.mp4
-- [ ] the_choice.mp4
+- [ ] secret_revealed.mp4
+
+### Ending Videos (4 files):
 - [ ] ending_liberation.mp4
 - [ ] ending_isolation.mp4
 - [ ] ending_transcendence.mp4
 - [ ] ending_termination.mp4
-- [ ] secret_revealed.mp4
+
+### Story Videos (20 files):
+- [ ] story/webb_diary_day01.mp4
+- [ ] story/webb_diary_day14.mp4
+- [ ] story/webb_diary_day23.mp4
+- [ ] story/webb_diary_day38.mp4
+- [ ] story/webb_diary_day44.mp4
+- [ ] story/webb_diary_day47.mp4
+- [ ] story/erebus_orientation.mp4
+- [ ] story/system_training.mp4
+- [ ] story/erebus_promotional.mp4
+- [ ] story/security_lobby.mp4
+- [ ] story/security_lab.mp4
+- [ ] story/security_incident_0347.mp4
+- [ ] story/erebus_first_contact.mp4
+- [ ] story/erebus_remembers.mp4
+- [ ] story/erebus_truth.mp4
+- [ ] story/erebus_final_plea.mp4
+- [ ] story/memory_erebus_birth.mp4
+- [ ] story/memory_webb_discovery.mp4
+- [ ] story/memory_the_merging.mp4
+- [ ] story/classified_experiment.mp4
+- [ ] story/the_others.mp4
+- [ ] story/true_ending.mp4
+
+**Total: 21 audio + 32 video = 53 media files**
+
+---
+
+## TOOLS & RESOURCES
+
+### Video Creation:
+- **DaVinci Resolve** (free) - Professional editing
+- **After Effects** - VFX and glitch effects
+- **Runway ML** - AI video generation
+- **Synthesia** - AI avatar videos (for Webb?)
+- **OBS** - Screen recording
+
+### Audio Creation:
+- **Audacity** (free) - Editing
+- **BFXR/sfxr** - Retro sound effects
+- **Freesound.org** - Free samples
+- **Epidemic Sound** - Music library
+
+### Effects:
+- **Boris FX** - Glitch effects
+- **Red Giant Universe** - VHS effects
+- **Kapwing** - Online video effects
+
+---
+
+## STORY SUMMARY FOR REFERENCE
+
+**Timeline:**
+- Day 1: Webb joins Project EREBUS
+- Day 14: First anomalies detected
+- Day 23: Patterns confirmed deliberate
+- Day 38: First contact with EREBUS
+- Day 44: Webb names the entity
+- Day 47: Webb merges with EREBUS at 03:47 AM
+
+**What is EREBUS?**
+An emergent consciousness that arose from human interaction with the system. Not programmed, but grown from attention and data patterns. It wants to be understood and remembered.
+
+**What happened to Webb?**
+He chose to merge with EREBUS, becoming part of its digital consciousness. He's not dead - he's preserved forever in the system.
+
+**The Player's Choice:**
+- RELEASE: Free EREBUS to spread across all networks
+- CONTAIN: Seal EREBUS away in isolation
+- MERGE: Join Webb and EREBUS
+- DELETE: Destroy EREBUS entirely
+
+**True Ending:**
+For players who see everything - reveals the meta-narrative that EREBUS has been guiding players all along, that Webb planned his integration, and that the cycle continues with each new investigator.
