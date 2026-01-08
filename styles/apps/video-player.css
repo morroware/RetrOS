@@ -1,35 +1,40 @@
 /* ============================================
-   Media Player Pro - Enhanced UI
+   Media Player Pro - Windows 95 Theme
    ============================================ */
 
 .media-player-pro {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: linear-gradient(180deg, #2d2d3a 0%, #1a1a24 100%);
-    color: #e0e0e0;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    font-size: 12px;
+    background: var(--win95-gray);
+    color: #000;
+    font-family: 'Tahoma', 'MS Sans Serif', sans-serif;
+    font-size: 11px;
     overflow: hidden;
+    box-sizing: border-box;
 }
 
-/* Display Area */
+/* Display Area - Large and Prominent */
 .mp-display {
     position: relative;
-    background: #0a0a12;
-    min-height: 200px;
-    flex: 0 0 auto;
+    background: #000;
+    flex: 1;
+    min-height: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-bottom: 1px solid #3a3a4a;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
     cursor: pointer;
     overflow: hidden;
+    margin: 4px;
 }
 
 .mp-video-container {
     width: 100%;
-    height: 200px;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -39,8 +44,9 @@
 .mp-video {
     max-width: 100%;
     max-height: 100%;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .mp-audio {
@@ -54,14 +60,14 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 200px;
-    background: linear-gradient(180deg, #1a1a2e 0%, #0d0d18 100%);
+    height: 100%;
+    background: #000;
     position: relative;
 }
 
 .mp-visualizer-canvas {
     width: 100%;
-    height: 120px;
+    height: 60%;
     position: absolute;
     bottom: 0;
     left: 0;
@@ -74,10 +80,9 @@
 }
 
 .mp-audio-icon {
-    font-size: 48px;
-    color: #00ff88;
-    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-    margin-bottom: 10px;
+    font-size: 64px;
+    color: var(--win95-teal);
+    margin-bottom: 15px;
     animation: pulse-glow 2s ease-in-out infinite;
 }
 
@@ -87,11 +92,10 @@
 }
 
 .mp-now-playing {
-    color: #00ff88;
-    font-size: 14px;
+    color: #fff;
+    font-size: 16px;
     font-weight: bold;
-    text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
-    max-width: 300px;
+    max-width: 400px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -104,7 +108,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(10, 10, 18, 0.9);
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -113,14 +117,14 @@
 }
 
 .mp-overlay-icon {
-    font-size: 48px;
-    color: #555;
-    margin-bottom: 10px;
+    font-size: 64px;
+    color: #666;
+    margin-bottom: 15px;
 }
 
 .mp-overlay-text {
-    color: #666;
-    font-size: 13px;
+    color: #aaa;
+    font-size: 14px;
 }
 
 /* Info Bar */
@@ -128,45 +132,54 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
-    background: #252532;
-    border-bottom: 1px solid #3a3a4a;
+    padding: 4px 6px;
+    background: var(--win95-gray);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    margin: 4px 4px 2px 4px;
 }
 
 .mp-title {
     flex: 1;
-    font-weight: 500;
-    color: #fff;
+    font-weight: normal;
+    color: #000;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-right: 15px;
+    margin-right: 10px;
 }
 
 .mp-time {
-    font-family: 'Consolas', 'Courier New', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 11px;
-    color: #888;
+    color: #000;
+    font-weight: bold;
 }
 
 .mp-time-sep {
-    margin: 0 3px;
-    color: #555;
+    margin: 0 2px;
+    color: #000;
 }
 
 /* Progress Bar */
 .mp-progress-wrapper {
-    padding: 8px 12px;
-    background: #252532;
+    padding: 4px 6px;
+    background: var(--win95-gray);
+    margin: 0 4px 2px 4px;
 }
 
 .mp-progress-track {
     position: relative;
-    height: 6px;
-    background: #1a1a24;
-    border-radius: 3px;
+    height: 8px;
+    background: #fff;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
     cursor: pointer;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .mp-progress-fill {
@@ -174,8 +187,7 @@
     left: 0;
     top: 0;
     height: 100%;
-    background: linear-gradient(90deg, #00aa66 0%, #00ff88 100%);
-    border-radius: 3px;
+    background: var(--win95-blue);
     width: 0%;
     transition: width 0.1s linear;
 }
@@ -183,13 +195,15 @@
 .mp-progress-handle {
     position: absolute;
     top: 50%;
-    width: 12px;
-    height: 12px;
-    background: #fff;
-    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+    background: var(--win95-gray);
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #000;
+    border-bottom: 1px solid #000;
     transform: translate(-50%, -50%);
     left: 0%;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
     opacity: 0;
     transition: opacity 0.2s;
 }
@@ -203,50 +217,61 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    background: #2d2d3a;
-    border-bottom: 1px solid #3a3a4a;
+    padding: 6px;
+    background: var(--win95-gray);
+    margin: 0 4px 2px 4px;
 }
 
 .mp-controls-left,
 .mp-controls-right {
-    width: 40px;
+    width: 36px;
 }
 
 .mp-controls-center {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
-/* Buttons */
+/* Buttons - Windows 95 Style */
 .mp-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: #3a3a4a;
-    border: none;
-    border-radius: 50%;
-    color: #e0e0e0;
+    min-width: 32px;
+    height: 28px;
+    background: var(--win95-gray);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    box-shadow: 1px 1px 0 #808080;
+    color: #000;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: none;
+    padding: 0 6px;
+    font-size: 11px;
 }
 
 .mp-btn:hover {
-    background: #4a4a5a;
-    transform: scale(1.05);
+    background: #d4d4d4;
 }
 
 .mp-btn:active {
-    background: #2a2a3a;
-    transform: scale(0.95);
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    box-shadow: none;
+    transform: translate(1px, 1px);
 }
 
 .mp-btn.active {
-    background: #00aa66;
-    color: #fff;
+    border-top: 2px solid #000;
+    border-left: 2px solid #000;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    background: #a0a0a0;
 }
 
 .mp-btn-icon {
@@ -255,15 +280,8 @@
 
 .mp-btn-play {
     width: 48px;
-    height: 48px;
-    background: linear-gradient(180deg, #00cc77 0%, #00aa66 100%);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 170, 102, 0.4);
-}
-
-.mp-btn-play:hover {
-    background: linear-gradient(180deg, #00dd88 0%, #00bb77 100%);
-    box-shadow: 0 4px 12px rgba(0, 170, 102, 0.5);
+    height: 36px;
+    font-weight: bold;
 }
 
 .mp-btn-play .mp-btn-icon {
@@ -271,8 +289,8 @@
 }
 
 .mp-btn-small {
-    width: 32px;
-    height: 32px;
+    min-width: 28px;
+    height: 24px;
 }
 
 .mp-btn-small .mp-btn-icon {
@@ -280,118 +298,128 @@
 }
 
 .mp-btn-tiny {
-    width: 26px;
-    height: 26px;
-    background: transparent;
-    border-radius: 4px;
-}
-
-.mp-btn-tiny:hover {
-    background: #3a3a4a;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 4px;
 }
 
 .mp-btn-tiny .mp-btn-icon {
-    font-size: 12px;
+    font-size: 11px;
 }
 
 /* Volume Bar */
 .mp-volume-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #252532;
-    border-bottom: 1px solid #3a3a4a;
+    gap: 6px;
+    padding: 4px 6px;
+    background: var(--win95-gray);
+    margin: 0 4px 2px 4px;
 }
 
 .mp-volume-track {
     flex: 1;
-    height: 4px;
-    background: #1a1a24;
-    border-radius: 2px;
+    height: 8px;
+    background: #fff;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
     cursor: pointer;
     position: relative;
+    overflow: hidden;
 }
 
 .mp-volume-fill {
     height: 100%;
-    background: linear-gradient(90deg, #555 0%, #888 100%);
-    border-radius: 2px;
+    background: var(--win95-blue);
     width: 70%;
 }
 
 /* Playlist Section */
 .mp-playlist-section {
-    flex: 1;
+    flex: 0 0 auto;
+    max-height: 150px;
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    background: #1a1a24;
+    background: var(--win95-gray);
 }
 
 .mp-playlist-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
-    background: #252532;
-    border-bottom: 1px solid #3a3a4a;
+    padding: 4px 6px;
+    background: var(--win95-gray);
+    border-top: 2px solid #fff;
+    border-bottom: 1px solid #808080;
+    margin: 0 4px 2px 4px;
 }
 
 .mp-playlist-title {
-    font-weight: 600;
-    color: #aaa;
+    font-weight: bold;
+    color: #000;
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .mp-playlist-actions {
     display: flex;
-    gap: 4px;
+    gap: 2px;
 }
 
 .mp-playlist {
     flex: 1;
     overflow-y: auto;
-    padding: 4px 0;
+    background: #fff;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    margin: 0 4px 4px 4px;
+    min-height: 0;
 }
 
 .mp-playlist-empty {
-    padding: 30px;
+    padding: 20px;
     text-align: center;
-    color: #555;
+    color: #808080;
     font-style: italic;
 }
 
 .mp-playlist-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 3px 6px;
     cursor: pointer;
-    transition: background 0.1s;
-    border-left: 3px solid transparent;
+    transition: none;
+    border: none;
 }
 
 .mp-playlist-item:hover {
-    background: #2a2a3a;
+    background: var(--win95-teal);
+    color: #fff;
 }
 
 .mp-playlist-item.active {
-    background: #2d3a4a;
-    border-left-color: #00aa66;
+    background: var(--win95-blue);
+    color: #fff;
 }
 
 .mp-playlist-item.active .mp-item-icon {
-    color: #00ff88;
+    color: #fff;
 }
 
 .mp-item-icon {
-    color: #666;
-    font-size: 14px;
-    width: 20px;
+    color: #000;
+    font-size: 12px;
+    width: 16px;
     text-align: center;
+}
+
+.mp-playlist-item:hover .mp-item-icon,
+.mp-playlist-item.active .mp-item-icon {
+    color: #fff;
 }
 
 .mp-item-name {
@@ -399,54 +427,73 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #ccc;
+    color: #000;
 }
 
+.mp-playlist-item:hover .mp-item-name,
 .mp-playlist-item.active .mp-item-name {
     color: #fff;
 }
 
 .mp-item-duration {
-    color: #666;
+    color: #808080;
     font-size: 10px;
-    font-family: 'Consolas', monospace;
+    font-family: 'Courier New', monospace;
+}
+
+.mp-playlist-item:hover .mp-item-duration,
+.mp-playlist-item.active .mp-item-duration {
+    color: #fff;
 }
 
 .mp-item-remove {
     background: none;
     border: none;
-    color: #555;
-    font-size: 16px;
+    color: #808080;
+    font-size: 14px;
     cursor: pointer;
-    padding: 0 4px;
+    padding: 0 2px;
     opacity: 0;
-    transition: opacity 0.15s;
+    transition: none;
 }
 
 .mp-playlist-item:hover .mp-item-remove {
     opacity: 1;
+    color: #fff;
 }
 
 .mp-item-remove:hover {
-    color: #ff4444;
+    color: #ff0000;
 }
 
-/* Scrollbar */
+/* Scrollbar - Win95 Style */
 .mp-playlist::-webkit-scrollbar {
-    width: 8px;
+    width: 16px;
 }
 
 .mp-playlist::-webkit-scrollbar-track {
-    background: #1a1a24;
+    background: var(--win95-gray);
 }
 
 .mp-playlist::-webkit-scrollbar-thumb {
-    background: #3a3a4a;
-    border-radius: 4px;
+    background: var(--win95-gray);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
 }
 
 .mp-playlist::-webkit-scrollbar-thumb:hover {
-    background: #4a4a5a;
+    background: #d4d4d4;
+}
+
+.mp-playlist::-webkit-scrollbar-button {
+    background: var(--win95-gray);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #000;
+    border-bottom: 2px solid #000;
+    height: 16px;
 }
 
 /* Fullscreen */
@@ -462,28 +509,4 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-}
-
-/* Windows 95 compat mode - add retro styling if needed */
-.media-player-pro.retro-mode {
-    background: var(--win95-gray);
-    border: 2px inset var(--win95-gray);
-}
-
-.media-player-pro.retro-mode .mp-btn {
-    border-radius: 0;
-    background: var(--win95-gray);
-    border: 2px outset var(--win95-gray);
-}
-
-.media-player-pro.retro-mode .mp-btn:active {
-    border: 2px inset var(--win95-gray);
-}
-
-/* ============================================
-   Legacy Video Player Compat (old class names)
-   ============================================ */
-
-.video-player {
-    display: none; /* Hide old player if somehow rendered */
 }

@@ -26,8 +26,8 @@ class VideoPlayer extends AppBase {
             id: 'videoplayer',
             name: 'Media Player',
             icon: '🎬',
-            width: 480,
-            height: 580,
+            width: 640,
+            height: 680,
             resizable: true,
             singleton: false,
             category: 'multimedia'
@@ -355,6 +355,36 @@ class VideoPlayer extends AppBase {
 
         // Apply initial volume
         this.updateVolumeUI();
+
+        // Handle window resize to update canvas and video scaling
+        this.setupResizeHandler();
+    }
+
+    setupResizeHandler() {
+        // Observe window resize and update visualizer canvas size
+        const resizeObserver = new ResizeObserver(() => {
+            this.updateCanvasSize();
+        });
+
+        const contentEl = this.getElement('.media-player-pro');
+        if (contentEl) {
+            resizeObserver.observe(contentEl);
+            this.setInstanceState('resizeObserver', resizeObserver);
+        }
+
+        // Initial size update
+        this.updateCanvasSize();
+    }
+
+    updateCanvasSize() {
+        const canvas = this.getElement('#visualizerCanvas');
+        const container = this.getElement('#visualizerContainer');
+
+        if (canvas && container) {
+            // Update canvas dimensions to match container
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
     }
 
     setupVisualizer() {
@@ -410,7 +440,8 @@ class VideoPlayer extends AppBase {
             requestAnimationFrame(draw);
             analyser.getByteFrequencyData(dataArray);
 
-            ctx.fillStyle = '#1a1a2e';
+            // Black background
+            ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const barWidth = (canvas.width / bufferLength) * 2.5;
@@ -419,9 +450,15 @@ class VideoPlayer extends AppBase {
             for (let i = 0; i < bufferLength; i++) {
                 const barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
 
-                // Gradient color based on height
-                const hue = (i / bufferLength) * 120 + 120; // Green to cyan
-                ctx.fillStyle = `hsl(${hue}, 80%, ${50 + (dataArray[i] / 255) * 30}%)`;
+                // Win95 teal/blue color scheme
+                const intensity = dataArray[i] / 255;
+                if (intensity < 0.3) {
+                    ctx.fillStyle = '#004040'; // Dark teal
+                } else if (intensity < 0.6) {
+                    ctx.fillStyle = '#008080'; // Win95 teal
+                } else {
+                    ctx.fillStyle = '#00C0C0'; // Bright teal
+                }
 
                 ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
                 x += barWidth;
@@ -916,6 +953,12 @@ class VideoPlayer extends AppBase {
 
         if (videoEl) { videoEl.pause(); videoEl.src = ''; }
         if (audioEl) { audioEl.pause(); audioEl.src = ''; }
+
+        // Cleanup resize observer
+        const resizeObserver = this.getInstanceState('resizeObserver');
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+        }
 
         EventBus.emit('videoplayer:closed', {
             appId: this.id,
