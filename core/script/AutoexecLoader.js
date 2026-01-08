@@ -5,9 +5,14 @@
  * and executes the first one found during system boot.
  *
  * Autoexec File Locations (checked in order):
- *   1. C:/Windows/autoexec.retro - System-level startup
- *   2. C:/Scripts/autoexec.retro - User scripts folder
- *   3. C:/Users/User/autoexec.retro - User home folder
+ *   1. /autoexec.retro - Real web directory (e.g., project root) - CHECKED FIRST
+ *   2. C:/Windows/autoexec.retro - Virtual filesystem: System-level startup
+ *   3. C:/Scripts/autoexec.retro - Virtual filesystem: User scripts folder
+ *   4. C:/Users/User/autoexec.retro - Virtual filesystem: User home folder
+ *
+ * Web admins can place autoexec.retro in the project root, and it will
+ * automatically execute on boot, allowing easy customization without
+ * modifying the virtual filesystem.
  */
 
 // Import the main (legacy) ScriptEngine for compatibility
@@ -15,7 +20,12 @@ import ScriptEngine from '../ScriptEngine.js';
 import { DEFAULT_LIMITS } from './utils/SafetyLimits.js';
 
 /**
- * Paths to check for autoexec scripts (in order)
+ * Real filesystem path (checked first - allows web admins to place autoexec.retro in project root)
+ */
+const REAL_AUTOEXEC_PATH = '/autoexec.retro';
+
+/**
+ * Virtual filesystem paths to check for autoexec scripts (in order)
  */
 const AUTOEXEC_PATHS = [
     'C:/Windows/autoexec.retro',
@@ -48,6 +58,59 @@ export async function runAutoexec(context = {}) {
         return null;
     }
 
+    // FIRST: Check for real file in web directory (allows web admins to provide autoexec.retro)
+    try {
+        console.log(`[AutoexecLoader] Checking for real file: ${REAL_AUTOEXEC_PATH}`);
+        const response = await fetch(REAL_AUTOEXEC_PATH);
+
+        if (response.ok) {
+            const scriptContent = await response.text();
+            console.log(`[AutoexecLoader] Found real autoexec script: ${REAL_AUTOEXEC_PATH}`);
+
+            // Emit start event
+            if (EventBus) {
+                EventBus.emit('autoexec:start', { path: REAL_AUTOEXEC_PATH, timestamp: Date.now() });
+            }
+
+            // Execute the script directly from content
+            const execContext = {
+                ...context,
+                AUTOEXEC: true,
+                BOOT_TIME: Date.now()
+            };
+
+            const result = await ScriptEngine.run(scriptContent, execContext);
+
+            if (result.success) {
+                console.log(`[AutoexecLoader] Real autoexec completed successfully`);
+
+                if (EventBus) {
+                    EventBus.emit('autoexec:complete', {
+                        path: REAL_AUTOEXEC_PATH,
+                        success: true,
+                        timestamp: Date.now()
+                    });
+                }
+            } else {
+                console.error(`[AutoexecLoader] Real autoexec failed:`, result.error);
+
+                if (EventBus) {
+                    EventBus.emit('autoexec:error', {
+                        path: REAL_AUTOEXEC_PATH,
+                        error: result.error,
+                        timestamp: Date.now()
+                    });
+                }
+            }
+
+            return result;
+        }
+    } catch (error) {
+        // Real file doesn't exist or fetch failed - this is normal, fall through to virtual filesystem
+        console.log(`[AutoexecLoader] No real autoexec.retro found (${error.message}), checking virtual filesystem...`);
+    }
+
+    // SECOND: Check virtual filesystem paths
     for (const path of AUTOEXEC_PATHS) {
         try {
             // Check if file exists
