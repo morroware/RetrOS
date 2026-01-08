@@ -566,9 +566,53 @@ export class Interpreter {
 
     async visitPlayStatement(stmt) {
         const EventBus = this.context.EventBus;
+        if (!EventBus) return;
 
-        if (EventBus) {
-            EventBus.emit('sound:play', { type: stmt.sound });
+        // Resolve the source (can be literal or variable)
+        const source = await this.visitExpression(stmt.source);
+
+        // Resolve options
+        const options = {};
+        for (const [key, valueExpr] of Object.entries(stmt.options)) {
+            options[key] = await this.visitExpression(valueExpr);
+        }
+
+        // Determine if this is an MP3 file path or a sound type
+        const isFilePath = typeof source === 'string' &&
+            (source.includes('/') || source.includes('\\') ||
+             source.endsWith('.mp3') || source.endsWith('.wav') ||
+             source.endsWith('.ogg') || source.startsWith('assets/'));
+
+        if (isFilePath) {
+            // Play MP3 file directly
+            EventBus.emit('audio:play', {
+                src: source,
+                volume: options.volume,
+                loop: options.loop || false,
+                force: options.force || false
+            });
+        } else {
+            // Play predefined sound type
+            EventBus.emit('sound:play', {
+                type: source,
+                volume: options.volume,
+                loop: options.loop || false,
+                force: options.force || false
+            });
+        }
+    }
+
+    async visitStopStatement(stmt) {
+        const EventBus = this.context.EventBus;
+        if (!EventBus) return;
+
+        if (stmt.source) {
+            // Stop specific audio
+            const source = await this.visitExpression(stmt.source);
+            EventBus.emit('audio:stop', { src: source });
+        } else {
+            // Stop all audio
+            EventBus.emit('audio:stopall', {});
         }
     }
 

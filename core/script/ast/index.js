@@ -39,6 +39,7 @@ export {
     PromptStatement,
     NotifyStatement,
     PlayStatement,
+    StopStatement,
     CommandStatement
 } from './nodes/Statements.js';
 

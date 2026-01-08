@@ -71,6 +71,7 @@ export const TokenType = {
 
     // Keywords - Sound
     PLAY: 'PLAY',
+    STOP: 'STOP',
 
     // Literals
     NUMBER: 'NUMBER',
@@ -188,6 +189,7 @@ export const KEYWORDS = {
 
     // Sound
     'play': TokenType.PLAY,
+    'stop': TokenType.STOP,
 
     // Literals
     'true': TokenType.TRUE,
