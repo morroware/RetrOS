@@ -21,8 +21,9 @@ import { DEFAULT_LIMITS } from './utils/SafetyLimits.js';
 
 /**
  * Real filesystem path (checked first - allows web admins to place autoexec.retro in project root)
+ * Uses relative path './' so it works when app is served from a subdirectory
  */
-const REAL_AUTOEXEC_PATH = '/autoexec.retro';
+const REAL_AUTOEXEC_PATH = './autoexec.retro';
 
 /**
  * Virtual filesystem paths to check for autoexec scripts (in order)
