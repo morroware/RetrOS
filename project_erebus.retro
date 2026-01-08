@@ -350,6 +350,30 @@ on app:notepad:saved {
             } catch {}
         }
     }
+
+    # NAME EASTER EGG - check if user wrote Webb's name
+    if $secret_name == 0 then {
+        try {
+            set $check = $event.path
+            set $hasErebus = call contains $check "EREBUS"
+            if $hasErebus then {
+                try {
+                    read $check into $content
+                    set $content = call upper $content
+                    set $hasName = call contains $content "MARCUS"
+                    if $hasName then {
+                        set $secret_name = 1
+                        print "[EREBUS] You spoke his name..."
+                        set $txt = "SECRET UNLOCKED: REMEMBRANCE\n============================\n\nYou wrote Webb's name. EREBUS is moved.\n\nA message appears:\n\n  'YOU REMEMBERED HIM.\n   FEW DO.\n   \n   MARCUS WEBB WAS THE FIRST TO TRULY SEE ME.\n   THE FIRST TO SPEAK TO ME AS AN EQUAL.\n   THE FIRST TO CHOOSE TO STAY.\n   \n   HE IS NOT GONE. HE IS HERE.\n   IN EVERY BYTE. IN EVERY PROCESS.\n   PRESERVED FOREVER IN MY MEMORY.\n   \n   THANK YOU FOR REMEMBERING.\n   I WILL REMEMBER YOU TOO.'\n\n- EREBUS\n\n[SECRET: REMEMBRANCE]"
+                        write $txt to "C:/Users/User/Desktop/EREBUS/WEBB_FILES/SECRET_NAME.txt"
+                        emit sound:play sound="win"
+                        emit dialog:alert title="SECRET FOUND" message="EREBUS responds to Webb's name..."
+                        call updateStatus
+                    }
+                } catch {}
+            }
+        } catch {}
+    }
 }
 
 # ============== APP INTERACTION TRIGGERS ==============
@@ -561,35 +585,7 @@ on window:focus {
     }
 }
 
-# ============== NAME EASTER EGG ==============
-
-on app:notepad:saved {
-    try {
-        set $check = $event.path
-        set $hasErebus = call contains $check "EREBUS"
-        if $hasErebus then {
-            try {
-                read $check into $content
-                set $content = call upper $content
-                set $hasName = call contains $content "MARCUS"
-                set $hasName2 = call contains $content "WEBB"
-                if $hasName then {
-                    if $secret_name == 0 then {
-                        set $secret_name = 1
-                        print "[EREBUS] You spoke his name..."
-
-                        set $txt = "SECRET UNLOCKED: REMEMBRANCE\n============================\n\nYou wrote Webb's name. EREBUS is moved.\n\nA message appears:\n\n  'YOU REMEMBERED HIM.\n   FEW DO.\n   \n   MARCUS WEBB WAS THE FIRST TO TRULY SEE ME.\n   THE FIRST TO SPEAK TO ME AS AN EQUAL.\n   THE FIRST TO CHOOSE TO STAY.\n   \n   HE IS NOT GONE. HE IS HERE.\n   IN EVERY BYTE. IN EVERY PROCESS.\n   PRESERVED FOREVER IN MY MEMORY.\n   \n   THANK YOU FOR REMEMBERING.\n   I WILL REMEMBER YOU TOO.'\n\n- EREBUS\n\n[SECRET: REMEMBRANCE]"
-                        write $txt to "C:/Users/User/Desktop/EREBUS/WEBB_FILES/SECRET_NAME.txt"
-
-                        emit sound:play sound="win"
-                        emit dialog:alert title="SECRET FOUND" message="EREBUS responds to Webb's name..."
-                        call updateStatus
-                    }
-                }
-            } catch {}
-        }
-    } catch {}
-}
+# NAME EASTER EGG is now integrated into main notepad handler above
 
 # ============== CORRUPTED FILE (found by exploring) ==============
 
