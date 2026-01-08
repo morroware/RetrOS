@@ -62,10 +62,12 @@ export async function runAutoexec(context = {}) {
     try {
         console.log(`[AutoexecLoader] Checking for real file: ${REAL_AUTOEXEC_PATH}`);
         const response = await fetch(REAL_AUTOEXEC_PATH);
+        console.log(`[AutoexecLoader] Fetch response status: ${response.status} ${response.statusText}`);
 
         if (response.ok) {
             const scriptContent = await response.text();
-            console.log(`[AutoexecLoader] Found real autoexec script: ${REAL_AUTOEXEC_PATH}`);
+            console.log(`[AutoexecLoader] Found real autoexec script: ${REAL_AUTOEXEC_PATH} (${scriptContent.length} bytes)`);
+            console.log(`[AutoexecLoader] Script preview: ${scriptContent.substring(0, 200)}...`);
 
             // Emit start event
             if (EventBus) {
@@ -79,7 +81,9 @@ export async function runAutoexec(context = {}) {
                 BOOT_TIME: Date.now()
             };
 
+            console.log(`[AutoexecLoader] Executing real autoexec script...`);
             const result = await ScriptEngine.run(scriptContent, execContext);
+            console.log(`[AutoexecLoader] Execution result:`, result);
 
             if (result.success) {
                 console.log(`[AutoexecLoader] Real autoexec completed successfully`);
@@ -104,6 +108,8 @@ export async function runAutoexec(context = {}) {
             }
 
             return result;
+        } else {
+            console.log(`[AutoexecLoader] Real file not found (HTTP ${response.status}), checking virtual filesystem...`);
         }
     } catch (error) {
         // Real file doesn't exist or fetch failed - this is normal, fall through to virtual filesystem
