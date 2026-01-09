@@ -807,12 +807,19 @@ class Asteroids extends AppBase {
                 });
             }
 
-            // Emit game over event
+            // Emit game over event (generic pattern)
             EventBus.emit('game:over', {
                 appId: 'asteroids',
                 won: false,
                 score: this.score,
                 stats: { level: this.level }
+            });
+
+            // Emit game-specific event for script handlers
+            EventBus.emit('asteroids:game:over', {
+                score: this.score,
+                level: this.level,
+                isHighScore
             });
 
             setTimeout(() => this.newGame(), 3000);

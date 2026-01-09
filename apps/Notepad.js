@@ -133,6 +133,12 @@ class Notepad extends AppBase {
         // ===== SCRIPTING SUPPORT =====
         // Register command handlers for scripting automation
         this._registerScriptingCommands();
+
+        // Emit opened event for script handlers
+        this.emitAppEvent('opened', {
+            fileName: this.getInstanceState('fileName') || 'Untitled',
+            hasFile: !!this.getInstanceState('currentFile')
+        });
     }
 
     /**

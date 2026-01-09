@@ -86,6 +86,11 @@ class Calculator extends AppBase {
 
         // ===== SCRIPTING SUPPORT =====
         this._registerScriptingCommands();
+
+        // Emit opened event for script handlers
+        this.emitAppEvent('opened', {
+            displayValue: this.displayValue
+        });
     }
 
     /**
@@ -229,6 +234,15 @@ class Calculator extends AppBase {
         const result = this.calculate(this.firstOperand, inputValue, this.operator);
 
         this.displayValue = String(parseFloat(result.toFixed(7)));
+
+        // Emit result event for script handlers
+        this.emitAppEvent('result', {
+            result: parseFloat(this.displayValue),
+            firstOperand: this.firstOperand,
+            secondOperand: inputValue,
+            operator: this.operator
+        });
+
         this.firstOperand = null;
         this.operator = null;
         this.waitingForSecondOperand = true;

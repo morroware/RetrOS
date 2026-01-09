@@ -267,6 +267,12 @@ class Paint extends AppBase {
             this.loadImageFromFile(currentFile);
         }
 
+        // Emit opened event for script handlers
+        this.emitAppEvent('opened', {
+            fileName: this.getInstanceState('fileName') || 'Untitled',
+            hasFile: !!currentFile
+        });
+
         // --- Event Listeners ---
 
         // Drawing
@@ -590,6 +596,11 @@ class Paint extends AppBase {
                 const dataURL = canvas.toDataURL('image/png');
                 FileSystemManager.writeFile(currentFile, dataURL, 'png');
                 this.alert('💾 Image saved!');
+                // Emit saved event for script handlers
+                this.emitAppEvent('saved', {
+                    path: Array.isArray(currentFile) ? currentFile.join('/') : currentFile,
+                    fileName: this.getInstanceState('fileName')
+                });
             } catch (e) {
                 this.alert(`Error saving image: ${e.message}`);
             }
@@ -631,6 +642,11 @@ class Paint extends AppBase {
             this.setInstanceState('fileName', fileName);
             this.updateWindowTitle();
             this.alert('💾 Image saved to ' + parsedPath.join('/'));
+            // Emit saved event for script handlers
+            this.emitAppEvent('saved', {
+                path: parsedPath.join('/'),
+                fileName: fileName
+            });
         } catch (e) {
             this.alert(`Error saving image: ${e.message}`);
         }

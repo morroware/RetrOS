@@ -264,6 +264,12 @@ class Terminal extends AppBase {
         });
 
         this.runBootSequence();
+
+        // Emit opened event for script handlers
+        this.emitAppEvent('opened', {
+            currentPath: this.currentPath,
+            pathString: this.currentPath.join('\\')
+        });
     }
 
     runBootSequence() {

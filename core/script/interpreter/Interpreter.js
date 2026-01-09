@@ -34,7 +34,9 @@ export class Interpreter {
         this.limits = options.limits || new SafetyLimits();
         this.builtins = options.builtins || new Map();
         this.userFunctions = new Map();
+        // eventHandlers: Map<eventName, Set<handler>> to support multiple handlers per event
         this.eventHandlers = new Map();
+        this.eventHandlerCount = 0;
         this.context = options.context || {};
 
         // Execution state
@@ -358,8 +360,8 @@ export class Interpreter {
             return;
         }
 
-        const handlerCount = this.eventHandlers.size;
-        if (!this.limits.checkEventHandlerCount(handlerCount)) {
+        // Check total handler count (not just unique event names)
+        if (!this.limits.checkEventHandlerCount(this.eventHandlerCount)) {
             throw new RuntimeError(
                 `Maximum event handlers (${this.limits.get('MAX_EVENT_HANDLERS')}) exceeded`,
                 { line: stmt.line, column: stmt.column }
@@ -385,7 +387,13 @@ export class Interpreter {
         };
 
         EventBus.on(stmt.eventName, handler);
-        this.eventHandlers.set(stmt.eventName, handler);
+
+        // Store handler in Set to support multiple handlers per event
+        if (!this.eventHandlers.has(stmt.eventName)) {
+            this.eventHandlers.set(stmt.eventName, new Set());
+        }
+        this.eventHandlers.get(stmt.eventName).add(handler);
+        this.eventHandlerCount++;
     }
 
     async visitEmitStatement(stmt) {
@@ -894,14 +902,17 @@ export class Interpreter {
      * Cleanup resources
      */
     cleanup() {
-        // Remove event handlers
+        // Remove all event handlers
         const EventBus = this.context.EventBus;
         if (EventBus) {
-            for (const [eventName, handler] of this.eventHandlers) {
-                EventBus.off(eventName, handler);
+            for (const [eventName, handlers] of this.eventHandlers) {
+                for (const handler of handlers) {
+                    EventBus.off(eventName, handler);
+                }
             }
         }
         this.eventHandlers.clear();
+        this.eventHandlerCount = 0;
         this.userFunctions.clear();
         this.globalEnv.clear();
     }

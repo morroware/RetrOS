@@ -589,7 +589,7 @@ on window:focus {
 
 # ============== CORRUPTED FILE (found by exploring) ==============
 
-on file:read {
+on fs:file:read {
     set $files_explored = $files_explored + 1
 
     if $files_explored == 10 then {

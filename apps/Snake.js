@@ -370,12 +370,19 @@ class Snake extends AppBase {
             });
         }
 
-        // Emit game over event
+        // Emit game over event (generic pattern)
         EventBus.emit('game:over', {
             appId: 'snake',
             won: false,
             score: this.score,
             stats: { length: this.snake.length, isHighScore }
+        });
+
+        // Emit game-specific event for script handlers
+        EventBus.emit('snake:game:over', {
+            score: this.score,
+            length: this.snake.length,
+            isHighScore
         });
 
         this.getElement('#overlay').classList.remove('hidden');
