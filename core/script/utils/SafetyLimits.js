@@ -12,8 +12,8 @@ export const DEFAULT_LIMITS = {
     /** Maximum function call recursion depth */
     MAX_RECURSION_DEPTH: 1000,
 
-    /** Maximum iterations for any loop construct */
-    MAX_LOOP_ITERATIONS: 100000,
+    /** Maximum iterations for any loop construct (10k is safe for ARG games) */
+    MAX_LOOP_ITERATIONS: 10000,
 
     /** Maximum string length (1MB) */
     MAX_STRING_LENGTH: 1000000,

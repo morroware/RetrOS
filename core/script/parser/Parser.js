@@ -1080,10 +1080,12 @@ export class Parser {
 
     /**
      * Check if at end of expression (more permissive)
+     * Expression ends when we reach a statement boundary OR there's no binary operator
+     * (if there IS a binary operator, we need to continue parsing the right-hand side)
      */
     isExpressionEnd() {
         return this.isStatementEnd() ||
-               this.getBinaryOperator() !== null;
+               this.getBinaryOperator() === null;
     }
 
     /**

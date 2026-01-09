@@ -518,19 +518,21 @@ export class Interpreter {
     async visitConfirmStatement(stmt) {
         const message = await this.visitExpression(stmt.message);
         const EventBus = this.context.EventBus;
+        // Capture environment now - callback may execute after scope changes
+        const capturedEnv = this.currentEnv;
 
         return new Promise((resolve) => {
             if (EventBus) {
                 EventBus.emit('dialog:confirm', {
                     message: this.stringify(message),
                     callback: (result) => {
-                        this.currentEnv.set(stmt.varName, result);
+                        capturedEnv.set(stmt.varName, result);
                         resolve(result);
                     }
                 });
             } else {
                 // Autoexec mode - skip dialogs
-                this.currentEnv.set(stmt.varName, true);
+                capturedEnv.set(stmt.varName, true);
                 resolve(true);
             }
         });
@@ -541,6 +543,8 @@ export class Interpreter {
         const defaultValue = stmt.defaultValue ?
             await this.visitExpression(stmt.defaultValue) : '';
         const EventBus = this.context.EventBus;
+        // Capture environment now - callback may execute after scope changes
+        const capturedEnv = this.currentEnv;
 
         return new Promise((resolve) => {
             if (EventBus) {
@@ -548,13 +552,13 @@ export class Interpreter {
                     message: this.stringify(message),
                     defaultValue: this.stringify(defaultValue),
                     callback: (result) => {
-                        this.currentEnv.set(stmt.varName, result);
+                        capturedEnv.set(stmt.varName, result);
                         resolve(result);
                     }
                 });
             } else {
                 // Autoexec mode - use default value
-                this.currentEnv.set(stmt.varName, defaultValue);
+                capturedEnv.set(stmt.varName, defaultValue);
                 resolve(defaultValue);
             }
         });
