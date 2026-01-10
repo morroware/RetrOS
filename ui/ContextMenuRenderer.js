@@ -157,9 +157,14 @@ class ContextMenuRendererClass {
     }
 
     desktopMenu() {
+        const hasPaste = this.clipboard.items.length > 0;
+        const pasteClass = hasPaste ? '' : 'disabled';
+
         return `
             <div class="context-item" data-action="arrange">Arrange Icons</div>
             <div class="context-item" data-action="refresh">Refresh</div>
+            <div class="context-divider"></div>
+            <div class="context-item ${pasteClass}" data-action="desktop-paste">📋 Paste${hasPaste ? ` (${this.clipboard.items.length} item${this.clipboard.items.length > 1 ? 's' : ''})` : ''}</div>
             <div class="context-divider"></div>
             <div class="context-item submenu-trigger">
                 New
@@ -188,11 +193,14 @@ class ContextMenuRendererClass {
 
             return `
                 <div class="context-item" data-action="open"><strong>Open</strong></div>
-                ${isTextFile ? '<div class="context-item" data-action="edit-notepad">Edit with Notepad</div>' : ''}
-                ${isImageFile ? '<div class="context-item" data-action="edit-paint">Edit with Paint</div>' : ''}
+                ${isTextFile ? '<div class="context-item" data-action="edit-notepad">📝 Edit with Notepad</div>' : ''}
+                ${isImageFile ? '<div class="context-item" data-action="edit-paint">🎨 Edit with Paint</div>' : ''}
                 <div class="context-divider"></div>
-                <div class="context-item" data-action="rename">Rename</div>
-                <div class="context-item" data-action="delete">Delete</div>
+                <div class="context-item" data-action="desktop-cut">✂️ Cut</div>
+                <div class="context-item" data-action="desktop-copy">📋 Copy</div>
+                <div class="context-divider"></div>
+                <div class="context-item" data-action="rename">✏️ Rename</div>
+                <div class="context-item" data-action="delete">🗑️ Delete</div>
                 <div class="context-divider"></div>
                 <div class="context-item" data-action="properties">Properties</div>
             `;
@@ -385,6 +393,18 @@ class ContextMenuRendererClass {
                     EventBus.emit('desktop:render');
                 }
                 break;
+
+            // ===== DESKTOP FILE CLIPBOARD ACTIONS =====
+            case 'desktop-cut':
+                this.handleDesktopCut(context);
+                break;
+            case 'desktop-copy':
+                this.handleDesktopCopy(context);
+                break;
+            case 'desktop-paste':
+                this.handleDesktopPaste(context);
+                break;
+
             case 'restore':
                 if (context?.windowId) WindowManager.restore(context.windowId);
                 break;
@@ -707,6 +727,107 @@ class ContextMenuRendererClass {
         }
 
         await SystemDialogs.alert(message, 'Properties', 'info');
+    }
+
+    // ===== DESKTOP CLIPBOARD HANDLERS =====
+
+    /**
+     * Handle Cut for desktop file icons
+     */
+    handleDesktopCut(context) {
+        const icon = context?.icon;
+        if (!icon || icon.type !== 'file' || !icon.filePath) return;
+
+        this.clipboard = {
+            items: [{
+                path: icon.filePath,
+                name: icon.label || icon.filePath[icon.filePath.length - 1],
+                type: icon.fileType || 'file'
+            }],
+            operation: 'cut'
+        };
+        console.log('[ContextMenu] Desktop Cut:', icon.filePath.join('/'));
+        EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+    }
+
+    /**
+     * Handle Copy for desktop file icons
+     */
+    handleDesktopCopy(context) {
+        const icon = context?.icon;
+        if (!icon || icon.type !== 'file' || !icon.filePath) return;
+
+        this.clipboard = {
+            items: [{
+                path: icon.filePath,
+                name: icon.label || icon.filePath[icon.filePath.length - 1],
+                type: icon.fileType || 'file'
+            }],
+            operation: 'copy'
+        };
+        console.log('[ContextMenu] Desktop Copy:', icon.filePath.join('/'));
+        EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
+    }
+
+    /**
+     * Handle Paste to desktop
+     * Works with files copied from either desktop or MyComputer
+     */
+    async handleDesktopPaste(context) {
+        if (this.clipboard.items.length === 0) return;
+
+        const targetPath = [...PATHS.DESKTOP];
+
+        try {
+            for (const item of this.clipboard.items) {
+                const sourcePath = item.path;
+                const fileName = item.name;
+
+                // Check if pasting to same location (already on desktop)
+                const sourceDir = sourcePath.slice(0, -1);
+                const isAlreadyOnDesktop = JSON.stringify(sourceDir) === JSON.stringify(targetPath);
+
+                if (isAlreadyOnDesktop) {
+                    if (this.clipboard.operation === 'cut') {
+                        // Can't cut/paste to same location
+                        continue;
+                    }
+                    // For copy, create a copy with modified name
+                    const newName = await this.generateCopyName(targetPath, fileName);
+                    const newPath = [...targetPath, newName];
+
+                    if (item.type === 'directory') {
+                        this.copyDirectory(sourcePath, newPath);
+                    } else {
+                        this.copyFile(sourcePath, newPath);
+                    }
+                } else {
+                    // Paste from different location to desktop
+                    if (this.clipboard.operation === 'cut') {
+                        FileSystemManager.moveItem(sourcePath, targetPath);
+                    } else {
+                        // Copy to desktop
+                        const destPath = [...targetPath, fileName];
+                        if (item.type === 'directory') {
+                            this.copyDirectory(sourcePath, destPath);
+                        } else {
+                            this.copyFile(sourcePath, destPath);
+                        }
+                    }
+                }
+            }
+
+            // Clear clipboard if it was a cut operation
+            if (this.clipboard.operation === 'cut') {
+                this.clipboard = { items: [], operation: null };
+            }
+
+            // Refresh desktop to show new files
+            EventBus.emit('filesystem:changed');
+            EventBus.emit('desktop:refresh');
+        } catch (e) {
+            await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
+        }
     }
 
     // Helper: Generate a copy name like "filename - Copy.txt"
