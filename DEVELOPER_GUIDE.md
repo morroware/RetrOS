@@ -20,7 +20,8 @@ A comprehensive guide for creating new applications, features, and plugins for I
 12. [Common Patterns](#common-patterns)
 13. [Plugin System](#plugin-system)
 14. [Feature Development](#feature-development)
-15. [Troubleshooting](#troubleshooting)
+15. [Scripting Integration](#scripting-integration)
+16. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -926,7 +927,6 @@ class MyFeature extends FeatureBase {
      */
     async enable() {
         this.log('Feature enabled');
-        // Re-initialize if needed
         if (!this.initialized) {
             await this.initialize();
             this.initialized = true;
@@ -954,8 +954,6 @@ class MyFeature extends FeatureBase {
         if (this.isRunning) return;
         this.isRunning = true;
         this.log('Started');
-
-        // Emit event for other features
         this.emit('my-feature:started', { timestamp: Date.now() });
     }
 
@@ -972,7 +970,6 @@ class MyFeature extends FeatureBase {
     }
 
     handleKeydown(e) {
-        // Access config values
         const speed = this.getConfig('speed', 5);
         this.log(`Key pressed, speed is: ${speed}`);
     }
@@ -1014,11 +1011,11 @@ export default {
 
     // Lifecycle hooks
     onLoad: async () => {
-        console.log('🚀 My Plugin loaded!');
+        console.log('My Plugin loaded!');
     },
 
     onUnload: async () => {
-        console.log('👋 My Plugin unloaded');
+        console.log('My Plugin unloaded');
     }
 };
 ```
@@ -1104,25 +1101,6 @@ const features = PluginLoader.getPluginFeatures('my-plugin');
 PluginLoader.logStatus();
 ```
 
-### Plugin Manifest Storage
-
-The plugin manifest is stored in localStorage and contains:
-
-```javascript
-{
-    plugins: [
-        {
-            path: '../plugins/features/dvd-bouncer/index.js',
-            enabled: true
-        },
-        {
-            path: '../plugins/features/my-plugin/index.js',
-            enabled: true
-        }
-    ]
-}
-```
-
 ---
 
 ## Feature Development
@@ -1184,19 +1162,6 @@ this.resetConfig();
 const saved = this.loadConfigFromStorage();
 ```
 
-### State Helpers
-
-```javascript
-// Check if enabled
-if (this.isEnabled()) { ... }
-
-// Load enabled state from storage
-this.loadEnabledState();
-
-// Save enabled state to storage
-this.saveEnabledState(true);
-```
-
 ### Event Helpers
 
 ```javascript
@@ -1212,71 +1177,6 @@ this.addHandler(element, 'click', this.handleClick, { capture: true });
 
 // Remove specific handler
 this.removeHandler(document, 'keydown');
-```
-
-### Logging Helpers
-
-```javascript
-this.log('Info message');      // [My Feature] Info message
-this.warn('Warning message');  // [My Feature] Warning message
-this.error('Error message');   // [My Feature] Error message
-```
-
-### Hook System
-
-Features can expose hooks for other features to extend:
-
-```javascript
-// In your feature - trigger a hook
-const results = this.triggerHook('before:start', { data: 'value' });
-
-// In another feature - register a hook handler
-myFeature.registerHook('before:start', (data) => {
-    console.log('About to start with:', data);
-    return { modified: true };
-});
-```
-
-### FeatureRegistry API
-
-```javascript
-import FeatureRegistry from './core/FeatureRegistry.js';
-
-// Register a feature
-FeatureRegistry.register(new MyFeature());
-
-// Get a feature instance
-const feature = FeatureRegistry.get('my-feature');
-
-// Enable/disable at runtime
-await FeatureRegistry.enable('my-feature');
-await FeatureRegistry.disable('my-feature');
-
-// Toggle
-const newState = await FeatureRegistry.toggle('my-feature');
-
-// Check status
-const isEnabled = FeatureRegistry.isEnabled('my-feature');
-const isInitialized = FeatureRegistry.isInitialized('my-feature');
-
-// Get all features
-const allFeatures = FeatureRegistry.getAll();
-
-// Get by category
-const plugins = FeatureRegistry.getByCategory('plugin');
-
-// Get enabled/disabled
-const enabled = FeatureRegistry.getEnabled();
-const disabled = FeatureRegistry.getDisabled();
-
-// Feature config
-const value = FeatureRegistry.getFeatureConfig('my-feature', 'speed', 5);
-FeatureRegistry.setFeatureConfig('my-feature', 'speed', 10);
-FeatureRegistry.resetFeatureConfig('my-feature');
-
-// Debug
-FeatureRegistry.logStatus();
-const debug = FeatureRegistry.getDebugInfo();
 ```
 
 ### Settings UI Definition
@@ -1337,97 +1237,133 @@ settings: [
 ]
 ```
 
-### Example: Complete Feature Plugin
+### FeatureRegistry API
 
-See the DVD Bouncer plugin for a complete example:
+```javascript
+import FeatureRegistry from './core/FeatureRegistry.js';
 
-- **Location**: `/plugins/features/dvd-bouncer/`
-- **Features**:
-  - Idle detection and auto-start
-  - Animation with requestAnimationFrame
-  - Configuration persistence
-  - Event emission for integration
-  - DOM event handling with cleanup
+// Register a feature
+FeatureRegistry.register(new MyFeature());
 
----
+// Get a feature instance
+const feature = FeatureRegistry.get('my-feature');
 
-## Troubleshooting
+// Enable/disable at runtime
+await FeatureRegistry.enable('my-feature');
+await FeatureRegistry.disable('my-feature');
 
-### App Doesn't Appear in Start Menu
+// Toggle
+const newState = await FeatureRegistry.toggle('my-feature');
 
-1. Check `showInMenu: true` in constructor
-2. Verify category matches existing category (see `APP_CATEGORIES`)
-3. Check for JavaScript errors in console
-4. Verify app is registered in AppRegistry
+// Check status
+const isEnabled = FeatureRegistry.isEnabled('my-feature');
+const isInitialized = FeatureRegistry.isInitialized('my-feature');
 
-### Event Handlers Not Working
+// Get all features
+const allFeatures = FeatureRegistry.getAll();
 
-1. Use `this.addHandler()` not `addEventListener`
-2. Check if element exists: `if (element) this.addHandler(...)`
-3. Verify `onMount()` is being called (add console.log)
-4. Check active window state for keyboard events
+// Get by category
+const plugins = FeatureRegistry.getByCategory('plugin');
 
-### Multiple Instances Conflict
+// Feature config
+const value = FeatureRegistry.getFeatureConfig('my-feature', 'speed', 5);
+FeatureRegistry.setFeatureConfig('my-feature', 'speed', 10);
+FeatureRegistry.resetFeatureConfig('my-feature');
 
-1. Use `getInstanceState()`/`setInstanceState()` not `this.property`
-2. Check `singleton: false` in constructor
-3. Verify state keys are unique per operation
-
-### Memory Leaks
-
-1. Use `this.addHandler()` - auto cleanup on close
-2. Use `this.onEvent()` for EventBus - auto cleanup
-3. Clear intervals/timeouts in `onClose()`
-4. Set `running: false` to stop animation loops
-
-### Window Not Responding
-
-1. Check for infinite loops
-2. Verify async operations have error handling
-3. Check console for unhandled promise rejections
-
-### Icons Not Displaying
-
-1. Check if FontAwesome is loaded (network tab)
-2. Use correct FontAwesome class format: `fa-solid fa-icon-name`
-3. Fallback to emoji if needed: `icon: '📁'`
-4. Check IconSystem mapping for shorthand names
+// Debug
+FeatureRegistry.logStatus();
+const debug = FeatureRegistry.getDebugInfo();
+```
 
 ---
 
-## Quick Reference
+## Scripting Integration
 
-### DOM Helpers
+### CommandBus
 
-| Method | Description |
-|--------|-------------|
-| `this.getWindow()` | Get window element |
-| `this.getElement(selector)` | Get element in window |
-| `this.getElements(selector)` | Get all matching elements |
-| `this.setContent(html)` | Replace window content |
-| `this.close()` | Close current window |
-| `this.closeAll()` | Close all app windows |
+The CommandBus (`/core/CommandBus.js`) provides a command execution layer that enables scripting support:
 
-### Utility Methods
+```javascript
+import CommandBus from './core/CommandBus.js';
 
-| Method | Description |
-|--------|-------------|
-| `this.playSound(type)` | Play system sound |
-| `this.playAudio(src)` | Play audio file |
-| `this.alert(msg)` | Show alert dialog |
-| `this.unlockAchievement(id)` | Unlock achievement |
+// Execute a command
+await CommandBus.execute('app:launch', { appId: 'notepad' });
+await CommandBus.execute('window:close', { id: 'window-1' });
+await CommandBus.execute('fs:create', { path: ['C:', 'test.txt'], content: 'Hello' });
 
-### App Categories
+// Available command namespaces:
+// - app:* - Application commands (launch, close, focus)
+// - window:* - Window commands (open, close, minimize, maximize)
+// - fs:* - File system commands (create, read, update, delete)
+// - dialog:* - Dialog commands (alert, confirm, prompt)
+```
 
-| Category | Description |
-|----------|-------------|
-| `accessories` | Productivity tools (Calculator, Notepad, Paint, Calendar, Clock, HyperCard) |
-| `games` | Games (Minesweeper, Snake, Solitaire, FreeCell, SkiFree, Asteroids, DOOM) |
-| `multimedia` | Media apps (Media Player, Winamp) |
-| `internet` | Network apps (Browser, Chat Room) |
-| `systemtools` | Utilities (Terminal, Defrag, Find Files, Task Manager, Script Runner) |
-| `settings` | Settings apps (Control Panel, Display Properties, Sound Settings, Features Settings) |
-| `system` | System apps (hidden from menu: My Computer, Recycle Bin, Admin Panel) |
+### Registering App Commands
+
+Apps can register custom commands for scripting access:
+
+```javascript
+class MyApp extends AppBase {
+    onMount() {
+        // Register a command that scripts can call
+        this.registerCommand('doSomething', async (params) => {
+            return { success: true, result: 'Done!' };
+        });
+
+        // Register a query for scripts to inspect app state
+        this.registerQuery('getStatus', () => {
+            return { status: 'running', count: this.getInstanceState('count') };
+        });
+    }
+}
+```
+
+### ScriptEngine
+
+The ScriptEngine (`/core/ScriptEngine.js`) enables RetroScript automation:
+
+```javascript
+import ScriptEngine from './core/ScriptEngine.js';
+
+// Execute a script
+const result = await ScriptEngine.run(`
+    set $counter = 0
+    launch notepad
+    wait 500
+    emit custom:event message="Hello from script"
+`);
+
+// Execute a script file from virtual filesystem
+const result = await ScriptEngine.runFile('C:/Scripts/myscript.retro');
+```
+
+### Autoexec Scripts
+
+The AutoexecLoader (`/core/script/AutoexecLoader.js`) automatically runs scripts on boot:
+
+```javascript
+import { runAutoexec, findAutoexec, createSampleAutoexec } from './core/script/AutoexecLoader.js';
+
+// Run autoexec (called during boot)
+await runAutoexec(context);
+
+// Check if autoexec exists
+const path = findAutoexec(context);
+
+// Create a sample autoexec
+createSampleAutoexec(context, 'C:/Windows/autoexec.retro');
+```
+
+**Autoexec locations (checked in order):**
+1. `./autoexec.retro` - Project root (via HTTP fetch)
+2. `C:/Windows/autoexec.retro` - System level
+3. `C:/Scripts/autoexec.retro` - User scripts
+4. `C:/Users/User/autoexec.retro` - User home
+
+**Autoexec events:**
+- `autoexec:start` - Execution begins
+- `autoexec:complete` - Execution succeeded
+- `autoexec:error` - Execution failed
 
 ---
 
@@ -1478,28 +1414,92 @@ const duration = SystemMonitor.measure('operation', 'start-operation');
 SystemMonitor.recordAction('button-click', 'submit-form', { form: 'login' });
 ```
 
-### Using Events in Apps
+---
 
-```javascript
-class MyApp extends AppBase {
-    onMount() {
-        // React to system state
-        this.onEvent('system:idle', () => this.pauseAnimations());
-        this.onEvent('system:active', () => this.resumeAnimations());
+## Troubleshooting
 
-        // React to input
-        this.onEvent('gesture:swipe', ({ direction }) => {
-            if (direction === 'left') this.nextSlide();
-            if (direction === 'right') this.prevSlide();
-        });
+### App Doesn't Appear in Start Menu
 
-        // Monitor performance
-        this.onEvent('perf:fps:low', ({ fps }) => {
-            this.reduceGraphicsQuality();
-        });
-    }
-}
-```
+1. Check `showInMenu: true` in constructor
+2. Verify category matches existing category (see `APP_CATEGORIES`)
+3. Check for JavaScript errors in console
+4. Verify app is registered in AppRegistry
+
+### Event Handlers Not Working
+
+1. Use `this.addHandler()` not `addEventListener`
+2. Check if element exists: `if (element) this.addHandler(...)`
+3. Verify `onMount()` is being called (add console.log)
+4. Check active window state for keyboard events
+
+### Multiple Instances Conflict
+
+1. Use `getInstanceState()`/`setInstanceState()` not `this.property`
+2. Check `singleton: false` in constructor
+3. Verify state keys are unique per operation
+
+### Memory Leaks
+
+1. Use `this.addHandler()` - auto cleanup on close
+2. Use `this.onEvent()` for EventBus - auto cleanup
+3. Clear intervals/timeouts in `onClose()`
+4. Set `running: false` to stop animation loops
+
+### Window Not Responding
+
+1. Check for infinite loops
+2. Verify async operations have error handling
+3. Check console for unhandled promise rejections
+
+### Icons Not Displaying
+
+1. Check if FontAwesome is loaded (network tab)
+2. Use correct FontAwesome class format: `fa-solid fa-icon-name`
+3. Fallback to emoji if needed: `icon: '📁'`
+4. Check IconSystem mapping for shorthand names
+
+### Autoexec Not Running
+
+1. Check console for `[AutoexecLoader]` messages
+2. Verify file path and content
+3. Check for syntax errors in the script
+4. Ensure FileSystemManager is initialized before autoexec runs
+
+---
+
+## Quick Reference
+
+### DOM Helpers
+
+| Method | Description |
+|--------|-------------|
+| `this.getWindow()` | Get window element |
+| `this.getElement(selector)` | Get element in window |
+| `this.getElements(selector)` | Get all matching elements |
+| `this.setContent(html)` | Replace window content |
+| `this.close()` | Close current window |
+| `this.closeAll()` | Close all app windows |
+
+### Utility Methods
+
+| Method | Description |
+|--------|-------------|
+| `this.playSound(type)` | Play system sound |
+| `this.playAudio(src)` | Play audio file |
+| `this.alert(msg)` | Show alert dialog |
+| `this.unlockAchievement(id)` | Unlock achievement |
+
+### App Categories
+
+| Category | Description |
+|----------|-------------|
+| `accessories` | Productivity tools (Calculator, Notepad, Paint, Calendar, Clock, HyperCard) |
+| `games` | Games (Minesweeper, Snake, Solitaire, FreeCell, SkiFree, Asteroids, DOOM) |
+| `multimedia` | Media apps (Media Player, Winamp) |
+| `internet` | Network apps (Browser, Chat Room) |
+| `systemtools` | Utilities (Terminal, Defrag, Find Files, Task Manager, Script Runner) |
+| `settings` | Settings apps (Control Panel, Display Properties, Sound Settings, Features Settings) |
+| `system` | System apps (hidden from menu: My Computer, Recycle Bin, Admin Panel) |
 
 ---
 
@@ -1509,67 +1509,66 @@ class MyApp extends AppBase {
 RetrOS/
 ├── index.html              # Main entry point with boot screen and UI
 ├── index.js                # Boot sequence & system initialization
+├── autoexec.retro          # Optional startup script
 │
-├── styles/                 # Modular CSS architecture (~4800 lines, 36 files)
+├── styles/                 # Modular CSS architecture (~5300 lines, 37 files)
 │   ├── main.css            # Entry point that imports all modules
 │   ├── core/               # Base styles and CSS variables
-│   ├── apps/               # App-specific styles (calculator, paint, etc.)
-│   ├── components/         # Reusable UI (buttons, dialogs, windows, forms)
-│   ├── features/           # Feature styles (clippy, screensaver, boot)
-│   ├── layout/             # Layout (desktop, taskbar, start menu)
+│   ├── apps/               # App-specific styles
+│   ├── components/         # Reusable UI components
+│   ├── features/           # Feature styles
+│   ├── layout/             # Layout components
 │   ├── effects/            # Animations and color schemes
 │   └── utilities/          # Helper utilities
 │
 ├── apps/                   # Application implementations (31 apps)
-│   ├── AppBase.js          # Base class - extend this (with messaging)
+│   ├── AppBase.js          # Base class - extend this
 │   ├── AppRegistry.js      # Register apps here
-│   ├── Calculator.js       # Calculator with keyboard support
-│   ├── Notepad.js          # Text editor with file system
-│   ├── Terminal.js         # MS-DOS terminal (30+ commands)
-│   ├── Paint.js            # Drawing app with file system
-│   ├── Snake.js, Minesweeper.js, Asteroids.js, etc.  # Games
-│   ├── HyperCard.js        # Stack-based information system
-│   ├── ScriptRunner.js     # Script execution and testing
-│   ├── FeaturesSettings.js # Features and plugin configuration
-│   └── [YourApp.js]        # Your new app
+│   └── [App].js            # Individual apps
 │
 ├── core/                   # Core systems (15 modules)
 │   ├── SemanticEventBus.js # Event system with validation, priorities
 │   ├── EventSchema.js      # 200+ event definitions
-│   ├── SystemMonitor.js    # System monitoring (input, performance)
-│   ├── CommandBus.js       # Command execution layer for scripting
+│   ├── SystemMonitor.js    # System monitoring
+│   ├── CommandBus.js       # Command execution layer
 │   ├── Constants.js        # Configuration constants
 │   ├── StateManager.js     # State management
 │   ├── WindowManager.js    # Window management
-│   ├── FileSystemManager.js # Virtual file system with events
+│   ├── FileSystemManager.js # Virtual file system
 │   ├── StorageManager.js   # LocalStorage
 │   ├── IconSystem.js       # Icon rendering
-│   ├── ScriptEngine.js     # Scripting engine
-│   ├── PluginLoader.js     # Plugin loading and management
-│   ├── FeatureRegistry.js  # Feature registration and lifecycle
-│   ├── FeatureBase.js      # Base class for features
-│   └── EventBus.js         # Backward compatibility wrapper
+│   ├── ScriptEngine.js     # Legacy scripting engine
+│   ├── PluginLoader.js     # Plugin loading
+│   ├── FeatureRegistry.js  # Feature lifecycle
+│   ├── FeatureBase.js      # Feature base class
+│   └── script/             # Modular script engine
+│       ├── AutoexecLoader.js
+│       ├── lexer/
+│       ├── parser/
+│       ├── interpreter/
+│       ├── builtins/
+│       └── errors/
 │
 ├── features/               # Optional features (7 modules)
-│   ├── SystemDialogs.js    # Dialogs (alert, confirm, file open/save)
-│   ├── SoundSystem.js      # Audio system
-│   ├── AchievementSystem.js # Achievements
-│   ├── ClippyAssistant.js  # Clippy helper assistant
-│   ├── DesktopPet.js       # Desktop pet companion
-│   ├── Screensaver.js      # Screensaver with multiple modes
-│   ├── EasterEggs.js       # Hidden surprises
-│   └── config.json         # Feature configuration
+│   ├── SystemDialogs.js    # Dialogs
+│   ├── SoundSystem.js      # Audio
+│   ├── AchievementSystem.js
+│   ├── ClippyAssistant.js
+│   ├── DesktopPet.js
+│   ├── Screensaver.js
+│   ├── EasterEggs.js
+│   └── config.json
 │
 ├── plugins/                # Plugin system
-│   └── features/           # Feature plugins
-│       ├── dvd-bouncer/    # DVD Bouncer screensaver plugin
-│       └── example-plugin/ # Example template plugin
+│   └── features/
+│       ├── dvd-bouncer/
+│       └── example-plugin/
 │
 └── ui/                     # UI components (4 renderers)
-    ├── DesktopRenderer.js  # Desktop icons
-    ├── TaskbarRenderer.js  # Taskbar
-    ├── StartMenuRenderer.js # Start menu
-    └── ContextMenuRenderer.js # Context menus
+    ├── DesktopRenderer.js
+    ├── TaskbarRenderer.js
+    ├── StartMenuRenderer.js
+    └── ContextMenuRenderer.js
 ```
 
 ---
@@ -1583,3 +1582,5 @@ RetrOS/
   - **Paint.js** - Drawing tools with file system integration
   - **Calendar.js** - Date navigation and selection
   - **FreeCell.js** - Complex card game with drag-and-drop
+- See [SCRIPTING_GUIDE.md](SCRIPTING_GUIDE.md) for RetroScript documentation
+- See [SEMANTIC_EVENTS.md](SEMANTIC_EVENTS.md) for event reference

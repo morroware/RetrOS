@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**A Windows 95-Themed Retro Operating System Simulator**
+**A Retro Operating System Simulator**
 
 *Version 95.0*
 
@@ -10,7 +10,7 @@
 [![No Dependencies](https://img.shields.io/badge/Dependencies-None-brightgreen?style=flat-square)](https://github.com/morroware/RetrOS)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-[Features](#features) | [Installation](#installation) | [Usage](#usage) | [Applications](#applications) | [Plugin System](#plugin-system) | [Easter Eggs](#easter-eggs) | [Architecture](#architecture)
+[Features](#features) | [Installation](#installation) | [Usage](#usage) | [Applications](#applications) | [Plugin System](#plugin-system) | [Scripting](#scripting) | [Architecture](#architecture)
 
 </div>
 
@@ -18,18 +18,18 @@
 
 ## Overview
 
-IlluminatOS! is a fully-functional Windows 95 desktop environment simulator built entirely with vanilla JavaScript, HTML5, and CSS3. Experience the nostalgic computing era of the mid-1990s right in your web browser, complete with draggable windows, classic applications, retro games, a virtual file system, and plenty of hidden surprises.
+IlluminatOS! is a fully-functional retro desktop environment simulator built entirely with vanilla JavaScript, HTML5, and CSS3. Experience nostalgic computing right in your web browser, complete with draggable windows, classic applications, retro games, a virtual file system, and plenty of hidden surprises.
 
 This project demonstrates advanced JavaScript patterns, event-driven architecture, and sophisticated UI/UX implementation—all without any external frameworks or dependencies.
 
 **Project Stats:**
-- **~45,000+ lines of JavaScript** across 65+ files
-- **~4,800+ lines of modular CSS** across 36 files
+- **~59,000+ lines of JavaScript** across 127+ files
+- **~5,300+ lines of modular CSS** across 37 files
 - **31 fully-functional applications**
 - **200+ semantic events** for complete system observability
 - **15 core system modules** powering the OS
-- **Extensible plugin system** with example plugins (DVD Bouncer, Example Plugin)
-- **Full scripting support** via RetroScript, CommandBus and ScriptEngine
+- **Extensible plugin system** with example plugins
+- **Full scripting support** via RetroScript language with autoexec support
 - **Zero external dependencies** - pure vanilla JavaScript
 
 ---
@@ -37,7 +37,7 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 ## Features
 
 ### Desktop Environment
-- **Authentic Windows 95 Interface** - Pixel-perfect recreation of the classic desktop
+- **Authentic Retro Interface** - Classic desktop recreation with attention to detail
 - **Draggable & Resizable Windows** - Full window management with minimize, maximize, and close
 - **Desktop Icons** - Drag to reposition, double-click to launch, right-click for context menus
 - **Selection Box** - Click and drag to multi-select desktop icons
@@ -45,15 +45,15 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 - **Taskbar** - Window buttons, quick launch area, and system tray with live clock
 - **Context Menus** - Right-click anywhere for contextual options
 - **CRT Effect** - Optional retro scanline overlay for that authentic monitor feel
-- **Custom Dialogs** - Windows 95-style alert, confirm, and prompt dialogs (replaces browser modals)
+- **Custom Dialogs** - Retro-style alert, confirm, and prompt dialogs
 - **Window Snapping** - Drag windows to screen edges for snap preview
 
 ### Virtual File System
 - **Multi-Drive Support** - C: (Local Disk), D: (CD-ROM), A: (Floppy)
-- **Full Directory Structure** - Windows, Program Files, Users folders with default files
+- **Full Directory Structure** - System folders with default files
 - **File Operations** - Create, read, edit, delete, move, copy, and rename files
 - **Persistent Storage** - Files saved to localStorage persist across sessions
-- **File Type Support** - Text files (.txt), images (.png), shortcuts (.lnk), executables
+- **File Type Support** - Text files (.txt), images (.png), shortcuts (.lnk), executables, scripts (.retro)
 - **File Associations** - Notepad opens .txt files, Paint opens .png files automatically
 
 ### Technical Features
@@ -73,6 +73,8 @@ This project demonstrates advanced JavaScript patterns, event-driven architectur
 - **Throttling/Debouncing** - Rate-limit high-frequency events
 - **Pattern Matching** - Subscribe with wildcards (e.g., `window:*`)
 - **SystemMonitor** - Tracks all input, activity, and performance events
+- **RetroScript Language** - Full scripting support for automation
+- **Autoexec Support** - Startup scripts run automatically on boot
 
 ---
 
@@ -90,15 +92,7 @@ IlluminatOS! requires no build process, package installation, or compilation. Si
 
 2. **Open in browser**
 
-   Option A - Direct file access:
-   ```bash
-   # Simply open index.html in your browser
-   open index.html        # macOS
-   xdg-open index.html    # Linux
-   start index.html       # Windows
-   ```
-
-   Option B - Local HTTP server (recommended):
+   Option A - Local HTTP server (recommended):
    ```bash
    # Using Python
    python -m http.server 8000
@@ -110,6 +104,13 @@ IlluminatOS! requires no build process, package installation, or compilation. Si
    php -S localhost:8000
    ```
    Then navigate to `http://localhost:8000`
+
+   Option B - Direct file access:
+   ```bash
+   # Simply open index.html in your browser
+   open index.html        # macOS
+   xdg-open index.html    # Linux
+   ```
 
 ### Browser Requirements
 
@@ -136,10 +137,11 @@ IlluminatOS! requires no build process, package installation, or compilation. Si
 
 When you first load IlluminatOS!, you'll experience an authentic boot sequence:
 1. BIOS-style startup screen
-2. Loading bar animation
-3. "Starting Windows 95..." message
+2. Loading bar animation with tips
+3. System initialization messages
 4. Desktop loads with icons
-5. Welcome dialog with tips (first visit only)
+5. Autoexec script runs (if present)
+6. Welcome dialog with tips (first visit only)
 
 ### Desktop Navigation
 
@@ -201,7 +203,7 @@ IlluminatOS! includes 31 fully-functional applications organized into categories
 
 | App | Description |
 |-----|-------------|
-| **My Computer** | Windows Explorer-style file browser with grid/list views and drag-and-drop |
+| **My Computer** | File explorer with grid/list views and drag-and-drop |
 | **Control Panel** | System settings for display, sound, desktop pet, and screensaver |
 | **Display Properties** | Display settings with Background, Screensaver, Appearance, and Effects tabs |
 | **Sound Settings** | Audio control panel |
@@ -227,7 +229,7 @@ IlluminatOS! includes 31 fully-functional applications organized into categories
 | App | Description |
 |-----|-------------|
 | **Winamp** | Legendary music player with visualizer, playlist, 8-band EQ, shuffle/repeat |
-| **Media Player** | Windows Media Player style audio/video player |
+| **Media Player** | Audio/video player |
 
 ### Internet & Communication (2 apps)
 
@@ -240,7 +242,7 @@ IlluminatOS! includes 31 fully-functional applications organized into categories
 
 | App | Description |
 |-----|-------------|
-| **Terminal** | MS-DOS style command line with 30+ commands |
+| **Terminal** | Command line with 30+ commands |
 | **Disk Defragmenter** | Classic satisfying block-moving defrag visualization |
 | **Task Manager** | Process viewer and management |
 | **Find Files** | File search utility across the virtual file system |
@@ -253,7 +255,7 @@ IlluminatOS! includes 31 fully-functional applications organized into categories
 
 #### Terminal
 
-An MS-DOS style command-line interface with extensive command set.
+A command-line interface with extensive command set.
 
 **Core Commands:**
 
@@ -282,6 +284,7 @@ An MS-DOS style command-line interface with extensive command set.
 | `move <src> <dst>` | Move file |
 | `find <text>` | Search for text |
 | `ping <host>` | Simulate network ping |
+| `run <script.retro>` | Execute a RetroScript file |
 
 **Fun Commands:**
 
@@ -307,27 +310,12 @@ The legendary MP3 player clone - it really whips the llama's ass!
 - Shuffle and repeat modes
 - Play, pause, stop, next, previous controls
 
-#### SkiFree
-
-The classic Windows skiing game where you dodge obstacles and flee from the Yeti!
-
-**Controls:**
-- Arrow Keys - Steer left/right, speed up/down
-- F - Speed boost
-- Space - Start/Restart
-- P - Pause
-
-**Tips:**
-- Go fast (press F) to outrun the Yeti
-- The Yeti is faster than your normal speed!
-- Hit jumps for bonus points
-
 #### Chat Room
 
-Experience the golden age of internet chat with this 90s AOL/IRC style chat room simulator!
+Experience the golden age of internet chat with this retro chat room simulator!
 
 **Commands:**
-- `/me [action]` - Perform an action (*username does something*)
+- `/me [action]` - Perform an action
 - `/nick [name]` - Change your screen name
 - `/clear` - Clear the chat window
 - `/users` - List users in the room
@@ -335,11 +323,103 @@ Experience the golden age of internet chat with this 90s AOL/IRC style chat room
 
 ---
 
+## Scripting
+
+IlluminatOS! includes a powerful scripting system called **RetroScript** for automation and creating interactive experiences.
+
+### Running Scripts
+
+Scripts can be run from:
+1. **Script Runner app** - Open via Start Menu > Programs > Script Runner
+2. **Terminal** - Use the `run` command with a `.retro` file path
+3. **Double-click** - `.retro` files on the desktop or in file explorer
+4. **Autoexec** - Place `autoexec.retro` in specific locations for automatic execution on boot
+
+### Autoexec Scripts
+
+Autoexec scripts run automatically when the system boots. The system checks these locations in order:
+
+1. **`./autoexec.retro`** - Project root directory (checked first via HTTP)
+2. **`C:/Windows/autoexec.retro`** - System-level startup
+3. **`C:/Scripts/autoexec.retro`** - User scripts folder
+4. **`C:/Users/User/autoexec.retro`** - User home folder
+
+Only the first found script is executed.
+
+**Example autoexec.retro:**
+```retro
+# System startup script
+print "Welcome to IlluminatOS!"
+
+# Create directories
+mkdir "C:/Users/User/Desktop/MyFolder"
+
+# Launch an app on startup
+launch calculator
+
+# Play startup sound
+play notify
+
+# Display notification
+notify "System ready!"
+```
+
+### RetroScript Quick Reference
+
+```retro
+# Variables
+set $name = "Alice"
+set $count = 0
+set $items = [1, 2, 3]
+
+# Arithmetic
+set $result = 5 + 3 * 2
+
+# Control flow
+if $count > 5 then {
+    print "High count"
+} else {
+    print "Low count"
+}
+
+# Loops
+loop 10 {
+    print "Iteration: $i"
+}
+
+# Functions
+def greet($name) {
+    print "Hello, " + $name
+}
+call greet "World"
+
+# Event handlers
+on window:open {
+    print "Window opened!"
+}
+
+# File operations
+write "Hello" to "C:/file.txt"
+read "C:/file.txt" into $content
+
+# System commands
+launch notepad
+wait 1000
+close notepad
+
+# Dialogs
+emit dialog:alert message="It works!" title="Success"
+```
+
+See [SCRIPTING_GUIDE.md](SCRIPTING_GUIDE.md) for complete documentation.
+
+---
+
 ## Special Features
 
 ### Clippy Assistant
 
-The iconic Clippy assistant makes an appearance! Clippy randomly spawns (50% chance) when you boot up and offers "helpful" advice.
+The iconic Clippy assistant makes an appearance! Clippy randomly spawns when you boot up and offers "helpful" advice.
 
 **Clippy's Personality:**
 - Offers random tips and commentary
@@ -392,7 +472,7 @@ Achievements persist between sessions and display as toast notifications when un
 
 ### DVD Bouncer Screensaver
 
-A nostalgic bouncing DVD logo screensaver plugin that brings back memories of the classic DVD player experience!
+A nostalgic bouncing DVD logo screensaver plugin!
 
 **Features:**
 - Classic bouncing DVD logo animation
@@ -408,78 +488,6 @@ A nostalgic bouncing DVD logo screensaver plugin that brings back memories of th
 | Logo Size | 40-200px | Size of the DVD logo |
 | Idle Timeout | 10-300s | Seconds before auto-start |
 | Auto-start | On/Off | Enable idle activation |
-
-**Tips:**
-- Wait for the legendary corner hit!
-- Every 5th corner hit gets a special message
-- Click anywhere to dismiss the screensaver
-
----
-
-## Plugin System
-
-IlluminatOS! features a powerful plugin system for extending functionality without modifying core code.
-
-### Architecture
-
-```
-plugins/
-├── features/                    # Feature plugins
-│   └── dvd-bouncer/            # Example plugin
-│       ├── index.js            # Plugin manifest
-│       ├── DVDBouncerFeature.js # Feature implementation
-│       └── README.md           # Documentation
-└── apps/                        # App plugins (future)
-```
-
-### Creating Plugins
-
-Plugins can provide new features, apps, and integrate with existing systems:
-
-1. **Create a feature class** extending `FeatureBase`
-2. **Create a plugin manifest** with metadata and exports
-3. **Register in boot sequence** via `PluginLoader`
-
-See the [Developer Guide](DEVELOPER_GUIDE.md#plugin-system) for comprehensive documentation.
-
-### Plugin Features
-
-| Capability | Description |
-|------------|-------------|
-| **FeatureBase** | Base class with lifecycle hooks, config management, event helpers |
-| **FeatureRegistry** | Central registry with dependency resolution |
-| **PluginLoader** | Dynamic loading from manifest |
-| **Settings UI** | Auto-generated settings from feature definitions |
-| **Event Integration** | Emit/subscribe to system events |
-| **Auto-cleanup** | Handlers automatically cleaned on disable |
-
-### Example: DVD Bouncer Plugin
-
-```javascript
-// plugins/features/dvd-bouncer/DVDBouncerFeature.js
-import FeatureBase from '../../../core/FeatureBase.js';
-
-class DVDBouncerFeature extends FeatureBase {
-    constructor() {
-        super({
-            id: 'dvd-bouncer',
-            name: 'DVD Bouncer',
-            category: 'plugin',
-            config: { speed: 2, logoSize: 80, idleTimeout: 60000 },
-            settings: [/* UI definitions */]
-        });
-    }
-
-    async initialize() {
-        this.subscribe('window:open', () => this.resetIdleTimer());
-        this.addHandler(document, 'mousemove', () => this.onUserActivity());
-        this.startIdleMonitoring();
-    }
-
-    start() { /* Create UI, start animation */ }
-    stop() { /* Clean up, emit events */ }
-}
-```
 
 ---
 
@@ -520,15 +528,81 @@ Explore the file system to find secret files:
 
 Click the taskbar clock **10 times** to trigger Disco Fever mode and unlock an achievement.
 
-### Clippy Annoyance
+---
 
-Dismiss Clippy **5 times** to unlock the "Clippy Hater" achievement.
+## Plugin System
+
+IlluminatOS! features a powerful plugin system for extending functionality without modifying core code.
+
+### Architecture
+
+```
+plugins/
+├── features/                    # Feature plugins
+│   ├── dvd-bouncer/            # DVD Bouncer screensaver
+│   │   ├── index.js            # Plugin manifest
+│   │   ├── DVDBouncerFeature.js # Feature implementation
+│   │   └── README.md           # Documentation
+│   └── example-plugin/         # Example template
+└── apps/                        # App plugins (future)
+```
+
+### Creating Plugins
+
+Plugins can provide new features, apps, and integrate with existing systems:
+
+1. **Create a feature class** extending `FeatureBase`
+2. **Create a plugin manifest** with metadata and exports
+3. **Register in boot sequence** via `PluginLoader`
+
+See the [Developer Guide](DEVELOPER_GUIDE.md#plugin-system) for comprehensive documentation.
+
+### Plugin Features
+
+| Capability | Description |
+|------------|-------------|
+| **FeatureBase** | Base class with lifecycle hooks, config management, event helpers |
+| **FeatureRegistry** | Central registry with dependency resolution |
+| **PluginLoader** | Dynamic loading from manifest |
+| **Settings UI** | Auto-generated settings from feature definitions |
+| **Event Integration** | Emit/subscribe to system events |
+| **Auto-cleanup** | Handlers automatically cleaned on disable |
+
+### Example: Feature Plugin
+
+```javascript
+// plugins/features/my-plugin/MyFeature.js
+import FeatureBase from '../../../core/FeatureBase.js';
+
+class MyFeature extends FeatureBase {
+    constructor() {
+        super({
+            id: 'my-feature',
+            name: 'My Feature',
+            category: 'plugin',
+            config: { speed: 2, enabled: true },
+            settings: [
+                { key: 'speed', label: 'Speed', type: 'number', min: 1, max: 10 },
+                { key: 'enabled', label: 'Enabled', type: 'checkbox' }
+            ]
+        });
+    }
+
+    async initialize() {
+        this.subscribe('window:open', () => this.onWindowOpen());
+        this.addHandler(document, 'mousemove', () => this.onUserActivity());
+    }
+
+    async enable() { /* Enable at runtime */ }
+    async disable() { /* Disable at runtime */ }
+}
+```
 
 ---
 
 ## System Dialogs
 
-IlluminatOS! features authentic Windows 95-style dialog boxes that replace browser modals.
+IlluminatOS! features authentic retro-style dialog boxes that replace browser modals.
 
 ### Run Dialog
 - Open with **Ctrl+R** or from Start Menu
@@ -543,7 +617,7 @@ IlluminatOS! features authentic Windows 95-style dialog boxes that replace brows
 - **Log off** - Clears session and shows welcome
 
 ### File Dialogs
-- Windows 95-style Open and Save As dialogs
+- Retro-style Open and Save As dialogs
 - Browse virtual file system
 - Navigate folders, create new folders
 - Filter by file type
@@ -556,69 +630,47 @@ IlluminatOS! features authentic Windows 95-style dialog boxes that replace brows
 
 ```
 IlluminatOS!/
-├── index.html              # Main entry point with boot screen and UI placeholders
+├── index.html              # Main entry point with boot screen and UI
 ├── index.js                # Boot sequence & system initialization
+├── autoexec.retro          # Optional startup script
 │
-├── styles/                 # Modular CSS architecture (~4800 lines, 36 files)
+├── styles/                 # Modular CSS architecture (~5300 lines, 37 files)
 │   ├── main.css            # Entry point that imports all modules
 │   ├── core/               # Base styles and CSS variables
-│   ├── apps/               # App-specific styles (calculator, paint, etc.)
-│   ├── components/         # Reusable UI components (buttons, dialogs, windows)
-│   ├── features/           # Feature styles (clippy, screensaver, boot screen)
-│   ├── layout/             # Layout components (desktop, taskbar, start menu)
+│   ├── apps/               # App-specific styles
+│   ├── components/         # Reusable UI components
+│   ├── features/           # Feature styles
+│   ├── layout/             # Layout components
 │   ├── effects/            # Animations and color schemes
 │   └── utilities/          # Helper utilities
 │
 ├── apps/                   # Application implementations (31 apps)
-│   ├── AppBase.js          # Base class for all apps (multi-instance support)
+│   ├── AppBase.js          # Base class for all apps
 │   ├── AppRegistry.js      # Central app registry & launcher
-│   ├── Calculator.js       # Calculator with keyboard support
-│   ├── Notepad.js          # Text editor with file system
-│   ├── Terminal.js         # MS-DOS terminal (30+ commands)
-│   ├── Paint.js            # Drawing app with file system
-│   ├── Snake.js            # Snake game
-│   ├── Minesweeper.js      # Minesweeper game
-│   ├── Asteroids.js        # Asteroids game
-│   ├── Solitaire.js        # Klondike solitaire
-│   ├── FreeCell.js         # FreeCell card game
-│   ├── Doom.js             # DOOM WebAssembly wrapper
-│   ├── MediaPlayer.js      # Media player
-│   ├── Browser.js          # Internet Explorer browser
-│   ├── MyComputer.js       # File explorer
-│   ├── RecycleBin.js       # Deleted items manager
-│   ├── ControlPanel.js     # System settings
-│   ├── DisplayProperties.js # Display settings
-│   ├── SoundSettings.js    # Sound settings
-│   ├── AdminPanel.js       # Admin tools
-│   ├── Winamp.js           # Winamp music player
-│   ├── SkiFree.js          # SkiFree skiing game
-│   ├── ChatRoom.js         # 90s chat room simulator
-│   ├── Defrag.js           # Disk Defragmenter
-│   ├── Calendar.js         # Calendar app
-│   ├── Clock.js            # Clock app
-│   ├── FindFiles.js        # File search utility
-│   ├── TaskManager.js      # Task manager
-│   ├── Help.js             # Help system
-│   ├── HyperCard.js        # Stack-based information system
-│   ├── FeaturesSettings.js # Features and plugin configuration
-│   └── ScriptRunner.js     # Script execution and testing
+│   └── [App].js            # Individual app implementations
 │
 ├── core/                   # Core system modules (15 modules)
-│   ├── SemanticEventBus.js # Enhanced event bus with validation, priorities, channels
-│   ├── EventSchema.js      # Schema definitions for 200+ semantic events
-│   ├── SystemMonitor.js    # System monitoring (input, performance, activity)
+│   ├── SemanticEventBus.js # Event bus with validation, priorities
+│   ├── EventSchema.js      # 200+ event definitions
+│   ├── SystemMonitor.js    # System monitoring
 │   ├── StateManager.js     # Centralized state management
 │   ├── WindowManager.js    # Window lifecycle & operations
 │   ├── StorageManager.js   # LocalStorage abstraction
-│   ├── FileSystemManager.js # Virtual file system with event emissions
-│   ├── IconSystem.js       # FontAwesome + emoji icon support
+│   ├── FileSystemManager.js # Virtual file system
+│   ├── IconSystem.js       # FontAwesome + emoji icons
 │   ├── Constants.js        # Centralized configuration
 │   ├── PluginLoader.js     # Plugin loading & management
 │   ├── FeatureRegistry.js  # Feature registration & lifecycle
-│   ├── FeatureBase.js      # Base class for features (lifecycle events)
+│   ├── FeatureBase.js      # Base class for features
 │   ├── ScriptEngine.js     # Scripting engine for automation
-│   ├── CommandBus.js       # Command execution layer for scripting
-│   └── EventBus.js         # Backward compatibility wrapper
+│   ├── CommandBus.js       # Command execution layer
+│   └── script/             # Modular script engine
+│       ├── AutoexecLoader.js # Autoexec file loader
+│       ├── lexer/          # Tokenizer
+│       ├── parser/         # Recursive descent parser
+│       ├── interpreter/    # AST visitor & executor
+│       ├── builtins/       # Built-in functions (9 modules)
+│       └── errors/         # Error types
 │
 ├── features/               # Core system features (7 modules)
 │   ├── ClippyAssistant.js  # Clippy helper popup
@@ -627,11 +679,13 @@ IlluminatOS!/
 │   ├── EasterEggs.js       # Hidden triggers
 │   ├── AchievementSystem.js # Achievement tracking
 │   ├── SoundSystem.js      # Web Audio sound effects
-│   └── SystemDialogs.js    # Windows 95-style dialogs
+│   ├── SystemDialogs.js    # Retro-style dialogs
+│   └── config.json         # Feature configuration
 │
 ├── plugins/                # Third-party plugins
 │   └── features/           # Feature plugins
-│       └── dvd-bouncer/    # DVD Bouncer screensaver plugin
+│       ├── dvd-bouncer/    # DVD Bouncer screensaver
+│       └── example-plugin/ # Example template
 │
 └── ui/                     # UI rendering components (4 renderers)
     ├── DesktopRenderer.js  # Desktop icons
@@ -644,38 +698,18 @@ IlluminatOS!/
 
 **Event-Driven Architecture**
 ```javascript
-// 200+ semantic events for everything that happens in the OS
 import EventBus, { Events, Priority } from './core/SemanticEventBus.js';
 
 // Subscribe with priority control
-EventBus.on(Events.WINDOW_OPEN, (payload, metadata, event) => {
+EventBus.on(Events.WINDOW_OPEN, (payload) => {
     console.log(`Window opened: ${payload.id}`);
 }, { priority: Priority.NORMAL });
 
 // Pattern matching (wildcards)
 EventBus.on('window:*', handler);  // All window events
-EventBus.on('app:*', handler);     // All app events
 
 // Request/response for async operations
 const result = await EventBus.request('dialog:confirm', { message: 'OK?' });
-
-// Throttled emissions for high-frequency events
-EventBus.emitThrottled(Events.MOUSE_MOVE, { x, y }, 16);
-```
-
-**Singleton Pattern**
-```javascript
-// Single instances for core services
-const StateManager = new StateManagerClass();
-export default StateManager;
-```
-
-**Observer Pattern**
-```javascript
-// Reactive state subscriptions
-StateManager.subscribe('windows', (windows) => {
-    TaskbarRenderer.update(windows);
-});
 ```
 
 **Base Class Pattern**
@@ -740,7 +774,7 @@ Settings are stored in localStorage and can be modified via Control Panel:
 
 ### LocalStorage Keys
 
-IlluminatOS! uses the prefix `illuminatos_` for all stored data:
+IlluminatOS! uses the prefix `smos_` for all stored data:
 
 | Key | Purpose |
 |-----|---------|
@@ -776,28 +810,42 @@ Or use Control Panel > Advanced > Reset
 
 ---
 
-## Browser Compatibility
+## Event System
 
-### Tested Browsers
+IlluminatOS! features a comprehensive event system with 200+ semantic events organized into namespaces.
 
-| Browser | Status | Notes |
-|---------|--------|-------|
-| Chrome 90+ | Full Support | Recommended |
-| Firefox 88+ | Full Support | |
-| Safari 14+ | Full Support | |
-| Edge 90+ | Full Support | |
-| Opera 76+ | Full Support | |
-| IE 11 | Not Supported | Use Edge |
+### Event Namespaces
 
-### Required Features
+| Namespace | Events | Description |
+|-----------|--------|-------------|
+| `window` | 18 | Window lifecycle (create, open, close, focus, resize, move, snap) |
+| `app` | 12 | App lifecycle (launch, ready, close, focus, blur, state, messaging) |
+| `system` | 18 | System events (boot, ready, idle, sleep, wake, network, fullscreen) |
+| `mouse` | 10 | Mouse input (move, click, dblclick, down, up, scroll, contextmenu) |
+| `keyboard` | 5 | Keyboard input (keydown, keyup, combo, shortcut, input) |
+| `touch` | 4 | Touch input (start, move, end, cancel) |
+| `gesture` | 6 | Gesture detection (tap, doubletap, swipe, pinch, rotate, longpress) |
+| `fs` | 12 | File system (create, read, update, delete, rename, move, copy) |
+| `feature` | 5 | Feature lifecycle (initialize, ready, enable, disable, config) |
+| `script` | 10 | Script execution (start, statement, complete, error, output) |
+| `audio` | 8 | Audio playback (play, pause, resume, stop, ended, error) |
+| `dialog` | 8 | System dialogs (alert, confirm, prompt, file dialogs) |
 
-- ES6 Modules (`<script type="module">`)
-- CSS Custom Properties (CSS Variables)
-- LocalStorage API
-- Canvas 2D Context
-- Web Audio API (for sounds)
-- Pointer Events
-- ResizeObserver API
+See [SEMANTIC_EVENTS.md](SEMANTIC_EVENTS.md) for complete documentation.
+
+### Quick Example
+
+```javascript
+import EventBus, { Events, Priority } from './core/SemanticEventBus.js';
+
+// Listen to all file system events
+EventBus.on('fs:*', (payload, metadata) => {
+    console.log(`File operation: ${metadata.name}`, payload);
+});
+
+// Wait for an event
+const { payload } = await EventBus.waitFor(Events.SYSTEM_READY);
+```
 
 ---
 
@@ -818,7 +866,7 @@ class MyApp extends AppBase {
         super({
             id: 'myapp',
             name: 'My Application',
-            icon: 'fa-solid fa-star', // FontAwesome class or emoji
+            icon: 'fa-solid fa-star',
             width: 400,
             height: 300,
             resizable: true,
@@ -828,16 +876,11 @@ class MyApp extends AppBase {
     }
 
     onOpen() {
-        return `
-            <div class="myapp-container">
-                <h1>Hello World!</h1>
-            </div>
-        `;
+        return `<div class="myapp-container"><h1>Hello World!</h1></div>`;
     }
 
     onMount() {
         // Setup event listeners after DOM is ready
-        // Use this.addHandler() for automatic cleanup
     }
 
     onClose() {
@@ -852,71 +895,41 @@ export default MyApp;
 
 ```javascript
 import MyApp from './MyApp.js';
-AppRegistry.register(new MyApp(), {
-    category: 'accessories',
-    description: 'My custom application'
-});
+AppRegistry.register(new MyApp(), { category: 'accessories' });
 ```
 
 ---
 
-## Event System
+## Browser Compatibility
 
-IlluminatOS! features a comprehensive event system with 200+ semantic events organized into namespaces. Every action in the OS emits events that can be observed and scripted.
+### Tested Browsers
 
-### Event Namespaces
+| Browser | Status | Notes |
+|---------|--------|-------|
+| Chrome 90+ | Full Support | Recommended |
+| Firefox 88+ | Full Support | |
+| Safari 14+ | Full Support | |
+| Edge 90+ | Full Support | |
+| Opera 76+ | Full Support | |
 
-| Namespace | Events | Description |
-|-----------|--------|-------------|
-| `window` | 18 | Window lifecycle (create, open, close, focus, resize, move, snap, etc.) |
-| `app` | 12 | App lifecycle (launch, ready, close, focus, blur, state, messaging) |
-| `system` | 18 | System events (boot, ready, idle, sleep, wake, network, fullscreen) |
-| `mouse` | 10 | Mouse input (move, click, dblclick, down, up, scroll, contextmenu) |
-| `keyboard` | 5 | Keyboard input (keydown, keyup, combo, shortcut, input) |
-| `touch` | 4 | Touch input (start, move, end, cancel) |
-| `gesture` | 6 | Gesture detection (tap, doubletap, swipe, pinch, rotate, longpress) |
-| `fs` | 12 | File system (create, read, update, delete, rename, move, copy) |
-| `feature` | 5 | Feature lifecycle (initialize, ready, enable, disable, config) |
-| `perf` | 5 | Performance (fps, memory, longtask, measure) |
-| `audio` | 8 | Audio playback (play, pause, resume, stop, ended, error) |
-| `ui` | 7 | UI interactions (menu, taskbar, context menu) |
-| `dialog` | 8 | System dialogs (alert, confirm, prompt, file dialogs) |
+### Required Features
 
-See [SEMANTIC_EVENTS.md](SEMANTIC_EVENTS.md) for complete documentation.
-
-### Quick Example
-
-```javascript
-import EventBus, { Events, Priority } from './core/SemanticEventBus.js';
-
-// Listen to all file system events
-EventBus.on('fs:*', (payload, metadata) => {
-    console.log(`File operation: ${metadata.name}`, payload);
-});
-
-// Listen to specific events with priority
-EventBus.on(Events.APP_LAUNCH, (payload) => {
-    console.log(`App launched: ${payload.appId}`);
-}, { priority: Priority.SCRIPT });
-
-// Wait for an event
-const { payload } = await EventBus.waitFor(Events.SYSTEM_READY);
-
-// Use channels for scoped communication
-const channel = EventBus.channel('my-channel', 'subscriber-1');
-channel.send({ message: 'Hello!' });
-channel.receive((msg, sender) => console.log(`From ${sender}:`, msg));
-```
+- ES6 Modules (`<script type="module">`)
+- CSS Custom Properties (CSS Variables)
+- LocalStorage API
+- Canvas 2D Context
+- Web Audio API (for sounds)
+- Pointer Events
+- ResizeObserver API
 
 ---
 
 ## Credits
 
-- **Design Inspiration:** Windows 95
 - **DOOM Port:** Chocolate Doom WebAssembly
 - **Icons:** FontAwesome 6.5.1
 - **Font:** VT323 (Google Fonts)
-- **Clippy:** The classic Office Assistant (1997-2007, RIP)
+- **Clippy:** The classic Office Assistant (RIP)
 
 ---
 
