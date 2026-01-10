@@ -50,9 +50,9 @@ class ContextMenuRendererClass {
         // Use event delegation for menu items - single handler for all clicks
         this.element.addEventListener('click', this.boundHandleMenuClick);
 
-        // Listen for show events
-        EventBus.on(Events.CONTEXT_MENU_SHOW, ({ x, y, type, icon, windowId }) => {
-            this.show(x, y, type, { icon, windowId });
+        // Listen for show events - pass through all context data for various menu types
+        EventBus.on(Events.CONTEXT_MENU_SHOW, ({ x, y, type, icon, windowId, item, currentPath }) => {
+            this.show(x, y, type, { icon, windowId, item, currentPath });
         });
 
         // Listen for desktop actions
@@ -89,6 +89,11 @@ class ContextMenuRendererClass {
     handleMenuClick(e) {
         const item = e.target.closest('[data-action]');
         if (item) {
+            // Don't trigger action for disabled items
+            if (item.classList.contains('disabled')) {
+                e.stopPropagation();
+                return;
+            }
             e.stopPropagation();
             this.handleAction(item.dataset.action);
         }
@@ -660,7 +665,7 @@ class ContextMenuRendererClass {
         if (!newName || newName === oldName) return;
 
         try {
-            FileSystemManager.renameNode(item.path, newName);
+            FileSystemManager.renameItem(item.path, newName);
             EventBus.emit('filesystem:changed');
         } catch (e) {
             await SystemDialogs.alert(`Error renaming: ${e.message}`, 'Rename Error', 'error');
