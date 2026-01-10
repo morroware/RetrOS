@@ -160,6 +160,10 @@ class ContextMenuRendererClass {
         const hasPaste = this.clipboard.items.length > 0;
         const pasteClass = hasPaste ? '' : 'disabled';
 
+        // Debug logging
+        console.log('[ContextMenu] desktopMenu called, clipboard:', this.clipboard);
+        console.log('[ContextMenu] hasPaste:', hasPaste, 'items:', this.clipboard.items.length);
+
         return `
             <div class="context-item" data-action="arrange">Arrange Icons</div>
             <div class="context-item" data-action="refresh">Refresh</div>
@@ -184,12 +188,27 @@ class ContextMenuRendererClass {
     }
 
     iconMenu(context) {
-        const icon = context.icon;
+        const icon = context?.icon;
+
+        // Debug logging
+        console.log('[ContextMenu] iconMenu called with icon:', icon);
+        console.log('[ContextMenu] icon.type:', icon?.type, 'icon.filePath:', icon?.filePath);
+
+        // If no icon data, show minimal menu
+        if (!icon) {
+            console.log('[ContextMenu] No icon data, showing minimal menu');
+            return `
+                <div class="context-item" data-action="properties">Properties</div>
+            `;
+        }
 
         // Different menu for files vs apps
+        // type: 'file' is for file system items (both files and folders from Desktop folder)
         if (icon.type === 'file') {
-            const isTextFile = ['txt', 'md', 'log'].includes(icon.extension);
-            const isImageFile = ['png', 'jpg', 'bmp'].includes(icon.extension);
+            console.log('[ContextMenu] Showing FILE context menu with Cut/Copy');
+            const extension = icon.extension || '';
+            const isTextFile = ['txt', 'md', 'log'].includes(extension);
+            const isImageFile = ['png', 'jpg', 'bmp'].includes(extension);
 
             return `
                 <div class="context-item" data-action="open"><strong>Open</strong></div>
@@ -202,6 +221,16 @@ class ContextMenuRendererClass {
                 <div class="context-item" data-action="rename">✏️ Rename</div>
                 <div class="context-item" data-action="delete">🗑️ Delete</div>
                 <div class="context-divider"></div>
+                <div class="context-item" data-action="properties">Properties</div>
+            `;
+        }
+
+        // App/link icons - also allow cut/copy for links
+        if (icon.type === 'link') {
+            return `
+                <div class="context-item" data-action="open"><strong>Open</strong></div>
+                <div class="context-divider"></div>
+                <div class="context-item" data-action="delete">🗑️ Remove from Desktop</div>
                 <div class="context-item" data-action="properties">Properties</div>
             `;
         }
