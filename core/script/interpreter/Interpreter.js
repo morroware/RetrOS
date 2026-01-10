@@ -705,18 +705,19 @@ export class Interpreter {
                 return Number(left) % modDivisor;
             }
 
-            // Comparison (uses loose equality for user-friendly scripting)
-            // This means 1 == "1" is true, null == undefined is true
-            case '==': return left == right;
-            case '!=': return left != right;
+            // Comparison (uses strict equality for predictable behavior)
+            case '==': return left === right;
+            case '!=': return left !== right;
             case '<': return left < right;
             case '>': return left > right;
             case '<=': return left <= right;
             case '>=': return left >= right;
 
-            // Logical (returns boolean based on truthiness, not the actual values)
-            case '&&': return this.isTruthy(left) && this.isTruthy(right);
-            case '||': return this.isTruthy(left) || this.isTruthy(right);
+            // Logical (returns actual values, not booleans - JS semantics)
+            // && returns left if falsy, otherwise right
+            // || returns left if truthy, otherwise right
+            case '&&': return this.isTruthy(left) ? right : left;
+            case '||': return this.isTruthy(left) ? left : right;
 
             default:
                 throw new RuntimeError(`Unknown operator: ${expr.operator}`, expr.getLocation());

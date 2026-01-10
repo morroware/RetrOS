@@ -411,7 +411,7 @@ on app:calculator:opened {
 }
 
 on app:calculator:result {
-    set $r = $event.result
+    set $r = call toNumber $event.result
     if $r == 347 then {
         if $secret_347 == 0 then {
             set $secret_347 = 1
@@ -488,7 +488,7 @@ on minesweeper:win {
 }
 
 on snake:game:over {
-    set $sc = $event.score
+    set $sc = call toNumber $event.score
     if $sc >= 10 then {
         if $game_snake == 0 then {
             set $game_snake = 1
@@ -507,7 +507,7 @@ on snake:game:over {
 }
 
 on asteroids:game:over {
-    set $sc = $event.score
+    set $sc = call toNumber $event.score
     if $sc >= 500 then {
         if $game_asteroids == 0 then {
             set $game_asteroids = 1

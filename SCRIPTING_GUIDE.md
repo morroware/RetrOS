@@ -288,11 +288,13 @@ set $neg = -5 + 3  # -2
 
 ### Comparison
 
+RetroScript uses **strict equality** - values must be the same type to be equal.
+
 ```retro
-# Equal
+# Equal (strict - type must match)
 if $a == $b then { print "equal" }
 
-# Not equal
+# Not equal (strict)
 if $a != $b then { print "not equal" }
 
 # Greater/Less than
@@ -302,13 +304,24 @@ if $a >= $b then { print "greater or equal" }
 if $a <= $b then { print "less or equal" }
 ```
 
-### Logical
+**Important:** Since strict equality is used, `"5" == 5` is **false** (string vs number).
+Use `call toNumber` to convert strings when comparing to numbers:
 
 ```retro
-# AND
+set $input = "42"
+set $num = call toNumber $input
+if $num == 42 then { print "match!" }  # Works!
+```
+
+### Logical
+
+Logical operators return **actual values**, not just booleans (JavaScript-style):
+
+```retro
+# AND - returns left if falsy, otherwise right
 if $a > 5 && $a < 10 then { print "between 5 and 10" }
 
-# OR
+# OR - returns left if truthy, otherwise right
 if $a < 0 || $a > 100 then { print "out of range" }
 
 # Also works with 'and' / 'or' keywords
@@ -317,6 +330,13 @@ if $a < 0 or $a > 100 then { print "out of range" }
 
 # Combined with parentheses
 if ($a > 5 && $a < 10) || $a == 0 then { print "valid" }
+```
+
+**Default value pattern** - Use `||` to provide fallback values:
+
+```retro
+set $name = $userName || "Guest"        # Use $userName or "Guest" if empty
+set $config = $userConfig || $defaults  # Use user config or defaults
 ```
 
 ### String Concatenation
@@ -1058,16 +1078,17 @@ print "Logging session to Desktop/session.log"
 ```retro
 set $score = 0
 
-# Question 1
+# Question 1 - numeric answer (use toNumber for comparison)
 set $answer = call prompt "What is 2 + 2?"
-if $answer == "4" then {
+set $answer = call toNumber $answer
+if $answer == 4 then {
     set $score = $score + 1
     notify "Correct!"
 } else {
     notify "Wrong! The answer is 4"
 }
 
-# Question 2
+# Question 2 - string answer (compare strings directly)
 set $answer = call prompt "What color is the sky?"
 set $answer = call lower $answer
 if $answer == "blue" then {
