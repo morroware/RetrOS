@@ -90,11 +90,15 @@ class DesktopRendererClass {
     renderFileIcons() {
         try {
             const desktopPath = [...PATHS.DESKTOP];
+            console.log('[DesktopRenderer] renderFileIcons() - Looking in:', desktopPath.join('/'));
+
             const files = FileSystemManager.listDirectory(desktopPath);
+            console.log('[DesktopRenderer] Files found in Desktop folder:', files.length, files.map(f => `${f.name} (${f.type})`));
 
             // Filter out .lnk files - those are shortcuts synced from StateManager
             // and are already displayed as icons on the desktop
             const realFiles = files.filter(file => file.extension !== 'lnk');
+            console.log('[DesktopRenderer] Real files (non-.lnk) to render:', realFiles.length, realFiles.map(f => f.name));
 
             // Get saved file positions
             const filePositions = StateManager.getState('filePositions') || {};
