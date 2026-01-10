@@ -34,237 +34,19 @@ class ScriptRunner extends AppBase {
         this.isDebugging = false;
         this.currentDebugLine = null;
         this.findVisible = false;
+
+        // File management
+        this.currentFilePath = null;
+        this.isModified = false;
+        this.originalContent = '';
+        this.lastRecordedCode = '';
     }
 
     onOpen(params) {
-        // Test script with app launching and events
-        const sampleScript = `# ═══════════════════════════════════════════════════════════════
-#  RetroScript Comprehensive Test Suite
-#  Press F5 or click Run to execute
-# ═══════════════════════════════════════════════════════════════
+        // Start with empty editor - blank slate for new scripts
+        const sampleScript = ``;
 
-print ═══════════════════════════════════════════════════════════════
-print   RetroScript Comprehensive Test Suite
-print ═══════════════════════════════════════════════════════════════
-print
-
-# ----- Test 1: Variables & Data Types -----
-print [Test 1] Variables & Data Types
-set $string = "Hello"
-set $number = 42
-set $bool = true
-set $array = [1, 2, 3]
-set $object = {name: "RetroScript", version: 1}
-set $arrLen = call count $array
-set $objKeys = call keys $object
-print   String: $string
-print   Number: $number
-print   Boolean: $bool
-print   Array length: $arrLen
-print   Object keys: $objKeys
-print   ✓ PASSED
-print
-
-# ----- Test 2: Arithmetic Operations -----
-print [Test 2] Arithmetic Operations
-set $a = 10
-set $b = 3
-set $sum = $a + $b
-set $diff = $a - $b
-set $prod = $a * $b
-set $quot = $a / $b
-set $mod = $a % $b
-print   $a + $b = $sum
-print   $a - $b = $diff
-print   $a * $b = $prod
-print   $a / $b = $quot
-print   $a % $b = $mod
-print   ✓ PASSED
-print
-
-# ----- Test 3: Control Flow -----
-print [Test 3] Control Flow (if/then/else)
-set $score = 85
-if $score >= 90 then {
-    print   Grade: A
-} else {
-    if $score >= 80 then {
-        print   Grade: B
-    } else {
-        print   Grade: C or lower
-    }
-}
-print   ✓ PASSED
-print
-
-# ----- Test 4: Loops -----
-print [Test 4] Loops
-print   Count loop:
-loop 3 {
-    print     iteration $i
-}
-print   While loop:
-set $count = 0
-loop while $count < 3 {
-    print     count = $count
-    set $count = $count + 1
-}
-print   Foreach loop:
-set $items = ["apple", "banana", "cherry"]
-foreach $item in $items {
-    print     item $i: $item
-}
-print   ✓ PASSED
-print
-
-# ----- Test 5: String Functions -----
-print [Test 5] String Functions
-set $text = "  RetroScript  "
-set $trimmed = call trim $text
-set $upper = call upper $trimmed
-set $lower = call lower $trimmed
-set $len = call length $trimmed
-print   Original: '$text'
-print   Trimmed: '$trimmed'
-print   Upper: $upper
-print   Lower: $lower
-print   Length: $len
-print   ✓ PASSED
-print
-
-# ----- Test 6: Math Functions -----
-print [Test 6] Math Functions
-set $rand = call random 1 10
-set $abs = call abs -5
-set $rounded = call round 3.7
-set $sqrt = call sqrt 16
-print   Random(1-10): $rand
-print   Abs(-5): $abs
-print   Round(3.7): $rounded
-print   Sqrt(16): $sqrt
-print   ✓ PASSED
-print
-
-# ----- Test 7: Array Functions -----
-print [Test 7] Array Functions
-set $nums = [5, 2, 8, 1, 9]
-set $first = call first $nums
-set $last = call last $nums
-set $sorted = call sort $nums
-print   Original: $nums
-print   First: $first
-print   Last: $last
-print   Sorted: $sorted
-print   ✓ PASSED
-print
-
-# ----- Test 8: Object Functions -----
-print [Test 8] Object Functions
-set $person = {name: "John", age: 30, role: "admin"}
-set $keys = call keys $person
-set $vals = call values $person
-set $name = call get $person "name"
-print   Object: $person
-print   Keys: $keys
-print   Values: $vals
-print   Name: $name
-print   ✓ PASSED
-print
-
-# ----- Test 9: Time Functions -----
-print [Test 9] Time Functions
-set $now = call now
-set $time = call time
-set $date = call date
-print   Timestamp: $now
-print   Time: $time
-print   Date: $date
-print   ✓ PASSED
-print
-
-# ----- Test 10: Type Functions -----
-print [Test 10] Type Functions
-set $val = 42
-set $type = call typeof $val
-set $isNum = call isNumber $val
-set $isStr = call isString $val
-print   Value: $val
-print   Type: $type
-print   Is number: $isNum
-print   Is string: $isStr
-print   ✓ PASSED
-print
-
-# ----- Test 11: User-Defined Functions -----
-print [Test 11] User-Defined Functions
-def double($x) {
-    return $x * 2
-}
-set $result = call double 5
-print   double(5) = $result
-def greet($name) {
-    print     Hello, $name!
-}
-call greet "RetroScript"
-print   ✓ PASSED
-print
-
-# ----- Test 12: Error Handling -----
-print [Test 12] Error Handling
-try {
-    set $result = call unknownFunction
-    print   ✗ FAILED - should have thrown error
-} catch $err {
-    print   ✓ PASSED - caught error successfully
-}
-print
-
-# ----- Test 13: Events -----
-print [Test 13] Events
-set $eventReceived = false
-on test:ping {
-    set $eventReceived = true
-    print   Event handler triggered!
-}
-emit test:ping
-wait 100
-if $eventReceived == true then {
-    print   ✓ PASSED
-} else {
-    print   ✗ FAILED - event not received
-}
-print
-
-# ----- Test 14: Notifications -----
-print [Test 14] Notifications
-notify RetroScript test notification!
-print   Notification sent
-print   ✓ PASSED
-print
-
-# ----- Test 15: Launch Apps -----
-print [Test 15] Launch Apps
-print   Launching Calculator...
-launch calculator
-wait 500
-print   Launching Notepad...
-launch notepad
-wait 500
-print   ✓ PASSED
-print
-
-# ----- Test 16: Sound -----
-print [Test 16] Sound
-play notify
-print   Sound played
-print   ✓ PASSED
-print
-
-print ═══════════════════════════════════════════════════════════════
-print   All tests completed successfully!
-print ═══════════════════════════════════════════════════════════════`;
-
-        // Full comprehensive test suite (available via Help menu)
+        // Full comprehensive test suite (available via Tests button)
         const fullTestSuite = `# ╔══════════════════════════════════════════════════════════════════╗
 # ║       RETROSCRIPT COMPREHENSIVE TEST SUITE v3.0                 ║
 # ║       Complete testing of all language features                 ║
@@ -2305,38 +2087,47 @@ notify RetroScript Test Suite Complete!`;
         return `
             <div class="script-runner">
                 <div class="script-toolbar">
+                    <!-- File Operations -->
+                    <button class="script-btn" id="newBtn" title="New Script (Ctrl+N)">
+                        <span class="btn-icon">📄</span> New
+                    </button>
+                    <button class="script-btn" id="loadBtn" title="Open Script (Ctrl+O)">
+                        <span class="btn-icon">📂</span> Open
+                    </button>
+                    <button class="script-btn" id="saveBtn" title="Save Script (Ctrl+S)">
+                        <span class="btn-icon">💾</span> Save
+                    </button>
+                    <span class="toolbar-divider"></span>
+
+                    <!-- Run Controls -->
                     <button class="script-btn run-btn" id="runBtn" title="Run Script (F5)">
                         <span class="btn-icon">▶</span> Run
                     </button>
-                    <button class="script-btn" id="stopBtn" title="Stop Script (Esc)">
+                    <button class="script-btn stop-btn" id="stopBtn" title="Stop Script (Esc)">
                         <span class="btn-icon">⏹</span> Stop
+                    </button>
+                    <span class="toolbar-divider"></span>
+
+                    <!-- Recording -->
+                    <button class="script-btn record-btn" id="recordBtn" title="Record Events as Code - Capture your actions!">
+                        <span class="btn-icon">⏺</span> Record
+                    </button>
+                    <span class="toolbar-divider"></span>
+
+                    <!-- Edit Tools -->
+                    <button class="script-btn" id="findBtn" title="Find/Replace (Ctrl+F)">
+                        <span class="btn-icon">🔍</span> Find
                     </button>
                     <button class="script-btn" id="clearBtn" title="Clear Output">
                         <span class="btn-icon">🗑</span> Clear
                     </button>
                     <span class="toolbar-divider"></span>
-                    <button class="script-btn" id="recordBtn" title="Record Events to Code">
-                        <span class="btn-icon">⏺</span> Record
-                    </button>
-                    <span class="toolbar-divider"></span>
-                    <button class="script-btn" id="saveBtn" title="Save Script (Ctrl+S)">
-                        <span class="btn-icon">💾</span> Save
-                    </button>
-                    <button class="script-btn" id="loadBtn" title="Load Script (Ctrl+O)">
-                        <span class="btn-icon">📂</span> Load
-                    </button>
-                    <button class="script-btn" id="newBtn" title="New Script (Ctrl+N)">
-                        <span class="btn-icon">📄</span> New
-                    </button>
-                    <span class="toolbar-divider"></span>
-                    <button class="script-btn" id="findBtn" title="Find/Replace (Ctrl+F)">
-                        <span class="btn-icon">🔍</span> Find
-                    </button>
-                    <span class="toolbar-divider"></span>
+
+                    <!-- Help & Testing -->
                     <button class="script-btn" id="helpBtn" title="Script Help (F1)">
                         <span class="btn-icon">❓</span> Help
                     </button>
-                    <button class="script-btn" id="testSuiteBtn" title="Load Comprehensive Test Suite">
+                    <button class="script-btn test-btn" id="testSuiteBtn" title="Load Comprehensive Test Suite">
                         <span class="btn-icon">🧪</span> Tests
                     </button>
                 </div>
@@ -2355,8 +2146,8 @@ notify RetroScript Test Suite Complete!`;
                 <div class="script-main">
                     <div class="script-editor-pane">
                         <div class="pane-header">
-                            Script Editor
-                            <span class="pane-header-info" id="scriptInfo"></span>
+                            <span id="editorTitle">Untitled</span>
+                            <span class="pane-header-info" id="modifiedIndicator"></span>
                         </div>
                         <div class="editor-container">
                             <div class="line-numbers" id="lineNumbers"></div>
@@ -2376,21 +2167,32 @@ notify RetroScript Test Suite Complete!`;
                             <button class="output-tab" data-tab="commands">Commands</button>
                         </div>
                         <div class="output-content" id="outputContent">
-                            <pre class="output-text" id="outputText">RetroScript IDE Ready
+                            <pre class="output-text" id="outputText"><span class="info">RetroScript IDE v1.0</span>
 
-Shortcuts:
-  F5        - Run script
-  Esc       - Stop script
-  Ctrl+S    - Save script
-  Ctrl+O    - Load script
-  Ctrl+N    - New script
-  Ctrl+F    - Find/Replace
-  F3        - Find next
-  Shift+F3  - Find previous
-  Tab       - Insert 4 spaces
-  F1        - Show help
+Welcome to the RetroScript IDE - a professional scripting
+environment for RetroOS automation and development.
 
-Click "Record" to capture events as code!
+<span class="success">Getting Started:</span>
+  - Write code in the editor on the left
+  - Press F5 or click Run to execute
+  - Click "Record" to capture your actions as code
+  - Click "Tests" to load the comprehensive test suite
+
+<span class="success">Keyboard Shortcuts:</span>
+  F5          Run script
+  Esc         Stop script / Close dialogs
+  Ctrl+S      Save script
+  Ctrl+O      Open script
+  Ctrl+N      New script
+  Ctrl+F      Find/Replace
+  F1          Show help reference
+
+<span class="success">Quick Example:</span>
+  print "Hello, World!"
+  set $name = "User"
+  print "Welcome, $name!"
+
+Type your script or click "Help" for full reference.
 </pre>
                         </div>
                     </div>
@@ -2398,6 +2200,8 @@ Click "Record" to capture events as code!
 
                 <div class="script-statusbar">
                     <span id="statusText">Ready</span>
+                    <span class="status-divider">|</span>
+                    <span id="filePathDisplay" class="file-path-display">New File</span>
                     <span class="status-divider">|</span>
                     <span id="lineInfo">Line 1, Col 1</span>
                     <span class="status-divider">|</span>
@@ -2454,6 +2258,41 @@ Click "Record" to capture events as code!
 
                 .script-btn.run-btn:hover {
                     background: #7CCD7C;
+                }
+
+                .script-btn.stop-btn {
+                    background: #FFB6C1;
+                }
+
+                .script-btn.stop-btn:hover {
+                    background: #FF9AA2;
+                }
+
+                .script-btn.record-btn {
+                    background: #FFE4B5;
+                }
+
+                .script-btn.record-btn:hover {
+                    background: #FFD89B;
+                }
+
+                .script-btn.record-btn.recording {
+                    background: #ff6b6b;
+                    color: white;
+                    animation: pulse 1s infinite;
+                }
+
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.7; }
+                }
+
+                .script-btn.test-btn {
+                    background: #E6E6FA;
+                }
+
+                .script-btn.test-btn:hover {
+                    background: #D8BFD8;
                 }
 
                 .toolbar-divider {
@@ -2698,6 +2537,21 @@ Click "Record" to capture events as code!
                     flex: 1;
                 }
 
+                .file-path-display {
+                    color: #404040;
+                    font-size: 11px;
+                    max-width: 200px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .modified-indicator {
+                    color: #ff6b6b;
+                    font-weight: bold;
+                    margin-left: 4px;
+                }
+
                 .record-status {
                     color: red;
                     font-weight: bold;
@@ -2885,6 +2739,7 @@ Click "Record" to capture events as code!
         this.addHandler(editor, 'input', () => {
             this.updateSyntaxHighlight();
             this.updateCharCount();
+            this.markModified();
         });
         this.addHandler(editor, 'scroll', () => this.syncScroll());
 
@@ -3067,19 +2922,57 @@ Click "Record" to capture events as code!
         const recordStatus = this.getElement('#recordStatus');
 
         if (this.isRecording) {
+            // Stop recording
             this.isRecording = false;
             recordBtn.innerHTML = '<span class="btn-icon">⏺</span> Record';
+            recordBtn.classList.remove('recording');
             recordStatus.textContent = '';
             recordStatus.classList.remove('active');
-            this.appendOutput(`Recording stopped - ${this.recordedEvents.length} events captured`, 'info');
-            this.appendOutput('Switch to "Recorded" tab to see generated code', 'info');
+
+            if (this.recordedEvents.length > 0) {
+                this.appendOutput('', 'info');
+                this.appendOutput('═══════════════════════════════════════════', 'info');
+                this.appendOutput(`  RECORDING COMPLETE - ${this.recordedEvents.length} events`, 'success');
+                this.appendOutput('═══════════════════════════════════════════', 'info');
+                this.appendOutput('', 'info');
+                this.appendOutput('Your actions have been converted to RetroScript code!', 'info');
+                this.appendOutput('Switching to "Recorded" tab...', 'info');
+
+                // Auto-switch to Recorded tab
+                this.switchTab('recorded');
+            } else {
+                this.appendOutput('', 'info');
+                this.appendOutput('Recording stopped - no events were captured.', 'info');
+                this.appendOutput('', 'info');
+                this.appendOutput('Tips for successful recording:', 'info');
+                this.appendOutput('  • Launch an app (click an icon on desktop)', 'info');
+                this.appendOutput('  • Close a window', 'info');
+                this.appendOutput('  • Use the Start menu', 'info');
+                this.appendOutput('  • Create or save a file', 'info');
+            }
         } else {
+            // Start recording
             this.isRecording = true;
             this.recordedEvents = [];
-            recordBtn.innerHTML = '<span class="btn-icon record-indicator">⏺</span> Stop';
+            recordBtn.innerHTML = '<span class="btn-icon">⏹</span> Stop';
+            recordBtn.classList.add('recording');
             recordStatus.textContent = '⏺ REC';
             recordStatus.classList.add('active');
-            this.appendOutput('Recording started - perform actions to capture as code...', 'info');
+
+            this.appendOutput('', 'info');
+            this.appendOutput('═══════════════════════════════════════════', 'error');
+            this.appendOutput('  ⏺ RECORDING STARTED', 'error');
+            this.appendOutput('═══════════════════════════════════════════', 'error');
+            this.appendOutput('', 'info');
+            this.appendOutput('Your actions are now being recorded as RetroScript code!', 'info');
+            this.appendOutput('', 'info');
+            this.appendOutput('Try these actions:', 'info');
+            this.appendOutput('  ▶ Launch an application', 'info');
+            this.appendOutput('  ▶ Play a sound', 'info');
+            this.appendOutput('  ▶ Create or delete a file', 'info');
+            this.appendOutput('  ▶ Show a notification', 'info');
+            this.appendOutput('', 'info');
+            this.appendOutput('Click "Stop" when finished recording.', 'success');
         }
     }
 
@@ -3103,63 +2996,133 @@ Click "Record" to capture events as code!
         if (eventName === 'app:launch' && payload.appId) {
             return `launch ${payload.appId}`;
         }
+        if (eventName === 'app:open' && payload.appId) {
+            return `launch ${payload.appId}`;
+        }
 
         // Window events
-        if (eventName === 'window:close' && payload.windowId) {
+        if (eventName === 'window:close') {
             return `close`;
         }
+        if (eventName === 'window:minimize' && payload.windowId) {
+            return `minimize`;
+        }
+        if (eventName === 'window:maximize' && payload.windowId) {
+            return `maximize`;
+        }
         if (eventName === 'window:focus' && payload.appId) {
-            return `# Focus: ${payload.appId}`;
+            return `focus  # ${payload.appId}`;
+        }
+        if (eventName === 'window:open') {
+            return null; // Skip, captured by app:launch
         }
 
         // Sound events
         if (eventName === 'sound:play' && payload.sound) {
             return `play ${payload.sound}`;
         }
+        if (eventName === 'sound:stop') {
+            return `# Sound stopped`;
+        }
 
         // Dialog events
         if (eventName === 'dialog:alert') {
-            const msg = payload.message || '';
-            return `alert "${msg.replace(/"/g, '\\"')}"`;
+            const msg = payload.message || payload.title || '';
+            return `emit dialog:alert message="${msg.replace(/"/g, '\\"')}"`;
         }
+        if (eventName === 'dialog:confirm') {
+            return `# Confirm dialog shown`;
+        }
+        if (eventName === 'dialog:prompt') {
+            return `# Prompt dialog shown`;
+        }
+
+        // Notification events
         if (eventName === 'notification:show') {
             const msg = payload.message || '';
             return `notify "${msg.replace(/"/g, '\\"')}"`;
         }
 
-        // File events
-        if (eventName.startsWith('fs:file:')) {
+        // File system events
+        if (eventName.startsWith('fs:file:') || eventName.startsWith('fs:dir:')) {
             const action = parts[2];
-            const path = payload.path;
-            if (action === 'create' || action === 'update') {
-                return `# File ${action}: ${path}`;
+            const pathArray = payload.path;
+            const pathStr = Array.isArray(pathArray) ? pathArray.join('/') : pathArray;
+
+            if (action === 'create') {
+                if (eventName.includes(':dir:')) {
+                    return `mkdir "${pathStr}"`;
+                }
+                return `write "" to "${pathStr}"`;
+            }
+            if (action === 'update' || action === 'write') {
+                return `# File updated: ${pathStr}`;
             }
             if (action === 'delete') {
-                return `delete "${path}"`;
+                return `delete "${pathStr}"`;
             }
+            if (action === 'read') {
+                return `# File read: ${pathStr}`;
+            }
+        }
+
+        // Notepad save events
+        if (eventName === 'app:notepad:saved') {
+            const pathArray = payload.path;
+            const pathStr = Array.isArray(pathArray) ? pathArray.join('/') : pathArray;
+            return `# Notepad saved: ${pathStr}`;
         }
 
         // Game events
-        if (eventName.includes(':win') || eventName.includes(':game:over')) {
-            return `# Event: ${eventName} (score: ${payload.score || 'N/A'})`;
+        if (eventName.includes(':win') || eventName.includes(':game:over') || eventName.includes(':complete')) {
+            const score = payload.score !== undefined ? ` score=${payload.score}` : '';
+            const time = payload.time !== undefined ? ` time=${payload.time}` : '';
+            return `# Game event: ${eventName}${score}${time}`;
+        }
+        if (eventName.includes(':start') || eventName.includes(':new')) {
+            return `# Game started: ${eventName}`;
         }
 
-        // Keyboard events (for documentation)
+        // Keyboard events (only special keys)
         if (eventName === 'keyboard:keydown' && payload.key) {
             if (payload.key.length === 1) return null; // Skip regular typing
-            return `# Key pressed: ${payload.key}`;
+            if (['Shift', 'Control', 'Alt', 'Meta'].includes(payload.key)) return null;
+            return `# Key: ${payload.key}`;
         }
 
-        // Mouse click
-        if (eventName === 'mouse:click') {
-            return `# Click at (${payload.x}, ${payload.y})`;
+        // Mouse click - skip to avoid noise
+        if (eventName === 'mouse:click' || eventName === 'mouse:down' || eventName === 'mouse:up') {
+            return null;
         }
 
-        // Generic event - emit it
-        if (parts.length >= 2) {
+        // System events
+        if (eventName === 'system:shutdown') {
+            return `# System shutdown`;
+        }
+        if (eventName === 'system:boot') {
+            return `# System boot`;
+        }
+
+        // Desktop events
+        if (eventName === 'desktop:wallpaper:change') {
+            return `# Wallpaper changed`;
+        }
+
+        // Skip internal/noisy events
+        if (eventName.startsWith('window:drag') ||
+            eventName.startsWith('window:resize') ||
+            eventName.startsWith('taskbar:') ||
+            eventName.startsWith('menu:') ||
+            eventName.startsWith('context:')) {
+            return null;
+        }
+
+        // Generic event - emit it if it seems useful
+        if (parts.length >= 2 && !eventName.startsWith('internal:')) {
             const props = Object.entries(payload || {})
                 .filter(([k, v]) => v !== undefined && v !== null && typeof v !== 'object')
-                .map(([k, v]) => `${k}="${v}"`)
+                .slice(0, 3) // Limit to 3 properties
+                .map(([k, v]) => `${k}="${String(v).substring(0, 50)}"`)
                 .join(' ');
             return props ? `emit ${eventName} ${props}` : `emit ${eventName}`;
         }
@@ -3170,14 +3133,61 @@ Click "Record" to capture events as code!
     newScript() {
         const editor = this.getElement('#scriptEditor');
         if (editor) {
-            editor.value = `# New RetroScript
-# Created: ${new Date().toLocaleString()}
+            // Start completely blank for a fresh slate
+            editor.value = '';
 
-print "Hello, World!"
-`;
+            // Reset file state
+            this.currentFilePath = null;
+            this.isModified = false;
+            this.originalContent = '';
+
+            // Update UI
+            this.updateEditorTitle();
             this.updateSyntaxHighlight();
             this.updateCharCount();
-            this.appendOutput('New script created', 'info');
+            this.clearOutput();
+            this.appendOutput('New script - ready to code', 'info');
+
+            // Focus the editor
+            editor.focus();
+        }
+    }
+
+    updateEditorTitle() {
+        const editorTitle = this.getElement('#editorTitle');
+        const modifiedIndicator = this.getElement('#modifiedIndicator');
+        const filePathDisplay = this.getElement('#filePathDisplay');
+
+        if (editorTitle) {
+            if (this.currentFilePath) {
+                const filename = this.currentFilePath[this.currentFilePath.length - 1];
+                editorTitle.textContent = filename;
+            } else {
+                editorTitle.textContent = 'Untitled';
+            }
+        }
+
+        if (modifiedIndicator) {
+            modifiedIndicator.textContent = this.isModified ? '*' : '';
+            modifiedIndicator.className = this.isModified ? 'pane-header-info modified-indicator' : 'pane-header-info';
+        }
+
+        if (filePathDisplay) {
+            if (this.currentFilePath) {
+                filePathDisplay.textContent = this.currentFilePath.join('/');
+            } else {
+                filePathDisplay.textContent = 'New File';
+            }
+        }
+    }
+
+    markModified() {
+        const editor = this.getElement('#scriptEditor');
+        if (editor && editor.value !== this.originalContent) {
+            if (!this.isModified) {
+                this.isModified = true;
+                this.updateEditorTitle();
+            }
         }
     }
 
@@ -3356,9 +3366,59 @@ print "Hello, World!"
         const script = editor.value;
 
         try {
+            // Use existing path if available, otherwise prompt
+            let savePath = this.currentFilePath;
+
+            if (!savePath) {
+                const result = await EventBus.request('dialog:file-save', {
+                    title: 'Save Script As',
+                    defaultPath: ['C:', 'Users', 'User', 'Documents'],
+                    defaultName: 'script.retro',
+                    filters: [
+                        { name: 'RetroScript', extensions: ['retro'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                }, { timeout: 60000 });
+
+                if (result && result.path) {
+                    savePath = result.path;
+                } else {
+                    return; // User cancelled
+                }
+            }
+
+            FileSystemManager.writeFile(savePath, script, 'retro');
+
+            // Update file state
+            this.currentFilePath = savePath;
+            this.originalContent = script;
+            this.isModified = false;
+            this.updateEditorTitle();
+
+            this.appendOutput(`Saved: ${savePath.join('/')}`, 'success');
+        } catch (e) {
+            // Save to default location on error
+            const path = ['C:', 'Users', 'User', 'Documents', `script_${Date.now()}.retro`];
+            FileSystemManager.writeFile(path, script, 'retro');
+
+            this.currentFilePath = path;
+            this.originalContent = script;
+            this.isModified = false;
+            this.updateEditorTitle();
+
+            this.appendOutput(`Saved: ${path.join('/')}`, 'success');
+        }
+    }
+
+    async saveScriptAs() {
+        const editor = this.getElement('#scriptEditor');
+        const script = editor.value;
+
+        try {
             const result = await EventBus.request('dialog:file-save', {
-                title: 'Save Script',
-                defaultPath: ['C:', 'Users', 'User', 'Documents'],
+                title: 'Save Script As',
+                defaultPath: this.currentFilePath ? this.currentFilePath.slice(0, -1) : ['C:', 'Users', 'User', 'Documents'],
+                defaultName: this.currentFilePath ? this.currentFilePath[this.currentFilePath.length - 1] : 'script.retro',
                 filters: [
                     { name: 'RetroScript', extensions: ['retro'] },
                     { name: 'All Files', extensions: ['*'] }
@@ -3367,13 +3427,16 @@ print "Hello, World!"
 
             if (result && result.path) {
                 FileSystemManager.writeFile(result.path, script, 'retro');
-                this.appendOutput(`Script saved to ${result.path.join('/')}`, 'success');
+
+                this.currentFilePath = result.path;
+                this.originalContent = script;
+                this.isModified = false;
+                this.updateEditorTitle();
+
+                this.appendOutput(`Saved as: ${result.path.join('/')}`, 'success');
             }
         } catch (e) {
-            // Save to default location
-            const path = ['C:', 'Users', 'User', 'Documents', 'script.retro'];
-            FileSystemManager.writeFile(path, script, 'retro');
-            this.appendOutput(`Script saved to ${path.join('/')}`, 'success');
+            this.appendOutput('Save cancelled', 'info');
         }
     }
 
@@ -3393,11 +3456,20 @@ print "Hello, World!"
                 const editor = this.getElement('#scriptEditor');
                 if (editor) {
                     editor.value = content;
-                    this.appendOutput(`Script loaded from ${result.path.join('/')}`, 'success');
+
+                    // Update file state
+                    this.currentFilePath = result.path;
+                    this.originalContent = content;
+                    this.isModified = false;
+                    this.updateEditorTitle();
+                    this.updateSyntaxHighlight();
+                    this.updateCharCount();
+
+                    this.appendOutput(`Opened: ${result.path.join('/')}`, 'success');
                 }
             }
         } catch (e) {
-            this.appendOutput('Load cancelled', 'info');
+            this.appendOutput('Open cancelled', 'info');
         }
     }
 
@@ -3526,9 +3598,38 @@ QUICK EXAMPLES:
     loadTestSuite() {
         const editor = this.getElement('#scriptEditor');
         if (editor && this.fullTestSuite) {
+            // Check if there's existing content
+            if (editor.value.trim()) {
+                // Ask before overwriting (simple confirm via output)
+                this.appendOutput('Loading test suite - replacing current content...', 'info');
+            }
+
             editor.value = this.fullTestSuite;
+
+            // Update file state (test suite is not a saved file)
+            this.currentFilePath = null;
+            this.originalContent = this.fullTestSuite;
+            this.isModified = false;
+            this.updateEditorTitle();
             this.updateSyntaxHighlight();
-            this.appendOutput('Loaded comprehensive test suite (2000+ lines). Click Run to execute all tests.', 'info');
+            this.updateCharCount();
+
+            this.clearOutput();
+            this.appendOutput('═══════════════════════════════════════════', 'info');
+            this.appendOutput('  COMPREHENSIVE TEST SUITE LOADED', 'success');
+            this.appendOutput('═══════════════════════════════════════════', 'info');
+            this.appendOutput('', 'info');
+            this.appendOutput('This test suite validates all RetroScript features:', 'info');
+            this.appendOutput('  - Variables & Data Types', 'info');
+            this.appendOutput('  - Arithmetic & Comparison Operators', 'info');
+            this.appendOutput('  - Control Flow (if/else, loops)', 'info');
+            this.appendOutput('  - User-Defined Functions', 'info');
+            this.appendOutput('  - String, Math, Array Functions', 'info');
+            this.appendOutput('  - Object Functions', 'info');
+            this.appendOutput('  - Error Handling (try/catch)', 'info');
+            this.appendOutput('  - Events & System Commands', 'info');
+            this.appendOutput('', 'info');
+            this.appendOutput('Press F5 or click "Run" to execute all tests.', 'success');
         }
     }
 
@@ -3555,6 +3656,8 @@ QUICK EXAMPLES:
                 break;
             case 'recorded':
                 outputText.innerHTML = this.renderRecordedCode();
+                // Setup button handlers after rendering
+                setTimeout(() => this.setupRecordedTabButtons(), 0);
                 break;
             case 'commands':
                 const commands = CommandBus.getCommands();
@@ -3606,40 +3709,124 @@ Run a script to see variable values here.
 
     renderRecordedCode() {
         if (this.recordedEvents.length === 0) {
+            const isRecording = this.isRecording;
             return `<div class="recorded-header">Event Recorder</div>
-No events recorded yet.
+${isRecording ? '<span class="error">⏺ Recording in progress...</span>\n\n' : ''}No events recorded yet.
 
-<span class="info">How to use:</span>
-1. Click the <span class="rec-command">Record</span> button in the toolbar
-2. Perform actions in IlluminatOS (launch apps, click, etc.)
-3. Click <span class="rec-command">Stop</span> to finish recording
-4. Generated RetroScript code will appear here!
+<span class="info">How to use the Event Recorder:</span>
 
-<span class="info">This is useful for:</span>
-• Learning RetroScript syntax
-• Creating automation scripts
-• Documenting actions as code
+1. Click the <span class="rec-command">⏺ Record</span> button in the toolbar
+2. Perform actions in RetroOS:
+   • Launch applications (calculator, notepad, etc.)
+   • Play sounds
+   • Show notifications
+   • Create or delete files
+   • Interact with the system
+3. Click <span class="rec-command">⏹ Stop</span> to finish recording
+4. Generated RetroScript code appears here
+
+<span class="info">Why use recording?</span>
+• <span class="success">Learn</span> - See how actions translate to code
+• <span class="success">Automate</span> - Quickly create automation scripts
+• <span class="success">Document</span> - Record workflows as executable scripts
+
+<span class="info">Tip:</span> You can copy the generated code and paste it
+into the editor to modify and run it!
 `;
         }
 
-        let code = `# Recorded RetroScript
-# Generated: ${new Date().toLocaleString()}
-# Events: ${this.recordedEvents.length}
-
-`;
+        // Build clean code (without HTML comments)
+        let cleanCode = `# Recorded RetroScript\n`;
+        cleanCode += `# Generated: ${new Date().toLocaleString()}\n`;
+        cleanCode += `# Events: ${this.recordedEvents.length}\n\n`;
 
         for (const event of this.recordedEvents) {
-            code += `${event.code}  <span class="rec-comment"># ${event.time} - ${event.event}</span>\n`;
+            // Add a simple comment for context
+            if (!event.code.startsWith('#')) {
+                cleanCode += `${event.code}\n`;
+            } else {
+                cleanCode += `${event.code}\n`;
+            }
         }
 
+        // Build display code with syntax highlighting
+        let displayCode = `<span class="rec-comment"># Recorded RetroScript</span>\n`;
+        displayCode += `<span class="rec-comment"># Generated: ${new Date().toLocaleString()}</span>\n`;
+        displayCode += `<span class="rec-comment"># Events: ${this.recordedEvents.length}</span>\n\n`;
+
+        for (const event of this.recordedEvents) {
+            if (event.code.startsWith('#')) {
+                displayCode += `<span class="rec-comment">${this.escapeHtml(event.code)}</span>\n`;
+            } else {
+                // Highlight the command
+                const parts = event.code.split(' ');
+                const cmd = parts[0];
+                const rest = parts.slice(1).join(' ');
+                displayCode += `<span class="rec-command">${this.escapeHtml(cmd)}</span> ${this.escapeHtml(rest)}\n`;
+            }
+        }
+
+        // Store clean code for copy/insert operations
+        this.lastRecordedCode = cleanCode;
+
         return `<div class="recorded-header">
-Recorded Code (${this.recordedEvents.length} events)
-<button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent.replace(/# .+$/gm, '').trim())">Copy Code</button>
+<span class="success">Recorded Code</span> (${this.recordedEvents.length} events)
 </div>
-<div class="recorded-code">${code}</div>
-<div style="margin-top: 16px; color: #87ceeb;">
-Tip: Click "Copy Code" to copy the generated script, then paste it into the editor!
+<div class="recorded-actions" style="margin-bottom: 8px;">
+<button class="copy-btn" id="copyCodeBtn">📋 Copy to Clipboard</button>
+<button class="copy-btn" id="insertCodeBtn" style="margin-left: 4px;">📝 Insert into Editor</button>
+<button class="copy-btn" id="clearRecordedBtn" style="margin-left: 4px; background: #553;">🗑 Clear</button>
+</div>
+<div class="recorded-code" style="white-space: pre-wrap; line-height: 1.4;">${displayCode}</div>
+<div style="margin-top: 12px; padding: 8px; background: #1a1a1a; border-left: 3px solid #4CAF50;">
+<span class="info">Actions:</span>
+• <strong>Copy to Clipboard</strong> - Copy the code and paste anywhere
+• <strong>Insert into Editor</strong> - Add the code to your current script
+• <strong>Clear</strong> - Remove recorded events and start fresh
 </div>`;
+    }
+
+    setupRecordedTabButtons() {
+        const copyBtn = this.getElement('#copyCodeBtn');
+        const insertBtn = this.getElement('#insertCodeBtn');
+        const clearBtn = this.getElement('#clearRecordedBtn');
+
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                if (this.lastRecordedCode) {
+                    navigator.clipboard.writeText(this.lastRecordedCode);
+                    this.appendOutput('Recorded code copied to clipboard!', 'success');
+                }
+            };
+        }
+
+        if (insertBtn) {
+            insertBtn.onclick = () => {
+                const editor = this.getElement('#scriptEditor');
+                if (editor && this.lastRecordedCode) {
+                    const currentContent = editor.value;
+                    if (currentContent.trim()) {
+                        editor.value = currentContent + '\n\n' + this.lastRecordedCode;
+                    } else {
+                        editor.value = this.lastRecordedCode;
+                    }
+                    this.updateSyntaxHighlight();
+                    this.updateCharCount();
+                    this.markModified();
+                    this.appendOutput('Recorded code inserted into editor!', 'success');
+                    this.switchTab('output');
+                }
+            };
+        }
+
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                this.recordedEvents = [];
+                this.lastRecordedCode = '';
+                this.switchTab('recorded'); // Refresh the tab
+                this.appendOutput('Recorded events cleared', 'info');
+            };
+        }
     }
 
     appendOutput(message, type = 'normal') {
