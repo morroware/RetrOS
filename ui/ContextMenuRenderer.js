@@ -566,23 +566,20 @@ class ContextMenuRendererClass {
                     if (item.type === 'directory') {
                         this.copyDirectory(sourcePath, newPath);
                     } else {
-                        const content = FileSystemManager.readFile(sourcePath);
-                        const info = FileSystemManager.getInfo(sourcePath);
-                        FileSystemManager.writeFile(newPath, content, info.extension);
+                        // Use copyFile to preserve all metadata
+                        this.copyFile(sourcePath, newPath);
                     }
                 } else {
                     // Paste to different location
                     if (this.clipboard.operation === 'cut') {
                         FileSystemManager.moveItem(sourcePath, targetPath);
                     } else {
-                        // Copy
+                        // Copy - use copyFile to preserve all metadata
                         const destPath = [...targetPath, fileName];
                         if (item.type === 'directory') {
                             this.copyDirectory(sourcePath, destPath);
                         } else {
-                            const content = FileSystemManager.readFile(sourcePath);
-                            const info = FileSystemManager.getInfo(sourcePath);
-                            FileSystemManager.writeFile(destPath, content, info.extension);
+                            this.copyFile(sourcePath, destPath);
                         }
                     }
                 }
@@ -736,6 +733,44 @@ class ContextMenuRendererClass {
         return copyName;
     }
 
+    // Helper: Copy a single file with all its metadata
+    copyFile(sourcePath, destPath) {
+        const sourceNode = FileSystemManager.getNode(sourcePath);
+        if (!sourceNode || sourceNode.type !== 'file') {
+            throw new Error('Source file not found');
+        }
+
+        const destFileName = destPath[destPath.length - 1];
+        const destParentPath = destPath.slice(0, -1);
+        const destParent = FileSystemManager.getNode(destParentPath);
+
+        if (!destParent) {
+            throw new Error('Destination directory not found');
+        }
+
+        const destChildren = destParent.children || destParent;
+        const now = new Date().toISOString();
+
+        // Copy all properties from source node
+        destChildren[destFileName] = {
+            type: 'file',
+            content: sourceNode.content || '',
+            extension: sourceNode.extension || '',
+            size: sourceNode.size || 0,
+            created: now,
+            modified: now,
+            // Copy special file metadata
+            ...(sourceNode.mimeType && { mimeType: sourceNode.mimeType }),
+            ...(sourceNode.isShortcut && { isShortcut: sourceNode.isShortcut }),
+            ...(sourceNode.shortcutTarget && { shortcutTarget: sourceNode.shortcutTarget }),
+            ...(sourceNode.shortcutType && { shortcutType: sourceNode.shortcutType }),
+            ...(sourceNode.shortcutIcon && { shortcutIcon: sourceNode.shortcutIcon }),
+            ...(sourceNode.appId && { appId: sourceNode.appId })
+        };
+
+        FileSystemManager.saveFileSystem();
+    }
+
     // Helper: Copy a directory recursively
     copyDirectory(sourcePath, destPath) {
         // Create the destination directory
@@ -751,8 +786,8 @@ class ContextMenuRendererClass {
             if (item.type === 'directory') {
                 this.copyDirectory(srcItemPath, destItemPath);
             } else {
-                const content = FileSystemManager.readFile(srcItemPath);
-                FileSystemManager.writeFile(destItemPath, content, item.extension);
+                // Use copyFile to preserve all metadata
+                this.copyFile(srcItemPath, destItemPath);
             }
         }
     }
