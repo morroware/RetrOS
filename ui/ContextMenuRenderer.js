@@ -17,6 +17,12 @@ class ContextMenuRendererClass {
         this.currentContext = null;
         this.initialized = false;
 
+        // Clipboard for Copy/Cut/Paste operations
+        this.clipboard = {
+            items: [],      // Array of { path: [], name: '', type: 'file'|'directory' }
+            operation: null // 'copy' or 'cut'
+        };
+
         // Bound handlers for cleanup capability
         this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
         this.boundHandleEscape = this.handleEscape.bind(this);
@@ -135,6 +141,12 @@ class ContextMenuRendererClass {
             case 'desktop': return this.desktopMenu();
             case 'icon': return this.iconMenu(context);
             case 'taskbar': return this.taskbarMenu(context);
+            // MyComputer file explorer context menus
+            case 'explorer-file': return this.explorerFileMenu(context);
+            case 'explorer-folder': return this.explorerFolderMenu(context);
+            case 'explorer-drive': return this.explorerDriveMenu(context);
+            case 'explorer-empty': return this.explorerEmptyMenu(context);
+            case 'explorer-system-folder': return this.explorerSystemFolderMenu(context);
             default: return this.desktopMenu();
         }
     }
@@ -197,6 +209,108 @@ class ContextMenuRendererClass {
             <div class="context-item" data-action="maximize">Maximize</div>
             <div class="context-divider"></div>
             <div class="context-item" data-action="close">Close</div>
+        `;
+    }
+
+    // ===== EXPLORER (MyComputer) CONTEXT MENUS =====
+
+    /**
+     * Context menu for files in MyComputer
+     */
+    explorerFileMenu(context) {
+        const item = context.item || {};
+        const extension = item.extension || '';
+        const isTextFile = ['txt', 'md', 'log', 'json', 'js', 'css', 'html'].includes(extension);
+        const isImageFile = ['png', 'jpg', 'jpeg', 'bmp', 'gif'].includes(extension);
+        const isAudioFile = ['mp3', 'wav', 'ogg'].includes(extension);
+        const isShortcut = extension === 'lnk';
+
+        let editOptions = '';
+        if (isTextFile) {
+            editOptions = '<div class="context-item" data-action="explorer-edit-notepad">📝 Edit with Notepad</div>';
+        } else if (isImageFile) {
+            editOptions = '<div class="context-item" data-action="explorer-edit-paint">🎨 Edit with Paint</div>';
+        }
+
+        return `
+            <div class="context-item" data-action="explorer-open"><strong>Open</strong></div>
+            ${editOptions}
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-cut">✂️ Cut</div>
+            <div class="context-item" data-action="explorer-copy">📋 Copy</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-delete">🗑️ Delete</div>
+            <div class="context-item" data-action="explorer-rename">✏️ Rename</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-properties">📄 Properties</div>
+        `;
+    }
+
+    /**
+     * Context menu for folders/directories in MyComputer
+     */
+    explorerFolderMenu(context) {
+        return `
+            <div class="context-item" data-action="explorer-open"><strong>Open</strong></div>
+            <div class="context-item" data-action="explorer-open-new">📂 Open in New Window</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-cut">✂️ Cut</div>
+            <div class="context-item" data-action="explorer-copy">📋 Copy</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-delete">🗑️ Delete</div>
+            <div class="context-item" data-action="explorer-rename">✏️ Rename</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-properties">📄 Properties</div>
+        `;
+    }
+
+    /**
+     * Context menu for drives in MyComputer
+     */
+    explorerDriveMenu(context) {
+        return `
+            <div class="context-item" data-action="explorer-open"><strong>Open</strong></div>
+            <div class="context-item" data-action="explorer-open-new">📂 Open in New Window</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-properties">📄 Properties</div>
+        `;
+    }
+
+    /**
+     * Context menu for system folders (My Documents, etc.) in MyComputer root
+     */
+    explorerSystemFolderMenu(context) {
+        return `
+            <div class="context-item" data-action="explorer-open"><strong>Open</strong></div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-properties">📄 Properties</div>
+        `;
+    }
+
+    /**
+     * Context menu for empty space in MyComputer (inside a folder)
+     */
+    explorerEmptyMenu(context) {
+        const hasPaste = this.clipboard.items.length > 0;
+        const pasteClass = hasPaste ? '' : 'disabled';
+
+        return `
+            <div class="context-item submenu-trigger">
+                📁 New
+                <span class="submenu-arrow">▶</span>
+                <div class="context-submenu">
+                    <div class="context-item" data-action="explorer-new-folder">📁 Folder</div>
+                    <div class="context-divider"></div>
+                    <div class="context-item" data-action="explorer-new-text">📝 Text Document</div>
+                    <div class="context-item" data-action="explorer-new-image">🖼️ Bitmap Image</div>
+                </div>
+            </div>
+            <div class="context-divider"></div>
+            <div class="context-item ${pasteClass}" data-action="explorer-paste">📋 Paste${hasPaste ? ` (${this.clipboard.items.length} item${this.clipboard.items.length > 1 ? 's' : ''})` : ''}</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-refresh">🔄 Refresh</div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="explorer-properties">📄 Properties</div>
         `;
     }
 
@@ -278,6 +392,379 @@ class ContextMenuRendererClass {
             case 'close':
                 if (context?.windowId) WindowManager.close(context.windowId);
                 break;
+
+            // ===== EXPLORER (MyComputer) ACTIONS =====
+            case 'explorer-open':
+                this.handleExplorerOpen(context);
+                break;
+            case 'explorer-open-new':
+                this.handleExplorerOpenNew(context);
+                break;
+            case 'explorer-edit-notepad':
+                if (context?.item?.path) {
+                    AppRegistry.launch('notepad', { filePath: context.item.path });
+                }
+                break;
+            case 'explorer-edit-paint':
+                if (context?.item?.path) {
+                    AppRegistry.launch('paint', { filePath: context.item.path });
+                }
+                break;
+            case 'explorer-cut':
+                this.handleExplorerCut(context);
+                break;
+            case 'explorer-copy':
+                this.handleExplorerCopy(context);
+                break;
+            case 'explorer-paste':
+                this.handleExplorerPaste(context);
+                break;
+            case 'explorer-delete':
+                this.handleExplorerDelete(context);
+                break;
+            case 'explorer-rename':
+                this.handleExplorerRename(context);
+                break;
+            case 'explorer-new-folder':
+                if (context?.currentPath) {
+                    this.createNewFolder(context.currentPath);
+                    EventBus.emit('filesystem:changed');
+                }
+                break;
+            case 'explorer-new-text':
+                if (context?.currentPath) {
+                    this.createNewTextFile(context.currentPath);
+                    EventBus.emit('filesystem:changed');
+                }
+                break;
+            case 'explorer-new-image':
+                AppRegistry.launch('paint');
+                break;
+            case 'explorer-refresh':
+                EventBus.emit('filesystem:changed');
+                break;
+            case 'explorer-properties':
+                this.handleExplorerProperties(context);
+                break;
+        }
+    }
+
+    // ===== EXPLORER ACTION HANDLERS =====
+
+    handleExplorerOpen(context) {
+        const item = context?.item;
+        if (!item) return;
+
+        if (item.type === 'directory' && item.path) {
+            // Navigate to folder in current window
+            EventBus.emit('mycomputer:navigate', { path: item.path });
+        } else if (item.type === 'drive' && item.driveLetter) {
+            EventBus.emit('mycomputer:navigate', { path: [item.driveLetter] });
+        } else if (item.type === 'system-folder' && item.appId) {
+            AppRegistry.launch(item.appId);
+        } else if (item.type === 'file' && item.path) {
+            // Open file with appropriate app
+            const ext = item.extension || '';
+            if (['txt', 'md', 'log', 'json', 'js', 'css', 'html'].includes(ext)) {
+                AppRegistry.launch('notepad', { filePath: item.path });
+            } else if (['png', 'jpg', 'jpeg', 'bmp', 'gif'].includes(ext)) {
+                AppRegistry.launch('paint', { filePath: item.path });
+            } else if (['mp3', 'wav', 'ogg'].includes(ext)) {
+                AppRegistry.launch('mediaplayer', { filePath: item.path });
+            } else if (ext === 'lnk') {
+                // Handle shortcut
+                this.openShortcut(item.path);
+            } else {
+                // Default to notepad for unknown types
+                AppRegistry.launch('notepad', { filePath: item.path });
+            }
+        } else if (item.type === 'shortcut' && item.shortcutData) {
+            if (item.shortcutData.type === 'link') {
+                AppRegistry.launch('browser', { url: item.shortcutData.target });
+            } else {
+                AppRegistry.launch(item.shortcutData.target);
+            }
+        } else if (item.type === 'executable' && item.shortcutData?.appId) {
+            AppRegistry.launch(item.shortcutData.appId);
+        }
+    }
+
+    handleExplorerOpenNew(context) {
+        const item = context?.item;
+        if (!item) return;
+
+        if (item.type === 'directory' && item.path) {
+            // Open in new MyComputer window - force new window by using different params
+            AppRegistry.launch('mycomputer', { initialPath: item.path, newWindow: true });
+        } else if (item.type === 'drive' && item.driveLetter) {
+            AppRegistry.launch('mycomputer', { initialPath: [item.driveLetter], newWindow: true });
+        }
+    }
+
+    handleExplorerCut(context) {
+        const item = context?.item;
+        if (!item?.path) return;
+
+        this.clipboard = {
+            items: [{
+                path: item.path,
+                name: item.name,
+                type: item.type
+            }],
+            operation: 'cut'
+        };
+        console.log('[ContextMenu] Cut:', item.path.join('/'));
+        EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+    }
+
+    handleExplorerCopy(context) {
+        const item = context?.item;
+        if (!item?.path) return;
+
+        this.clipboard = {
+            items: [{
+                path: item.path,
+                name: item.name,
+                type: item.type
+            }],
+            operation: 'copy'
+        };
+        console.log('[ContextMenu] Copy:', item.path.join('/'));
+        EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
+    }
+
+    async handleExplorerPaste(context) {
+        if (this.clipboard.items.length === 0) return;
+
+        const targetPath = context?.currentPath;
+        if (!targetPath || targetPath.length === 0) {
+            await SystemDialogs.alert('Cannot paste here. Please navigate to a folder first.', 'Paste Error', 'error');
+            return;
+        }
+
+        try {
+            for (const item of this.clipboard.items) {
+                const sourcePath = item.path;
+                const fileName = item.name;
+
+                // Check if pasting to same location
+                const sourceDir = sourcePath.slice(0, -1);
+                if (JSON.stringify(sourceDir) === JSON.stringify(targetPath)) {
+                    if (this.clipboard.operation === 'cut') {
+                        // Can't cut/paste to same location
+                        continue;
+                    }
+                    // For copy, create a copy with modified name
+                    const newName = await this.generateCopyName(targetPath, fileName);
+                    const newPath = [...targetPath, newName];
+
+                    if (item.type === 'directory') {
+                        this.copyDirectory(sourcePath, newPath);
+                    } else {
+                        const content = FileSystemManager.readFile(sourcePath);
+                        const info = FileSystemManager.getInfo(sourcePath);
+                        FileSystemManager.writeFile(newPath, content, info.extension);
+                    }
+                } else {
+                    // Paste to different location
+                    if (this.clipboard.operation === 'cut') {
+                        FileSystemManager.moveItem(sourcePath, targetPath);
+                    } else {
+                        // Copy
+                        const destPath = [...targetPath, fileName];
+                        if (item.type === 'directory') {
+                            this.copyDirectory(sourcePath, destPath);
+                        } else {
+                            const content = FileSystemManager.readFile(sourcePath);
+                            const info = FileSystemManager.getInfo(sourcePath);
+                            FileSystemManager.writeFile(destPath, content, info.extension);
+                        }
+                    }
+                }
+            }
+
+            // Clear clipboard if it was a cut operation
+            if (this.clipboard.operation === 'cut') {
+                this.clipboard = { items: [], operation: null };
+            }
+
+            EventBus.emit('filesystem:changed');
+        } catch (e) {
+            await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
+        }
+    }
+
+    async handleExplorerDelete(context) {
+        const item = context?.item;
+        if (!item?.path) return;
+
+        const confirmed = await SystemDialogs.confirm(
+            `Are you sure you want to send "${item.name}" to the Recycle Bin?`,
+            'Confirm Delete'
+        );
+        if (!confirmed) return;
+
+        try {
+            // Store item info for potential restore
+            let content = '';
+            if (item.type === 'file') {
+                try {
+                    content = FileSystemManager.readFile(item.path);
+                } catch (e) {
+                    // File might not be readable
+                }
+            }
+
+            // Add to recycle bin
+            const recycledItem = {
+                id: `recycled_${Date.now()}`,
+                label: item.name,
+                emoji: item.icon || '📄',
+                type: 'recycled_file',
+                originalPath: item.path,
+                fileType: item.type,
+                extension: item.extension || '',
+                content: content,
+                deletedAt: Date.now()
+            };
+
+            const recycledItems = StateManager.getState('recycledItems') || [];
+            recycledItems.push(recycledItem);
+            StateManager.setState('recycledItems', recycledItems, true);
+
+            // Delete from filesystem
+            if (item.type === 'directory') {
+                try {
+                    FileSystemManager.deleteDirectory(item.path, true);
+                } catch (e) {
+                    console.error('Error deleting directory:', e);
+                }
+            } else {
+                FileSystemManager.deleteFile(item.path);
+            }
+
+            EventBus.emit('filesystem:changed');
+            EventBus.emit(Events.SOUND_PLAY, { type: 'recycle' });
+        } catch (e) {
+            await SystemDialogs.alert(`Error deleting: ${e.message}`, 'Delete Error', 'error');
+        }
+    }
+
+    async handleExplorerRename(context) {
+        const item = context?.item;
+        if (!item?.path) return;
+
+        const oldName = item.name;
+        const newName = await SystemDialogs.prompt(`Rename "${oldName}" to:`, oldName, 'Rename');
+
+        if (!newName || newName === oldName) return;
+
+        try {
+            FileSystemManager.renameNode(item.path, newName);
+            EventBus.emit('filesystem:changed');
+        } catch (e) {
+            await SystemDialogs.alert(`Error renaming: ${e.message}`, 'Rename Error', 'error');
+        }
+    }
+
+    async handleExplorerProperties(context) {
+        const item = context?.item;
+        let message = '';
+
+        if (item?.path) {
+            try {
+                const info = FileSystemManager.getInfo(item.path);
+                message = `Name: ${item.name}\n`;
+                message += `Type: ${item.type === 'directory' ? 'Folder' : 'File'}\n`;
+                message += `Location: ${item.path.slice(0, -1).join('\\') || 'Root'}\n`;
+
+                if (info.size !== undefined) {
+                    message += `Size: ${FileSystemManager.formatSize(info.size)}\n`;
+                }
+                if (info.created) {
+                    message += `Created: ${new Date(info.created).toLocaleString()}\n`;
+                }
+                if (info.modified) {
+                    message += `Modified: ${new Date(info.modified).toLocaleString()}\n`;
+                }
+            } catch (e) {
+                message = `Name: ${item?.name || 'Unknown'}\nError reading properties: ${e.message}`;
+            }
+        } else if (context?.currentPath) {
+            message = `Location: ${context.currentPath.join('\\') || 'My Computer'}\n`;
+            try {
+                const items = FileSystemManager.listDirectory(context.currentPath);
+                const files = items.filter(i => i.type === 'file').length;
+                const folders = items.filter(i => i.type === 'directory').length;
+                message += `Contains: ${folders} folder(s), ${files} file(s)`;
+            } catch (e) {
+                message += 'Unable to read folder contents.';
+            }
+        } else {
+            message = 'My Computer\nSystem Information';
+        }
+
+        await SystemDialogs.alert(message, 'Properties', 'info');
+    }
+
+    // Helper: Generate a copy name like "filename - Copy.txt"
+    async generateCopyName(targetPath, originalName) {
+        const ext = originalName.includes('.') ? originalName.split('.').pop() : '';
+        const baseName = ext ? originalName.slice(0, -(ext.length + 1)) : originalName;
+
+        let copyName = ext ? `${baseName} - Copy.${ext}` : `${baseName} - Copy`;
+        let counter = 2;
+
+        // Check if copy already exists
+        try {
+            const items = FileSystemManager.listDirectory(targetPath);
+            const existingNames = items.map(i => i.name);
+
+            while (existingNames.includes(copyName)) {
+                copyName = ext ? `${baseName} - Copy (${counter}).${ext}` : `${baseName} - Copy (${counter})`;
+                counter++;
+            }
+        } catch (e) {
+            // If we can't list directory, just use the default copy name
+        }
+
+        return copyName;
+    }
+
+    // Helper: Copy a directory recursively
+    copyDirectory(sourcePath, destPath) {
+        // Create the destination directory
+        FileSystemManager.createDirectory(destPath);
+
+        // Get contents of source
+        const items = FileSystemManager.listDirectory(sourcePath);
+
+        for (const item of items) {
+            const srcItemPath = [...sourcePath, item.name];
+            const destItemPath = [...destPath, item.name];
+
+            if (item.type === 'directory') {
+                this.copyDirectory(srcItemPath, destItemPath);
+            } else {
+                const content = FileSystemManager.readFile(srcItemPath);
+                FileSystemManager.writeFile(destItemPath, content, item.extension);
+            }
+        }
+    }
+
+    // Helper: Open a .lnk shortcut file
+    openShortcut(filePath) {
+        try {
+            const node = FileSystemManager.getNode(filePath);
+            if (node && node.shortcutTarget) {
+                if (node.shortcutType === 'link') {
+                    AppRegistry.launch('browser', { url: node.shortcutTarget });
+                } else {
+                    AppRegistry.launch(node.shortcutTarget);
+                }
+            }
+        } catch (e) {
+            console.error('Error opening shortcut:', e);
         }
     }
 

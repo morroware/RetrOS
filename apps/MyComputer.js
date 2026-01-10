@@ -7,7 +7,7 @@ import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from './AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
-import EventBus from '../core/EventBus.js';
+import EventBus, { Events } from '../core/EventBus.js';
 import { PATHS } from '../core/Constants.js';
 
 class MyComputer extends AppBase {
@@ -456,11 +456,22 @@ class MyComputer extends AppBase {
         // Setup drag and drop handlers for content area
         this.setupDragDropHandlers();
 
+        // Setup context menu handlers
+        this.setupContextMenuHandlers();
+
         // Subscribe to filesystem changes for real-time updates
         this.fsChangeHandler = () => this.refreshView();
         EventBus.on('filesystem:changed', this.fsChangeHandler);
         EventBus.on('filesystem:file:changed', this.fsChangeHandler);
         EventBus.on('filesystem:directory:changed', this.fsChangeHandler);
+
+        // Listen for navigation events from context menu
+        this.navigationHandler = ({ path }) => {
+            if (path && Array.isArray(path)) {
+                this.navigateToPath(path);
+            }
+        };
+        EventBus.on('mycomputer:navigate', this.navigationHandler);
 
         // If we have an initial path, navigate to it after mount
         if (initialPath.length > 0) {
@@ -507,6 +518,234 @@ class MyComputer extends AppBase {
             content.classList.remove('drop-target');
             this.handleFileDrop(e);
         });
+    }
+
+    /**
+     * Setup context menu handlers for the content area
+     * Provides Windows 95-style right-click context menus
+     */
+    setupContextMenuHandlers() {
+        const content = this.getElement('#content');
+        if (!content) return;
+
+        // Right-click on content area (empty space)
+        this.addHandler(content, 'contextmenu', (e) => {
+            // Check if we clicked on an item or empty space
+            const clickedItem = e.target.closest('.mycomputer-item, .mycomputer-list-item, .drive-item, .folder-item');
+
+            if (!clickedItem) {
+                // Clicked on empty space - show empty area context menu
+                e.preventDefault();
+                e.stopPropagation();
+
+                const currentPath = this.getInstanceState('currentPath') || [];
+
+                // Only show empty menu if inside a directory, not at My Computer root
+                if (currentPath.length > 0) {
+                    EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                        x: e.clientX,
+                        y: e.clientY,
+                        type: 'explorer-empty',
+                        currentPath: currentPath
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Attach context menu handlers to items
+     * Called after content is rendered
+     */
+    attachItemContextMenus() {
+        const currentPath = this.getInstanceState('currentPath') || [];
+
+        // Drive items
+        const driveItems = this.getElements('.drive-item');
+        driveItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const driveLetter = item.dataset.drive;
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-drive',
+                    item: {
+                        name: driveLetter,
+                        type: 'drive',
+                        driveLetter: driveLetter
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // System folder items (My Documents, Control Panel, etc.)
+        const systemFolderItems = this.getElements('.folder-item');
+        systemFolderItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const appId = item.dataset.folder;
+                const label = item.querySelector('.mycomputer-item-label')?.textContent || appId;
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-system-folder',
+                    item: {
+                        name: label,
+                        type: 'system-folder',
+                        appId: appId
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // Directory items
+        const directoryItems = this.getElements('.directory-item');
+        directoryItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const dirName = item.dataset.name;
+                const itemPath = [...currentPath, dirName];
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-folder',
+                    item: {
+                        name: dirName,
+                        type: 'directory',
+                        path: itemPath,
+                        icon: '📁'
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // File items
+        const fileItems = this.getElements('.file-item');
+        fileItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = item.dataset.name;
+                const extension = item.dataset.extension || '';
+                const itemPath = [...currentPath, fileName];
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-file',
+                    item: {
+                        name: fileName,
+                        type: 'file',
+                        path: itemPath,
+                        extension: extension,
+                        icon: this.getFileIcon(extension)
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // Shortcut items
+        const shortcutItems = this.getElements('.shortcut-item');
+        shortcutItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = item.dataset.name;
+                const itemPath = [...currentPath, fileName];
+                let shortcutData = null;
+                try {
+                    shortcutData = JSON.parse(item.dataset.shortcut || '{}');
+                } catch (err) {}
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-file',
+                    item: {
+                        name: fileName,
+                        type: 'shortcut',
+                        path: itemPath,
+                        extension: 'lnk',
+                        icon: '🔗',
+                        shortcutData: shortcutData
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // Executable items
+        const executableItems = this.getElements('.executable-item');
+        executableItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = item.dataset.name;
+                const itemPath = [...currentPath, fileName];
+                let shortcutData = null;
+                try {
+                    shortcutData = JSON.parse(item.dataset.shortcut || '{}');
+                } catch (err) {}
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-file',
+                    item: {
+                        name: fileName,
+                        type: 'executable',
+                        path: itemPath,
+                        extension: 'exe',
+                        icon: '⚙️',
+                        shortcutData: shortcutData
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+    }
+
+    /**
+     * Get the appropriate icon for a file extension
+     */
+    getFileIcon(extension) {
+        const iconMap = {
+            'txt': '📝',
+            'md': '📝',
+            'log': '📋',
+            'json': '📋',
+            'js': '📜',
+            'css': '🎨',
+            'html': '🌐',
+            'png': '🖼️',
+            'jpg': '🖼️',
+            'jpeg': '🖼️',
+            'bmp': '🖼️',
+            'gif': '🖼️',
+            'mp3': '🎵',
+            'wav': '🎵',
+            'ogg': '🎵',
+            'lnk': '🔗',
+            'exe': '⚙️'
+        };
+        return iconMap[extension] || '📄';
     }
 
     /**
@@ -670,6 +909,10 @@ class MyComputer extends AppBase {
             EventBus.off('filesystem:changed', this.fsChangeHandler);
             EventBus.off('filesystem:file:changed', this.fsChangeHandler);
             EventBus.off('filesystem:directory:changed', this.fsChangeHandler);
+        }
+        // Clean up navigation event listener
+        if (this.navigationHandler) {
+            EventBus.off('mycomputer:navigate', this.navigationHandler);
         }
     }
 
@@ -970,6 +1213,9 @@ class MyComputer extends AppBase {
     }
 
     setupContentHandlers() {
+        // Attach context menu handlers for all items
+        this.attachItemContextMenus();
+
         // Drive items (only on root view)
         const driveItems = this.getElements('.drive-item');
         driveItems.forEach(item => {
