@@ -2,6 +2,8 @@
  * ArrayBuiltins - Array manipulation functions for RetroScript
  */
 
+import { DEFAULT_LIMITS } from '../utils/SafetyLimits.js';
+
 export function registerArrayBuiltins(interpreter) {
     // Basic operations
     interpreter.registerBuiltin('count', (arr) => {
@@ -25,10 +27,14 @@ export function registerArrayBuiltins(interpreter) {
         return null;
     });
 
-    // Stack operations
+    // Stack operations (with safety limits to prevent memory exhaustion)
     interpreter.registerBuiltin('push', (arr, ...items) => {
         if (Array.isArray(arr)) {
-            return [...arr, ...items];
+            const result = [...arr, ...items];
+            if (result.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
+                return result.slice(0, DEFAULT_LIMITS.MAX_ARRAY_LENGTH);
+            }
+            return result;
         }
         return arr;
     });
@@ -49,7 +55,11 @@ export function registerArrayBuiltins(interpreter) {
 
     interpreter.registerBuiltin('unshift', (arr, ...items) => {
         if (Array.isArray(arr)) {
-            return [...items, ...arr];
+            const result = [...items, ...arr];
+            if (result.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
+                return result.slice(0, DEFAULT_LIMITS.MAX_ARRAY_LENGTH);
+            }
+            return result;
         }
         return arr;
     });
@@ -101,26 +111,60 @@ export function registerArrayBuiltins(interpreter) {
     });
 
     interpreter.registerBuiltin('flatten', (arr, depth = 1) => {
-        if (Array.isArray(arr)) return arr.flat(Number(depth));
+        if (Array.isArray(arr)) {
+            // Limit depth to prevent excessive flattening
+            const safeDepth = Math.max(0, Math.min(100, Math.floor(Number(depth))));
+            const result = arr.flat(safeDepth);
+            // Also check result length
+            if (result.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
+                return result.slice(0, DEFAULT_LIMITS.MAX_ARRAY_LENGTH);
+            }
+            return result;
+        }
         return arr;
     });
 
-    // Creation
+    // Creation (with safety limits to prevent memory exhaustion)
     interpreter.registerBuiltin('range', (start, end, step = 1) => {
         const s = Number(start);
         const e = Number(end);
         const st = Number(step) || 1;
+        const maxLength = DEFAULT_LIMITS.MAX_ARRAY_LENGTH;
         const result = [];
-        if (st > 0) {
-            for (let i = s; i < e; i += st) result.push(i);
-        } else if (st < 0) {
-            for (let i = s; i > e; i += st) result.push(i);
+
+        // Prevent infinite loops by checking step direction and estimating size
+        if (st === 0) return result;
+
+        const estimatedSize = Math.abs((e - s) / st);
+        if (estimatedSize > maxLength) {
+            // Limit to max array length
+            const limitedEnd = st > 0 ? s + (st * maxLength) : s + (st * maxLength);
+            if (st > 0) {
+                for (let i = s; i < limitedEnd && result.length < maxLength; i += st) {
+                    result.push(i);
+                }
+            } else {
+                for (let i = s; i > limitedEnd && result.length < maxLength; i += st) {
+                    result.push(i);
+                }
+            }
+        } else {
+            if (st > 0) {
+                for (let i = s; i < e && result.length < maxLength; i += st) {
+                    result.push(i);
+                }
+            } else {
+                for (let i = s; i > e && result.length < maxLength; i += st) {
+                    result.push(i);
+                }
+            }
         }
         return result;
     });
 
     interpreter.registerBuiltin('fill', (count, value) => {
-        return Array(Math.max(0, Math.floor(Number(count)))).fill(value);
+        const safeCount = Math.max(0, Math.min(DEFAULT_LIMITS.MAX_ARRAY_LENGTH, Math.floor(Number(count))));
+        return Array(safeCount).fill(value);
     });
 
     // Aggregation
@@ -186,9 +230,13 @@ export function registerArrayBuiltins(interpreter) {
         return arr;
     });
 
-    // Concatenation
+    // Concatenation (with safety limit to prevent memory exhaustion)
     interpreter.registerBuiltin('arrayConcat', (...arrays) => {
-        return arrays.flat();
+        const result = arrays.flat();
+        if (result.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
+            return result.slice(0, DEFAULT_LIMITS.MAX_ARRAY_LENGTH);
+        }
+        return result;
     });
 }
 

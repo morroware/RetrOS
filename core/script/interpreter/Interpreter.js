@@ -366,6 +366,13 @@ export class Interpreter {
             );
         }
 
+        // Remove any existing handler for this event to prevent memory leaks
+        if (this.eventHandlers.has(stmt.eventName)) {
+            const oldHandler = this.eventHandlers.get(stmt.eventName);
+            EventBus.off(stmt.eventName, oldHandler);
+            this.eventHandlers.delete(stmt.eventName);
+        }
+
         const handler = async (eventData) => {
             const handlerEnv = this.currentEnv.extend();
             handlerEnv.set('event', eventData);
@@ -687,23 +694,30 @@ export class Interpreter {
                 return Number(left) + Number(right);
             case '-': return Number(left) - Number(right);
             case '*': return Number(left) * Number(right);
-            case '/':
+            case '/': {
                 const divisor = Number(right);
-                if (divisor === 0) return 0;
+                if (divisor === 0) return 0; // Return 0 for division by zero
                 return Number(left) / divisor;
-            case '%': return Number(left) % Number(right);
+            }
+            case '%': {
+                const modDivisor = Number(right);
+                if (modDivisor === 0) return 0; // Return 0 for modulo by zero (consistent with division)
+                return Number(left) % modDivisor;
+            }
 
-            // Comparison
-            case '==': return left == right;
-            case '!=': return left != right;
+            // Comparison (uses strict equality for predictable behavior)
+            case '==': return left === right;
+            case '!=': return left !== right;
             case '<': return left < right;
             case '>': return left > right;
             case '<=': return left <= right;
             case '>=': return left >= right;
 
-            // Logical
-            case '&&': return this.isTruthy(left) && this.isTruthy(right);
-            case '||': return this.isTruthy(left) || this.isTruthy(right);
+            // Logical (returns actual values, not booleans - JS semantics)
+            // && returns left if falsy, otherwise right
+            // || returns left if truthy, otherwise right
+            case '&&': return this.isTruthy(left) ? right : left;
+            case '||': return this.isTruthy(left) ? left : right;
 
             default:
                 throw new RuntimeError(`Unknown operator: ${expr.operator}`, expr.getLocation());

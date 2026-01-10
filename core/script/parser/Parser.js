@@ -223,9 +223,9 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'loop'
 
-        // Check for 'while' keyword
+        // Check for 'while' keyword - "loop while" is equivalent to "while"
         if (this.check(TokenType.WHILE)) {
-            return this.parseWhileStatement();
+            return this.parseWhileStatement(location);
         }
 
         // Parse count
@@ -238,12 +238,14 @@ export class Parser {
     }
 
     /**
-     * Parse while statement: loop while condition { ... }
+     * Parse while statement: while condition { ... } or loop while condition { ... }
+     * @param {Object} [inheritedLocation] - Location from parseLoopStatement for "loop while" syntax
      */
-    parseWhileStatement() {
-        const location = this.getLocation();
+    parseWhileStatement(inheritedLocation = null) {
+        // Use inherited location from "loop while" or get current location for standalone "while"
+        const location = inheritedLocation || this.getLocation();
 
-        // consume 'while' if present (might already be consumed by parseLoopStatement)
+        // consume 'while' if present
         if (this.check(TokenType.WHILE)) {
             this.advance();
         }
