@@ -691,7 +691,7 @@ class MyComputer extends AppBase {
     copySelectedItem(item) {
         if (!item?.path) return;
         // Use the ContextMenuRenderer's clipboard (it's a singleton)
-        import('./ContextMenuRenderer.js').then(module => {
+        import('../ui/ContextMenuRenderer.js').then(module => {
             const ContextMenuRenderer = module.default;
             ContextMenuRenderer.clipboard = {
                 items: [{
@@ -708,7 +708,7 @@ class MyComputer extends AppBase {
 
     cutSelectedItem(item) {
         if (!item?.path) return;
-        import('./ContextMenuRenderer.js').then(module => {
+        import('../ui/ContextMenuRenderer.js').then(module => {
             const ContextMenuRenderer = module.default;
             ContextMenuRenderer.clipboard = {
                 items: [{
@@ -727,7 +727,7 @@ class MyComputer extends AppBase {
         const currentPath = this.getInstanceState('currentPath') || [];
         if (currentPath.length === 0) return; // Can't paste at root
 
-        import('./ContextMenuRenderer.js').then(async module => {
+        import('../ui/ContextMenuRenderer.js').then(async module => {
             const ContextMenuRenderer = module.default;
             // Trigger paste using the shared clipboard
             await ContextMenuRenderer.handleExplorerPaste({ currentPath });

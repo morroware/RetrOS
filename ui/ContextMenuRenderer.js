@@ -117,12 +117,20 @@ class ContextMenuRendererClass {
     }
 
     show(x, y, type, context = {}) {
-        if (!this.element) return;
+        console.log('[ContextMenu] show() called with:', { x, y, type, context });
+
+        if (!this.element) {
+            console.error('[ContextMenu] ERROR: Menu element not found!');
+            return;
+        }
 
         this.currentContext = { type, ...context };
-        
+
         // Generate menu
-        this.element.innerHTML = this.generateMenu(type, context);
+        console.log('[ContextMenu] Generating menu for type:', type);
+        const menuHTML = this.generateMenu(type, context);
+        console.log('[ContextMenu] Generated menu HTML length:', menuHTML?.length);
+        this.element.innerHTML = menuHTML;
         
         // Position (keep on screen)
         x = Math.min(x, window.innerWidth - 200);
@@ -142,18 +150,44 @@ class ContextMenuRendererClass {
     }
 
     generateMenu(type, context) {
+        console.log('[ContextMenu] generateMenu() type:', type);
+        let result;
         switch (type) {
-            case 'desktop': return this.desktopMenu();
-            case 'icon': return this.iconMenu(context);
-            case 'taskbar': return this.taskbarMenu(context);
+            case 'desktop':
+                console.log('[ContextMenu] -> Calling desktopMenu()');
+                result = this.desktopMenu();
+                break;
+            case 'icon':
+                console.log('[ContextMenu] -> Calling iconMenu() with icon:', context?.icon);
+                result = this.iconMenu(context);
+                break;
+            case 'taskbar':
+                result = this.taskbarMenu(context);
+                break;
             // MyComputer file explorer context menus
-            case 'explorer-file': return this.explorerFileMenu(context);
-            case 'explorer-folder': return this.explorerFolderMenu(context);
-            case 'explorer-drive': return this.explorerDriveMenu(context);
-            case 'explorer-empty': return this.explorerEmptyMenu(context);
-            case 'explorer-system-folder': return this.explorerSystemFolderMenu(context);
-            default: return this.desktopMenu();
+            case 'explorer-file':
+                console.log('[ContextMenu] -> Calling explorerFileMenu() with item:', context?.item);
+                result = this.explorerFileMenu(context);
+                break;
+            case 'explorer-folder':
+                console.log('[ContextMenu] -> Calling explorerFolderMenu()');
+                result = this.explorerFolderMenu(context);
+                break;
+            case 'explorer-drive':
+                result = this.explorerDriveMenu(context);
+                break;
+            case 'explorer-empty':
+                console.log('[ContextMenu] -> Calling explorerEmptyMenu(), clipboard:', this.clipboard);
+                result = this.explorerEmptyMenu(context);
+                break;
+            case 'explorer-system-folder':
+                result = this.explorerSystemFolderMenu(context);
+                break;
+            default:
+                console.log('[ContextMenu] -> Unknown type, defaulting to desktopMenu()');
+                result = this.desktopMenu();
         }
+        return result;
     }
 
     desktopMenu() {
@@ -357,7 +391,9 @@ class ContextMenuRendererClass {
     }
 
     handleAction(action) {
+        console.log('[ContextMenu] handleAction() called with action:', action);
         const context = this.currentContext;
+        console.log('[ContextMenu] Current context:', context);
         this.hide();
 
         const desktopPath = [...PATHS.DESKTOP];
@@ -556,8 +592,12 @@ class ContextMenuRendererClass {
     }
 
     handleExplorerCut(context) {
+        console.log('[ContextMenu] handleExplorerCut() called with context:', context);
         const item = context?.item;
-        if (!item?.path) return;
+        if (!item?.path) {
+            console.error('[ContextMenu] ERROR: No item path in context!');
+            return;
+        }
 
         this.clipboard = {
             items: [{
@@ -567,13 +607,18 @@ class ContextMenuRendererClass {
             }],
             operation: 'cut'
         };
-        console.log('[ContextMenu] Cut:', item.path.join('/'));
+        console.log('[ContextMenu] Explorer Cut SUCCESS:', item.path.join('/'));
+        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
     }
 
     handleExplorerCopy(context) {
+        console.log('[ContextMenu] handleExplorerCopy() called with context:', context);
         const item = context?.item;
-        if (!item?.path) return;
+        if (!item?.path) {
+            console.error('[ContextMenu] ERROR: No item path in context!');
+            return;
+        }
 
         this.clipboard = {
             items: [{
@@ -583,15 +628,26 @@ class ContextMenuRendererClass {
             }],
             operation: 'copy'
         };
-        console.log('[ContextMenu] Copy:', item.path.join('/'));
+        console.log('[ContextMenu] Explorer Copy SUCCESS:', item.path.join('/'));
+        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
     async handleExplorerPaste(context) {
-        if (this.clipboard.items.length === 0) return;
+        console.log('[ContextMenu] handleExplorerPaste() called');
+        console.log('[ContextMenu] Current clipboard:', this.clipboard);
+        console.log('[ContextMenu] Context:', context);
+
+        if (this.clipboard.items.length === 0) {
+            console.log('[ContextMenu] Clipboard is empty, nothing to paste');
+            return;
+        }
 
         const targetPath = context?.currentPath;
+        console.log('[ContextMenu] Target path:', targetPath);
+
         if (!targetPath || targetPath.length === 0) {
+            console.error('[ContextMenu] ERROR: No target path for paste');
             await SystemDialogs.alert('Cannot paste here. Please navigate to a folder first.', 'Paste Error', 'error');
             return;
         }
@@ -640,6 +696,12 @@ class ContextMenuRendererClass {
             }
 
             EventBus.emit('filesystem:changed');
+
+            // Also refresh desktop if pasting to the Desktop folder
+            const desktopPath = [...PATHS.DESKTOP];
+            if (JSON.stringify(targetPath) === JSON.stringify(desktopPath)) {
+                EventBus.emit('desktop:refresh');
+            }
         } catch (e) {
             await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
         }
@@ -764,8 +826,12 @@ class ContextMenuRendererClass {
      * Handle Cut for desktop file icons
      */
     handleDesktopCut(context) {
+        console.log('[ContextMenu] handleDesktopCut() called with context:', context);
         const icon = context?.icon;
-        if (!icon || icon.type !== 'file' || !icon.filePath) return;
+        if (!icon || icon.type !== 'file' || !icon.filePath) {
+            console.error('[ContextMenu] ERROR: Invalid icon for cut:', { icon, type: icon?.type, filePath: icon?.filePath });
+            return;
+        }
 
         this.clipboard = {
             items: [{
@@ -775,7 +841,8 @@ class ContextMenuRendererClass {
             }],
             operation: 'cut'
         };
-        console.log('[ContextMenu] Desktop Cut:', icon.filePath.join('/'));
+        console.log('[ContextMenu] Desktop Cut SUCCESS:', icon.filePath.join('/'));
+        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
     }
 
@@ -783,8 +850,12 @@ class ContextMenuRendererClass {
      * Handle Copy for desktop file icons
      */
     handleDesktopCopy(context) {
+        console.log('[ContextMenu] handleDesktopCopy() called with context:', context);
         const icon = context?.icon;
-        if (!icon || icon.type !== 'file' || !icon.filePath) return;
+        if (!icon || icon.type !== 'file' || !icon.filePath) {
+            console.error('[ContextMenu] ERROR: Invalid icon for copy:', { icon, type: icon?.type, filePath: icon?.filePath });
+            return;
+        }
 
         this.clipboard = {
             items: [{
@@ -794,7 +865,8 @@ class ContextMenuRendererClass {
             }],
             operation: 'copy'
         };
-        console.log('[ContextMenu] Desktop Copy:', icon.filePath.join('/'));
+        console.log('[ContextMenu] Desktop Copy SUCCESS:', icon.filePath.join('/'));
+        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
@@ -803,9 +875,16 @@ class ContextMenuRendererClass {
      * Works with files copied from either desktop or MyComputer
      */
     async handleDesktopPaste(context) {
-        if (this.clipboard.items.length === 0) return;
+        console.log('[ContextMenu] handleDesktopPaste() called');
+        console.log('[ContextMenu] Current clipboard:', this.clipboard);
+
+        if (this.clipboard.items.length === 0) {
+            console.log('[ContextMenu] Clipboard is empty, nothing to paste');
+            return;
+        }
 
         const targetPath = [...PATHS.DESKTOP];
+        console.log('[ContextMenu] Target path:', targetPath);
 
         try {
             for (const item of this.clipboard.items) {
