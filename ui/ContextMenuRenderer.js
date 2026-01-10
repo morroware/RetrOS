@@ -640,6 +640,12 @@ class ContextMenuRendererClass {
             }
 
             EventBus.emit('filesystem:changed');
+
+            // Also refresh desktop if pasting to the Desktop folder
+            const desktopPath = [...PATHS.DESKTOP];
+            if (JSON.stringify(targetPath) === JSON.stringify(desktopPath)) {
+                EventBus.emit('desktop:refresh');
+            }
         } catch (e) {
             await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
         }
