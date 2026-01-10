@@ -366,6 +366,13 @@ export class Interpreter {
             );
         }
 
+        // Remove any existing handler for this event to prevent memory leaks
+        if (this.eventHandlers.has(stmt.eventName)) {
+            const oldHandler = this.eventHandlers.get(stmt.eventName);
+            EventBus.off(stmt.eventName, oldHandler);
+            this.eventHandlers.delete(stmt.eventName);
+        }
+
         const handler = async (eventData) => {
             const handlerEnv = this.currentEnv.extend();
             handlerEnv.set('event', eventData);
@@ -687,13 +694,19 @@ export class Interpreter {
                 return Number(left) + Number(right);
             case '-': return Number(left) - Number(right);
             case '*': return Number(left) * Number(right);
-            case '/':
+            case '/': {
                 const divisor = Number(right);
-                if (divisor === 0) return 0;
+                if (divisor === 0) return 0; // Return 0 for division by zero
                 return Number(left) / divisor;
-            case '%': return Number(left) % Number(right);
+            }
+            case '%': {
+                const modDivisor = Number(right);
+                if (modDivisor === 0) return 0; // Return 0 for modulo by zero (consistent with division)
+                return Number(left) % modDivisor;
+            }
 
-            // Comparison
+            // Comparison (uses loose equality for user-friendly scripting)
+            // This means 1 == "1" is true, null == undefined is true
             case '==': return left == right;
             case '!=': return left != right;
             case '<': return left < right;
@@ -701,7 +714,7 @@ export class Interpreter {
             case '<=': return left <= right;
             case '>=': return left >= right;
 
-            // Logical
+            // Logical (returns boolean based on truthiness, not the actual values)
             case '&&': return this.isTruthy(left) && this.isTruthy(right);
             case '||': return this.isTruthy(left) || this.isTruthy(right);
 

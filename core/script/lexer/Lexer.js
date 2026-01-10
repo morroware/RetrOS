@@ -253,17 +253,25 @@ export class Lexer {
 
     /**
      * Process escape sequences in string
+     * Uses single-pass replacement to correctly handle sequences like \\n
      * @param {string} str - Raw string
      * @returns {string} Processed string
      */
     processEscapes(str) {
-        return str
-            .replace(/\\n/g, '\n')
-            .replace(/\\t/g, '\t')
-            .replace(/\\r/g, '\r')
-            .replace(/\\"/g, '"')
-            .replace(/\\'/g, "'")
-            .replace(/\\\\/g, '\\');
+        // Use single-pass replacement to correctly handle escape sequences
+        // This ensures \\n becomes \n (literal backslash + n) not a newline
+        return str.replace(/\\(.)/g, (match, char) => {
+            switch (char) {
+                case 'n': return '\n';
+                case 't': return '\t';
+                case 'r': return '\r';
+                case '"': return '"';
+                case "'": return "'";
+                case '\\': return '\\';
+                case '0': return '\0';
+                default: return char; // Unknown escape, just return the character
+            }
+        });
     }
 
     /**

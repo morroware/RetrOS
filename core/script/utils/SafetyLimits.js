@@ -5,6 +5,8 @@
  * infinite loops, and other potentially dangerous script behaviors.
  */
 
+import { TimeoutError } from '../errors/ScriptError.js';
+
 /**
  * Default safety limit values
  */
@@ -114,11 +116,11 @@ export class SafetyLimits {
 
     /**
      * Check timeout and throw if exceeded
-     * @throws {Error} If execution has timed out
+     * @throws {TimeoutError} If execution has timed out
      */
     checkTimeout() {
         if (this.isTimedOut()) {
-            throw new Error(`Script execution timed out after ${this.currentTimeout}ms`);
+            throw new TimeoutError(this.currentTimeout);
         }
     }
 

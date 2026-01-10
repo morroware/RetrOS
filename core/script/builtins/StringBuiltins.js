@@ -2,6 +2,11 @@
  * StringBuiltins - String manipulation functions for RetroScript
  */
 
+import { DEFAULT_LIMITS } from '../utils/SafetyLimits.js';
+
+// Maximum repeat count to prevent memory exhaustion
+const MAX_REPEAT_COUNT = 10000;
+
 export function registerStringBuiltins(interpreter) {
     // Case conversion
     interpreter.registerBuiltin('upper', (str) => String(str).toUpperCase());
@@ -21,8 +26,14 @@ export function registerStringBuiltins(interpreter) {
     interpreter.registerBuiltin('charCode', (str, index = 0) => String(str).charCodeAt(Number(index)));
     interpreter.registerBuiltin('fromCharCode', (...codes) => String.fromCharCode(...codes.map(Number)));
 
-    // Concatenation
-    interpreter.registerBuiltin('concat', (...args) => args.map(String).join(''));
+    // Concatenation (with safety limit to prevent memory exhaustion)
+    interpreter.registerBuiltin('concat', (...args) => {
+        const result = args.map(String).join('');
+        if (result.length > DEFAULT_LIMITS.MAX_STRING_LENGTH) {
+            return result.substring(0, DEFAULT_LIMITS.MAX_STRING_LENGTH);
+        }
+        return result;
+    });
 
     // Substrings
     interpreter.registerBuiltin('substr', (str, start, length) => {
@@ -85,17 +96,25 @@ export function registerStringBuiltins(interpreter) {
         return String(arr);
     });
 
-    // Padding
+    // Padding (with safety limits to prevent memory exhaustion)
     interpreter.registerBuiltin('padStart', (str, length, pad = ' ') => {
-        return String(str).padStart(Number(length), String(pad));
+        const safeLength = Math.min(Number(length), DEFAULT_LIMITS.MAX_STRING_LENGTH);
+        return String(str).padStart(safeLength, String(pad));
     });
     interpreter.registerBuiltin('padEnd', (str, length, pad = ' ') => {
-        return String(str).padEnd(Number(length), String(pad));
+        const safeLength = Math.min(Number(length), DEFAULT_LIMITS.MAX_STRING_LENGTH);
+        return String(str).padEnd(safeLength, String(pad));
     });
 
-    // Repeat
+    // Repeat (with safety limit to prevent memory exhaustion)
     interpreter.registerBuiltin('repeat', (str, count) => {
-        return String(str).repeat(Math.max(0, Math.floor(Number(count))));
+        const repeatCount = Math.max(0, Math.min(MAX_REPEAT_COUNT, Math.floor(Number(count))));
+        const result = String(str).repeat(repeatCount);
+        // Also check the resulting string length
+        if (result.length > DEFAULT_LIMITS.MAX_STRING_LENGTH) {
+            return result.substring(0, DEFAULT_LIMITS.MAX_STRING_LENGTH);
+        }
+        return result;
     });
 
     // Reverse (works on strings and arrays)
