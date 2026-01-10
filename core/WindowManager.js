@@ -238,11 +238,18 @@ class WindowManagerClass {
 
     /**
      * Focus a window (bring to front)
+     * If the window is minimized, it will be restored automatically (Windows 95 behavior)
      * @param {string} id - Window ID
      */
     focus(id) {
         const windowEl = document.getElementById(`window-${id}`);
         if (!windowEl) return;
+
+        // If minimized, restore it first (Windows 95 behavior)
+        if (this.isMinimized(id)) {
+            this.restore(id);
+            return; // restore() already calls focus()
+        }
 
         // Remove active from all windows
         document.querySelectorAll('.window').forEach(w => {
@@ -1002,6 +1009,35 @@ class WindowManagerClass {
      */
     getOpenIds() {
         return StateManager.getState('windows').map(w => w.id);
+    }
+
+    /**
+     * Find all windows for a specific app type
+     * @param {string} appId - Base app ID (e.g., 'notepad', 'mycomputer')
+     * @returns {Object[]} Array of window state objects
+     */
+    findWindowsByApp(appId) {
+        const windows = StateManager.getState('windows') || [];
+        return windows.filter(w => w.id === appId || w.id.startsWith(`${appId}-`));
+    }
+
+    /**
+     * Find a window for an app and optionally restore/focus it
+     * Returns the window ID if found and restored, null otherwise
+     * @param {string} appId - Base app ID
+     * @param {boolean} restoreIfFound - Whether to restore/focus if found
+     * @returns {string|null} Window ID if found
+     */
+    findAndRestoreApp(appId, restoreIfFound = true) {
+        const windows = this.findWindowsByApp(appId);
+        if (windows.length > 0) {
+            const windowId = windows[0].id;
+            if (restoreIfFound) {
+                this.focus(windowId); // Will restore if minimized
+            }
+            return windowId;
+        }
+        return null;
     }
 }
 

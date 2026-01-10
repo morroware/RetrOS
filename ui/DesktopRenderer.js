@@ -139,6 +139,9 @@ class DesktopRendererClass {
                     y: y
                 };
 
+                // Debug logging
+                console.log('[DesktopRenderer] Creating file icon:', fileIcon.label, 'type:', fileIcon.type);
+
                 this.renderIcon(fileIcon);
             });
 
@@ -874,6 +877,11 @@ class DesktopRendererClass {
     showIconContextMenu(e, icon) {
         e.preventDefault();
         e.stopPropagation();
+
+        // Debug logging
+        console.log('[DesktopRenderer] showIconContextMenu called');
+        console.log('[DesktopRenderer] icon:', icon);
+        console.log('[DesktopRenderer] icon.type:', icon?.type, 'icon.filePath:', icon?.filePath);
 
         EventBus.emit(Events.CONTEXT_MENU_SHOW, {
             x: e.clientX,

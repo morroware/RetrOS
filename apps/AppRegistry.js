@@ -18,6 +18,7 @@
 
 import EventBus, { Events } from '../core/EventBus.js';
 import { CATEGORIES } from '../core/Constants.js';
+import WindowManager from '../core/WindowManager.js';
 
 // --- App Imports ---
 import Calculator from './Calculator.js';
@@ -216,8 +217,12 @@ class AppRegistryClass {
 
     /**
      * Launch an application with comprehensive error handling
+     * Implements Windows 95-style behavior:
+     * - If app is already open and minimized, restore it instead of creating a new window
+     * - If opening a file that's already open in an existing window, restore that window
+     *
      * @param {string} appId - App ID to launch
-     * @param {object} params - Launch parameters
+     * @param {object} params - Launch parameters (e.g., { filePath: [...] } for file-based apps)
      * @returns {boolean} True if launch succeeded, false otherwise
      */
     launch(appId, params = {}) {
@@ -250,6 +255,17 @@ class AppRegistryClass {
         }
 
         try {
+            // Windows 95 behavior: Check if this file is already open in an existing window
+            // This handles cases like double-clicking a .txt file when it's already open in Notepad
+            if (params && params.filePath && Array.isArray(params.filePath)) {
+                const existingWindowId = app.findWindowWithFile(params.filePath);
+                if (existingWindowId) {
+                    console.log(`[AppRegistry] File already open in window ${existingWindowId}, restoring...`);
+                    WindowManager.focus(existingWindowId); // Will restore if minimized
+                    return true;
+                }
+            }
+
             // Set parameters if provided
             if (params && typeof params === 'object') {
                 if (typeof app.setParams === 'function') {
@@ -263,6 +279,8 @@ class AppRegistryClass {
             }
 
             // Launch the app (this is the critical operation)
+            // Note: AppBase.launch() already handles singleton apps by focusing existing window
+            // and calling onRelaunch() if params are provided
             if (typeof app.launch !== 'function') {
                 throw new Error(`App ${appId} does not have a launch() method`);
             }

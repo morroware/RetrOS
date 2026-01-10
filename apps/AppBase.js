@@ -129,6 +129,39 @@ class AppBase {
         // Override in subclass to handle re-launch with new params
     }
 
+    /**
+     * Get the file path currently open in a specific window
+     * Override in file-based apps (Notepad, Paint, etc.) to enable
+     * the "restore existing window" behavior when opening files
+     * @param {string} windowId - The window ID to check
+     * @returns {string[]|null} File path array or null if no file open
+     */
+    getOpenFilePath(windowId) {
+        const instanceData = this.openWindows.get(windowId);
+        if (instanceData && instanceData.state.currentFile) {
+            return instanceData.state.currentFile;
+        }
+        return null;
+    }
+
+    /**
+     * Find a window that has a specific file open
+     * @param {string[]} filePath - File path to search for
+     * @returns {string|null} Window ID if found, null otherwise
+     */
+    findWindowWithFile(filePath) {
+        if (!filePath || !Array.isArray(filePath)) return null;
+
+        const filePathStr = JSON.stringify(filePath);
+        for (const [windowId, instanceData] of this.openWindows.entries()) {
+            const openFile = instanceData.state.currentFile;
+            if (openFile && JSON.stringify(openFile) === filePathStr) {
+                return windowId;
+            }
+        }
+        return null;
+    }
+
     // ===== PUBLIC API =====
 
     /**

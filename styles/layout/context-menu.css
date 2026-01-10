@@ -31,6 +31,16 @@
     color: white;
 }
 
+.context-item.disabled {
+    color: var(--win95-dark);
+    cursor: default;
+}
+
+.context-item.disabled:hover {
+    background: transparent;
+    color: var(--win95-dark);
+}
+
 .context-divider {
     height: 2px;
     background: var(--win95-dark);

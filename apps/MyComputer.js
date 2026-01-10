@@ -7,7 +7,7 @@ import AppBase from './AppBase.js';
 import StateManager from '../core/StateManager.js';
 import AppRegistry from './AppRegistry.js';
 import FileSystemManager from '../core/FileSystemManager.js';
-import EventBus from '../core/EventBus.js';
+import EventBus, { Events } from '../core/EventBus.js';
 import { PATHS } from '../core/Constants.js';
 
 class MyComputer extends AppBase {
@@ -411,18 +411,51 @@ class MyComputer extends AppBase {
                     outline: 2px dashed #0000ff;
                     outline-offset: -2px;
                 }
+                /* Selected item styles */
+                .mycomputer-item.selected,
+                .mycomputer-list-item.selected {
+                    background: var(--win95-blue, #000080);
+                    color: white;
+                }
+                .mycomputer-item.selected .mycomputer-item-label,
+                .mycomputer-list-item.selected .mycomputer-list-name {
+                    color: white;
+                }
+                /* Empty folder message */
+                .mycomputer-empty {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    color: #808080;
+                    font-size: 14px;
+                    padding: 40px;
+                    text-align: center;
+                }
+                .mycomputer-empty-icon {
+                    font-size: 48px;
+                    margin-bottom: 16px;
+                    opacity: 0.5;
+                }
             </style>
 
             <div class="mycomputer-app">
                 <div class="mycomputer-toolbar">
-                    <button class="mycomputer-btn" id="back-btn" disabled>
+                    <button class="mycomputer-btn" id="back-btn" disabled title="Go back (Alt+Left)">
                         ◀ Back
                     </button>
-                    <button class="mycomputer-btn" id="up-btn" disabled>
+                    <button class="mycomputer-btn" id="forward-btn" disabled title="Go forward (Alt+Right)">
+                        ▶ Forward
+                    </button>
+                    <button class="mycomputer-btn" id="up-btn" disabled title="Go up one level (Backspace)">
                         ▲ Up
                     </button>
                     <div style="width: 2px; height: 20px; background: #808080; margin: 0 4px;"></div>
-                    <button class="mycomputer-btn" id="view-btn">
+                    <button class="mycomputer-btn" id="refresh-btn" title="Refresh (F5)">
+                        🔄
+                    </button>
+                    <button class="mycomputer-btn" id="view-btn" title="Toggle view">
                         📋 View
                     </button>
                     <div class="mycomputer-address">
@@ -449,6 +482,8 @@ class MyComputer extends AppBase {
         this.setInstanceState('currentPath', initialPath);
         this.setInstanceState('viewMode', 'grid');
         this.setInstanceState('history', []);
+        this.setInstanceState('forwardHistory', []);
+        this.setInstanceState('selectedItem', null);
 
         // Setup toolbar buttons
         this.setupToolbarHandlers();
@@ -456,11 +491,25 @@ class MyComputer extends AppBase {
         // Setup drag and drop handlers for content area
         this.setupDragDropHandlers();
 
+        // Setup context menu handlers
+        this.setupContextMenuHandlers();
+
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+
         // Subscribe to filesystem changes for real-time updates
         this.fsChangeHandler = () => this.refreshView();
         EventBus.on('filesystem:changed', this.fsChangeHandler);
         EventBus.on('filesystem:file:changed', this.fsChangeHandler);
         EventBus.on('filesystem:directory:changed', this.fsChangeHandler);
+
+        // Listen for navigation events from context menu
+        this.navigationHandler = ({ path }) => {
+            if (path && Array.isArray(path)) {
+                this.navigateToPath(path);
+            }
+        };
+        EventBus.on('mycomputer:navigate', this.navigationHandler);
 
         // If we have an initial path, navigate to it after mount
         if (initialPath.length > 0) {
@@ -507,6 +556,505 @@ class MyComputer extends AppBase {
             content.classList.remove('drop-target');
             this.handleFileDrop(e);
         });
+    }
+
+    /**
+     * Setup context menu handlers for the content area
+     * Provides Windows 95-style right-click context menus
+     */
+    setupContextMenuHandlers() {
+        const content = this.getElement('#content');
+        if (!content) return;
+
+        // Right-click on content area (empty space)
+        this.addHandler(content, 'contextmenu', (e) => {
+            // Check if we clicked on an item or empty space
+            const clickedItem = e.target.closest('.mycomputer-item, .mycomputer-list-item, .drive-item, .folder-item');
+
+            if (!clickedItem) {
+                // Clicked on empty space - show empty area context menu
+                e.preventDefault();
+                e.stopPropagation();
+
+                const currentPath = this.getInstanceState('currentPath') || [];
+
+                // Only show empty menu if inside a directory, not at My Computer root
+                if (currentPath.length > 0) {
+                    EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                        x: e.clientX,
+                        y: e.clientY,
+                        type: 'explorer-empty',
+                        currentPath: currentPath
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Setup keyboard shortcuts for file operations
+     * Ctrl+C: Copy, Ctrl+X: Cut, Ctrl+V: Paste, Delete: Delete, F2: Rename, F5: Refresh
+     */
+    setupKeyboardShortcuts() {
+        const windowEl = this.getElement('.mycomputer-app');
+        if (!windowEl) return;
+
+        // Make the content area focusable to receive keyboard events
+        windowEl.setAttribute('tabindex', '0');
+
+        this.keyboardHandler = (e) => {
+            // Only handle if this window is focused/active
+            if (!document.activeElement?.closest('.mycomputer-app')) return;
+
+            const selectedItem = this.getInstanceState('selectedItem');
+            const currentPath = this.getInstanceState('currentPath') || [];
+
+            // F5 - Refresh
+            if (e.key === 'F5') {
+                e.preventDefault();
+                this.refreshView();
+                return;
+            }
+
+            // F2 - Rename selected item
+            if (e.key === 'F2' && selectedItem) {
+                e.preventDefault();
+                this.renameSelectedItem(selectedItem);
+                return;
+            }
+
+            // Delete - Delete selected item
+            if (e.key === 'Delete' && selectedItem) {
+                e.preventDefault();
+                this.deleteSelectedItem(selectedItem);
+                return;
+            }
+
+            // Backspace - Go up one level
+            if (e.key === 'Backspace' && !e.target.matches('input, textarea')) {
+                e.preventDefault();
+                this.navigateUp();
+                return;
+            }
+
+            // Alt+Left - Go back
+            if (e.key === 'ArrowLeft' && e.altKey) {
+                e.preventDefault();
+                this.navigateBack();
+                return;
+            }
+
+            // Alt+Right - Go forward
+            if (e.key === 'ArrowRight' && e.altKey) {
+                e.preventDefault();
+                this.navigateForward();
+                return;
+            }
+
+            // Ctrl+C - Copy
+            if (e.key === 'c' && (e.ctrlKey || e.metaKey) && selectedItem) {
+                e.preventDefault();
+                this.copySelectedItem(selectedItem);
+                return;
+            }
+
+            // Ctrl+X - Cut
+            if (e.key === 'x' && (e.ctrlKey || e.metaKey) && selectedItem) {
+                e.preventDefault();
+                this.cutSelectedItem(selectedItem);
+                return;
+            }
+
+            // Ctrl+V - Paste
+            if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                this.pasteFromClipboard();
+                return;
+            }
+
+            // Ctrl+A - Select all (future enhancement)
+            // Enter - Open selected item
+            if (e.key === 'Enter' && selectedItem) {
+                e.preventDefault();
+                this.openSelectedItem(selectedItem);
+                return;
+            }
+        };
+
+        // Add keyboard listener to document but filter by focus
+        document.addEventListener('keydown', this.keyboardHandler);
+    }
+
+    /**
+     * Clipboard operations for keyboard shortcuts
+     */
+    copySelectedItem(item) {
+        if (!item?.path) return;
+        // Use the ContextMenuRenderer's clipboard (it's a singleton)
+        import('./ContextMenuRenderer.js').then(module => {
+            const ContextMenuRenderer = module.default;
+            ContextMenuRenderer.clipboard = {
+                items: [{
+                    path: item.path,
+                    name: item.name,
+                    type: item.type
+                }],
+                operation: 'copy'
+            };
+            console.log('[MyComputer] Copied:', item.path.join('/'));
+            EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
+        });
+    }
+
+    cutSelectedItem(item) {
+        if (!item?.path) return;
+        import('./ContextMenuRenderer.js').then(module => {
+            const ContextMenuRenderer = module.default;
+            ContextMenuRenderer.clipboard = {
+                items: [{
+                    path: item.path,
+                    name: item.name,
+                    type: item.type
+                }],
+                operation: 'cut'
+            };
+            console.log('[MyComputer] Cut:', item.path.join('/'));
+            EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+        });
+    }
+
+    async pasteFromClipboard() {
+        const currentPath = this.getInstanceState('currentPath') || [];
+        if (currentPath.length === 0) return; // Can't paste at root
+
+        import('./ContextMenuRenderer.js').then(async module => {
+            const ContextMenuRenderer = module.default;
+            // Trigger paste using the shared clipboard
+            await ContextMenuRenderer.handleExplorerPaste({ currentPath });
+        });
+    }
+
+    async renameSelectedItem(item) {
+        if (!item?.path) return;
+        const { default: SystemDialogs } = await import('../core/SystemDialogs.js');
+
+        const newName = await SystemDialogs.prompt(`Rename "${item.name}" to:`, item.name, 'Rename');
+        if (!newName || newName === item.name) return;
+
+        try {
+            FileSystemManager.renameItem(item.path, newName);
+            EventBus.emit('filesystem:changed');
+        } catch (e) {
+            await SystemDialogs.alert(`Error renaming: ${e.message}`, 'Rename Error', 'error');
+        }
+    }
+
+    async deleteSelectedItem(item) {
+        if (!item?.path) return;
+        const { default: SystemDialogs } = await import('../core/SystemDialogs.js');
+
+        const confirmed = await SystemDialogs.confirm(
+            `Are you sure you want to send "${item.name}" to the Recycle Bin?`,
+            'Confirm Delete'
+        );
+        if (!confirmed) return;
+
+        try {
+            if (item.type === 'directory') {
+                FileSystemManager.deleteDirectory(item.path, true);
+            } else {
+                FileSystemManager.deleteFile(item.path);
+            }
+            EventBus.emit('filesystem:changed');
+            EventBus.emit(Events.SOUND_PLAY, { type: 'recycle' });
+            this.setInstanceState('selectedItem', null);
+        } catch (e) {
+            await SystemDialogs.alert(`Error deleting: ${e.message}`, 'Delete Error', 'error');
+        }
+    }
+
+    openSelectedItem(item) {
+        if (!item) return;
+
+        if (item.type === 'directory') {
+            this.navigateToPath(item.path);
+        } else if (item.type === 'file') {
+            this.openFile(item.name);
+        }
+    }
+
+    /**
+     * Attach context menu handlers to items
+     * Called after content is rendered
+     */
+    attachItemContextMenus() {
+        const currentPath = this.getInstanceState('currentPath') || [];
+
+        // Drive items
+        const driveItems = this.getElements('.drive-item');
+        driveItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const driveLetter = item.dataset.drive;
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-drive',
+                    item: {
+                        name: driveLetter,
+                        type: 'drive',
+                        driveLetter: driveLetter
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // System folder items (My Documents, Control Panel, etc.)
+        const systemFolderItems = this.getElements('.folder-item');
+        systemFolderItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const appId = item.dataset.folder;
+                const label = item.querySelector('.mycomputer-item-label')?.textContent || appId;
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-system-folder',
+                    item: {
+                        name: label,
+                        type: 'system-folder',
+                        appId: appId
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // Directory items
+        const directoryItems = this.getElements('.directory-item');
+        directoryItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const dirName = item.dataset.name;
+                const itemPath = [...currentPath, dirName];
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-folder',
+                    item: {
+                        name: dirName,
+                        type: 'directory',
+                        path: itemPath,
+                        icon: '📁'
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // File items
+        const fileItems = this.getElements('.file-item');
+        fileItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = item.dataset.name;
+                const extension = item.dataset.extension || '';
+                const itemPath = [...currentPath, fileName];
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-file',
+                    item: {
+                        name: fileName,
+                        type: 'file',
+                        path: itemPath,
+                        extension: extension,
+                        icon: this.getFileIcon(extension)
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // Shortcut items
+        const shortcutItems = this.getElements('.shortcut-item');
+        shortcutItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = item.dataset.name;
+                const itemPath = [...currentPath, fileName];
+                let shortcutData = null;
+                try {
+                    shortcutData = JSON.parse(item.dataset.shortcut || '{}');
+                } catch (err) {}
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-file',
+                    item: {
+                        name: fileName,
+                        type: 'shortcut',
+                        path: itemPath,
+                        extension: 'lnk',
+                        icon: '🔗',
+                        shortcutData: shortcutData
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+
+        // Executable items
+        const executableItems = this.getElements('.executable-item');
+        executableItems.forEach(item => {
+            this.addHandler(item, 'contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = item.dataset.name;
+                const itemPath = [...currentPath, fileName];
+                let shortcutData = null;
+                try {
+                    shortcutData = JSON.parse(item.dataset.shortcut || '{}');
+                } catch (err) {}
+
+                EventBus.emit(Events.CONTEXT_MENU_SHOW, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    type: 'explorer-file',
+                    item: {
+                        name: fileName,
+                        type: 'executable',
+                        path: itemPath,
+                        extension: 'exe',
+                        icon: '⚙️',
+                        shortcutData: shortcutData
+                    },
+                    currentPath: currentPath
+                });
+            });
+        });
+    }
+
+    /**
+     * Setup item selection (single-click to select)
+     * Selected items can be operated on with keyboard shortcuts
+     */
+    setupItemSelection() {
+        const currentPath = this.getInstanceState('currentPath') || [];
+
+        // Select all file and directory items
+        const allItems = this.getElements('.mycomputer-item, .mycomputer-list-item');
+
+        allItems.forEach(item => {
+            this.addHandler(item, 'click', (e) => {
+                // Don't select on double-click (that opens the item)
+                if (e.detail === 2) return;
+
+                // Remove selection from all items
+                allItems.forEach(i => i.classList.remove('selected'));
+
+                // Add selection to clicked item
+                item.classList.add('selected');
+
+                // Store selected item info for keyboard operations
+                const name = item.dataset.name;
+                const type = item.dataset.type;
+                const extension = item.dataset.extension || '';
+
+                if (name && (type === 'file' || type === 'directory')) {
+                    this.setInstanceState('selectedItem', {
+                        name,
+                        type,
+                        extension,
+                        path: [...currentPath, name]
+                    });
+
+                    // Update status bar with selected item
+                    this.updateStatusForSelection(name, type, extension, currentPath);
+                }
+            });
+        });
+
+        // Click on empty space deselects
+        const content = this.getElement('#content');
+        if (content) {
+            this.addHandler(content, 'click', (e) => {
+                if (e.target === content || e.target.classList.contains('mycomputer-view-grid') || e.target.classList.contains('mycomputer-view-list')) {
+                    allItems.forEach(i => i.classList.remove('selected'));
+                    this.setInstanceState('selectedItem', null);
+                    this.updateStatus();
+                }
+            });
+        }
+    }
+
+    /**
+     * Update status bar to show selected item info
+     */
+    updateStatusForSelection(name, type, extension, currentPath) {
+        const statusText = this.getElement('#status-text');
+        const statusItems = this.getElement('#status-items');
+
+        if (!statusText) return;
+
+        if (type === 'file') {
+            try {
+                const filePath = [...currentPath, name];
+                const info = FileSystemManager.getInfo(filePath);
+                const size = FileSystemManager.formatSize(info.size || 0);
+                statusText.textContent = `"${name}" selected`;
+                if (statusItems) statusItems.textContent = size;
+            } catch (e) {
+                statusText.textContent = `"${name}" selected`;
+                if (statusItems) statusItems.textContent = '';
+            }
+        } else {
+            statusText.textContent = `"${name}" selected`;
+            if (statusItems) statusItems.textContent = 'Folder';
+        }
+    }
+
+    /**
+     * Get the appropriate icon for a file extension
+     */
+    getFileIcon(extension) {
+        const iconMap = {
+            'txt': '📝',
+            'md': '📝',
+            'log': '📋',
+            'json': '📋',
+            'js': '📜',
+            'css': '🎨',
+            'html': '🌐',
+            'png': '🖼️',
+            'jpg': '🖼️',
+            'jpeg': '🖼️',
+            'bmp': '🖼️',
+            'gif': '🖼️',
+            'mp3': '🎵',
+            'wav': '🎵',
+            'ogg': '🎵',
+            'lnk': '🔗',
+            'exe': '⚙️'
+        };
+        return iconMap[extension] || '📄';
     }
 
     /**
@@ -670,6 +1218,14 @@ class MyComputer extends AppBase {
             EventBus.off('filesystem:changed', this.fsChangeHandler);
             EventBus.off('filesystem:file:changed', this.fsChangeHandler);
             EventBus.off('filesystem:directory:changed', this.fsChangeHandler);
+        }
+        // Clean up navigation event listener
+        if (this.navigationHandler) {
+            EventBus.off('mycomputer:navigate', this.navigationHandler);
+        }
+        // Clean up keyboard listener
+        if (this.keyboardHandler) {
+            document.removeEventListener('keydown', this.keyboardHandler);
         }
     }
 
@@ -889,6 +1445,16 @@ class MyComputer extends AppBase {
 
     renderGridView(items) {
         const currentPath = this.getInstanceState('currentPath') || [];
+
+        if (items.length === 0) {
+            return `
+                <div class="mycomputer-empty">
+                    <div class="mycomputer-empty-icon">📂</div>
+                    <div>This folder is empty.</div>
+                </div>
+            `;
+        }
+
         return `
             <div class="mycomputer-view-grid">
                 ${items.map((item, idx) => {
@@ -913,6 +1479,16 @@ class MyComputer extends AppBase {
 
     renderListView(items) {
         const currentPath = this.getInstanceState('currentPath') || [];
+
+        if (items.length === 0) {
+            return `
+                <div class="mycomputer-empty">
+                    <div class="mycomputer-empty-icon">📂</div>
+                    <div>This folder is empty.</div>
+                </div>
+            `;
+        }
+
         return `
             <div class="mycomputer-view-list">
                 ${items.map((item, idx) => {
@@ -946,11 +1522,27 @@ class MyComputer extends AppBase {
             });
         }
 
+        // Forward button
+        const forwardBtn = this.getElement('#forward-btn');
+        if (forwardBtn) {
+            this.addHandler(forwardBtn, 'click', () => {
+                this.navigateForward();
+            });
+        }
+
         // Up button
         const upBtn = this.getElement('#up-btn');
         if (upBtn) {
             this.addHandler(upBtn, 'click', () => {
                 this.navigateUp();
+            });
+        }
+
+        // Refresh button
+        const refreshBtn = this.getElement('#refresh-btn');
+        if (refreshBtn) {
+            this.addHandler(refreshBtn, 'click', () => {
+                this.refreshView();
             });
         }
 
@@ -970,6 +1562,12 @@ class MyComputer extends AppBase {
     }
 
     setupContentHandlers() {
+        // Attach context menu handlers for all items
+        this.attachItemContextMenus();
+
+        // Setup item selection for all clickable items
+        this.setupItemSelection();
+
         // Drive items (only on root view)
         const driveItems = this.getElements('.drive-item');
         driveItems.forEach(item => {
@@ -1382,6 +1980,9 @@ class MyComputer extends AppBase {
             this.setInstanceState('history', history);
         }
 
+        // Clear forward history when navigating to new path
+        this.setInstanceState('forwardHistory', []);
+
         // Navigate to new path
         this.setInstanceState('currentPath', path);
         this.refreshView();
@@ -1391,9 +1992,31 @@ class MyComputer extends AppBase {
         const history = this.getInstanceState('history') || [];
         if (history.length === 0) return;
 
+        // Save current path to forward history
+        const currentPath = this.getInstanceState('currentPath') || [];
+        const forwardHistory = this.getInstanceState('forwardHistory') || [];
+        forwardHistory.push([...currentPath]);
+        this.setInstanceState('forwardHistory', forwardHistory);
+
         const previousPath = history.pop();
         this.setInstanceState('history', history);
         this.setInstanceState('currentPath', previousPath);
+        this.refreshView();
+    }
+
+    navigateForward() {
+        const forwardHistory = this.getInstanceState('forwardHistory') || [];
+        if (forwardHistory.length === 0) return;
+
+        // Save current path to back history
+        const currentPath = this.getInstanceState('currentPath') || [];
+        const history = this.getInstanceState('history') || [];
+        history.push([...currentPath]);
+        this.setInstanceState('history', history);
+
+        const nextPath = forwardHistory.pop();
+        this.setInstanceState('forwardHistory', forwardHistory);
+        this.setInstanceState('currentPath', nextPath);
         this.refreshView();
     }
 
@@ -1401,10 +2024,11 @@ class MyComputer extends AppBase {
         const currentPath = this.getInstanceState('currentPath') || [];
         if (currentPath.length === 0) return; // Already at root
 
-        // Save to history
+        // Save to history and clear forward history
         const history = this.getInstanceState('history') || [];
         history.push([...currentPath]);
         this.setInstanceState('history', history);
+        this.setInstanceState('forwardHistory', []);
 
         // Go up one level
         const newPath = currentPath.slice(0, -1);
@@ -1417,8 +2041,13 @@ class MyComputer extends AppBase {
         const content = this.getElement('#content');
         const addressBar = this.getElement('#address-bar');
         const backBtn = this.getElement('#back-btn');
+        const forwardBtn = this.getElement('#forward-btn');
         const upBtn = this.getElement('#up-btn');
         const history = this.getInstanceState('history') || [];
+        const forwardHistory = this.getInstanceState('forwardHistory') || [];
+
+        // Clear selection when view changes
+        this.setInstanceState('selectedItem', null);
 
         let html = '';
         let address = 'My Computer';
@@ -1427,14 +2056,16 @@ class MyComputer extends AppBase {
             // Root view - show drives and system folders
             html = this.renderRootView();
             address = 'My Computer';
-            backBtn.disabled = history.length === 0;
-            upBtn.disabled = true;
+            if (backBtn) backBtn.disabled = history.length === 0;
+            if (forwardBtn) forwardBtn.disabled = forwardHistory.length === 0;
+            if (upBtn) upBtn.disabled = true;
         } else {
             // Directory view - show contents
             html = this.renderDirectoryView(currentPath);
             address = 'My Computer\\' + currentPath.join('\\');
-            backBtn.disabled = history.length === 0;
-            upBtn.disabled = false;
+            if (backBtn) backBtn.disabled = history.length === 0;
+            if (forwardBtn) forwardBtn.disabled = forwardHistory.length === 0;
+            if (upBtn) upBtn.disabled = false;
         }
 
         if (content) content.innerHTML = html;

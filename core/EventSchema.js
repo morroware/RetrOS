@@ -342,18 +342,21 @@ export const EventSchema = {
     'ui:menu:context:show': {
         namespace: 'ui',
         action: 'menu:context:show',
-        description: 'Context menu shown',
+        description: 'Context menu shown - type determines which menu to display',
         payload: {
             x: 'number',
             y: 'number',
-            items: 'array',
-            target: 'string?'
+            type: 'string',         // Menu type: 'desktop', 'icon', 'taskbar', 'explorer-file', etc.
+            icon: 'object?',        // Icon data for icon context menus
+            windowId: 'string?',    // Window ID for taskbar context menus
+            item: 'object?',        // Item data for explorer context menus
+            currentPath: 'array?'   // Current path for explorer context menus
         },
         example: {
             x: 100,
             y: 200,
-            items: [{ label: 'Open', action: 'open' }],
-            target: 'desktop'
+            type: 'icon',
+            icon: { id: 'notepad', type: 'app', label: 'Notepad' }
         }
     },
 
