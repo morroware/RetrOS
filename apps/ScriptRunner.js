@@ -2,7 +2,8 @@
  * ScriptRunner - RetrOS Scripting IDE
  *
  * A development tool for writing and testing RetroScript scripts.
- * Provides syntax highlighting, output console, and event monitoring.
+ * Provides syntax highlighting, output console, variable inspector,
+ * event recording with code generation, and debugging features.
  */
 
 import AppBase from './AppBase.js';
@@ -17,15 +18,22 @@ class ScriptRunner extends AppBase {
             id: 'scriptrunner',
             name: 'Script Runner',
             icon: '📜',
-            width: 800,
-            height: 600,
+            width: 900,
+            height: 650,
             category: 'systemtools'
         });
 
         this.output = [];
         this.eventLog = [];
+        this.recordedEvents = [];
+        this.variables = {};
         this.isRecording = false;
-        this.maxLogEntries = 100;
+        this.maxLogEntries = 200;
+        this.errorLine = null;
+        this.breakpoints = new Set();
+        this.isDebugging = false;
+        this.currentDebugLine = null;
+        this.findVisible = false;
     }
 
     onOpen(params) {
@@ -2297,27 +2305,35 @@ notify RetroScript Test Suite Complete!`;
         return `
             <div class="script-runner">
                 <div class="script-toolbar">
-                    <button class="script-btn" id="runBtn" title="Run Script (F5)">
+                    <button class="script-btn run-btn" id="runBtn" title="Run Script (F5)">
                         <span class="btn-icon">▶</span> Run
                     </button>
-                    <button class="script-btn" id="stopBtn" title="Stop Script">
+                    <button class="script-btn" id="stopBtn" title="Stop Script (Esc)">
                         <span class="btn-icon">⏹</span> Stop
                     </button>
                     <button class="script-btn" id="clearBtn" title="Clear Output">
                         <span class="btn-icon">🗑</span> Clear
                     </button>
                     <span class="toolbar-divider"></span>
-                    <button class="script-btn" id="recordBtn" title="Record Events">
+                    <button class="script-btn" id="recordBtn" title="Record Events to Code">
                         <span class="btn-icon">⏺</span> Record
                     </button>
-                    <button class="script-btn" id="saveBtn" title="Save Script">
+                    <span class="toolbar-divider"></span>
+                    <button class="script-btn" id="saveBtn" title="Save Script (Ctrl+S)">
                         <span class="btn-icon">💾</span> Save
                     </button>
-                    <button class="script-btn" id="loadBtn" title="Load Script">
+                    <button class="script-btn" id="loadBtn" title="Load Script (Ctrl+O)">
                         <span class="btn-icon">📂</span> Load
                     </button>
+                    <button class="script-btn" id="newBtn" title="New Script (Ctrl+N)">
+                        <span class="btn-icon">📄</span> New
+                    </button>
                     <span class="toolbar-divider"></span>
-                    <button class="script-btn" id="helpBtn" title="Script Help">
+                    <button class="script-btn" id="findBtn" title="Find/Replace (Ctrl+F)">
+                        <span class="btn-icon">🔍</span> Find
+                    </button>
+                    <span class="toolbar-divider"></span>
+                    <button class="script-btn" id="helpBtn" title="Script Help (F1)">
                         <span class="btn-icon">❓</span> Help
                     </button>
                     <button class="script-btn" id="testSuiteBtn" title="Load Comprehensive Test Suite">
@@ -2325,9 +2341,23 @@ notify RetroScript Test Suite Complete!`;
                     </button>
                 </div>
 
+                <div class="find-bar" id="findBar" style="display: none;">
+                    <input type="text" id="findInput" placeholder="Find..." class="find-input" />
+                    <input type="text" id="replaceInput" placeholder="Replace..." class="find-input" />
+                    <button class="find-btn" id="findNextBtn" title="Find Next (F3)">Next</button>
+                    <button class="find-btn" id="findPrevBtn" title="Find Previous (Shift+F3)">Prev</button>
+                    <button class="find-btn" id="replaceBtn" title="Replace">Replace</button>
+                    <button class="find-btn" id="replaceAllBtn" title="Replace All">All</button>
+                    <span class="find-info" id="findInfo"></span>
+                    <button class="find-close" id="findCloseBtn" title="Close (Esc)">×</button>
+                </div>
+
                 <div class="script-main">
                     <div class="script-editor-pane">
-                        <div class="pane-header">Script Editor</div>
+                        <div class="pane-header">
+                            Script Editor
+                            <span class="pane-header-info" id="scriptInfo"></span>
+                        </div>
                         <div class="editor-container">
                             <div class="line-numbers" id="lineNumbers"></div>
                             <div class="editor-wrapper">
@@ -2341,10 +2371,26 @@ notify RetroScript Test Suite Complete!`;
                         <div class="output-tabs">
                             <button class="output-tab active" data-tab="output">Output</button>
                             <button class="output-tab" data-tab="events">Events</button>
+                            <button class="output-tab" data-tab="variables">Variables</button>
+                            <button class="output-tab" data-tab="recorded">Recorded</button>
                             <button class="output-tab" data-tab="commands">Commands</button>
                         </div>
                         <div class="output-content" id="outputContent">
-                            <pre class="output-text" id="outputText">Ready to run scripts...
+                            <pre class="output-text" id="outputText">RetroScript IDE Ready
+
+Shortcuts:
+  F5        - Run script
+  Esc       - Stop script
+  Ctrl+S    - Save script
+  Ctrl+O    - Load script
+  Ctrl+N    - New script
+  Ctrl+F    - Find/Replace
+  F3        - Find next
+  Shift+F3  - Find previous
+  Tab       - Insert 4 spaces
+  F1        - Show help
+
+Click "Record" to capture events as code!
 </pre>
                         </div>
                     </div>
@@ -2354,6 +2400,10 @@ notify RetroScript Test Suite Complete!`;
                     <span id="statusText">Ready</span>
                     <span class="status-divider">|</span>
                     <span id="lineInfo">Line 1, Col 1</span>
+                    <span class="status-divider">|</span>
+                    <span id="charCount">0 chars</span>
+                    <span class="status-spacer"></span>
+                    <span id="recordStatus" class="record-status"></span>
                 </div>
             </div>
 
@@ -2398,10 +2448,73 @@ notify RetroScript Test Suite Complete!`;
                     font-size: 12px;
                 }
 
+                .script-btn.run-btn {
+                    background: #90EE90;
+                }
+
+                .script-btn.run-btn:hover {
+                    background: #7CCD7C;
+                }
+
                 .toolbar-divider {
                     width: 1px;
                     background: #808080;
                     margin: 0 4px;
+                }
+
+                /* Find/Replace Bar */
+                .find-bar {
+                    display: flex;
+                    align-items: center;
+                    padding: 4px 8px;
+                    background: var(--win95-gray);
+                    border-bottom: 1px solid #808080;
+                    gap: 4px;
+                }
+
+                .find-input {
+                    padding: 3px 6px;
+                    border: 2px inset var(--win95-light);
+                    font-size: 12px;
+                    width: 150px;
+                    font-family: inherit;
+                }
+
+                .find-btn {
+                    padding: 2px 8px;
+                    background: var(--win95-gray);
+                    border: 2px outset var(--win95-light);
+                    cursor: pointer;
+                    font-size: 11px;
+                }
+
+                .find-btn:hover {
+                    background: #d0d0d0;
+                }
+
+                .find-btn:active {
+                    border-style: inset;
+                }
+
+                .find-info {
+                    font-size: 11px;
+                    color: #404040;
+                    margin-left: 8px;
+                }
+
+                .find-close {
+                    margin-left: auto;
+                    padding: 0 6px;
+                    background: var(--win95-gray);
+                    border: 2px outset var(--win95-light);
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+
+                .find-close:hover {
+                    background: #ff6b6b;
+                    color: white;
                 }
 
                 .script-main {
@@ -2430,6 +2543,15 @@ notify RetroScript Test Suite Complete!`;
                     color: white;
                     font-weight: bold;
                     font-size: 12px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .pane-header-info {
+                    font-weight: normal;
+                    font-size: 11px;
+                    opacity: 0.9;
                 }
 
                 .editor-container {
@@ -2572,6 +2694,19 @@ notify RetroScript Test Suite Complete!`;
                     color: #808080;
                 }
 
+                .status-spacer {
+                    flex: 1;
+                }
+
+                .record-status {
+                    color: red;
+                    font-weight: bold;
+                }
+
+                .record-status.active {
+                    animation: blink 1s infinite;
+                }
+
                 .recording .record-indicator {
                     color: red;
                     animation: blink 1s infinite;
@@ -2580,6 +2715,96 @@ notify RetroScript Test Suite Complete!`;
                 @keyframes blink {
                     0%, 50% { opacity: 1; }
                     51%, 100% { opacity: 0; }
+                }
+
+                /* Variables panel styling */
+                .var-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12px;
+                }
+
+                .var-table th {
+                    background: #333;
+                    color: #0f0;
+                    padding: 4px 8px;
+                    text-align: left;
+                    border-bottom: 1px solid #555;
+                }
+
+                .var-table td {
+                    padding: 3px 8px;
+                    border-bottom: 1px solid #333;
+                }
+
+                .var-table tr:hover {
+                    background: #1a1a1a;
+                }
+
+                .var-name {
+                    color: #9cdcfe;
+                }
+
+                .var-type {
+                    color: #569cd6;
+                    font-style: italic;
+                }
+
+                .var-value {
+                    color: #ce9178;
+                    max-width: 200px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                /* Recorded code styling */
+                .recorded-header {
+                    color: #87ceeb;
+                    margin-bottom: 8px;
+                }
+
+                .recorded-code {
+                    color: #d4d4d4;
+                    font-family: 'Consolas', 'Courier New', monospace;
+                }
+
+                .recorded-code .rec-comment {
+                    color: #6a9955;
+                }
+
+                .recorded-code .rec-command {
+                    color: #c586c0;
+                }
+
+                .recorded-code .rec-event {
+                    color: #dcdcaa;
+                }
+
+                /* Error line highlighting */
+                .line-error {
+                    background: rgba(255, 0, 0, 0.2) !important;
+                    border-left: 3px solid #ff0000;
+                }
+
+                .error-gutter {
+                    color: #ff0000;
+                    font-weight: bold;
+                }
+
+                /* Copy button for recorded code */
+                .copy-btn {
+                    float: right;
+                    padding: 2px 8px;
+                    background: #333;
+                    border: 1px solid #555;
+                    color: #0f0;
+                    cursor: pointer;
+                    font-size: 11px;
+                }
+
+                .copy-btn:hover {
+                    background: #444;
                 }
             </style>
         `;
@@ -2592,6 +2817,8 @@ notify RetroScript Test Suite Complete!`;
         const recordBtn = this.getElement('#recordBtn');
         const saveBtn = this.getElement('#saveBtn');
         const loadBtn = this.getElement('#loadBtn');
+        const newBtn = this.getElement('#newBtn');
+        const findBtn = this.getElement('#findBtn');
         const helpBtn = this.getElement('#helpBtn');
         const editor = this.getElement('#scriptEditor');
         const tabs = this.getElement('.output-tabs');
@@ -2614,6 +2841,12 @@ notify RetroScript Test Suite Complete!`;
         // Load script
         this.addHandler(loadBtn, 'click', () => this.loadScript());
 
+        // New script
+        this.addHandler(newBtn, 'click', () => this.newScript());
+
+        // Find/Replace
+        this.addHandler(findBtn, 'click', () => this.toggleFind());
+
         // Help
         this.addHandler(helpBtn, 'click', () => this.showHelp());
 
@@ -2628,26 +2861,84 @@ notify RetroScript Test Suite Complete!`;
             }
         });
 
+        // Find bar buttons
+        this.addHandler(this.getElement('#findNextBtn'), 'click', () => this.findNext());
+        this.addHandler(this.getElement('#findPrevBtn'), 'click', () => this.findPrev());
+        this.addHandler(this.getElement('#replaceBtn'), 'click', () => this.replaceOne());
+        this.addHandler(this.getElement('#replaceAllBtn'), 'click', () => this.replaceAll());
+        this.addHandler(this.getElement('#findCloseBtn'), 'click', () => this.toggleFind());
+        this.addHandler(this.getElement('#findInput'), 'keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.shiftKey ? this.findPrev() : this.findNext();
+            } else if (e.key === 'Escape') {
+                this.toggleFind();
+            }
+        });
+
         // Track cursor position and update highlighting
         this.addHandler(editor, 'keyup', () => {
             this.updateLineInfo();
             this.updateSyntaxHighlight();
+            this.updateCharCount();
         });
         this.addHandler(editor, 'click', () => this.updateLineInfo());
-        this.addHandler(editor, 'input', () => this.updateSyntaxHighlight());
+        this.addHandler(editor, 'input', () => {
+            this.updateSyntaxHighlight();
+            this.updateCharCount();
+        });
         this.addHandler(editor, 'scroll', () => this.syncScroll());
 
-        // Initial syntax highlight
+        // Initial syntax highlight and char count
         this.updateSyntaxHighlight();
+        this.updateCharCount();
 
-        // F5 to run, Tab for indent
+        // Keyboard shortcuts
         this.addHandler(editor, 'keydown', (e) => {
+            // F5 - Run
             if (e.key === 'F5') {
                 e.preventDefault();
                 this.runScript();
             }
-            // Handle Tab key for indentation
-            if (e.key === 'Tab') {
+            // F1 - Help
+            if (e.key === 'F1') {
+                e.preventDefault();
+                this.showHelp();
+            }
+            // F3 - Find next/prev
+            if (e.key === 'F3') {
+                e.preventDefault();
+                e.shiftKey ? this.findPrev() : this.findNext();
+            }
+            // Escape - Stop or close find
+            if (e.key === 'Escape') {
+                if (this.findVisible) {
+                    this.toggleFind();
+                } else {
+                    this.stopScript();
+                }
+            }
+            // Ctrl+S - Save
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                this.saveScript();
+            }
+            // Ctrl+O - Open
+            if (e.ctrlKey && e.key === 'o') {
+                e.preventDefault();
+                this.loadScript();
+            }
+            // Ctrl+N - New
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                this.newScript();
+            }
+            // Ctrl+F - Find
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                this.toggleFind();
+            }
+            // Tab - Insert 4 spaces
+            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey) {
                 e.preventDefault();
                 const start = editor.selectionStart;
                 const end = editor.selectionEnd;
@@ -2664,10 +2955,23 @@ notify RetroScript Test Suite Complete!`;
 
         this.subscribe('script:error', ({ error, line }) => {
             this.appendOutput(`Error${line ? ` at line ${line}` : ''}: ${error}`, 'error');
+            if (line) {
+                this.highlightErrorLine(line);
+            }
         });
 
-        // Monitor events for event log
+        // Subscribe to variable updates from script engine
+        this.subscribe('script:variables', ({ variables }) => {
+            this.variables = variables || {};
+            this.updateVariablesPanel();
+        });
+
+        // Monitor events for event log and recording
         this.eventSubscription = EventBus.on('*', (payload, meta, event) => {
+            // Skip internal events
+            if (event.name.startsWith('script:') || event.name.startsWith('macro:')) return;
+
+            // Add to event log
             if (this.eventLog.length > this.maxLogEntries) {
                 this.eventLog.shift();
             }
@@ -2676,6 +2980,11 @@ notify RetroScript Test Suite Complete!`;
                 event: event.name,
                 payload: JSON.stringify(payload).substring(0, 100)
             });
+
+            // Record event as code if recording
+            if (this.isRecording) {
+                this.recordEvent(event.name, payload);
+            }
         });
     }
 
@@ -2693,12 +3002,30 @@ notify RetroScript Test Suite Complete!`;
             const script = editor.value;
             console.log('[ScriptRunner] Script length:', script.length, 'chars');
 
+            // Clear previous error highlighting
+            this.clearErrorHighlight();
+            this.variables = {};
+
             this.setStatus('Running...');
             this.appendOutput('\n--- Script Started ---', 'info');
 
             console.log('[ScriptRunner] Calling ScriptEngine.run...');
-            const result = await ScriptEngine.run(script);
+            const result = await ScriptEngine.run(script, {
+                onOutput: (msg) => this.appendOutput(msg, 'success'),
+                onError: (err, line) => {
+                    this.appendOutput(`Error${line ? ` at line ${line}` : ''}: ${err}`, 'error');
+                    if (line) this.highlightErrorLine(line);
+                },
+                onVariables: (vars) => {
+                    this.variables = vars || {};
+                }
+            });
             console.log('[ScriptRunner] ScriptEngine.run completed');
+
+            // Capture final variables from result if available
+            if (result.variables) {
+                this.variables = result.variables;
+            }
 
             if (result.success) {
                 this.appendOutput('--- Script Completed ---', 'success');
@@ -2707,6 +3034,9 @@ notify RetroScript Test Suite Complete!`;
                 }
             } else {
                 this.appendOutput(`--- Script Failed: ${result.error} ---`, 'error');
+                if (result.line) {
+                    this.highlightErrorLine(result.line);
+                }
             }
 
             this.setStatus('Ready');
@@ -2734,18 +3064,291 @@ notify RetroScript Test Suite Complete!`;
 
     toggleRecording() {
         const recordBtn = this.getElement('#recordBtn');
+        const recordStatus = this.getElement('#recordStatus');
 
         if (this.isRecording) {
             this.isRecording = false;
-            EventBus.emit('macro:record:stop');
             recordBtn.innerHTML = '<span class="btn-icon">⏺</span> Record';
-            this.appendOutput('Recording stopped', 'info');
+            recordStatus.textContent = '';
+            recordStatus.classList.remove('active');
+            this.appendOutput(`Recording stopped - ${this.recordedEvents.length} events captured`, 'info');
+            this.appendOutput('Switch to "Recorded" tab to see generated code', 'info');
         } else {
             this.isRecording = true;
-            EventBus.emit('macro:record:start', { macroId: 'script-runner-macro' });
-            recordBtn.innerHTML = '<span class="btn-icon record-indicator">⏺</span> Stop Rec';
-            this.appendOutput('Recording started - perform actions to record...', 'info');
+            this.recordedEvents = [];
+            recordBtn.innerHTML = '<span class="btn-icon record-indicator">⏺</span> Stop';
+            recordStatus.textContent = '⏺ REC';
+            recordStatus.classList.add('active');
+            this.appendOutput('Recording started - perform actions to capture as code...', 'info');
         }
+    }
+
+    recordEvent(eventName, payload) {
+        const timestamp = new Date().toLocaleTimeString();
+        const code = this.eventToCode(eventName, payload);
+        if (code) {
+            this.recordedEvents.push({
+                time: timestamp,
+                event: eventName,
+                code: code
+            });
+        }
+    }
+
+    eventToCode(eventName, payload) {
+        // Convert common events to RetroScript code
+        const parts = eventName.split(':');
+
+        // App launch events
+        if (eventName === 'app:launch' && payload.appId) {
+            return `launch ${payload.appId}`;
+        }
+
+        // Window events
+        if (eventName === 'window:close' && payload.windowId) {
+            return `close`;
+        }
+        if (eventName === 'window:focus' && payload.appId) {
+            return `# Focus: ${payload.appId}`;
+        }
+
+        // Sound events
+        if (eventName === 'sound:play' && payload.sound) {
+            return `play ${payload.sound}`;
+        }
+
+        // Dialog events
+        if (eventName === 'dialog:alert') {
+            const msg = payload.message || '';
+            return `alert "${msg.replace(/"/g, '\\"')}"`;
+        }
+        if (eventName === 'notification:show') {
+            const msg = payload.message || '';
+            return `notify "${msg.replace(/"/g, '\\"')}"`;
+        }
+
+        // File events
+        if (eventName.startsWith('fs:file:')) {
+            const action = parts[2];
+            const path = payload.path;
+            if (action === 'create' || action === 'update') {
+                return `# File ${action}: ${path}`;
+            }
+            if (action === 'delete') {
+                return `delete "${path}"`;
+            }
+        }
+
+        // Game events
+        if (eventName.includes(':win') || eventName.includes(':game:over')) {
+            return `# Event: ${eventName} (score: ${payload.score || 'N/A'})`;
+        }
+
+        // Keyboard events (for documentation)
+        if (eventName === 'keyboard:keydown' && payload.key) {
+            if (payload.key.length === 1) return null; // Skip regular typing
+            return `# Key pressed: ${payload.key}`;
+        }
+
+        // Mouse click
+        if (eventName === 'mouse:click') {
+            return `# Click at (${payload.x}, ${payload.y})`;
+        }
+
+        // Generic event - emit it
+        if (parts.length >= 2) {
+            const props = Object.entries(payload || {})
+                .filter(([k, v]) => v !== undefined && v !== null && typeof v !== 'object')
+                .map(([k, v]) => `${k}="${v}"`)
+                .join(' ');
+            return props ? `emit ${eventName} ${props}` : `emit ${eventName}`;
+        }
+
+        return null;
+    }
+
+    newScript() {
+        const editor = this.getElement('#scriptEditor');
+        if (editor) {
+            editor.value = `# New RetroScript
+# Created: ${new Date().toLocaleString()}
+
+print "Hello, World!"
+`;
+            this.updateSyntaxHighlight();
+            this.updateCharCount();
+            this.appendOutput('New script created', 'info');
+        }
+    }
+
+    toggleFind() {
+        const findBar = this.getElement('#findBar');
+        const findInput = this.getElement('#findInput');
+
+        this.findVisible = !this.findVisible;
+        findBar.style.display = this.findVisible ? 'flex' : 'none';
+
+        if (this.findVisible) {
+            findInput.focus();
+            // Get selected text as search term
+            const editor = this.getElement('#scriptEditor');
+            const selected = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+            if (selected) {
+                findInput.value = selected;
+            }
+        }
+    }
+
+    findNext() {
+        const findInput = this.getElement('#findInput');
+        const editor = this.getElement('#scriptEditor');
+        const findInfo = this.getElement('#findInfo');
+
+        const searchText = findInput.value;
+        if (!searchText) return;
+
+        const text = editor.value;
+        const startPos = editor.selectionEnd;
+        const index = text.indexOf(searchText, startPos);
+
+        if (index !== -1) {
+            editor.selectionStart = index;
+            editor.selectionEnd = index + searchText.length;
+            editor.focus();
+            this.scrollToSelection(editor);
+            this.updateFindInfo(text, searchText);
+        } else {
+            // Wrap around
+            const wrapIndex = text.indexOf(searchText);
+            if (wrapIndex !== -1) {
+                editor.selectionStart = wrapIndex;
+                editor.selectionEnd = wrapIndex + searchText.length;
+                editor.focus();
+                this.scrollToSelection(editor);
+                findInfo.textContent = 'Wrapped';
+            } else {
+                findInfo.textContent = 'Not found';
+            }
+        }
+    }
+
+    findPrev() {
+        const findInput = this.getElement('#findInput');
+        const editor = this.getElement('#scriptEditor');
+        const findInfo = this.getElement('#findInfo');
+
+        const searchText = findInput.value;
+        if (!searchText) return;
+
+        const text = editor.value;
+        const startPos = editor.selectionStart - 1;
+        const index = text.lastIndexOf(searchText, startPos);
+
+        if (index !== -1) {
+            editor.selectionStart = index;
+            editor.selectionEnd = index + searchText.length;
+            editor.focus();
+            this.scrollToSelection(editor);
+            this.updateFindInfo(text, searchText);
+        } else {
+            // Wrap around
+            const wrapIndex = text.lastIndexOf(searchText);
+            if (wrapIndex !== -1) {
+                editor.selectionStart = wrapIndex;
+                editor.selectionEnd = wrapIndex + searchText.length;
+                editor.focus();
+                this.scrollToSelection(editor);
+                findInfo.textContent = 'Wrapped';
+            } else {
+                findInfo.textContent = 'Not found';
+            }
+        }
+    }
+
+    replaceOne() {
+        const findInput = this.getElement('#findInput');
+        const replaceInput = this.getElement('#replaceInput');
+        const editor = this.getElement('#scriptEditor');
+
+        const searchText = findInput.value;
+        const replaceText = replaceInput.value;
+        if (!searchText) return;
+
+        const selected = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+        if (selected === searchText) {
+            const start = editor.selectionStart;
+            editor.value = editor.value.substring(0, start) + replaceText + editor.value.substring(editor.selectionEnd);
+            editor.selectionStart = start;
+            editor.selectionEnd = start + replaceText.length;
+            this.updateSyntaxHighlight();
+            this.findNext();
+        } else {
+            this.findNext();
+        }
+    }
+
+    replaceAll() {
+        const findInput = this.getElement('#findInput');
+        const replaceInput = this.getElement('#replaceInput');
+        const editor = this.getElement('#scriptEditor');
+        const findInfo = this.getElement('#findInfo');
+
+        const searchText = findInput.value;
+        const replaceText = replaceInput.value;
+        if (!searchText) return;
+
+        const count = (editor.value.match(new RegExp(this.escapeRegex(searchText), 'g')) || []).length;
+        editor.value = editor.value.split(searchText).join(replaceText);
+        this.updateSyntaxHighlight();
+        findInfo.textContent = `Replaced ${count} occurrences`;
+    }
+
+    escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    updateFindInfo(text, searchText) {
+        const findInfo = this.getElement('#findInfo');
+        const count = (text.match(new RegExp(this.escapeRegex(searchText), 'g')) || []).length;
+        findInfo.textContent = `${count} match${count !== 1 ? 'es' : ''}`;
+    }
+
+    scrollToSelection(editor) {
+        // Calculate line number and scroll to it
+        const textBefore = editor.value.substring(0, editor.selectionStart);
+        const lineNumber = textBefore.split('\n').length;
+        const lineHeight = 18; // Approximate line height
+        editor.scrollTop = (lineNumber - 5) * lineHeight;
+    }
+
+    updateCharCount() {
+        const editor = this.getElement('#scriptEditor');
+        const charCount = this.getElement('#charCount');
+        if (editor && charCount) {
+            const chars = editor.value.length;
+            const lines = editor.value.split('\n').length;
+            charCount.textContent = `${chars} chars, ${lines} lines`;
+        }
+    }
+
+    highlightErrorLine(lineNum) {
+        this.errorLine = lineNum;
+        const lineNumbers = this.getElement('#lineNumbers');
+        if (lineNumbers) {
+            const lines = lineNumbers.innerHTML.split('\n');
+            lines[lineNum - 1] = `<span class="error-gutter">${lineNum}</span>`;
+            lineNumbers.innerHTML = lines.join('\n');
+        }
+    }
+
+    clearErrorHighlight() {
+        this.errorLine = null;
+        this.updateSyntaxHighlight();
+    }
+
+    updateVariablesPanel() {
+        // This is called when script:variables event is received
+        // The tab will display current variables when switched to
     }
 
     async saveScript() {
@@ -2945,7 +3548,13 @@ QUICK EXAMPLES:
             case 'events':
                 outputText.innerHTML = this.eventLog.map(e =>
                     `<span class="event">[${e.time}] ${e.event}</span>\n  ${e.payload}`
-                ).join('\n\n') || 'No events logged yet.\n';
+                ).join('\n\n') || 'No events logged yet.\nRun a script or interact with the system to see events.\n';
+                break;
+            case 'variables':
+                outputText.innerHTML = this.renderVariables();
+                break;
+            case 'recorded':
+                outputText.innerHTML = this.renderRecordedCode();
                 break;
             case 'commands':
                 const commands = CommandBus.getCommands();
@@ -2954,6 +3563,83 @@ QUICK EXAMPLES:
                 ).join('\n');
                 break;
         }
+    }
+
+    renderVariables() {
+        const vars = Object.entries(this.variables);
+        if (vars.length === 0) {
+            return `<div class="recorded-header">Variables</div>
+No variables captured yet.
+
+Variables are captured when a script runs.
+Run a script to see variable values here.
+
+<span class="info">Tip: Use the Output tab to see script output.</span>`;
+        }
+
+        let html = `<div class="recorded-header">Script Variables (${vars.length})</div>
+<table class="var-table">
+<tr><th>Name</th><th>Type</th><th>Value</th></tr>`;
+
+        for (const [name, value] of vars) {
+            const type = Array.isArray(value) ? 'array' : typeof value;
+            let displayValue = value;
+
+            if (typeof value === 'object' && value !== null) {
+                try {
+                    displayValue = JSON.stringify(value);
+                } catch (e) {
+                    displayValue = '[Object]';
+                }
+            }
+
+            html += `<tr>
+<td class="var-name">$${this.escapeHtml(name)}</td>
+<td class="var-type">${type}</td>
+<td class="var-value" title="${this.escapeHtml(String(displayValue))}">${this.escapeHtml(String(displayValue))}</td>
+</tr>`;
+        }
+
+        html += '</table>';
+        return html;
+    }
+
+    renderRecordedCode() {
+        if (this.recordedEvents.length === 0) {
+            return `<div class="recorded-header">Event Recorder</div>
+No events recorded yet.
+
+<span class="info">How to use:</span>
+1. Click the <span class="rec-command">Record</span> button in the toolbar
+2. Perform actions in IlluminatOS (launch apps, click, etc.)
+3. Click <span class="rec-command">Stop</span> to finish recording
+4. Generated RetroScript code will appear here!
+
+<span class="info">This is useful for:</span>
+• Learning RetroScript syntax
+• Creating automation scripts
+• Documenting actions as code
+`;
+        }
+
+        let code = `# Recorded RetroScript
+# Generated: ${new Date().toLocaleString()}
+# Events: ${this.recordedEvents.length}
+
+`;
+
+        for (const event of this.recordedEvents) {
+            code += `${event.code}  <span class="rec-comment"># ${event.time} - ${event.event}</span>\n`;
+        }
+
+        return `<div class="recorded-header">
+Recorded Code (${this.recordedEvents.length} events)
+<button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent.replace(/# .+$/gm, '').trim())">Copy Code</button>
+</div>
+<div class="recorded-code">${code}</div>
+<div style="margin-top: 16px; color: #87ceeb;">
+Tip: Click "Copy Code" to copy the generated script, then paste it into the editor!
+</div>`;
     }
 
     appendOutput(message, type = 'normal') {
