@@ -32,6 +32,9 @@ class DesktopRendererClass {
             return;
         }
 
+        // Track cut item paths for visual styling
+        this.cutItemPaths = [];
+
         // Initial render
         this.render();
 
@@ -45,6 +48,12 @@ class DesktopRendererClass {
         EventBus.on('filesystem:changed', () => this.render());
         EventBus.on('filesystem:file:changed', () => this.render());
         EventBus.on('filesystem:directory:changed', () => this.render());
+
+        // Listen for clipboard cut state changes
+        EventBus.on('clipboard:cut-state', ({ cutPaths }) => {
+            this.cutItemPaths = cutPaths || [];
+            this.updateCutVisualState();
+        });
 
         // Listen for recycle bin requests to recycle file icons
         EventBus.on('recyclebin:recycle-file', ({ iconId }) => {
@@ -81,6 +90,9 @@ class DesktopRendererClass {
 
         // Render file icons from Desktop folder
         this.renderFileIcons();
+
+        // Apply cut visual state after rendering
+        this.updateCutVisualState();
     }
 
     /**
@@ -871,6 +883,32 @@ class DesktopRendererClass {
         this.desktop.querySelectorAll('.icon.selected').forEach(icon => {
             icon.classList.remove('selected');
         });
+    }
+
+    /**
+     * Update cut visual state for all icons
+     * Applies .cut class to icons that are in the cut list
+     */
+    updateCutVisualState() {
+        if (!this.desktop) return;
+
+        // Remove cut class from all icons first
+        this.desktop.querySelectorAll('.icon.cut').forEach(icon => {
+            icon.classList.remove('cut');
+        });
+
+        // Apply cut class to icons that match cut paths
+        if (this.cutItemPaths.length > 0) {
+            this.desktop.querySelectorAll('.icon').forEach(iconEl => {
+                const iconData = iconEl._iconData;
+                if (iconData?.filePath) {
+                    const pathStr = JSON.stringify(iconData.filePath);
+                    if (this.cutItemPaths.includes(pathStr)) {
+                        iconEl.classList.add('cut');
+                    }
+                }
+            });
+        }
     }
 
     /**

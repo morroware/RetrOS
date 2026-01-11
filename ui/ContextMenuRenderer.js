@@ -23,6 +23,9 @@ class ContextMenuRendererClass {
             operation: null // 'copy' or 'cut'
         };
 
+        // Track paths of items that are cut (for visual feedback)
+        this.cutItemPaths = [];
+
         // Bound handlers for cleanup capability
         this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
         this.boundHandleEscape = this.handleEscape.bind(this);
@@ -615,9 +618,13 @@ class ContextMenuRendererClass {
             }],
             operation: 'cut'
         };
+
+        // Track cut items for visual feedback
+        this.cutItemPaths = [JSON.stringify(item.path)];
+
         console.log('[ContextMenu] Explorer Cut SUCCESS:', item.path.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+        EventBus.emit('clipboard:cut-state', { cutPaths: this.cutItemPaths });
     }
 
     handleExplorerCopy(context) {
@@ -628,6 +635,9 @@ class ContextMenuRendererClass {
             return;
         }
 
+        // Clear any existing cut state (copy replaces cut)
+        this.clearCutState();
+
         this.clipboard = {
             items: [{
                 path: item.path,
@@ -637,7 +647,6 @@ class ContextMenuRendererClass {
             operation: 'copy'
         };
         console.log('[ContextMenu] Explorer Copy SUCCESS:', item.path.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
@@ -707,6 +716,9 @@ class ContextMenuRendererClass {
                     }
                 }
             }
+
+            // Clear cut visual state after successful paste
+            this.clearCutState();
 
             // Clear clipboard if it was a cut operation
             if (this.clipboard.operation === 'cut') {
@@ -869,9 +881,13 @@ class ContextMenuRendererClass {
             }],
             operation: 'cut'
         };
+
+        // Track cut items for visual feedback
+        this.cutItemPaths = [JSON.stringify(icon.filePath)];
+
         console.log('[ContextMenu] Desktop Cut SUCCESS:', icon.filePath.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+        EventBus.emit('clipboard:cut-state', { cutPaths: this.cutItemPaths });
     }
 
     /**
@@ -893,6 +909,9 @@ class ContextMenuRendererClass {
             return;
         }
 
+        // Clear any existing cut state (copy replaces cut)
+        this.clearCutState();
+
         this.clipboard = {
             items: [{
                 path: icon.filePath,
@@ -902,7 +921,6 @@ class ContextMenuRendererClass {
             operation: 'copy'
         };
         console.log('[ContextMenu] Desktop File Copy SUCCESS:', icon.filePath.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
@@ -971,6 +989,9 @@ class ContextMenuRendererClass {
                 }
             }
 
+            // Clear cut visual state after successful paste
+            this.clearCutState();
+
             // Clear clipboard if it was a cut operation
             if (this.clipboard.operation === 'cut') {
                 this.clipboard = { items: [], operation: null };
@@ -983,6 +1004,17 @@ class ContextMenuRendererClass {
         } catch (e) {
             console.error('[ContextMenu] Paste error:', e);
             await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
+        }
+    }
+
+    /**
+     * Clear the cut state - removes visual cut indicators
+     * Called when paste completes or a new copy/cut operation starts
+     */
+    clearCutState() {
+        if (this.cutItemPaths.length > 0) {
+            this.cutItemPaths = [];
+            EventBus.emit('clipboard:cut-state', { cutPaths: [] });
         }
     }
 
