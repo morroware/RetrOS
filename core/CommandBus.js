@@ -49,6 +49,7 @@ class CommandBusClass {
         this._registerFsCommands();
         this._registerDialogCommands();
         this._registerSystemCommands();
+        this._registerTerminalCommands();
         this._registerQueryHandlers();
         this._registerTimerHandlers();
         this._registerMacroHandlers();
@@ -314,6 +315,327 @@ class CommandBusClass {
             const { achievementId } = payload;
             StateManager.unlockAchievement(achievementId);
             return { achievementId, unlocked: true };
+        });
+    }
+
+    // ==========================================
+    // TERMINAL COMMANDS
+    // ==========================================
+    _registerTerminalCommands() {
+        /**
+         * Helper to get Terminal instance
+         */
+        const getTerminal = async () => {
+            const AppRegistry = (await import('../apps/AppRegistry.js')).default;
+            const terminal = AppRegistry.get('terminal');
+            if (terminal && terminal.openWindows && terminal.openWindows.size > 0) {
+                const firstWindowId = terminal.openWindows.keys().next().value;
+                terminal._currentWindowId = firstWindowId;
+                return terminal;
+            }
+            return null;
+        };
+
+        /**
+         * Ensure terminal is open
+         */
+        const ensureTerminal = async () => {
+            let terminal = await getTerminal();
+            if (!terminal) {
+                const AppRegistry = (await import('../apps/AppRegistry.js')).default;
+                AppRegistry.launch('terminal');
+                await new Promise(resolve => setTimeout(resolve, 200));
+                terminal = await getTerminal();
+            }
+            return terminal;
+        };
+
+        // Execute a command in terminal
+        this.register('terminal:execute', async (payload) => {
+            const { command, windowId } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            // If windowId specified, check it matches
+            if (windowId && terminal._currentWindowId !== windowId) {
+                throw new Error('Terminal window not found');
+            }
+
+            terminal.executeCommand(String(command));
+            return {
+                output: terminal.lastOutput,
+                path: terminal.currentPath.join('\\')
+            };
+        });
+
+        // Execute multiple commands in sequence
+        this.register('terminal:executeSequence', async (payload) => {
+            const { commands } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            const outputs = [];
+            for (const cmd of commands) {
+                terminal.executeCommand(String(cmd));
+                outputs.push(terminal.lastOutput);
+            }
+            return { outputs };
+        });
+
+        // Print text to terminal
+        this.register('terminal:print', async (payload) => {
+            const { text, color } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.print(String(text), color || '#c0c0c0');
+            return { printed: true };
+        });
+
+        // Print HTML to terminal
+        this.register('terminal:printHtml', async (payload) => {
+            const { html } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.printHtml(String(html));
+            return { printed: true };
+        });
+
+        // Clear terminal screen
+        this.register('terminal:clear', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.cmdClear();
+            return { cleared: true };
+        });
+
+        // Change directory
+        this.register('terminal:cd', async (payload) => {
+            const { path } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.cmdCd([String(path)]);
+            return { path: terminal.currentPath.join('\\') };
+        });
+
+        // Get current path
+        this.register('terminal:getPath', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return {
+                path: terminal.currentPath,
+                pathString: terminal.currentPath.join('\\')
+            };
+        });
+
+        // Get terminal state
+        this.register('terminal:getState', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return {
+                currentPath: terminal.currentPath,
+                pathString: terminal.currentPath.join('\\'),
+                godMode: terminal.godMode,
+                hasActiveProcess: terminal.activeProcess !== null,
+                activeProcessType: terminal.activeProcess,
+                historyCount: terminal.commandHistory.length,
+                windowId: terminal._currentWindowId
+            };
+        });
+
+        // Get command history
+        this.register('terminal:getHistory', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return { history: [...terminal.commandHistory] };
+        });
+
+        // Get last output
+        this.register('terminal:getOutput', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return { output: terminal.lastOutput };
+        });
+
+        // Set environment variable
+        this.register('terminal:setEnvVar', async (payload) => {
+            const { name, value } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.envVars[String(name).toUpperCase()] = String(value);
+            return { name: String(name).toUpperCase(), value: String(value) };
+        });
+
+        // Get environment variable
+        this.register('terminal:getEnvVar', async (payload) => {
+            const { name } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return {
+                name: String(name).toUpperCase(),
+                value: terminal.envVars[String(name).toUpperCase()] || null
+            };
+        });
+
+        // Get all environment variables
+        this.register('terminal:getEnvVars', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return { envVars: { ...terminal.envVars } };
+        });
+
+        // Create alias
+        this.register('terminal:createAlias', async (payload) => {
+            const { name, command } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.aliases[String(name).toLowerCase()] = String(command);
+            return { name: String(name).toLowerCase(), command: String(command) };
+        });
+
+        // Get all aliases
+        this.register('terminal:getAliases', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            return { aliases: { ...terminal.aliases } };
+        });
+
+        // Enable god mode
+        this.register('terminal:enableGodMode', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.godMode = true;
+            terminal.print('*** GOD MODE ACTIVATED ***', '#ff00ff');
+            return { godMode: true };
+        });
+
+        // Start matrix effect
+        this.register('terminal:startMatrix', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            terminal.startMatrix();
+            return { started: true };
+        });
+
+        // Run a script file
+        this.register('terminal:runScript', async (payload) => {
+            const { scriptPath } = payload;
+            const terminal = await getTerminal();
+
+            if (!terminal) {
+                throw new Error('No terminal window open');
+            }
+
+            const filePath = terminal.resolvePath(String(scriptPath));
+            if (String(scriptPath).endsWith('.retro')) {
+                terminal.executeRetroScript(filePath);
+            } else if (String(scriptPath).endsWith('.bat')) {
+                terminal.executeBatchFile(filePath);
+            } else {
+                throw new Error('Unknown script type. Use .retro or .bat');
+            }
+            return { scriptPath: filePath };
+        });
+
+        // Open terminal (launch if not open)
+        this.register('terminal:open', async (payload) => {
+            const { initialCommand } = payload;
+            const terminal = await ensureTerminal();
+
+            if (!terminal) {
+                throw new Error('Failed to open terminal');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            if (initialCommand) {
+                terminal.executeCommand(String(initialCommand));
+            }
+
+            return { windowId: terminal._currentWindowId };
+        });
+
+        // Focus terminal window
+        this.register('terminal:focus', async (payload) => {
+            const terminal = await getTerminal();
+
+            if (!terminal || !terminal._currentWindowId) {
+                throw new Error('No terminal window open');
+            }
+
+            WindowManager.focus(terminal._currentWindowId);
+            return { focused: true };
+        });
+
+        // Check if terminal is open
+        this.register('terminal:isOpen', async (payload) => {
+            const terminal = await getTerminal();
+            return { open: terminal !== null };
         });
     }
 

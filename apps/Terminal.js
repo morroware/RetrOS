@@ -537,6 +537,15 @@ class Terminal extends AppBase {
         });
 
         this.runBootSequence();
+
+        // Emit terminal opened event for script handlers
+        EventBus.emit('app:terminal:opened', {
+            appId: this.id,
+            windowId: this.windowId,
+            currentPath: this.currentPath,
+            pathString: this.currentPath.join('\\'),
+            timestamp: Date.now()
+        });
     }
 
     runBootSequence() {
@@ -824,6 +833,19 @@ class Terminal extends AppBase {
                 this.print('operable program or batch file.');
             }
         }
+
+        // Emit command executed event for script handlers
+        EventBus.emit('app:terminal:command', {
+            appId: this.id,
+            windowId: this.windowId,
+            command: trimmed,
+            cmd: cmd,
+            args: args,
+            output: this.lastOutput,
+            currentPath: this.currentPath,
+            pathString: this.currentPath.join('\\'),
+            timestamp: Date.now()
+        });
     }
 
     /**
@@ -2813,6 +2835,15 @@ ECHO Batch script completed!
         if (this.activeProcess) {
             this.killProcess();
         }
+
+        // Emit terminal closed event for script handlers
+        EventBus.emit('app:terminal:closed', {
+            appId: this.id,
+            windowId: this.windowId,
+            commandHistory: [...this.commandHistory],
+            historyCount: this.commandHistory.length,
+            timestamp: Date.now()
+        });
     }
 }
 

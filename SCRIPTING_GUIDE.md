@@ -703,6 +703,67 @@ on system:active {
 | `inspect(val)` | Pretty print value | `call inspect $obj` |
 | `assert(cond, msg)` | Assert condition | `call assert $x > 0 "Must be positive"` |
 
+### Terminal Functions
+
+Control the Terminal app from scripts:
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `terminalOpen([cmd])` | Open terminal, optionally run command | `call terminalOpen "ver"` |
+| `terminalClose` | Close terminal window | `call terminalClose` |
+| `terminalFocus` | Focus terminal window | `call terminalFocus` |
+| `terminalMinimize` | Minimize terminal window | `call terminalMinimize` |
+| `isTerminalOpen` | Check if terminal is open | `call isTerminalOpen` |
+| `terminalPrint(text, [color])` | Print text to terminal | `call terminalPrint "Hello" "#00ff00"` |
+| `terminalPrintHtml(html)` | Print HTML to terminal | `call terminalPrintHtml "<b>Bold</b>"` |
+| `terminalClear` | Clear terminal screen | `call terminalClear` |
+| `terminalExecute(cmd)` | Execute terminal command | `call terminalExecute "dir"` |
+| `terminalExecuteSequence(cmds)` | Execute multiple commands | `call terminalExecuteSequence ["dir", "ver"]` |
+| `terminalCd(path)` | Change directory | `call terminalCd "C:/Users"` |
+| `terminalGetPath` | Get current path | `call terminalGetPath` |
+| `terminalGetOutput` | Get last command output | `call terminalGetOutput` |
+| `terminalGetAllOutput` | Get all terminal text | `call terminalGetAllOutput` |
+| `terminalGetHistory` | Get command history | `call terminalGetHistory` |
+| `terminalGetState` | Get terminal state | `call terminalGetState` |
+| `terminalGetEnvVars` | Get all env variables | `call terminalGetEnvVars` |
+| `terminalGetEnvVar(name)` | Get env variable | `call terminalGetEnvVar "PATH"` |
+| `terminalSetEnvVar(name, val)` | Set env variable | `call terminalSetEnvVar "MYVAR" "value"` |
+| `terminalAlias(name, cmd)` | Create command alias | `call terminalAlias "ls" "dir"` |
+| `terminalGetAliases` | Get all aliases | `call terminalGetAliases` |
+| `terminalDir([path])` | List directory | `call terminalDir` |
+| `terminalReadFile(path)` | Read file (relative to terminal) | `call terminalReadFile "test.txt"` |
+| `terminalWriteFile(path, content)` | Write file | `call terminalWriteFile "test.txt" "Hello"` |
+| `terminalFileExists(path)` | Check file exists | `call terminalFileExists "test.txt"` |
+| `terminalRunScript(path)` | Run .retro or .bat file | `call terminalRunScript "script.retro"` |
+| `terminalGodMode` | Enable god mode | `call terminalGodMode` |
+| `terminalIsGodMode` | Check god mode status | `call terminalIsGodMode` |
+| `terminalMatrix` | Start matrix effect | `call terminalMatrix` |
+| `terminalCowsay(msg)` | Display cowsay message | `call terminalCowsay "Hello!"` |
+| `terminalFortune` | Display random fortune | `call terminalFortune` |
+| `terminalColor(code)` | Set terminal color | `call terminalColor "a"` |
+
+**Terminal Events (for event handlers):**
+
+```retro
+# React when terminal is opened
+on app:terminal:opened {
+    print "Terminal opened!"
+    set $path = $event.pathString
+    print "Current path: $path"
+}
+
+# React to terminal commands
+on app:terminal:command {
+    print "Command executed: $event.command"
+    print "Output: $event.output"
+}
+
+# React when terminal closes
+on app:terminal:closed {
+    print "Terminal closed. History count: $event.historyCount"
+}
+```
+
 ---
 
 ## File Operations
