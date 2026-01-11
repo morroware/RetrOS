@@ -9,6 +9,7 @@ import EventBus from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import { PATHS } from '../core/Constants.js';
+import ScriptEngine from '../core/script/ScriptEngine.js';
 
 class Terminal extends AppBase {
     constructor() {
@@ -27,6 +28,10 @@ class Terminal extends AppBase {
         this.activeProcess = null;
         this.currentPath = [...PATHS.USER_HOME];
         this.lastOutput = '';
+        this.aliases = {}; // Command aliases
+        this.batchCommands = []; // For batch file execution
+        this.batchIndex = 0;
+        this.pipeEnabled = true; // Enable pipe operators
 
         // DOS-like environment variables
         this.envVars = {
@@ -74,6 +79,19 @@ class Terminal extends AppBase {
             }
         });
 
+        // Execute multiple commands in sequence
+        this.registerCommand('executeSequence', (commands) => {
+            if (!Array.isArray(commands)) {
+                return { success: false, error: 'Commands must be an array' };
+            }
+            const outputs = [];
+            for (const cmd of commands) {
+                this.executeCommand(cmd);
+                outputs.push(this.lastOutput);
+            }
+            return { success: true, outputs };
+        });
+
         // Clear the terminal screen
         this.registerCommand('clear', () => {
             this.cmdClear();
@@ -92,6 +110,15 @@ class Terminal extends AppBase {
                 return { success: true, text: String(text) };
             }
             return { success: false, error: 'No text provided' };
+        });
+
+        // Print HTML to terminal
+        this.registerCommand('printHtml', (html) => {
+            if (html !== undefined && html !== null) {
+                this.printHtml(String(html));
+                return { success: true, html: String(html) };
+            }
+            return { success: false, error: 'No HTML provided' };
         });
 
         // Change directory
@@ -120,6 +147,213 @@ class Terminal extends AppBase {
             } catch (error) {
                 return { success: false, error: error.message };
             }
+        });
+
+        // Read a file
+        this.registerCommand('readFile', (filePath) => {
+            if (!filePath) {
+                return { success: false, error: 'File path required' };
+            }
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                const content = FileSystemManager.readFile(resolvedPath);
+                return { success: true, content };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Write to a file
+        this.registerCommand('writeFile', (filePath, content, extension = 'txt') => {
+            if (!filePath || content === undefined) {
+                return { success: false, error: 'File path and content required' };
+            }
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                FileSystemManager.writeFile(resolvedPath, content, extension);
+                return { success: true, path: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Set environment variable
+        this.registerCommand('setEnvVar', (name, value) => {
+            if (!name) {
+                return { success: false, error: 'Variable name required' };
+            }
+            this.envVars[name.toUpperCase()] = String(value || '');
+            return { success: true, name: name.toUpperCase(), value: this.envVars[name.toUpperCase()] };
+        });
+
+        // Get environment variable
+        this.registerCommand('getEnvVar', (name) => {
+            if (!name) {
+                return { success: false, error: 'Variable name required' };
+            }
+            const value = this.envVars[name.toUpperCase()];
+            return { success: true, name: name.toUpperCase(), value: value || null };
+        });
+
+        // Create an alias
+        this.registerCommand('createAlias', (name, command) => {
+            if (!name || !command) {
+                return { success: false, error: 'Alias name and command required' };
+            }
+            this.aliases[name.toLowerCase()] = command;
+            return { success: true, name: name.toLowerCase(), command };
+        });
+
+        // Remove an alias
+        this.registerCommand('removeAlias', (name) => {
+            if (!name) {
+                return { success: false, error: 'Alias name required' };
+            }
+            const existed = !!this.aliases[name.toLowerCase()];
+            delete this.aliases[name.toLowerCase()];
+            return { success: true, existed };
+        });
+
+        // Run a script file
+        this.registerCommand('runScript', (scriptPath) => {
+            if (!scriptPath) {
+                return { success: false, error: 'Script path required' };
+            }
+            try {
+                const resolvedPath = this.resolvePath(scriptPath);
+                if (scriptPath.endsWith('.retro')) {
+                    this.executeRetroScript(resolvedPath);
+                } else if (scriptPath.endsWith('.bat')) {
+                    this.executeBatchFile(resolvedPath);
+                } else {
+                    return { success: false, error: 'Unknown script type. Use .retro or .bat' };
+                }
+                return { success: true, scriptPath: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Focus the terminal window
+        this.registerCommand('focus', () => {
+            if (this.windowId) {
+                EventBus.emit('window:focus', { windowId: this.windowId });
+                return { success: true };
+            }
+            return { success: false, error: 'Window not available' };
+        });
+
+        // Minimize the terminal window
+        this.registerCommand('minimize', () => {
+            if (this.windowId) {
+                EventBus.emit('window:minimize', { windowId: this.windowId });
+                return { success: true };
+            }
+            return { success: false, error: 'Window not available' };
+        });
+
+        // Maximize the terminal window
+        this.registerCommand('maximize', () => {
+            if (this.windowId) {
+                EventBus.emit('window:maximize', { windowId: this.windowId });
+                return { success: true };
+            }
+            return { success: false, error: 'Window not available' };
+        });
+
+        // Close the terminal
+        this.registerCommand('closeTerminal', () => {
+            this.close();
+            return { success: true };
+        });
+
+        // Show a message in the terminal
+        this.registerCommand('showMessage', (message, type = 'info') => {
+            const colors = {
+                'info': '#c0c0c0',
+                'success': '#00ff00',
+                'warning': '#ffff00',
+                'error': '#ff0000',
+                'cyan': '#00ffff',
+                'magenta': '#ff00ff'
+            };
+            const color = colors[type] || '#c0c0c0';
+            this.print(message, color);
+            return { success: true, message, type };
+        });
+
+        // Create a file
+        this.registerCommand('createFile', (filePath, content = '') => {
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                const extension = filePath.split('.').pop() || 'txt';
+                FileSystemManager.writeFile(resolvedPath, content, extension);
+                return { success: true, path: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Delete a file
+        this.registerCommand('deleteFile', (filePath) => {
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                FileSystemManager.deleteFile(resolvedPath);
+                return { success: true, path: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Check if file exists
+        this.registerCommand('fileExists', (filePath) => {
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                const exists = FileSystemManager.exists(resolvedPath);
+                return { success: true, exists };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Launch an application
+        this.registerCommand('launchApp', (appId, params = {}) => {
+            if (!appId) {
+                return { success: false, error: 'App ID required' };
+            }
+            import('./AppRegistry.js').then(module => {
+                const AppRegistry = module.default;
+                AppRegistry.launch(appId, params);
+            });
+            return { success: true, appId, params };
+        });
+
+        // Trigger matrix mode
+        this.registerCommand('startMatrix', () => {
+            this.startMatrix();
+            return { success: true };
+        });
+
+        // Stop matrix mode
+        this.registerCommand('stopMatrix', () => {
+            if (this.activeProcess === 'matrix') {
+                this.killProcess();
+                return { success: true };
+            }
+            return { success: false, error: 'Matrix mode not active' };
+        });
+
+        // Enable god mode
+        this.registerCommand('enableGodMode', () => {
+            this.godMode = true;
+            this.print('*** GOD MODE ACTIVATED ***', '#ff00ff');
+            return { success: true };
+        });
+
+        // Update prompt
+        this.registerCommand('updatePrompt', () => {
+            this.updatePrompt();
+            return { success: true, prompt: this.getPrompt() };
         });
     }
 
@@ -150,6 +384,11 @@ class Terminal extends AppBase {
             return { envVars: { ...this.envVars } };
         });
 
+        // Get all aliases
+        this.registerQuery('getAliases', () => {
+            return { aliases: { ...this.aliases } };
+        });
+
         // Get terminal state
         this.registerQuery('getState', () => {
             return {
@@ -157,7 +396,41 @@ class Terminal extends AppBase {
                 pathString: this.currentPath.join('\\'),
                 godMode: this.godMode,
                 hasActiveProcess: this.activeProcess !== null,
-                historyCount: this.commandHistory.length
+                activeProcessType: this.activeProcess,
+                historyCount: this.commandHistory.length,
+                windowId: this.windowId
+            };
+        });
+
+        // Get window information
+        this.registerQuery('getWindowInfo', () => {
+            return {
+                windowId: this.windowId,
+                appId: this.id,
+                appName: this.name
+            };
+        });
+
+        // Get full terminal output as text
+        this.registerQuery('getAllOutput', () => {
+            const output = this.getElement('#terminalOutput');
+            return {
+                outputText: output ? output.textContent : '',
+                outputHtml: output ? output.innerHTML : ''
+            };
+        });
+
+        // Check if god mode is active
+        this.registerQuery('isGodMode', () => {
+            return { godMode: this.godMode };
+        });
+
+        // Get batch execution state
+        this.registerQuery('getBatchState', () => {
+            return {
+                isExecutingBatch: this.batchCommands.length > 0,
+                batchCommandCount: this.batchCommands.length,
+                currentBatchIndex: this.batchIndex
             };
         });
     }
@@ -410,10 +683,24 @@ class Terminal extends AppBase {
         this.commandHistory.push(trimmed);
         this.historyIndex = -1;
 
+        // Variable interpolation - replace %VAR% with environment variable values
+        let interpolated = this.interpolateVariables(trimmed);
+
+        // Handle pipe operators
+        if (this.pipeEnabled && interpolated.includes('|') && !interpolated.match(/echo.*>>/)) {
+            return this.executePipedCommands(interpolated);
+        }
+
         // Parse command and arguments (handle quoted strings)
-        const parts = this.parseCommandLine(trimmed);
-        const cmd = parts[0].toLowerCase();
+        const parts = this.parseCommandLine(interpolated);
+        let cmd = parts[0].toLowerCase();
         const args = parts.slice(1);
+
+        // Resolve aliases
+        if (this.aliases[cmd]) {
+            const aliasCmd = this.aliases[cmd];
+            return this.executeCommand(aliasCmd + ' ' + args.join(' '));
+        }
 
         // Konami code easter egg
         if (trimmed.replace(/\s/g, '').toLowerCase() === 'uuddlrlrba') {
@@ -490,6 +777,26 @@ class Terminal extends AppBase {
             'party': () => this.startParty(),
             'color': () => this.cmdColor(args),
 
+            // Scripting commands
+            'retro': () => this.cmdRetro(args),
+            'script': () => this.cmdRetro(args),
+            'call': () => this.cmdCall(args),
+            'bat': () => this.cmdCall(args),
+            'newscript': () => this.cmdNewScript(args),
+            'newbatch': () => this.cmdNewBatch(args),
+
+            // Additional file commands
+            'grep': () => this.cmdGrep(args),
+            'touch': () => this.cmdTouch(args),
+            'wget': () => this.cmdWget(args),
+            'curl': () => this.cmdWget(args),
+            'head': () => this.cmdHead(args),
+            'tail': () => this.cmdTail(args),
+            'wc': () => this.cmdWordCount(args),
+            'diff': () => this.cmdDiff(args),
+            'alias': () => this.cmdAlias(args),
+            'unalias': () => this.cmdUnalias(args),
+
             // Other commands
             'sudo': () => this.cmdSudo(args),
             'bsod': () => this.triggerBSOD(),
@@ -552,6 +859,14 @@ class Terminal extends AppBase {
         } else if (extension === 'exe') {
             // Executable - launch the app
             return this.openExecutable(node);
+        } else if (extension === 'retro') {
+            // RetroScript file - execute it
+            this.executeRetroScript(filePath);
+            return true;
+        } else if (extension === 'bat') {
+            // Batch file - execute it
+            this.executeBatchFile(filePath);
+            return true;
         } else if (['txt', 'md', 'log'].includes(extension)) {
             // Text file - open in Notepad
             this.openInNotepad(filePath);
@@ -698,36 +1013,69 @@ class Terminal extends AppBase {
         return `
 For more information on a specific command, type HELP command-name
 
-ATTRIB     Displays file attributes.
-CD         Displays or changes the current directory.
-CHKDSK     Checks a disk and displays a status report.
-CLS        Clears the screen.
-COPY       Copies files to another location.
-DATE       Displays the date.
-DEL        Deletes files.
-DIR        Displays a list of files and subdirectories.
-ECHO       Displays messages, or turns command echoing on/off.
-EDIT       Starts Notepad to edit a file.
-FIND       Searches for a text string in a file.
-FORMAT     Formats a disk (simulated).
-HELP       Provides help information.
-IPCONFIG   Displays network configuration.
-MD         Creates a directory.
-MEM        Displays memory usage.
-MORE       Displays output one screen at a time.
-MOVE       Moves files from one directory to another.
-PATH       Displays or sets the search path.
-PING       Tests network connectivity.
-RD         Removes a directory.
-REN        Renames a file or directory.
-SET        Displays or sets environment variables.
-START      Starts an application or opens a file.
-SYSTEMINFO Displays system configuration.
-TIME       Displays the system time.
-TREE       Displays directory structure graphically.
-TYPE       Displays the contents of a text file.
-VER        Displays the operating system version.
-VOL        Displays the disk volume label.
+FILE SYSTEM COMMANDS:
+  ATTRIB     Displays file attributes.
+  CD         Displays or changes the current directory.
+  COPY       Copies files to another location.
+  DEL        Deletes files.
+  DIR        Displays a list of files and subdirectories.
+  EDIT       Starts Notepad to edit a file.
+  FIND       Searches for a text string in a file.
+  MD         Creates a directory.
+  MORE       Displays output one screen at a time.
+  MOVE       Moves files from one directory to another.
+  RD         Removes a directory.
+  REN        Renames a file or directory.
+  TREE       Displays directory structure graphically.
+  TYPE       Displays the contents of a text file.
+
+ADVANCED FILE COMMANDS:
+  DIFF       Compares two files and shows differences.
+  GREP       Searches for patterns in files (with options).
+  HEAD       Displays the first lines of a file.
+  TAIL       Displays the last lines of a file.
+  TOUCH      Creates an empty file or updates timestamp.
+  WC         Counts lines, words, and characters in a file.
+
+SCRIPTING COMMANDS:
+  RETRO      Executes a RetroScript file (.retro).
+  SCRIPT     Alias for RETRO command.
+  CALL       Executes a batch file (.bat).
+  BAT        Alias for CALL command.
+  NEWSCRIPT  Creates a new RetroScript template file.
+  NEWBATCH   Creates a new batch file template.
+  ALIAS      Creates command aliases.
+  UNALIAS    Removes a command alias.
+
+SYSTEM COMMANDS:
+  CHKDSK     Checks a disk and displays a status report.
+  CLS        Clears the screen.
+  DATE       Displays the date.
+  ECHO       Displays messages, or turns command echoing on/off.
+  FORMAT     Formats a disk (simulated).
+  HELP       Provides help information.
+  MEM        Displays memory usage.
+  PATH       Displays or sets the search path.
+  SET        Displays or sets environment variables.
+  START      Starts an application or opens a file.
+  SYSTEMINFO Displays system configuration.
+  TIME       Displays the system time.
+  VER        Displays the operating system version.
+  VOL        Displays the disk volume label.
+
+NETWORK COMMANDS:
+  IPCONFIG   Displays network configuration.
+  PING       Tests network connectivity.
+  NETSTAT    Displays network statistics.
+  TRACERT    Traces route to destination.
+  NSLOOKUP   DNS lookup.
+  WGET       Downloads files from URL (simulated).
+  CURL       Alias for WGET.
+
+FEATURES:
+  - Variable interpolation: Use %VAR% in commands
+  - Pipe operators: Chain commands with | (e.g., dir | grep txt)
+  - Type any .retro or .bat filename to execute it
 
 TIP: Type a filename to open it (e.g. "snake.lnk" or "welcome.txt")
 
@@ -1770,6 +2118,695 @@ Special Thanks:
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
+    }
+
+    // === SCRIPTING SUPPORT ===
+
+    /**
+     * Interpolate environment variables in command line
+     * Replaces %VAR% with the value of environment variable VAR
+     */
+    interpolateVariables(cmdLine) {
+        return cmdLine.replace(/%(\w+)%/g, (match, varName) => {
+            return this.envVars[varName.toUpperCase()] || match;
+        });
+    }
+
+    /**
+     * Execute piped commands (cmd1 | cmd2 | cmd3)
+     */
+    executePipedCommands(cmdLine) {
+        const commands = cmdLine.split('|').map(c => c.trim());
+        let output = '';
+
+        for (let i = 0; i < commands.length; i++) {
+            const cmd = commands[i];
+
+            if (i === 0) {
+                // First command - execute normally and capture output
+                this.executeCommandSilent(cmd, (result) => {
+                    output = result;
+                });
+            } else {
+                // Subsequent commands - use previous output as input
+                // For now, we'll simulate pipe by passing output to commands that support it
+                if (cmd.toLowerCase().startsWith('grep ')) {
+                    // Grep from piped input
+                    output = this.grepFromString(output, cmd.substring(5).trim());
+                } else if (cmd.toLowerCase().startsWith('head ')) {
+                    output = this.headFromString(output, cmd.substring(5).trim());
+                } else if (cmd.toLowerCase().startsWith('tail ')) {
+                    output = this.tailFromString(output, cmd.substring(5).trim());
+                } else if (cmd.toLowerCase().startsWith('wc')) {
+                    output = this.wcFromString(output);
+                } else {
+                    // Command doesn't support piped input
+                    this.print(`'${cmd.split(' ')[0]}' does not support piped input`);
+                    return;
+                }
+            }
+        }
+
+        if (output) {
+            this.print(output);
+        }
+    }
+
+    /**
+     * Execute a command silently and capture output
+     */
+    executeCommandSilent(cmdLine, callback) {
+        const parts = this.parseCommandLine(cmdLine);
+        const cmd = parts[0].toLowerCase();
+        const args = parts.slice(1);
+
+        let result = '';
+
+        // Execute common commands that produce output
+        if (cmd === 'dir' || cmd === 'ls') {
+            result = this.cmdDir(args);
+        } else if (cmd === 'type' || cmd === 'cat') {
+            result = this.cmdType(args);
+        } else if (cmd === 'echo') {
+            result = args.join(' ');
+        } else if (cmd === 'find') {
+            result = this.cmdFind(args);
+        } else if (cmd === 'grep') {
+            result = this.cmdGrep(args);
+        } else {
+            result = `'${cmd}' cannot be used in a pipe`;
+        }
+
+        callback(result);
+    }
+
+    /**
+     * Execute a RetroScript file
+     */
+    async executeRetroScript(filePath) {
+        try {
+            const content = FileSystemManager.readFile(filePath);
+            const fileName = filePath[filePath.length - 1];
+
+            this.print(`Executing RetroScript: ${fileName}...`, '#00ff00');
+
+            // Create a script engine instance
+            const engine = new ScriptEngine();
+
+            // Execute the script
+            const result = await engine.execute(content);
+
+            if (result.success) {
+                if (result.output) {
+                    this.print(result.output);
+                }
+                this.print(`Script completed successfully.`, '#00ff00');
+            } else {
+                this.print(`Script error: ${result.error}`, '#ff0000');
+            }
+        } catch (e) {
+            this.print(`Error executing script: ${e.message}`, '#ff0000');
+        }
+    }
+
+    /**
+     * Execute a batch file (.bat)
+     */
+    executeBatchFile(filePath) {
+        try {
+            const content = FileSystemManager.readFile(filePath);
+            const fileName = filePath[filePath.length - 1];
+
+            this.print(`Executing batch file: ${fileName}...`);
+
+            // Parse batch file into commands
+            const lines = content.split('\n');
+            const commands = [];
+
+            for (let line of lines) {
+                line = line.trim();
+
+                // Skip empty lines and comments
+                if (!line || line.startsWith('REM ') || line.startsWith('::')) {
+                    continue;
+                }
+
+                // Remove @ECHO OFF directive (just skip it)
+                if (line.toUpperCase() === '@ECHO OFF' || line.toUpperCase() === 'ECHO OFF') {
+                    continue;
+                }
+
+                commands.push(line);
+            }
+
+            // Execute commands sequentially
+            this.batchCommands = commands;
+            this.batchIndex = 0;
+            this.executeBatchNext();
+        } catch (e) {
+            this.print(`Error executing batch file: ${e.message}`, '#ff0000');
+        }
+    }
+
+    /**
+     * Execute next command in batch file
+     */
+    executeBatchNext() {
+        if (this.batchIndex >= this.batchCommands.length) {
+            this.batchCommands = [];
+            this.batchIndex = 0;
+            return;
+        }
+
+        const cmd = this.batchCommands[this.batchIndex];
+        this.batchIndex++;
+
+        // Execute the command (without showing the prompt again)
+        const parts = this.parseCommandLine(cmd);
+        const cmdName = parts[0].toLowerCase();
+        const args = parts.slice(1);
+
+        // Show the command being executed
+        this.print(cmd, '#808080');
+
+        // Find and execute the command
+        const commands = this.getCommandMap();
+        if (commands[cmdName]) {
+            const result = commands[cmdName](args);
+            if (result) this.print(result);
+        }
+
+        // Continue with next command
+        setTimeout(() => this.executeBatchNext(), 50);
+    }
+
+    /**
+     * Get command map for batch execution
+     */
+    getCommandMap() {
+        return {
+            'dir': (args) => this.cmdDir(args),
+            'ls': (args) => this.cmdDir(args),
+            'cd': (args) => this.cmdCd(args),
+            'type': (args) => this.cmdType(args),
+            'cat': (args) => this.cmdType(args),
+            'echo': (args) => this.cmdEcho(args, 'echo ' + args.join(' ')),
+            'mkdir': (args) => this.cmdMkdir(args),
+            'del': (args) => this.cmdDel(args),
+            'copy': (args) => this.cmdCopy(args),
+            'move': (args) => this.cmdMove(args),
+            'cls': () => this.cmdClear(),
+            'clear': () => this.cmdClear(),
+            'ver': () => this.cmdVer(),
+            'date': () => this.cmdDate(),
+            'time': () => this.cmdTime(),
+            'set': (args) => this.cmdSet(args),
+        };
+    }
+
+    // === SCRIPTING COMMANDS ===
+
+    /**
+     * RETRO/SCRIPT command - Execute a RetroScript file
+     */
+    cmdRetro(args) {
+        if (!args[0]) {
+            return 'Usage: RETRO <script.retro>\n\nExecutes a RetroScript file.\n\nExample: retro test.retro';
+        }
+
+        const filePath = this.resolvePath(args[0]);
+
+        // Check if file exists
+        if (!FileSystemManager.exists(filePath)) {
+            return 'Script file not found.';
+        }
+
+        this.executeRetroScript(filePath);
+        return null;
+    }
+
+    /**
+     * CALL/BAT command - Execute a batch file
+     */
+    cmdCall(args) {
+        if (!args[0]) {
+            return 'Usage: CALL <script.bat>\n\nExecutes a batch file.\n\nExample: call startup.bat';
+        }
+
+        const filePath = this.resolvePath(args[0]);
+
+        // Check if file exists
+        if (!FileSystemManager.exists(filePath)) {
+            return 'Batch file not found.';
+        }
+
+        this.executeBatchFile(filePath);
+        return null;
+    }
+
+    // === ADDITIONAL FILE COMMANDS ===
+
+    /**
+     * GREP command - Search for patterns in files
+     */
+    cmdGrep(args) {
+        if (args.length < 2) {
+            return 'Usage: GREP <pattern> <file>\n\nSearches for a pattern in a file.\n\nOptions:\n  -i  Case insensitive\n  -n  Show line numbers\n  -v  Invert match (show non-matching lines)';
+        }
+
+        let caseInsensitive = false;
+        let showLineNumbers = false;
+        let invertMatch = false;
+        let pattern = '';
+        let fileName = '';
+
+        // Parse options
+        for (const arg of args) {
+            if (arg === '-i') {
+                caseInsensitive = true;
+            } else if (arg === '-n') {
+                showLineNumbers = true;
+            } else if (arg === '-v') {
+                invertMatch = true;
+            } else if (!pattern) {
+                pattern = arg;
+            } else {
+                fileName = arg;
+            }
+        }
+
+        if (!pattern || !fileName) {
+            return 'GREP: Missing pattern or filename';
+        }
+
+        try {
+            const filePath = this.resolvePath(fileName);
+            const content = FileSystemManager.readFile(filePath);
+
+            return this.grepContent(content, pattern, caseInsensitive, showLineNumbers, invertMatch);
+        } catch (e) {
+            return `File not found - ${fileName}`;
+        }
+    }
+
+    /**
+     * Grep helper for content
+     */
+    grepContent(content, pattern, caseInsensitive, showLineNumbers, invertMatch) {
+        const lines = content.split('\n');
+        let output = '';
+        let lineNum = 0;
+
+        for (const line of lines) {
+            lineNum++;
+            const searchLine = caseInsensitive ? line.toLowerCase() : line;
+            const searchPattern = caseInsensitive ? pattern.toLowerCase() : pattern;
+            const matches = searchLine.includes(searchPattern);
+
+            if ((matches && !invertMatch) || (!matches && invertMatch)) {
+                if (showLineNumbers) {
+                    output += `${lineNum}: ${line}\n`;
+                } else {
+                    output += `${line}\n`;
+                }
+            }
+        }
+
+        return output || '(no matches found)';
+    }
+
+    /**
+     * Grep from piped string
+     */
+    grepFromString(input, argsStr) {
+        const args = argsStr.split(/\s+/);
+        let caseInsensitive = false;
+        let showLineNumbers = false;
+        let invertMatch = false;
+        let pattern = '';
+
+        for (const arg of args) {
+            if (arg === '-i') caseInsensitive = true;
+            else if (arg === '-n') showLineNumbers = true;
+            else if (arg === '-v') invertMatch = true;
+            else if (!pattern) pattern = arg;
+        }
+
+        if (!pattern) return input;
+
+        return this.grepContent(input, pattern, caseInsensitive, showLineNumbers, invertMatch);
+    }
+
+    /**
+     * TOUCH command - Create an empty file
+     */
+    cmdTouch(args) {
+        if (!args[0]) {
+            return 'Usage: TOUCH <filename>\n\nCreates an empty file or updates timestamp.';
+        }
+
+        try {
+            const filePath = this.resolvePath(args[0]);
+
+            if (FileSystemManager.exists(filePath)) {
+                // File exists - update timestamp (simulated)
+                return '';
+            } else {
+                // Create new empty file
+                const extension = args[0].split('.').pop();
+                FileSystemManager.writeFile(filePath, '', extension);
+                return '';
+            }
+        } catch (e) {
+            return `Unable to create file - ${e.message}`;
+        }
+    }
+
+    /**
+     * WGET/CURL command - Download files (simulated)
+     */
+    cmdWget(args) {
+        if (!args[0]) {
+            return 'Usage: WGET <url> [output_file]\n\nDownloads a file from a URL (simulated).\n\nExample: wget http://example.com/file.txt';
+        }
+
+        const url = args[0];
+        const fileName = args[1] || url.split('/').pop() || 'download.txt';
+
+        this.print(`Connecting to ${url}...`);
+        this.print('HTTP request sent, awaiting response... 200 OK');
+        this.print(`Length: 1024 bytes`);
+        this.print(`Saving to: '${fileName}'`);
+        this.print('');
+        this.print('100%[===================>] 1,024      --.-KB/s    in 0.001s');
+        this.print('');
+
+        // Create a simulated downloaded file
+        try {
+            const filePath = this.resolvePath(fileName);
+            const content = `# Downloaded from ${url}\n\nThis is a simulated download.\nIn a real implementation, this would contain the actual file content.`;
+            FileSystemManager.writeFile(filePath, content, 'txt');
+            return `'${fileName}' saved [1024/1024]`;
+        } catch (e) {
+            return `Unable to save file - ${e.message}`;
+        }
+    }
+
+    /**
+     * HEAD command - Show first lines of a file
+     */
+    cmdHead(args) {
+        const lines = 10;
+        let numLines = lines;
+        let fileName = args[0];
+
+        // Check for -n option
+        if (args[0] === '-n' && args[1]) {
+            numLines = parseInt(args[1]);
+            fileName = args[2];
+        }
+
+        if (!fileName) {
+            return 'Usage: HEAD [-n lines] <file>\n\nDisplays the first lines of a file (default: 10).';
+        }
+
+        try {
+            const filePath = this.resolvePath(fileName);
+            const content = FileSystemManager.readFile(filePath);
+            return this.headFromString(content, numLines.toString());
+        } catch (e) {
+            return `File not found - ${fileName}`;
+        }
+    }
+
+    /**
+     * Head helper for string
+     */
+    headFromString(content, numLinesStr) {
+        const numLines = parseInt(numLinesStr) || 10;
+        const lines = content.split('\n');
+        return lines.slice(0, numLines).join('\n');
+    }
+
+    /**
+     * TAIL command - Show last lines of a file
+     */
+    cmdTail(args) {
+        const lines = 10;
+        let numLines = lines;
+        let fileName = args[0];
+
+        // Check for -n option
+        if (args[0] === '-n' && args[1]) {
+            numLines = parseInt(args[1]);
+            fileName = args[2];
+        }
+
+        if (!fileName) {
+            return 'Usage: TAIL [-n lines] <file>\n\nDisplays the last lines of a file (default: 10).';
+        }
+
+        try {
+            const filePath = this.resolvePath(fileName);
+            const content = FileSystemManager.readFile(filePath);
+            return this.tailFromString(content, numLines.toString());
+        } catch (e) {
+            return `File not found - ${fileName}`;
+        }
+    }
+
+    /**
+     * Tail helper for string
+     */
+    tailFromString(content, numLinesStr) {
+        const numLines = parseInt(numLinesStr) || 10;
+        const lines = content.split('\n');
+        return lines.slice(-numLines).join('\n');
+    }
+
+    /**
+     * WC command - Count words, lines, and characters
+     */
+    cmdWordCount(args) {
+        if (!args[0]) {
+            return 'Usage: WC <file>\n\nCounts lines, words, and characters in a file.';
+        }
+
+        try {
+            const filePath = this.resolvePath(args[0]);
+            const content = FileSystemManager.readFile(filePath);
+            return this.wcFromString(content);
+        } catch (e) {
+            return `File not found - ${args[0]}`;
+        }
+    }
+
+    /**
+     * WC helper for string
+     */
+    wcFromString(content) {
+        const lines = content.split('\n').length;
+        const words = content.split(/\s+/).filter(w => w.length > 0).length;
+        const chars = content.length;
+        return `  ${lines} lines, ${words} words, ${chars} characters`;
+    }
+
+    /**
+     * DIFF command - Compare two files
+     */
+    cmdDiff(args) {
+        if (args.length < 2) {
+            return 'Usage: DIFF <file1> <file2>\n\nCompares two files and shows differences.';
+        }
+
+        try {
+            const filePath1 = this.resolvePath(args[0]);
+            const filePath2 = this.resolvePath(args[1]);
+
+            const content1 = FileSystemManager.readFile(filePath1);
+            const content2 = FileSystemManager.readFile(filePath2);
+
+            const lines1 = content1.split('\n');
+            const lines2 = content2.split('\n');
+
+            let output = `Comparing ${args[0]} and ${args[1]}:\n\n`;
+            let hasDifferences = false;
+
+            const maxLines = Math.max(lines1.length, lines2.length);
+
+            for (let i = 0; i < maxLines; i++) {
+                const line1 = lines1[i] || '';
+                const line2 = lines2[i] || '';
+
+                if (line1 !== line2) {
+                    hasDifferences = true;
+                    output += `Line ${i + 1}:\n`;
+                    output += `< ${line1}\n`;
+                    output += `> ${line2}\n`;
+                    output += '\n';
+                }
+            }
+
+            if (!hasDifferences) {
+                return 'Files are identical.';
+            }
+
+            return output;
+        } catch (e) {
+            return `Error comparing files: ${e.message}`;
+        }
+    }
+
+    /**
+     * ALIAS command - Create command aliases
+     */
+    cmdAlias(args) {
+        if (args.length === 0) {
+            // Show all aliases
+            if (Object.keys(this.aliases).length === 0) {
+                return 'No aliases defined.';
+            }
+
+            let output = 'Current aliases:\n';
+            for (const [name, cmd] of Object.entries(this.aliases)) {
+                output += `  ${name} = ${cmd}\n`;
+            }
+            return output;
+        }
+
+        // Parse alias definition: alias name=command
+        const aliasStr = args.join(' ');
+        const match = aliasStr.match(/^(\w+)=(.+)$/);
+
+        if (!match) {
+            return 'Usage: ALIAS <name>=<command>\n\nExamples:\n  alias ll=dir /w\n  alias cls=clear';
+        }
+
+        const name = match[1].toLowerCase();
+        const command = match[2];
+
+        this.aliases[name] = command;
+        return `Alias created: ${name} = ${command}`;
+    }
+
+    /**
+     * UNALIAS command - Remove an alias
+     */
+    cmdUnalias(args) {
+        if (!args[0]) {
+            return 'Usage: UNALIAS <name>\n\nRemoves a command alias.';
+        }
+
+        const name = args[0].toLowerCase();
+
+        if (this.aliases[name]) {
+            delete this.aliases[name];
+            return `Alias '${name}' removed.`;
+        }
+
+        return `Alias '${name}' not found.`;
+    }
+
+    /**
+     * NEWSCRIPT command - Create a new RetroScript template
+     */
+    cmdNewScript(args) {
+        if (!args[0]) {
+            return 'Usage: NEWSCRIPT <filename.retro>\n\nCreates a new RetroScript template file.';
+        }
+
+        const fileName = args[0];
+        if (!fileName.endsWith('.retro')) {
+            return 'Error: Filename must end with .retro';
+        }
+
+        const template = `# RetroScript Example
+# Created: ${new Date().toLocaleDateString()}
+
+# Print a message
+print "Hello from RetroScript!"
+
+# Set a variable
+set $name = "User"
+print "Welcome, " + $name
+
+# Loop example
+print "Counting to 5:"
+loop 5 {
+    print "  " + $i
+}
+
+# File operations example
+# write "Sample content" to "C:/test.txt"
+# read "C:/test.txt" into $content
+# print "File contents: " + $content
+
+# Event handling example
+# on app:notepad:saved {
+#     print "Notepad file saved!"
+# }
+
+print "Script completed!"
+`;
+
+        try {
+            const filePath = this.resolvePath(fileName);
+            FileSystemManager.writeFile(filePath, template, 'retro');
+            return `Created template script: ${fileName}\nUse 'edit ${fileName}' to modify it.`;
+        } catch (e) {
+            return `Unable to create script: ${e.message}`;
+        }
+    }
+
+    /**
+     * NEWBATCH command - Create a new batch file template
+     */
+    cmdNewBatch(args) {
+        if (!args[0]) {
+            return 'Usage: NEWBATCH <filename.bat>\n\nCreates a new batch file template.';
+        }
+
+        const fileName = args[0];
+        if (!fileName.endsWith('.bat')) {
+            return 'Error: Filename must end with .bat';
+        }
+
+        const template = `@ECHO OFF
+REM Batch File Example
+REM Created: ${new Date().toLocaleDateString()}
+
+ECHO Starting batch script...
+ECHO.
+
+REM Display current directory
+ECHO Current directory:
+CD
+
+REM List files
+ECHO.
+ECHO Files in current directory:
+DIR
+
+REM Set environment variable
+SET MYVAR=Hello World
+ECHO Environment variable MYVAR = %MYVAR%
+
+REM Display system info
+ECHO.
+ECHO System Information:
+VER
+
+ECHO.
+ECHO Batch script completed!
+`;
+
+        try {
+            const filePath = this.resolvePath(fileName);
+            FileSystemManager.writeFile(filePath, template, 'bat');
+            return `Created template batch file: ${fileName}\nUse 'edit ${fileName}' to modify it.`;
+        } catch (e) {
+            return `Unable to create batch file: ${e.message}`;
+        }
     }
 
     onClose() {
