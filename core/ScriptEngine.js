@@ -1,5 +1,29 @@
 /**
- * ScriptEngine - Foundation for RetrOS scripting language
+ * ╔════════════════════════════════════════════════════════════════════╗
+ * ║                           ⚠️  DEPRECATED  ⚠️                        ║
+ * ╠════════════════════════════════════════════════════════════════════╣
+ * ║                                                                    ║
+ * ║  This legacy ScriptEngine has been DEPRECATED and replaced by the ║
+ * ║  modular architecture in core/script/ScriptEngine.js             ║
+ * ║                                                                    ║
+ * ║  The new modular engine provides:                                  ║
+ * ║  ✓ Better architecture (Lexer → Parser → Interpreter)             ║
+ * ║  ✓ Proper AST with visitor pattern                                ║
+ * ║  ✓ Enhanced error reporting (line + column)                       ║
+ * ║  ✓ Full backwards compatibility                                   ║
+ * ║  ✓ Unquoted print statements (print Hello World!)                 ║
+ * ║  ✓ String interpolation (print Hello $name!)                      ║
+ * ║  ✓ Legacy callback API support                                    ║
+ * ║                                                                    ║
+ * ║  Migration:                                                        ║
+ * ║  Change: import ScriptEngine from './core/ScriptEngine.js'        ║
+ * ║  To:     import ScriptEngine from './core/script/ScriptEngine.js' ║
+ * ║                                                                    ║
+ * ║  This file will be removed in a future release.                   ║
+ * ║                                                                    ║
+ * ╚════════════════════════════════════════════════════════════════════╝
+ *
+ * ScriptEngine - Foundation for RetrOS scripting language (LEGACY)
  *
  * Provides a simple scripting interface that uses semantic events to control
  * the operating system. This is the foundation for turning RetrOS into a game.

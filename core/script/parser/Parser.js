@@ -182,13 +182,115 @@ export class Parser {
 
     /**
      * Parse print statement: print message
+     * Supports both:
+     *   - print "quoted string" (expression mode)
+     *   - print unquoted text with $variables (legacy mode)
      */
     parsePrintStatement() {
         const location = this.getLocation();
         this.advance(); // consume 'print'
 
-        const message = this.parseExpression();
-        return new AST.PrintStatement(message, location);
+        // Check if this looks like an unquoted print statement
+        // Unquoted mode is triggered if the next token is NOT:
+        // - STRING (quoted text)
+        // - NUMBER, TRUE, FALSE, NULL (literals)
+        // - LPAREN (grouped expression)
+        // - LBRACKET (array)
+        // - LBRACE (object)
+        // - VARIABLE starting an expression like $x + $y
+
+        // Check if this is a simple quoted expression
+        const nextToken = this.peek();
+        const isQuotedExpression =
+            nextToken.type === TokenType.STRING ||
+            nextToken.type === TokenType.NUMBER ||
+            nextToken.type === TokenType.TRUE ||
+            nextToken.type === TokenType.FALSE ||
+            nextToken.type === TokenType.NULL ||
+            nextToken.type === TokenType.LPAREN ||
+            nextToken.type === TokenType.LBRACKET ||
+            nextToken.type === TokenType.LBRACE;
+
+        // Check for variable expression (e.g., print $x or print $x + $y)
+        const isVariableExpression =
+            nextToken.type === TokenType.VARIABLE &&
+            this.checkNext(TokenType.PLUS, TokenType.MINUS, TokenType.STAR,
+                          TokenType.SLASH, TokenType.RPAREN, TokenType.NEWLINE, TokenType.EOF);
+
+        if (isQuotedExpression || isVariableExpression) {
+            // Standard expression mode
+            const message = this.parseExpression();
+            return new AST.PrintStatement(message, location);
+        } else {
+            // Unquoted legacy mode - collect remaining line as raw text with interpolation
+            const message = this.parseUnquotedText();
+            return new AST.PrintStatement(message, location);
+        }
+    }
+
+    /**
+     * Parse unquoted text with $variable interpolation (legacy mode)
+     * Collects all tokens until end of statement and creates an InterpolatedStringExpression
+     * Example: print Hello $name! Welcome to $place
+     * @returns {AST.InterpolatedStringExpression}
+     */
+    parseUnquotedText() {
+        const location = this.getLocation();
+        const parts = [];
+        let currentText = '';
+        let lastWasVariable = false;
+
+        // Collect tokens until end of statement
+        while (!this.isStatementEnd()) {
+            const token = this.peek();
+
+            if (token.type === TokenType.VARIABLE) {
+                // Save accumulated text as a literal (with trailing space for separation)
+                if (currentText.length > 0) {
+                    parts.push(new AST.LiteralExpression(currentText + ' ', location));
+                    currentText = '';
+                }
+
+                // Add variable expression
+                this.advance();
+                parts.push(new AST.VariableExpression(token.value, location));
+                lastWasVariable = true;
+            } else {
+                // Accumulate text from token
+                // Add space before this token if:
+                // 1. We already have text accumulated, OR
+                // 2. We just processed a variable (need space after variable)
+                if (currentText.length > 0) {
+                    currentText += ' ';
+                } else if (lastWasVariable) {
+                    currentText = ' ';
+                }
+
+                // Use lexeme (original text) for accurate representation
+                const text = token.lexeme || token.value;
+                currentText += text;
+                this.advance();
+                lastWasVariable = false;
+            }
+        }
+
+        // Add any remaining text
+        if (currentText.length > 0) {
+            parts.push(new AST.LiteralExpression(currentText, location));
+        }
+
+        // If no parts, return empty string
+        if (parts.length === 0) {
+            return new AST.LiteralExpression('', location);
+        }
+
+        // If only one part and it's a literal, return it directly
+        if (parts.length === 1 && parts[0].type === 'Literal') {
+            return parts[0];
+        }
+
+        // Otherwise return interpolated string
+        return new AST.InterpolatedStringExpression(parts, location);
     }
 
     /**
@@ -1118,11 +1220,12 @@ export class Parser {
     }
 
     /**
-     * Check if next token matches type
+     * Check if next token matches any of the given types
      */
-    checkNext(type) {
+    checkNext(...types) {
         if (this.current + 1 >= this.tokens.length) return false;
-        return this.tokens[this.current + 1].type === type;
+        const nextType = this.tokens[this.current + 1].type;
+        return types.includes(nextType);
     }
 
     /**

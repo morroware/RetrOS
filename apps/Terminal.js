@@ -9,7 +9,7 @@ import EventBus from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import { PATHS } from '../core/Constants.js';
-import ScriptEngine from '../core/ScriptEngine.js';
+import ScriptEngine from '../core/script/ScriptEngine.js';
 
 class Terminal extends AppBase {
     constructor() {
