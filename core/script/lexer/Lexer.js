@@ -333,14 +333,23 @@ export class Lexer {
     }
 
     /**
-     * Check if character is alphabetic
+     * Check if character is alphabetic (includes Unicode letters)
      * @param {string} char
      * @returns {boolean}
      */
     isAlpha(char) {
-        return (char >= 'a' && char <= 'z') ||
-               (char >= 'A' && char <= 'Z') ||
-               char === '_';
+        // ASCII letters and underscore
+        if ((char >= 'a' && char <= 'z') ||
+            (char >= 'A' && char <= 'Z') ||
+            char === '_') {
+            return true;
+        }
+        // Accept Unicode letters and symbols (code point > 127)
+        // This allows box-drawing chars, emojis, accented letters, etc.
+        if (char && char.charCodeAt(0) > 127) {
+            return true;
+        }
+        return false;
     }
 
     /**
