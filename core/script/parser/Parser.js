@@ -195,9 +195,11 @@ export class Parser {
         // - STRING (quoted text)
         // - NUMBER, TRUE, FALSE, NULL (literals)
         // - LPAREN (grouped expression)
-        // - LBRACKET (array)
-        // - LBRACE (object)
         // - VARIABLE starting an expression like $x + $y
+        //
+        // Note: LBRACKET ([) and LBRACE ({) are NOT included because they're
+        // commonly used in unquoted text like "print [1] Test Name"
+        // To print arrays/objects, use: print $arrayVar or print "[1,2,3]"
 
         // Check if this is a simple quoted expression
         const nextToken = this.peek();
@@ -207,9 +209,7 @@ export class Parser {
             nextToken.type === TokenType.TRUE ||
             nextToken.type === TokenType.FALSE ||
             nextToken.type === TokenType.NULL ||
-            nextToken.type === TokenType.LPAREN ||
-            nextToken.type === TokenType.LBRACKET ||
-            nextToken.type === TokenType.LBRACE;
+            nextToken.type === TokenType.LPAREN;
 
         // Check for variable expression (e.g., print $x or print $x + $y)
         const isVariableExpression =
