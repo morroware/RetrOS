@@ -118,6 +118,9 @@ class ContextMenuRendererClass {
 
     show(x, y, type, context = {}) {
         console.log('[ContextMenu] show() called with:', { x, y, type, context });
+        console.log('[ContextMenu] context.icon:', context.icon);
+        console.log('[ContextMenu] context.icon?.type:', context.icon?.type);
+        console.log('[ContextMenu] context.icon?.filePath:', context.icon?.filePath);
 
         if (!this.element) {
             console.error('[ContextMenu] ERROR: Menu element not found!');
@@ -125,6 +128,7 @@ class ContextMenuRendererClass {
         }
 
         this.currentContext = { type, ...context };
+        console.log('[ContextMenu] currentContext set to:', this.currentContext);
 
         // Generate menu
         console.log('[ContextMenu] Generating menu for type:', type);
@@ -259,19 +263,23 @@ class ContextMenuRendererClass {
             `;
         }
 
-        // App/link icons - also allow cut/copy for links
+        // App/link icons - also show copy/paste for shortcuts
         if (icon.type === 'link') {
             return `
                 <div class="context-item" data-action="open"><strong>Open</strong></div>
+                <div class="context-divider"></div>
+                <div class="context-item" data-action="desktop-copy">📋 Copy</div>
                 <div class="context-divider"></div>
                 <div class="context-item" data-action="delete">🗑️ Remove from Desktop</div>
                 <div class="context-item" data-action="properties">Properties</div>
             `;
         }
 
-        // App icons
+        // App icons - allow copying app shortcuts
         return `
             <div class="context-item" data-action="open"><strong>Open</strong></div>
+            <div class="context-divider"></div>
+            <div class="context-item" data-action="desktop-copy">📋 Copy</div>
             <div class="context-divider"></div>
             <div class="context-item" data-action="delete">Remove from Desktop</div>
             <div class="context-item" data-action="properties">Properties</div>
@@ -824,12 +832,20 @@ class ContextMenuRendererClass {
 
     /**
      * Handle Cut for desktop file icons
+     * Note: Cut only works for file icons, not app/link shortcuts (use copy instead)
      */
     handleDesktopCut(context) {
         console.log('[ContextMenu] handleDesktopCut() called with context:', context);
         const icon = context?.icon;
-        if (!icon || icon.type !== 'file' || !icon.filePath) {
-            console.error('[ContextMenu] ERROR: Invalid icon for cut:', { icon, type: icon?.type, filePath: icon?.filePath });
+        if (!icon) {
+            console.error('[ContextMenu] ERROR: No icon in context!');
+            return;
+        }
+
+        // Only allow cutting file icons (files/folders on desktop)
+        // App and link shortcuts should only be copied, not cut
+        if (icon.type !== 'file' || !icon.filePath) {
+            console.error('[ContextMenu] ERROR: Cut only works for file icons:', { icon, type: icon?.type, filePath: icon?.filePath });
             return;
         }
 
@@ -851,22 +867,53 @@ class ContextMenuRendererClass {
      */
     handleDesktopCopy(context) {
         console.log('[ContextMenu] handleDesktopCopy() called with context:', context);
+        console.log('[ContextMenu] context.icon:', context?.icon);
         const icon = context?.icon;
-        if (!icon || icon.type !== 'file' || !icon.filePath) {
-            console.error('[ContextMenu] ERROR: Invalid icon for copy:', { icon, type: icon?.type, filePath: icon?.filePath });
+        if (!icon) {
+            console.error('[ContextMenu] ERROR: No icon in context!');
+            console.error('[ContextMenu] ERROR: Full context:', context);
             return;
         }
 
-        this.clipboard = {
-            items: [{
-                path: icon.filePath,
-                name: icon.label || icon.filePath[icon.filePath.length - 1],
-                type: icon.fileType || 'file'
-            }],
-            operation: 'copy'
-        };
-        console.log('[ContextMenu] Desktop Copy SUCCESS:', icon.filePath.join('/'));
+        // For file icons (from Desktop folder)
+        if (icon.type === 'file' && icon.filePath) {
+            this.clipboard = {
+                items: [{
+                    path: icon.filePath,
+                    name: icon.label || icon.filePath[icon.filePath.length - 1],
+                    type: icon.fileType || 'file'
+                }],
+                operation: 'copy'
+            };
+            console.log('[ContextMenu] Desktop File Copy SUCCESS:', icon.filePath.join('/'));
+        }
+        // For app/link icons (shortcuts)
+        else if (icon.type === 'app' || icon.type === 'link') {
+            // Store the desktop shortcut in clipboard for pasting
+            this.clipboard = {
+                items: [{
+                    shortcut: true,
+                    icon: {
+                        id: `${icon.id}_copy_${Date.now()}`,
+                        label: `${icon.label} - Copy`,
+                        emoji: icon.emoji,
+                        type: icon.type,
+                        url: icon.url || null,
+                        x: (icon.x || 20) + 20,  // Offset slightly
+                        y: (icon.y || 20) + 20
+                    }
+                }],
+                operation: 'copy'
+            };
+            console.log('[ContextMenu] Desktop Shortcut Copy SUCCESS:', icon.label);
+        }
+        else {
+            console.error('[ContextMenu] ERROR: Invalid icon type or missing filePath:', { icon, type: icon?.type, filePath: icon?.filePath });
+            return;
+        }
+
         console.log('[ContextMenu] Clipboard now:', this.clipboard);
+        console.log('[ContextMenu] Clipboard items:', JSON.stringify(this.clipboard.items, null, 2));
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
@@ -888,6 +935,14 @@ class ContextMenuRendererClass {
 
         try {
             for (const item of this.clipboard.items) {
+                // Handle pasting desktop shortcuts (app/link icons)
+                if (item.shortcut && item.icon) {
+                    console.log('[ContextMenu] Pasting desktop shortcut:', item.icon.label);
+                    StateManager.addIcon(item.icon);
+                    continue;
+                }
+
+                // Handle pasting files
                 const sourcePath = item.path;
                 const fileName = item.name;
 
@@ -930,7 +985,7 @@ class ContextMenuRendererClass {
                 this.clipboard = { items: [], operation: null };
             }
 
-            // Refresh desktop to show new files
+            // Refresh desktop to show new files/shortcuts
             EventBus.emit('filesystem:changed');
             EventBus.emit('desktop:refresh');
         } catch (e) {
