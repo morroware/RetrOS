@@ -2377,6 +2377,355 @@ class ScriptEngineClass {
             };
             return key ? env[key] : env;
         });
+
+        // ==========================================
+        // TERMINAL FUNCTIONS
+        // ==========================================
+
+        /**
+         * Helper to get Terminal instance
+         */
+        const getTerminal = async () => {
+            const AppRegistry = (await import('../apps/AppRegistry.js')).default;
+            const terminal = AppRegistry.get('terminal');
+            if (terminal && terminal.openWindows && terminal.openWindows.size > 0) {
+                const firstWindowId = terminal.openWindows.keys().next().value;
+                terminal._currentWindowId = firstWindowId;
+                return terminal;
+            }
+            return null;
+        };
+
+        /**
+         * Ensure terminal is open
+         */
+        const ensureTerminal = async () => {
+            let terminal = await getTerminal();
+            if (!terminal) {
+                const AppRegistry = (await import('../apps/AppRegistry.js')).default;
+                AppRegistry.launch('terminal');
+                await new Promise(resolve => setTimeout(resolve, 200));
+                terminal = await getTerminal();
+            }
+            return terminal;
+        };
+
+        // Check if terminal is open
+        this.defineFunction('isTerminalOpen', async () => {
+            const terminal = await getTerminal();
+            return terminal !== null && terminal.openWindows && terminal.openWindows.size > 0;
+        });
+
+        // Open terminal (launch if not open)
+        this.defineFunction('terminalOpen', async (initialCommand = null) => {
+            const terminal = await ensureTerminal();
+            if (!terminal) {
+                return { success: false, error: 'Failed to open terminal' };
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            if (initialCommand) {
+                terminal.executeCommand(String(initialCommand));
+            }
+
+            return { success: true, windowId: terminal._currentWindowId };
+        });
+
+        // Close terminal window
+        this.defineFunction('terminalClose', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.close();
+            return true;
+        });
+
+        // Focus terminal window
+        this.defineFunction('terminalFocus', async () => {
+            const terminal = await getTerminal();
+            if (!terminal || !terminal._currentWindowId) return false;
+            EventBus.emit('window:focus', { windowId: terminal._currentWindowId });
+            return true;
+        });
+
+        // Minimize terminal window
+        this.defineFunction('terminalMinimize', async () => {
+            const terminal = await getTerminal();
+            if (!terminal || !terminal._currentWindowId) return false;
+            EventBus.emit('window:minimize', { windowId: terminal._currentWindowId });
+            return true;
+        });
+
+        // Print text to terminal
+        this.defineFunction('terminalPrint', async (text, color = null) => {
+            const terminal = await getTerminal();
+            if (!terminal) {
+                console.warn('[TerminalBuiltins] No terminal open');
+                return false;
+            }
+            terminal.print(String(text), color);
+            return true;
+        });
+
+        // Print HTML to terminal
+        this.defineFunction('terminalPrintHtml', async (html) => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.printHtml(String(html));
+            return true;
+        });
+
+        // Clear terminal screen
+        this.defineFunction('terminalClear', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.cmdClear();
+            return true;
+        });
+
+        // Execute a terminal command
+        this.defineFunction('terminalExecute', async (command) => {
+            const terminal = await getTerminal();
+            if (!terminal) {
+                return { success: false, error: 'No terminal open' };
+            }
+            terminal.executeCommand(String(command));
+            return {
+                success: true,
+                output: terminal.lastOutput,
+                path: terminal.currentPath.join('\\')
+            };
+        });
+
+        // Execute multiple terminal commands
+        this.defineFunction('terminalExecuteSequence', async (commands) => {
+            const terminal = await getTerminal();
+            if (!terminal) {
+                return { success: false, error: 'No terminal open' };
+            }
+            if (!Array.isArray(commands)) {
+                commands = [String(commands)];
+            }
+            const outputs = [];
+            for (const cmd of commands) {
+                terminal.executeCommand(String(cmd));
+                outputs.push(terminal.lastOutput);
+            }
+            return { success: true, outputs };
+        });
+
+        // Change directory
+        this.defineFunction('terminalCd', async (path) => {
+            const terminal = await getTerminal();
+            if (!terminal) {
+                return { success: false, error: 'No terminal open' };
+            }
+            terminal.cmdCd([String(path)]);
+            return { success: true, path: terminal.currentPath.join('\\') };
+        });
+
+        // Get current path
+        this.defineFunction('terminalGetPath', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return null;
+            return terminal.currentPath.join('\\');
+        });
+
+        // Get last output
+        this.defineFunction('terminalGetOutput', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return null;
+            return terminal.lastOutput;
+        });
+
+        // Get all terminal output
+        this.defineFunction('terminalGetAllOutput', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return null;
+            const output = terminal.getElement('#terminalOutput');
+            return output ? output.textContent : '';
+        });
+
+        // Get command history
+        this.defineFunction('terminalGetHistory', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return [];
+            return [...terminal.commandHistory];
+        });
+
+        // Get terminal state
+        this.defineFunction('terminalGetState', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return null;
+            return {
+                currentPath: terminal.currentPath,
+                pathString: terminal.currentPath.join('\\'),
+                godMode: terminal.godMode,
+                hasActiveProcess: terminal.activeProcess !== null,
+                activeProcessType: terminal.activeProcess,
+                historyCount: terminal.commandHistory.length,
+                windowId: terminal._currentWindowId
+            };
+        });
+
+        // Get all environment variables
+        this.defineFunction('terminalGetEnvVars', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return {};
+            return { ...terminal.envVars };
+        });
+
+        // Get environment variable
+        this.defineFunction('terminalGetEnvVar', async (name) => {
+            const terminal = await getTerminal();
+            if (!terminal) return null;
+            return terminal.envVars[String(name).toUpperCase()] || null;
+        });
+
+        // Set environment variable
+        this.defineFunction('terminalSetEnvVar', async (name, value) => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.envVars[String(name).toUpperCase()] = String(value);
+            return true;
+        });
+
+        // Create alias
+        this.defineFunction('terminalAlias', async (name, command) => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.aliases[String(name).toLowerCase()] = String(command);
+            return true;
+        });
+
+        // Get all aliases
+        this.defineFunction('terminalGetAliases', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return {};
+            return { ...terminal.aliases };
+        });
+
+        // Directory listing
+        this.defineFunction('terminalDir', async (path = null) => {
+            const terminal = await getTerminal();
+            if (!terminal) return [];
+            let resolvedPath;
+            if (path) {
+                resolvedPath = terminal.resolvePath(String(path));
+            } else {
+                resolvedPath = terminal.currentPath;
+            }
+            try {
+                return FileSystemManager.listDirectory(resolvedPath);
+            } catch (e) {
+                return [];
+            }
+        });
+
+        // Read file from terminal perspective
+        this.defineFunction('terminalReadFile', async (filePath) => {
+            const terminal = await getTerminal();
+            let resolvedPath;
+            if (terminal) {
+                resolvedPath = terminal.resolvePath(String(filePath));
+            } else {
+                resolvedPath = FileSystemManager.parsePath(String(filePath));
+            }
+            try {
+                return FileSystemManager.readFile(resolvedPath);
+            } catch (e) {
+                return null;
+            }
+        });
+
+        // Write file from terminal perspective
+        this.defineFunction('terminalWriteFile', async (filePath, content) => {
+            const terminal = await getTerminal();
+            let resolvedPath;
+            if (terminal) {
+                resolvedPath = terminal.resolvePath(String(filePath));
+            } else {
+                resolvedPath = FileSystemManager.parsePath(String(filePath));
+            }
+            try {
+                const extension = String(filePath).split('.').pop() || 'txt';
+                FileSystemManager.writeFile(resolvedPath, String(content), extension);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        });
+
+        // Check if file exists
+        this.defineFunction('terminalFileExists', async (filePath) => {
+            const terminal = await getTerminal();
+            let resolvedPath;
+            if (terminal) {
+                resolvedPath = terminal.resolvePath(String(filePath));
+            } else {
+                resolvedPath = FileSystemManager.parsePath(String(filePath));
+            }
+            return FileSystemManager.exists(resolvedPath);
+        });
+
+        // Run RetroScript file
+        this.defineFunction('terminalRunScript', async (scriptPath) => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            const filePath = terminal.resolvePath(String(scriptPath));
+            terminal.executeRetroScript(filePath);
+            return true;
+        });
+
+        // Enable god mode
+        this.defineFunction('terminalGodMode', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.godMode = true;
+            terminal.print('*** GOD MODE ACTIVATED ***', '#ff00ff');
+            return true;
+        });
+
+        // Check god mode
+        this.defineFunction('terminalIsGodMode', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            return terminal.godMode;
+        });
+
+        // Start matrix effect
+        this.defineFunction('terminalMatrix', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.startMatrix();
+            return true;
+        });
+
+        // Cowsay
+        this.defineFunction('terminalCowsay', async (message) => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            const output = terminal.cmdCowsay([String(message)]);
+            if (output) terminal.print(output);
+            return true;
+        });
+
+        // Fortune
+        this.defineFunction('terminalFortune', async () => {
+            const terminal = await getTerminal();
+            if (!terminal) return null;
+            const fortune = terminal.cmdFortune();
+            terminal.print(fortune);
+            return fortune;
+        });
+
+        // Set terminal color
+        this.defineFunction('terminalColor', async (colorCode) => {
+            const terminal = await getTerminal();
+            if (!terminal) return false;
+            terminal.cmdColor([String(colorCode)]);
+            return true;
+        });
     }
 
     /**
