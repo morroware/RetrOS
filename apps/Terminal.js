@@ -9,7 +9,7 @@ import EventBus from '../core/EventBus.js';
 import StateManager from '../core/StateManager.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 import { PATHS } from '../core/Constants.js';
-import ScriptEngine from '../core/script/ScriptEngine.js';
+import ScriptEngine from '../core/ScriptEngine.js';
 
 class Terminal extends AppBase {
     constructor() {
@@ -2232,40 +2232,26 @@ Special Thanks:
 
             this.print(`Executing RetroScript: ${fileName}...`, '#00ff00');
 
-            // Save previous callback to restore later
-            const previousOutputCallback = ScriptEngine.outputCallback;
-
-            // Set up output callback to capture and display print statements
-            ScriptEngine.onOutput((message) => {
-                this.print(message);
+            // Execute the script using the legacy ScriptEngine (same as ScriptRunner)
+            const result = await ScriptEngine.run(content, {
+                onOutput: (msg) => this.print(msg),
+                onError: (err, line) => {
+                    const location = line ? ` at line ${line}` : '';
+                    this.print(`Error${location}: ${err}`, '#ff0000');
+                }
             });
-
-            // Ensure the script engine has proper context for file operations and events
-            ScriptEngine.setContext({
-                FileSystemManager: FileSystemManager,
-                EventBus: EventBus
-            });
-
-            // Reset engine state for fresh execution
-            ScriptEngine.reset();
-
-            // Execute the script
-            const result = await ScriptEngine.run(content);
-
-            // Restore previous output callback
-            ScriptEngine.outputCallback = previousOutputCallback;
 
             if (result.success) {
                 this.print(`Script completed successfully.`, '#00ff00');
             } else {
                 // Format error with location info if available
                 const error = result.error;
-                if (error && typeof error === 'object') {
+                const line = result.line;
+                if (line) {
+                    this.print(`Script error at line ${line}: ${error}`, '#ff0000');
+                } else if (error && typeof error === 'object') {
                     const location = error.line ? ` at line ${error.line}` : '';
                     this.print(`Script error${location}: ${error.message || error}`, '#ff0000');
-                    if (error.hint) {
-                        this.print(`Hint: ${error.hint}`, '#ffff00');
-                    }
                 } else {
                     this.print(`Script error: ${error}`, '#ff0000');
                 }
