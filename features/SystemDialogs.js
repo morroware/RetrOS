@@ -386,6 +386,14 @@ class SystemDialogs extends FeatureBase {
                                 <select class="file-dialog-filetype" id="fileDialogFiletype">
                                     <option value="*">All Files (*.*)</option>
                                     <option value="txt">Text Files (*.txt)</option>
+                                    <option value="retro">RetroScript (*.retro)</option>
+                                    <option value="bat">Batch Files (*.bat)</option>
+                                    <option value="md">Markdown (*.md)</option>
+                                    <option value="js">JavaScript (*.js)</option>
+                                    <option value="css">Stylesheets (*.css)</option>
+                                    <option value="html">HTML Files (*.html)</option>
+                                    <option value="json">JSON Files (*.json)</option>
+                                    <option value="log">Log Files (*.log)</option>
                                     <option value="png">PNG Images (*.png)</option>
                                     <option value="bmp">BMP Images (*.bmp)</option>
                                 </select>

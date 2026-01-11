@@ -268,10 +268,10 @@ class Notepad extends AppBase {
     }
 
     async openFile() {
-        // Show file open dialog
+        // Show file open dialog - use '*' to show all text-based files
         const result = await SystemDialogs.showFileOpen({
             title: 'Open',
-            filter: 'txt',
+            filter: '*',
             initialPath: [...PATHS.DOCUMENTS]
         });
 
@@ -326,14 +326,22 @@ class Notepad extends AppBase {
         const textarea = this.getElement('#notepadText');
         if (!textarea) return;
 
-        // Generate a default filename with full timestamp (date + time) for unique names
+        // Generate a default filename - use current file extension or .txt
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        const defaultName = `note_${timestamp}.txt`;
+        const currentFile = this.getInstanceState('currentFile');
+        const currentFileName = this.getInstanceState('fileName') || '';
+
+        // Preserve the current file extension if editing an existing file
+        let defaultExt = '.txt';
+        if (currentFileName && currentFileName.includes('.')) {
+            defaultExt = currentFileName.substring(currentFileName.lastIndexOf('.'));
+        }
+        const defaultName = `note_${timestamp}${defaultExt}`;
 
         const result = await SystemDialogs.showFileSave({
             title: 'Save As',
-            filter: 'txt',
+            filter: '*',
             initialPath: [...PATHS.DESKTOP],
             defaultFilename: defaultName
         });
@@ -343,13 +351,16 @@ class Notepad extends AppBase {
         try {
             let fileName = result.filename;
 
-            // Ensure .txt extension if no extension provided
+            // Only add .txt extension if no extension provided at all
             if (!fileName.includes('.')) {
                 fileName += '.txt';
             }
 
+            // Determine the file extension for writeFile
+            const extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+
             const fullPath = [...result.path, fileName];
-            FileSystemManager.writeFile(fullPath, textarea.value);
+            FileSystemManager.writeFile(fullPath, textarea.value, extension);
 
             this.setInstanceState('currentFile', fullPath);
             this.setInstanceState('fileName', fileName);
