@@ -118,6 +118,9 @@ class ContextMenuRendererClass {
 
     show(x, y, type, context = {}) {
         console.log('[ContextMenu] show() called with:', { x, y, type, context });
+        console.log('[ContextMenu] context.icon:', context.icon);
+        console.log('[ContextMenu] context.icon?.type:', context.icon?.type);
+        console.log('[ContextMenu] context.icon?.filePath:', context.icon?.filePath);
 
         if (!this.element) {
             console.error('[ContextMenu] ERROR: Menu element not found!');
@@ -125,6 +128,7 @@ class ContextMenuRendererClass {
         }
 
         this.currentContext = { type, ...context };
+        console.log('[ContextMenu] currentContext set to:', this.currentContext);
 
         // Generate menu
         console.log('[ContextMenu] Generating menu for type:', type);
@@ -851,9 +855,11 @@ class ContextMenuRendererClass {
      */
     handleDesktopCopy(context) {
         console.log('[ContextMenu] handleDesktopCopy() called with context:', context);
+        console.log('[ContextMenu] context.icon:', context?.icon);
         const icon = context?.icon;
         if (!icon || icon.type !== 'file' || !icon.filePath) {
             console.error('[ContextMenu] ERROR: Invalid icon for copy:', { icon, type: icon?.type, filePath: icon?.filePath });
+            console.error('[ContextMenu] ERROR: Full context:', context);
             return;
         }
 
@@ -867,6 +873,7 @@ class ContextMenuRendererClass {
         };
         console.log('[ContextMenu] Desktop Copy SUCCESS:', icon.filePath.join('/'));
         console.log('[ContextMenu] Clipboard now:', this.clipboard);
+        console.log('[ContextMenu] Clipboard items:', JSON.stringify(this.clipboard.items, null, 2));
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
