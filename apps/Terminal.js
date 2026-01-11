@@ -2232,17 +2232,43 @@ Special Thanks:
 
             this.print(`Executing RetroScript: ${fileName}...`, '#00ff00');
 
-            // Use the ScriptEngine singleton - it uses .run() method
+            // Save previous callback to restore later
+            const previousOutputCallback = ScriptEngine.outputCallback;
+
+            // Set up output callback to capture and display print statements
+            ScriptEngine.onOutput((message) => {
+                this.print(message);
+            });
+
+            // Ensure the script engine has proper context for file operations and events
+            ScriptEngine.setContext({
+                FileSystemManager: FileSystemManager,
+                EventBus: EventBus
+            });
+
+            // Reset engine state for fresh execution
+            ScriptEngine.reset();
+
+            // Execute the script
             const result = await ScriptEngine.run(content);
 
+            // Restore previous output callback
+            ScriptEngine.outputCallback = previousOutputCallback;
+
             if (result.success) {
-                if (result.output) {
-                    this.print(result.output);
-                }
                 this.print(`Script completed successfully.`, '#00ff00');
             } else {
-                const errorMsg = result.error?.message || result.error?.toString?.() || result.error || 'Unknown error';
-                this.print(`Script error: ${errorMsg}`, '#ff0000');
+                // Format error with location info if available
+                const error = result.error;
+                if (error && typeof error === 'object') {
+                    const location = error.line ? ` at line ${error.line}` : '';
+                    this.print(`Script error${location}: ${error.message || error}`, '#ff0000');
+                    if (error.hint) {
+                        this.print(`Hint: ${error.hint}`, '#ffff00');
+                    }
+                } else {
+                    this.print(`Script error: ${error}`, '#ff0000');
+                }
             }
         } catch (e) {
             this.print(`Error executing script: ${e.message}`, '#ff0000');
