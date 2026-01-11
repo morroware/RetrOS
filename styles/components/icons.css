@@ -21,6 +21,15 @@
     z-index: 1000;
 }
 
+/* Cut state - items marked for cut appear faded */
+.icon.cut {
+    opacity: 0.5;
+}
+
+.icon.cut .icon-image {
+    filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.5)) grayscale(30%);
+}
+
 .icon:hover,
 .icon:focus {
     background: rgba(0, 0, 128, 0.3);

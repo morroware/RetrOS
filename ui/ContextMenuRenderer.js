@@ -23,6 +23,9 @@ class ContextMenuRendererClass {
             operation: null // 'copy' or 'cut'
         };
 
+        // Track paths of items that are cut (for visual feedback)
+        this.cutItemPaths = [];
+
         // Bound handlers for cleanup capability
         this.boundHandleOutsideClick = this.handleOutsideClick.bind(this);
         this.boundHandleEscape = this.handleEscape.bind(this);
@@ -195,18 +198,18 @@ class ContextMenuRendererClass {
     }
 
     desktopMenu() {
-        const hasPaste = this.clipboard.items.length > 0;
+        // Only count valid file items (with path), not shortcut items
+        const fileItems = this.clipboard.items.filter(item => item.path && Array.isArray(item.path));
+        const hasPaste = fileItems.length > 0;
         const pasteClass = hasPaste ? '' : 'disabled';
 
-        // Debug logging
-        console.log('[ContextMenu] desktopMenu called, clipboard:', this.clipboard);
-        console.log('[ContextMenu] hasPaste:', hasPaste, 'items:', this.clipboard.items.length);
+        console.log('[ContextMenu] desktopMenu - clipboard file items:', fileItems.length);
 
         return `
             <div class="context-item" data-action="arrange">Arrange Icons</div>
             <div class="context-item" data-action="refresh">Refresh</div>
             <div class="context-divider"></div>
-            <div class="context-item ${pasteClass}" data-action="desktop-paste">📋 Paste${hasPaste ? ` (${this.clipboard.items.length} item${this.clipboard.items.length > 1 ? 's' : ''})` : ''}</div>
+            <div class="context-item ${pasteClass}" data-action="desktop-paste">📋 Paste${hasPaste ? ` (${fileItems.length} item${fileItems.length > 1 ? 's' : ''})` : ''}</div>
             <div class="context-divider"></div>
             <div class="context-item submenu-trigger">
                 New
@@ -263,23 +266,19 @@ class ContextMenuRendererClass {
             `;
         }
 
-        // App/link icons - also show copy/paste for shortcuts
+        // Link icons - web shortcuts (no copy - only files can be copied)
         if (icon.type === 'link') {
             return `
-                <div class="context-item" data-action="open"><strong>Open</strong></div>
-                <div class="context-divider"></div>
-                <div class="context-item" data-action="desktop-copy">📋 Copy</div>
+                <div class="context-item" data-action="open"><strong>Open Link</strong></div>
                 <div class="context-divider"></div>
                 <div class="context-item" data-action="delete">🗑️ Remove from Desktop</div>
                 <div class="context-item" data-action="properties">Properties</div>
             `;
         }
 
-        // App icons - allow copying app shortcuts
+        // App icons - application shortcuts (no copy - only files can be copied)
         return `
             <div class="context-item" data-action="open"><strong>Open</strong></div>
-            <div class="context-divider"></div>
-            <div class="context-item" data-action="desktop-copy">📋 Copy</div>
             <div class="context-divider"></div>
             <div class="context-item" data-action="delete">Remove from Desktop</div>
             <div class="context-item" data-action="properties">Properties</div>
@@ -375,8 +374,12 @@ class ContextMenuRendererClass {
      * Context menu for empty space in MyComputer (inside a folder)
      */
     explorerEmptyMenu(context) {
-        const hasPaste = this.clipboard.items.length > 0;
+        // Only count valid file items (with path)
+        const fileItems = this.clipboard.items.filter(item => item.path && Array.isArray(item.path));
+        const hasPaste = fileItems.length > 0;
         const pasteClass = hasPaste ? '' : 'disabled';
+
+        console.log('[ContextMenu] explorerEmptyMenu - clipboard file items:', fileItems.length);
 
         return `
             <div class="context-item submenu-trigger">
@@ -390,7 +393,7 @@ class ContextMenuRendererClass {
                 </div>
             </div>
             <div class="context-divider"></div>
-            <div class="context-item ${pasteClass}" data-action="explorer-paste">📋 Paste${hasPaste ? ` (${this.clipboard.items.length} item${this.clipboard.items.length > 1 ? 's' : ''})` : ''}</div>
+            <div class="context-item ${pasteClass}" data-action="explorer-paste">📋 Paste${hasPaste ? ` (${fileItems.length} item${fileItems.length > 1 ? 's' : ''})` : ''}</div>
             <div class="context-divider"></div>
             <div class="context-item" data-action="explorer-refresh">🔄 Refresh</div>
             <div class="context-divider"></div>
@@ -615,9 +618,13 @@ class ContextMenuRendererClass {
             }],
             operation: 'cut'
         };
+
+        // Track cut items for visual feedback
+        this.cutItemPaths = [JSON.stringify(item.path)];
+
         console.log('[ContextMenu] Explorer Cut SUCCESS:', item.path.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+        EventBus.emit('clipboard:cut-state', { cutPaths: this.cutItemPaths });
     }
 
     handleExplorerCopy(context) {
@@ -628,6 +635,9 @@ class ContextMenuRendererClass {
             return;
         }
 
+        // Clear any existing cut state (copy replaces cut)
+        this.clearCutState();
+
         this.clipboard = {
             items: [{
                 path: item.path,
@@ -637,7 +647,6 @@ class ContextMenuRendererClass {
             operation: 'copy'
         };
         console.log('[ContextMenu] Explorer Copy SUCCESS:', item.path.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
@@ -662,32 +671,42 @@ class ContextMenuRendererClass {
 
         try {
             for (const item of this.clipboard.items) {
+                // Validate clipboard item has valid path data
+                if (!item.path || !Array.isArray(item.path)) {
+                    console.log('[ContextMenu] Skipping invalid clipboard item');
+                    continue;
+                }
+
                 const sourcePath = item.path;
                 const fileName = item.name;
+
+                console.log('[ContextMenu] Processing:', fileName, 'from:', sourcePath.join('/'));
 
                 // Check if pasting to same location
                 const sourceDir = sourcePath.slice(0, -1);
                 if (JSON.stringify(sourceDir) === JSON.stringify(targetPath)) {
                     if (this.clipboard.operation === 'cut') {
                         // Can't cut/paste to same location
+                        console.log('[ContextMenu] Skipping cut to same location');
                         continue;
                     }
                     // For copy, create a copy with modified name
                     const newName = await this.generateCopyName(targetPath, fileName);
                     const newPath = [...targetPath, newName];
+                    console.log('[ContextMenu] Copying to same location with new name:', newName);
 
                     if (item.type === 'directory') {
                         this.copyDirectory(sourcePath, newPath);
                     } else {
-                        // Use copyFile to preserve all metadata
                         this.copyFile(sourcePath, newPath);
                     }
                 } else {
                     // Paste to different location
+                    console.log('[ContextMenu] Pasting to:', targetPath.join('/'));
                     if (this.clipboard.operation === 'cut') {
                         FileSystemManager.moveItem(sourcePath, targetPath);
                     } else {
-                        // Copy - use copyFile to preserve all metadata
+                        // Copy to target
                         const destPath = [...targetPath, fileName];
                         if (item.type === 'directory') {
                             this.copyDirectory(sourcePath, destPath);
@@ -698,9 +717,13 @@ class ContextMenuRendererClass {
                 }
             }
 
+            // Clear cut visual state after successful paste
+            this.clearCutState();
+
             // Clear clipboard if it was a cut operation
             if (this.clipboard.operation === 'cut') {
                 this.clipboard = { items: [], operation: null };
+                EventBus.emit('clipboard:changed', { operation: null, count: 0 });
             }
 
             EventBus.emit('filesystem:changed');
@@ -711,6 +734,7 @@ class ContextMenuRendererClass {
                 EventBus.emit('desktop:refresh');
             }
         } catch (e) {
+            console.error('[ContextMenu] Explorer paste error:', e);
             await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
         }
     }
@@ -857,69 +881,53 @@ class ContextMenuRendererClass {
             }],
             operation: 'cut'
         };
+
+        // Track cut items for visual feedback
+        this.cutItemPaths = [JSON.stringify(icon.filePath)];
+
         console.log('[ContextMenu] Desktop Cut SUCCESS:', icon.filePath.join('/'));
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
         EventBus.emit('clipboard:changed', { operation: 'cut', count: 1 });
+        EventBus.emit('clipboard:cut-state', { cutPaths: this.cutItemPaths });
     }
 
     /**
      * Handle Copy for desktop file icons
+     * Note: Only files can be copied, not apps or link shortcuts
      */
     handleDesktopCopy(context) {
         console.log('[ContextMenu] handleDesktopCopy() called with context:', context);
-        console.log('[ContextMenu] context.icon:', context?.icon);
         const icon = context?.icon;
         if (!icon) {
             console.error('[ContextMenu] ERROR: No icon in context!');
-            console.error('[ContextMenu] ERROR: Full context:', context);
             return;
         }
 
-        // For file icons (from Desktop folder)
-        if (icon.type === 'file' && icon.filePath) {
-            this.clipboard = {
-                items: [{
-                    path: icon.filePath,
-                    name: icon.label || icon.filePath[icon.filePath.length - 1],
-                    type: icon.fileType || 'file'
-                }],
-                operation: 'copy'
-            };
-            console.log('[ContextMenu] Desktop File Copy SUCCESS:', icon.filePath.join('/'));
-        }
-        // For app/link icons (shortcuts)
-        else if (icon.type === 'app' || icon.type === 'link') {
-            // Store the desktop shortcut in clipboard for pasting
-            this.clipboard = {
-                items: [{
-                    shortcut: true,
-                    icon: {
-                        id: `${icon.id}_copy_${Date.now()}`,
-                        label: `${icon.label} - Copy`,
-                        emoji: icon.emoji,
-                        type: icon.type,
-                        url: icon.url || null,
-                        x: (icon.x || 20) + 20,  // Offset slightly
-                        y: (icon.y || 20) + 20
-                    }
-                }],
-                operation: 'copy'
-            };
-            console.log('[ContextMenu] Desktop Shortcut Copy SUCCESS:', icon.label);
-        }
-        else {
-            console.error('[ContextMenu] ERROR: Invalid icon type or missing filePath:', { icon, type: icon?.type, filePath: icon?.filePath });
+        // Only allow copying file icons (files/folders from Desktop folder)
+        // Apps and link shortcuts cannot be copied
+        if (icon.type !== 'file' || !icon.filePath) {
+            console.log('[ContextMenu] Copy rejected: Only files can be copied, not apps or links');
             return;
         }
 
-        console.log('[ContextMenu] Clipboard now:', this.clipboard);
-        console.log('[ContextMenu] Clipboard items:', JSON.stringify(this.clipboard.items, null, 2));
+        // Clear any existing cut state (copy replaces cut)
+        this.clearCutState();
+
+        this.clipboard = {
+            items: [{
+                path: icon.filePath,
+                name: icon.label || icon.filePath[icon.filePath.length - 1],
+                type: icon.fileType || 'file'
+            }],
+            operation: 'copy'
+        };
+        console.log('[ContextMenu] Desktop File Copy SUCCESS:', icon.filePath.join('/'));
         EventBus.emit('clipboard:changed', { operation: 'copy', count: 1 });
     }
 
     /**
      * Handle Paste to desktop
      * Works with files copied from either desktop or MyComputer
+     * Only files can be pasted (not app/link shortcuts)
      */
     async handleDesktopPaste(context) {
         console.log('[ContextMenu] handleDesktopPaste() called');
@@ -931,18 +939,16 @@ class ContextMenuRendererClass {
         }
 
         const targetPath = [...PATHS.DESKTOP];
-        console.log('[ContextMenu] Target path:', targetPath);
+        console.log('[ContextMenu] Target path (Desktop):', targetPath.join('/'));
 
         try {
             for (const item of this.clipboard.items) {
-                // Handle pasting desktop shortcuts (app/link icons)
-                if (item.shortcut && item.icon) {
-                    console.log('[ContextMenu] Pasting desktop shortcut:', item.icon.label);
-                    StateManager.addIcon(item.icon);
+                // Only handle file items (ignore any legacy shortcut data)
+                if (!item.path || !Array.isArray(item.path)) {
+                    console.log('[ContextMenu] Skipping invalid clipboard item');
                     continue;
                 }
 
-                // Handle pasting files
                 const sourcePath = item.path;
                 const fileName = item.name;
 
@@ -953,11 +959,13 @@ class ContextMenuRendererClass {
                 if (isAlreadyOnDesktop) {
                     if (this.clipboard.operation === 'cut') {
                         // Can't cut/paste to same location
+                        console.log('[ContextMenu] Skipping cut to same location');
                         continue;
                     }
                     // For copy, create a copy with modified name
                     const newName = await this.generateCopyName(targetPath, fileName);
                     const newPath = [...targetPath, newName];
+                    console.log('[ContextMenu] Copying to same location with new name:', newName);
 
                     if (item.type === 'directory') {
                         this.copyDirectory(sourcePath, newPath);
@@ -966,6 +974,7 @@ class ContextMenuRendererClass {
                     }
                 } else {
                     // Paste from different location to desktop
+                    console.log('[ContextMenu] Pasting from:', sourcePath.join('/'), 'to Desktop');
                     if (this.clipboard.operation === 'cut') {
                         FileSystemManager.moveItem(sourcePath, targetPath);
                     } else {
@@ -980,16 +989,32 @@ class ContextMenuRendererClass {
                 }
             }
 
+            // Clear cut visual state after successful paste
+            this.clearCutState();
+
             // Clear clipboard if it was a cut operation
             if (this.clipboard.operation === 'cut') {
                 this.clipboard = { items: [], operation: null };
+                EventBus.emit('clipboard:changed', { operation: null, count: 0 });
             }
 
-            // Refresh desktop to show new files/shortcuts
+            // Refresh desktop to show new files
             EventBus.emit('filesystem:changed');
             EventBus.emit('desktop:refresh');
         } catch (e) {
+            console.error('[ContextMenu] Paste error:', e);
             await SystemDialogs.alert(`Error pasting: ${e.message}`, 'Paste Error', 'error');
+        }
+    }
+
+    /**
+     * Clear the cut state - removes visual cut indicators
+     * Called when paste completes or a new copy/cut operation starts
+     */
+    clearCutState() {
+        if (this.cutItemPaths.length > 0) {
+            this.cutItemPaths = [];
+            EventBus.emit('clipboard:cut-state', { cutPaths: [] });
         }
     }
 

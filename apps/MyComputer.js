@@ -421,6 +421,15 @@ class MyComputer extends AppBase {
                 .mycomputer-list-item.selected .mycomputer-list-name {
                     color: white;
                 }
+                /* Cut state - items marked for cut appear faded */
+                .mycomputer-item.cut,
+                .mycomputer-list-item.cut {
+                    opacity: 0.5;
+                }
+                .mycomputer-item.cut .mycomputer-item-icon,
+                .mycomputer-list-item.cut .mycomputer-list-icon {
+                    filter: grayscale(30%);
+                }
                 /* Empty folder message */
                 .mycomputer-empty {
                     display: flex;
@@ -484,6 +493,7 @@ class MyComputer extends AppBase {
         this.setInstanceState('history', []);
         this.setInstanceState('forwardHistory', []);
         this.setInstanceState('selectedItem', null);
+        this.setInstanceState('cutItemPaths', []);
 
         // Setup toolbar buttons
         this.setupToolbarHandlers();
@@ -510,6 +520,13 @@ class MyComputer extends AppBase {
             }
         };
         EventBus.on('mycomputer:navigate', this.navigationHandler);
+
+        // Listen for clipboard cut state changes
+        this.cutStateHandler = ({ cutPaths }) => {
+            this.setInstanceState('cutItemPaths', cutPaths || []);
+            this.updateCutVisualState();
+        };
+        EventBus.on('clipboard:cut-state', this.cutStateHandler);
 
         // If we have an initial path, navigate to it after mount
         if (initialPath.length > 0) {
@@ -1222,6 +1239,10 @@ class MyComputer extends AppBase {
         // Clean up navigation event listener
         if (this.navigationHandler) {
             EventBus.off('mycomputer:navigate', this.navigationHandler);
+        }
+        // Clean up cut state listener
+        if (this.cutStateHandler) {
+            EventBus.off('clipboard:cut-state', this.cutStateHandler);
         }
         // Clean up keyboard listener
         if (this.keyboardHandler) {
@@ -2074,6 +2095,40 @@ class MyComputer extends AppBase {
         // Re-setup handlers for new content
         this.setupContentHandlers();
         this.updateStatus();
+
+        // Apply cut visual state to items
+        this.updateCutVisualState();
+    }
+
+    /**
+     * Update cut visual state for all items
+     * Applies .cut class to items that are in the cut list
+     */
+    updateCutVisualState() {
+        const cutItemPaths = this.getInstanceState('cutItemPaths') || [];
+        const content = this.getElement('#content');
+        const currentPath = this.getInstanceState('currentPath') || [];
+
+        if (!content) return;
+
+        // Remove cut class from all items first
+        content.querySelectorAll('.cut').forEach(el => el.classList.remove('cut'));
+
+        if (cutItemPaths.length === 0) return;
+
+        // Get all file and directory items and apply cut class if they match
+        const allItems = content.querySelectorAll('.file-item, .directory-item');
+        allItems.forEach(item => {
+            const itemName = item.dataset.name;
+            if (itemName) {
+                // Compute full path same way as context menu handlers
+                const itemPath = [...currentPath, itemName];
+                const pathStr = JSON.stringify(itemPath);
+                if (cutItemPaths.includes(pathStr)) {
+                    item.classList.add('cut');
+                }
+            }
+        });
     }
 
     updateStatus() {
