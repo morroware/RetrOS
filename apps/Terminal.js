@@ -537,6 +537,15 @@ class Terminal extends AppBase {
         });
 
         this.runBootSequence();
+
+        // Emit terminal opened event for script handlers
+        EventBus.emit('app:terminal:opened', {
+            appId: this.id,
+            windowId: this.windowId,
+            currentPath: this.currentPath,
+            pathString: this.currentPath.join('\\'),
+            timestamp: Date.now()
+        });
     }
 
     runBootSequence() {
@@ -824,6 +833,19 @@ class Terminal extends AppBase {
                 this.print('operable program or batch file.');
             }
         }
+
+        // Emit command executed event for script handlers
+        EventBus.emit('app:terminal:command', {
+            appId: this.id,
+            windowId: this.windowId,
+            command: trimmed,
+            cmd: cmd,
+            args: args,
+            output: this.lastOutput,
+            currentPath: this.currentPath,
+            pathString: this.currentPath.join('\\'),
+            timestamp: Date.now()
+        });
     }
 
     /**
@@ -2210,11 +2232,8 @@ Special Thanks:
 
             this.print(`Executing RetroScript: ${fileName}...`, '#00ff00');
 
-            // Create a script engine instance
-            const engine = new ScriptEngine();
-
-            // Execute the script
-            const result = await engine.execute(content);
+            // Use the ScriptEngine singleton - it uses .run() method
+            const result = await ScriptEngine.run(content);
 
             if (result.success) {
                 if (result.output) {
@@ -2222,7 +2241,8 @@ Special Thanks:
                 }
                 this.print(`Script completed successfully.`, '#00ff00');
             } else {
-                this.print(`Script error: ${result.error}`, '#ff0000');
+                const errorMsg = result.error?.message || result.error?.toString?.() || result.error || 'Unknown error';
+                this.print(`Script error: ${errorMsg}`, '#ff0000');
             }
         } catch (e) {
             this.print(`Error executing script: ${e.message}`, '#ff0000');
@@ -2813,6 +2833,15 @@ ECHO Batch script completed!
         if (this.activeProcess) {
             this.killProcess();
         }
+
+        // Emit terminal closed event for script handlers
+        EventBus.emit('app:terminal:closed', {
+            appId: this.id,
+            windowId: this.windowId,
+            commandHistory: [...this.commandHistory],
+            historyCount: this.commandHistory.length,
+            timestamp: Date.now()
+        });
     }
 }
 
