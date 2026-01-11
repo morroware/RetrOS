@@ -2232,11 +2232,8 @@ Special Thanks:
 
             this.print(`Executing RetroScript: ${fileName}...`, '#00ff00');
 
-            // Create a script engine instance
-            const engine = new ScriptEngine();
-
-            // Execute the script
-            const result = await engine.execute(content);
+            // Use the ScriptEngine singleton - it uses .run() method
+            const result = await ScriptEngine.run(content);
 
             if (result.success) {
                 if (result.output) {
@@ -2244,7 +2241,8 @@ Special Thanks:
                 }
                 this.print(`Script completed successfully.`, '#00ff00');
             } else {
-                this.print(`Script error: ${result.error}`, '#ff0000');
+                const errorMsg = result.error?.message || result.error?.toString?.() || result.error || 'Unknown error';
+                this.print(`Script error: ${errorMsg}`, '#ff0000');
             }
         } catch (e) {
             this.print(`Error executing script: ${e.message}`, '#ff0000');
