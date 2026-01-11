@@ -29,8 +29,8 @@ export class Parser {
         const statements = [];
 
         while (!this.isAtEnd()) {
-            // Skip newlines between statements
-            while (this.check(TokenType.NEWLINE)) {
+            // Skip newlines and semicolons between statements
+            while (this.check(TokenType.NEWLINE) || this.check(TokenType.SEMICOLON)) {
                 this.advance();
             }
 
@@ -943,8 +943,8 @@ export class Parser {
             throw this.error('Expected "{" to start block');
         }
 
-        // Skip newlines
-        while (this.check(TokenType.NEWLINE)) {
+        // Skip newlines and semicolons
+        while (this.check(TokenType.NEWLINE) || this.check(TokenType.SEMICOLON)) {
             this.advance();
         }
 
@@ -955,8 +955,8 @@ export class Parser {
                 statements.push(stmt);
             }
 
-            // Skip newlines
-            while (this.check(TokenType.NEWLINE)) {
+            // Skip newlines and semicolons (statement separators)
+            while (this.check(TokenType.NEWLINE) || this.check(TokenType.SEMICOLON)) {
                 this.advance();
             }
         }
