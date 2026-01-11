@@ -248,7 +248,7 @@ class ContextMenuRendererClass {
         if (icon.type === 'file') {
             console.log('[ContextMenu] Showing FILE context menu with Cut/Copy');
             const extension = icon.extension || '';
-            const isTextFile = ['txt', 'md', 'log'].includes(extension);
+            const isTextFile = ['txt', 'md', 'log', 'retro', 'bat', 'js', 'css', 'html', 'json'].includes(extension);
             const isImageFile = ['png', 'jpg', 'bmp'].includes(extension);
 
             return `
@@ -303,7 +303,7 @@ class ContextMenuRendererClass {
     explorerFileMenu(context) {
         const item = context.item || {};
         const extension = item.extension || '';
-        const isTextFile = ['txt', 'md', 'log', 'json', 'js', 'css', 'html'].includes(extension);
+        const isTextFile = ['txt', 'md', 'log', 'json', 'js', 'css', 'html', 'retro', 'bat'].includes(extension);
         const isImageFile = ['png', 'jpg', 'jpeg', 'bmp', 'gif'].includes(extension);
         const isAudioFile = ['mp3', 'wav', 'ogg'].includes(extension);
         const isShortcut = extension === 'lnk';
@@ -566,7 +566,7 @@ class ContextMenuRendererClass {
         } else if (item.type === 'file' && item.path) {
             // Open file with appropriate app
             const ext = item.extension || '';
-            if (['txt', 'md', 'log', 'json', 'js', 'css', 'html'].includes(ext)) {
+            if (['txt', 'md', 'log', 'json', 'js', 'css', 'html', 'retro', 'bat'].includes(ext)) {
                 AppRegistry.launch('notepad', { filePath: item.path });
             } else if (['png', 'jpg', 'jpeg', 'bmp', 'gif'].includes(ext)) {
                 AppRegistry.launch('paint', { filePath: item.path });
@@ -1154,10 +1154,13 @@ class ContextMenuRendererClass {
 
         if (fileType === 'directory') {
             AppRegistry.launch('mycomputer', { initialPath: filePath });
-        } else if (extension === 'txt' || extension === 'md' || extension === 'log') {
+        } else if (['txt', 'md', 'log', 'retro', 'bat', 'js', 'css', 'html', 'json'].includes(extension)) {
             AppRegistry.launch('notepad', { filePath });
-        } else if (extension === 'png' || extension === 'jpg' || extension === 'bmp') {
+        } else if (['png', 'jpg', 'bmp'].includes(extension)) {
             AppRegistry.launch('paint', { filePath });
+        } else {
+            // Default to notepad for unknown text-like files
+            AppRegistry.launch('notepad', { filePath });
         }
     }
 
