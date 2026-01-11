@@ -89,16 +89,16 @@ export class Lexer {
                 if (this.match('&')) {
                     this.addToken(TokenType.AND);
                 } else {
-                    // Single & not supported, treat as unknown
-                    this.error(`Unexpected character '&'. Did you mean '&&'?`);
+                    // Single & for text content (e.g., "Time & Date")
+                    this.addToken(TokenType.AMPERSAND);
                 }
                 break;
             case '|':
                 if (this.match('|')) {
                     this.addToken(TokenType.OR);
                 } else {
-                    // Single | not supported
-                    this.error(`Unexpected character '|'. Did you mean '||'?`);
+                    // Single | for text content
+                    this.addToken(TokenType.PIPE);
                 }
                 break;
 
@@ -309,9 +309,11 @@ export class Lexer {
 
     /**
      * Scan an identifier or keyword
+     * Note: Colons (:) are NOT included in identifiers to support object literals like {name: value}
+     * For namespaced event names like "app:launch", use quotes or separate tokens
      */
     scanIdentifier() {
-        while (this.isAlphaNumeric(this.peek()) || this.peek() === ':' || this.peek() === '_') {
+        while (this.isAlphaNumeric(this.peek()) || this.peek() === '_') {
             this.advance();
         }
 

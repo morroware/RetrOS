@@ -183,46 +183,33 @@ export class Parser {
     /**
      * Parse print statement: print message
      * Supports both:
-     *   - print "quoted string" (expression mode)
-     *   - print unquoted text with $variables (legacy mode)
+     *   - print "quoted string" + expression (expression mode)
+     *   - print unquoted text with $variables (legacy/text mode)
      */
     parsePrintStatement() {
         const location = this.getLocation();
         this.advance(); // consume 'print'
 
-        // Check if this looks like an unquoted print statement
-        // Unquoted mode is triggered if the next token is NOT:
-        // - STRING (quoted text)
-        // - NUMBER, TRUE, FALSE, NULL (literals)
-        // - LPAREN (grouped expression)
-        // - VARIABLE starting an expression like $x + $y
+        // Use a conservative heuristic for expression vs unquoted text mode:
+        // - Expression mode: Only when starting with STRING (quoted text)
+        //   This ensures "Hello" + $name works as expression concatenation
+        // - Unquoted text mode: Everything else (including numbers, identifiers)
+        //   This provides maximum backwards compatibility with legacy scripts
+        //   that use unquoted text like "print 5 == 5: true" or "print Hello World!"
         //
-        // Note: LBRACKET ([) and LBRACE ({) are NOT included because they're
-        // commonly used in unquoted text like "print [1] Test Name"
-        // To print arrays/objects, use: print $arrayVar or print "[1,2,3]"
+        // Note: Variables like $x are handled in unquoted mode with interpolation
 
-        // Check if this is a simple quoted expression
         const nextToken = this.peek();
-        const isQuotedExpression =
-            nextToken.type === TokenType.STRING ||
-            nextToken.type === TokenType.NUMBER ||
-            nextToken.type === TokenType.TRUE ||
-            nextToken.type === TokenType.FALSE ||
-            nextToken.type === TokenType.NULL ||
-            nextToken.type === TokenType.LPAREN;
 
-        // Check for variable expression (e.g., print $x or print $x + $y)
-        const isVariableExpression =
-            nextToken.type === TokenType.VARIABLE &&
-            this.checkNext(TokenType.PLUS, TokenType.MINUS, TokenType.STAR,
-                          TokenType.SLASH, TokenType.RPAREN, TokenType.NEWLINE, TokenType.EOF);
-
-        if (isQuotedExpression || isVariableExpression) {
-            // Standard expression mode
+        // Only use expression mode for quoted strings
+        // This allows: print "Hello" + $name
+        // All other cases use unquoted text mode with $variable interpolation
+        if (nextToken.type === TokenType.STRING) {
+            // Standard expression mode starting with quoted string
             const message = this.parseExpression();
             return new AST.PrintStatement(message, location);
         } else {
-            // Unquoted legacy mode - collect remaining line as raw text with interpolation
+            // Unquoted text mode - collect remaining line as raw text with interpolation
             const message = this.parseUnquotedText();
             return new AST.PrintStatement(message, location);
         }
@@ -240,6 +227,18 @@ export class Parser {
         let currentText = '';
         let lastWasVariable = false;
 
+        // Punctuation tokens that should NOT have a space before them
+        const noSpaceBeforeTokens = new Set([
+            TokenType.NOT,        // !
+            TokenType.COLON,      // :
+            TokenType.DOT,        // .
+            TokenType.COMMA,      // ,
+            TokenType.SEMICOLON,  // ;
+            TokenType.RPAREN,     // )
+            TokenType.RBRACKET,   // ]
+            TokenType.RBRACE      // }
+        ]);
+
         // Collect tokens until end of statement
         while (!this.isStatementEnd()) {
             const token = this.peek();
@@ -256,18 +255,23 @@ export class Parser {
                 parts.push(new AST.VariableExpression(token.value, location));
                 lastWasVariable = true;
             } else {
+                // Check if this token should NOT have a space before it
+                const shouldAddSpace = !noSpaceBeforeTokens.has(token.type);
+
                 // Accumulate text from token
                 // Add space before this token if:
-                // 1. We already have text accumulated, OR
-                // 2. We just processed a variable (need space after variable)
-                if (currentText.length > 0) {
-                    currentText += ' ';
-                } else if (lastWasVariable) {
-                    currentText = ' ';
+                // 1. We already have text accumulated AND this isn't punctuation, OR
+                // 2. We just processed a variable AND this isn't punctuation
+                if (shouldAddSpace) {
+                    if (currentText.length > 0) {
+                        currentText += ' ';
+                    } else if (lastWasVariable) {
+                        currentText = ' ';
+                    }
                 }
 
-                // Use lexeme (original text) for accurate representation
-                const text = token.lexeme || token.value;
+                // Use raw (original text) for accurate representation
+                const text = token.raw || token.value;
                 currentText += text;
                 this.advance();
                 lastWasVariable = false;
@@ -491,16 +495,39 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'on'
 
-        // Expect event name
-        if (!this.check(TokenType.IDENTIFIER)) {
-            throw this.error('Expected event name after "on"');
-        }
-        const eventName = this.advance().value;
+        // Parse event name (may include colons like "app:launch")
+        const eventName = this.parseEventName();
 
         // Parse body
         const body = this.parseBlock();
 
         return new AST.OnStatement(eventName, body, location);
+    }
+
+    /**
+     * Parse event name which may be namespaced like "app:launch"
+     * Collects IDENTIFIER:IDENTIFIER:... sequences
+     * @returns {string} Event name
+     */
+    parseEventName() {
+        if (!this.check(TokenType.IDENTIFIER)) {
+            throw this.error('Expected event name');
+        }
+        let eventName = this.advance().value;
+
+        // Collect any additional namespaced parts (colon followed by identifier)
+        while (this.check(TokenType.COLON)) {
+            this.advance(); // consume ':'
+            if (this.check(TokenType.IDENTIFIER)) {
+                eventName += ':' + this.advance().value;
+            } else {
+                // Trailing colon - just include it
+                eventName += ':';
+                break;
+            }
+        }
+
+        return eventName;
     }
 
     /**
@@ -510,11 +537,8 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'emit'
 
-        // Expect event name
-        if (!this.check(TokenType.IDENTIFIER)) {
-            throw this.error('Expected event name after "emit"');
-        }
-        const eventName = this.advance().value;
+        // Parse event name (may include colons like "app:launch")
+        const eventName = this.parseEventName();
 
         // Parse payload key=value pairs
         const payload = {};
@@ -689,7 +713,14 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'alert'
 
-        const message = this.parseExpression();
+        // Support both quoted and unquoted messages (like print)
+        const nextToken = this.peek();
+        let message;
+        if (nextToken.type === TokenType.STRING) {
+            message = this.parseExpression();
+        } else {
+            message = this.parseUnquotedText();
+        }
         return new AST.AlertStatement(message, location);
     }
 
@@ -745,7 +776,14 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'notify'
 
-        const message = this.parseExpression();
+        // Support both quoted and unquoted messages (like print)
+        const nextToken = this.peek();
+        let message;
+        if (nextToken.type === TokenType.STRING) {
+            message = this.parseExpression();
+        } else {
+            message = this.parseUnquotedText();
+        }
         return new AST.NotifyStatement(message, location);
     }
 
@@ -761,15 +799,16 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'play'
 
-        // Parse source - can be identifier (sound type), string (path), or variable
+        // Parse source - can be identifier/keyword (sound type), string (path), or variable
         let source;
-        if (this.check(TokenType.IDENTIFIER)) {
-            // Sound type like: play click
+        const token = this.peek();
+        if (token.type === TokenType.IDENTIFIER || token.isKeyword()) {
+            // Sound type like: play click, play notify (notify is a keyword but valid sound name)
             source = new AST.LiteralExpression(this.advance().value, location);
-        } else if (this.check(TokenType.STRING)) {
+        } else if (token.type === TokenType.STRING) {
             // File path like: play "assets/sounds/music.mp3"
             source = new AST.LiteralExpression(this.advance().value, location);
-        } else if (this.check(TokenType.VARIABLE)) {
+        } else if (token.type === TokenType.VARIABLE) {
             // Variable like: play $soundFile
             source = new AST.VariableExpression(this.advance().value, location);
         } else {

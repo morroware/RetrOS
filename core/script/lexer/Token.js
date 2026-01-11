@@ -103,6 +103,8 @@ export const TokenType = {
     AND: 'AND',             // &&
     OR: 'OR',               // ||
     NOT: 'NOT',             // !
+    AMPERSAND: 'AMPERSAND', // & (single, for text)
+    PIPE: 'PIPE',           // | (single, for text)
 
     // Delimiters
     LBRACE: 'LBRACE',       // {
