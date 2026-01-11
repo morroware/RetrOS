@@ -446,8 +446,9 @@ export class Parser {
         const location = this.getLocation();
         this.advance(); // consume 'call'
 
-        // Expect function name
-        if (!this.check(TokenType.IDENTIFIER)) {
+        // Expect function name (can be identifier or keyword like toJSON, fromJSON)
+        const token = this.peek();
+        if (token.type !== TokenType.IDENTIFIER && !token.isKeyword()) {
             throw this.error('Expected function name after "call"');
         }
         const funcName = this.advance().value;
@@ -1058,7 +1059,9 @@ export class Parser {
 
         // Check for 'call' keyword
         if (this.match(TokenType.CALL)) {
-            if (!this.check(TokenType.IDENTIFIER)) {
+            // Function name can be identifier or keyword (like toJSON, fromJSON)
+            const token = this.peek();
+            if (token.type !== TokenType.IDENTIFIER && !token.isKeyword()) {
                 throw this.error('Expected function name after "call"');
             }
             const funcName = this.advance().value;
