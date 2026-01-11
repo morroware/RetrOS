@@ -330,7 +330,7 @@ print "Last boot: " + $bootTime
 - Add more comprehensive test coverage for edge cases
 
 ### Long Term (Future)
-- Remove legacy `core/ScriptEngine.js` entirely (breaking change)
+- ✅ ~~Remove legacy `core/ScriptEngine.js` entirely~~ **COMPLETED**
 - Consider adding escape sequences for special characters in unquoted mode
 - Enhance lexer to better handle natural language text
 
@@ -344,11 +344,11 @@ The ScriptEngine unification is **COMPLETE** and **PRODUCTION READY**. The modul
 ✨ **Enhanced error reporting** for debugging
 ✨ **Unified API** for all consumers
 
-All active consumers (Terminal, ScriptRunner, AutoexecLoader) are now using the modular engine, and the legacy engine is deprecated but kept for reference.
+All active consumers (Terminal, ScriptRunner, AutoexecLoader) are now using the modular engine, and the legacy engine has been completely removed.
 
 ---
 
 **Migration completed**: 2026-01-11
 **Status**: ✅ PRODUCTION READY
-**Breaking changes**: NONE
-**Deprecations**: `core/ScriptEngine.js` (legacy)
+**Breaking changes**: NONE (for existing code using modular engine)
+**Removed**: `core/ScriptEngine.js` (legacy - no longer needed)

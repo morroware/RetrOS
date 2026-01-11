@@ -13,7 +13,7 @@ import EventBus, { Events } from './core/EventBus.js';
 import WindowManager from './core/WindowManager.js';
 import FileSystemManager from './core/FileSystemManager.js';
 import CommandBus from './core/CommandBus.js';
-import ScriptEngine from './core/ScriptEngine.js';
+import ScriptEngine from './core/script/ScriptEngine.js';
 
 // === UI RENDERERS ===
 import TaskbarRenderer from './ui/TaskbarRenderer.js';
