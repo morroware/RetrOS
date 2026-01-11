@@ -79,6 +79,19 @@ class Terminal extends AppBase {
             }
         });
 
+        // Execute multiple commands in sequence
+        this.registerCommand('executeSequence', (commands) => {
+            if (!Array.isArray(commands)) {
+                return { success: false, error: 'Commands must be an array' };
+            }
+            const outputs = [];
+            for (const cmd of commands) {
+                this.executeCommand(cmd);
+                outputs.push(this.lastOutput);
+            }
+            return { success: true, outputs };
+        });
+
         // Clear the terminal screen
         this.registerCommand('clear', () => {
             this.cmdClear();
@@ -97,6 +110,15 @@ class Terminal extends AppBase {
                 return { success: true, text: String(text) };
             }
             return { success: false, error: 'No text provided' };
+        });
+
+        // Print HTML to terminal
+        this.registerCommand('printHtml', (html) => {
+            if (html !== undefined && html !== null) {
+                this.printHtml(String(html));
+                return { success: true, html: String(html) };
+            }
+            return { success: false, error: 'No HTML provided' };
         });
 
         // Change directory
@@ -125,6 +147,213 @@ class Terminal extends AppBase {
             } catch (error) {
                 return { success: false, error: error.message };
             }
+        });
+
+        // Read a file
+        this.registerCommand('readFile', (filePath) => {
+            if (!filePath) {
+                return { success: false, error: 'File path required' };
+            }
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                const content = FileSystemManager.readFile(resolvedPath);
+                return { success: true, content };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Write to a file
+        this.registerCommand('writeFile', (filePath, content, extension = 'txt') => {
+            if (!filePath || content === undefined) {
+                return { success: false, error: 'File path and content required' };
+            }
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                FileSystemManager.writeFile(resolvedPath, content, extension);
+                return { success: true, path: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Set environment variable
+        this.registerCommand('setEnvVar', (name, value) => {
+            if (!name) {
+                return { success: false, error: 'Variable name required' };
+            }
+            this.envVars[name.toUpperCase()] = String(value || '');
+            return { success: true, name: name.toUpperCase(), value: this.envVars[name.toUpperCase()] };
+        });
+
+        // Get environment variable
+        this.registerCommand('getEnvVar', (name) => {
+            if (!name) {
+                return { success: false, error: 'Variable name required' };
+            }
+            const value = this.envVars[name.toUpperCase()];
+            return { success: true, name: name.toUpperCase(), value: value || null };
+        });
+
+        // Create an alias
+        this.registerCommand('createAlias', (name, command) => {
+            if (!name || !command) {
+                return { success: false, error: 'Alias name and command required' };
+            }
+            this.aliases[name.toLowerCase()] = command;
+            return { success: true, name: name.toLowerCase(), command };
+        });
+
+        // Remove an alias
+        this.registerCommand('removeAlias', (name) => {
+            if (!name) {
+                return { success: false, error: 'Alias name required' };
+            }
+            const existed = !!this.aliases[name.toLowerCase()];
+            delete this.aliases[name.toLowerCase()];
+            return { success: true, existed };
+        });
+
+        // Run a script file
+        this.registerCommand('runScript', (scriptPath) => {
+            if (!scriptPath) {
+                return { success: false, error: 'Script path required' };
+            }
+            try {
+                const resolvedPath = this.resolvePath(scriptPath);
+                if (scriptPath.endsWith('.retro')) {
+                    this.executeRetroScript(resolvedPath);
+                } else if (scriptPath.endsWith('.bat')) {
+                    this.executeBatchFile(resolvedPath);
+                } else {
+                    return { success: false, error: 'Unknown script type. Use .retro or .bat' };
+                }
+                return { success: true, scriptPath: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Focus the terminal window
+        this.registerCommand('focus', () => {
+            if (this.windowId) {
+                EventBus.emit('window:focus', { windowId: this.windowId });
+                return { success: true };
+            }
+            return { success: false, error: 'Window not available' };
+        });
+
+        // Minimize the terminal window
+        this.registerCommand('minimize', () => {
+            if (this.windowId) {
+                EventBus.emit('window:minimize', { windowId: this.windowId });
+                return { success: true };
+            }
+            return { success: false, error: 'Window not available' };
+        });
+
+        // Maximize the terminal window
+        this.registerCommand('maximize', () => {
+            if (this.windowId) {
+                EventBus.emit('window:maximize', { windowId: this.windowId });
+                return { success: true };
+            }
+            return { success: false, error: 'Window not available' };
+        });
+
+        // Close the terminal
+        this.registerCommand('closeTerminal', () => {
+            this.close();
+            return { success: true };
+        });
+
+        // Show a message in the terminal
+        this.registerCommand('showMessage', (message, type = 'info') => {
+            const colors = {
+                'info': '#c0c0c0',
+                'success': '#00ff00',
+                'warning': '#ffff00',
+                'error': '#ff0000',
+                'cyan': '#00ffff',
+                'magenta': '#ff00ff'
+            };
+            const color = colors[type] || '#c0c0c0';
+            this.print(message, color);
+            return { success: true, message, type };
+        });
+
+        // Create a file
+        this.registerCommand('createFile', (filePath, content = '') => {
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                const extension = filePath.split('.').pop() || 'txt';
+                FileSystemManager.writeFile(resolvedPath, content, extension);
+                return { success: true, path: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Delete a file
+        this.registerCommand('deleteFile', (filePath) => {
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                FileSystemManager.deleteFile(resolvedPath);
+                return { success: true, path: resolvedPath };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Check if file exists
+        this.registerCommand('fileExists', (filePath) => {
+            try {
+                const resolvedPath = this.resolvePath(filePath);
+                const exists = FileSystemManager.exists(resolvedPath);
+                return { success: true, exists };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        });
+
+        // Launch an application
+        this.registerCommand('launchApp', (appId, params = {}) => {
+            if (!appId) {
+                return { success: false, error: 'App ID required' };
+            }
+            import('./AppRegistry.js').then(module => {
+                const AppRegistry = module.default;
+                AppRegistry.launch(appId, params);
+            });
+            return { success: true, appId, params };
+        });
+
+        // Trigger matrix mode
+        this.registerCommand('startMatrix', () => {
+            this.startMatrix();
+            return { success: true };
+        });
+
+        // Stop matrix mode
+        this.registerCommand('stopMatrix', () => {
+            if (this.activeProcess === 'matrix') {
+                this.killProcess();
+                return { success: true };
+            }
+            return { success: false, error: 'Matrix mode not active' };
+        });
+
+        // Enable god mode
+        this.registerCommand('enableGodMode', () => {
+            this.godMode = true;
+            this.print('*** GOD MODE ACTIVATED ***', '#ff00ff');
+            return { success: true };
+        });
+
+        // Update prompt
+        this.registerCommand('updatePrompt', () => {
+            this.updatePrompt();
+            return { success: true, prompt: this.getPrompt() };
         });
     }
 
@@ -155,6 +384,11 @@ class Terminal extends AppBase {
             return { envVars: { ...this.envVars } };
         });
 
+        // Get all aliases
+        this.registerQuery('getAliases', () => {
+            return { aliases: { ...this.aliases } };
+        });
+
         // Get terminal state
         this.registerQuery('getState', () => {
             return {
@@ -162,7 +396,41 @@ class Terminal extends AppBase {
                 pathString: this.currentPath.join('\\'),
                 godMode: this.godMode,
                 hasActiveProcess: this.activeProcess !== null,
-                historyCount: this.commandHistory.length
+                activeProcessType: this.activeProcess,
+                historyCount: this.commandHistory.length,
+                windowId: this.windowId
+            };
+        });
+
+        // Get window information
+        this.registerQuery('getWindowInfo', () => {
+            return {
+                windowId: this.windowId,
+                appId: this.id,
+                appName: this.name
+            };
+        });
+
+        // Get full terminal output as text
+        this.registerQuery('getAllOutput', () => {
+            const output = this.getElement('#terminalOutput');
+            return {
+                outputText: output ? output.textContent : '',
+                outputHtml: output ? output.innerHTML : ''
+            };
+        });
+
+        // Check if god mode is active
+        this.registerQuery('isGodMode', () => {
+            return { godMode: this.godMode };
+        });
+
+        // Get batch execution state
+        this.registerQuery('getBatchState', () => {
+            return {
+                isExecutingBatch: this.batchCommands.length > 0,
+                batchCommandCount: this.batchCommands.length,
+                currentBatchIndex: this.batchIndex
             };
         });
     }
