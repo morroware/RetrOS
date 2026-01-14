@@ -86,6 +86,9 @@ class ScriptEngineClass {
      * @param {Object} [options] - Execution options
      * @param {number} [options.timeout] - Execution timeout in ms
      * @param {Object} [options.variables] - Initial variables
+     * @param {Function} [options.onOutput] - Legacy callback for output (called for each print)
+     * @param {Function} [options.onError] - Legacy callback for errors
+     * @param {Function} [options.onVariables] - Legacy callback for variable updates
      * @returns {Object} Execution result
      */
     async run(source, options = {}) {
@@ -101,6 +104,29 @@ class ScriptEngineClass {
         }
 
         this.isRunning = true;
+
+        // Store any legacy callbacks temporarily
+        const legacyOutputCallback = options.onOutput;
+        const legacyErrorCallback = options.onError;
+        const legacyVariablesCallback = options.onVariables;
+
+        // Create temporary callback wrappers that call both legacy and registered callbacks
+        const originalOnOutput = this.outputCallback;
+        const originalOnError = this.errorCallback;
+
+        if (legacyOutputCallback) {
+            this.outputCallback = (message) => {
+                legacyOutputCallback(message);
+                if (originalOnOutput) originalOnOutput(message);
+            };
+        }
+
+        if (legacyErrorCallback) {
+            this.errorCallback = (error, line) => {
+                legacyErrorCallback(error, line);
+                if (originalOnError) originalOnError(error, line);
+            };
+        }
 
         try {
             // Set timeout if specified
@@ -126,16 +152,30 @@ class ScriptEngineClass {
             // Execute
             const result = await this.interpreter.execute(ast);
 
+            // Get final variables
+            const variables = this.interpreter.getVariables();
+
+            // Call legacy onVariables callback if provided
+            if (legacyVariablesCallback) {
+                legacyVariablesCallback(variables);
+            }
+
             // Emit completion
             this.emitComplete({ success: true, result });
 
             return {
                 success: true,
                 result,
-                variables: this.interpreter.getVariables()
+                variables
             };
         } catch (error) {
             const errorInfo = this.formatError(error);
+
+            // For legacy callbacks, also pass line number if available
+            if (legacyErrorCallback && errorInfo.line) {
+                // Already called via emitError
+            }
+
             this.emitError(errorInfo.message);
             this.emitComplete({ success: false, error: errorInfo });
 
@@ -146,6 +186,10 @@ class ScriptEngineClass {
         } finally {
             this.isRunning = false;
             this.limits.setTimeout(DEFAULT_LIMITS.DEFAULT_EXECUTION_TIMEOUT);
+
+            // Restore original callbacks
+            this.outputCallback = originalOnOutput;
+            this.errorCallback = originalOnError;
         }
     }
 

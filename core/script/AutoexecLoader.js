@@ -15,8 +15,8 @@
  * modifying the virtual filesystem.
  */
 
-// Import the main (legacy) ScriptEngine for compatibility
-import ScriptEngine from '../ScriptEngine.js';
+// Import the modular ScriptEngine (now supports legacy compatibility)
+import ScriptEngine from './ScriptEngine.js';
 import { DEFAULT_LIMITS } from './utils/SafetyLimits.js';
 
 /**

@@ -8,7 +8,7 @@
 
 import AppBase from './AppBase.js';
 import EventBus from '../core/EventBus.js';
-import ScriptEngine from '../core/ScriptEngine.js';
+import ScriptEngine from '../core/script/ScriptEngine.js';
 import CommandBus from '../core/CommandBus.js';
 import FileSystemManager from '../core/FileSystemManager.js';
 
