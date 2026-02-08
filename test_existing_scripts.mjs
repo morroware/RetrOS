@@ -11,8 +11,27 @@ const __dirname = dirname(__filename);
 
 const { default: ScriptEngine } = await import('./core/script/ScriptEngine.js');
 
-// Initialize engine
-ScriptEngine.initialize({ EventBus: null, CommandBus: null });
+// Initialize engine with mock FileSystemManager for scripts that need it
+const files = {};
+const dirs = new Set(['C:', 'C:/Users', 'C:/Users/User', 'C:/Windows']);
+
+ScriptEngine.initialize({
+    EventBus: null,
+    CommandBus: null,
+    FileSystemManager: {
+        readFile: (path) => files[path] ?? null,
+        writeFile: (path, content) => { files[path] = String(content); },
+        mkdir: (path) => { dirs.add(path); },
+        delete: (path) => { delete files[path]; dirs.delete(path); },
+        exists: (path) => files.hasOwnProperty(path) || dirs.has(path),
+        parsePath: (path) => {
+            const parts = String(path).replace(/\\/g, '/').split('/');
+            return { drive: parts[0], path: parts.slice(1).join('/'), name: parts[parts.length - 1] };
+        },
+        listDirectory: (path) => [],
+        getFileInfo: (path) => null
+    }
+});
 
 // Test scripts
 const testScripts = [

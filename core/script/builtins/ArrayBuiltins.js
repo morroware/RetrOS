@@ -27,39 +27,44 @@ export function registerArrayBuiltins(interpreter) {
         return null;
     });
 
-    // Stack operations (with safety limits to prevent memory exhaustion)
+    // Stack operations (mutate in-place for intuitive scripting behavior,
+    // with safety limits to prevent memory exhaustion)
     interpreter.registerBuiltin('push', (arr, ...items) => {
         if (Array.isArray(arr)) {
-            const result = [...arr, ...items];
-            if (result.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
-                return result.slice(0, DEFAULT_LIMITS.MAX_ARRAY_LENGTH);
+            if (arr.length + items.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
+                const allowed = DEFAULT_LIMITS.MAX_ARRAY_LENGTH - arr.length;
+                if (allowed > 0) arr.push(...items.slice(0, allowed));
+            } else {
+                arr.push(...items);
             }
-            return result;
+            return arr;
         }
         return arr;
     });
 
     interpreter.registerBuiltin('pop', (arr) => {
         if (Array.isArray(arr) && arr.length > 0) {
-            return arr[arr.length - 1];
+            return arr.pop();
         }
         return null;
     });
 
     interpreter.registerBuiltin('shift', (arr) => {
         if (Array.isArray(arr) && arr.length > 0) {
-            return arr[0];
+            return arr.shift();
         }
         return null;
     });
 
     interpreter.registerBuiltin('unshift', (arr, ...items) => {
         if (Array.isArray(arr)) {
-            const result = [...items, ...arr];
-            if (result.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
-                return result.slice(0, DEFAULT_LIMITS.MAX_ARRAY_LENGTH);
+            if (arr.length + items.length > DEFAULT_LIMITS.MAX_ARRAY_LENGTH) {
+                const allowed = DEFAULT_LIMITS.MAX_ARRAY_LENGTH - arr.length;
+                if (allowed > 0) arr.unshift(...items.slice(0, allowed));
+            } else {
+                arr.unshift(...items);
             }
-            return result;
+            return arr;
         }
         return arr;
     });

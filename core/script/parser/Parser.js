@@ -271,7 +271,7 @@ export class Parser {
                 }
 
                 // Use raw (original text) for accurate representation
-                const text = token.raw || token.value;
+                const text = token.raw || token.value || '';
                 currentText += text;
                 this.advance();
                 lastWasVariable = false;
@@ -1066,16 +1066,28 @@ export class Parser {
             }
             const funcName = this.advance().value;
 
-            // Parse arguments (more permissive - until end of expression context)
+            // Parse arguments until end of call context.
+            // Use parseExpression() for each arg so unary operators (-5, !val) work.
+            // parseExpression() naturally stops at non-operator tokens (e.g. the next arg),
+            // so `call add 3 4` correctly parses as add(3, 4), not add(3+4).
             const args = [];
-            while (!this.isExpressionEnd()) {
-                args.push(this.parsePrimaryExpression());
+            while (!this.isCallArgEnd()) {
+                args.push(this.parseExpression());
             }
 
             return new AST.CallExpression(funcName, args, location);
         }
 
         return this.parsePrimaryExpression();
+    }
+
+    /**
+     * Check if at end of call arguments.
+     * Similar to isStatementEnd but also stops at RPAREN (for grouped expressions).
+     */
+    isCallArgEnd() {
+        return this.isStatementEnd() ||
+               this.check(TokenType.RPAREN);
     }
 
     /**
@@ -1218,10 +1230,10 @@ export class Parser {
      * Check if at end of statement
      */
     isStatementEnd() {
-        return this.check(TokenType.NEWLINE) ||
+        return this.isAtEnd() ||
+               this.check(TokenType.NEWLINE) ||
                this.check(TokenType.SEMICOLON) ||
-               this.check(TokenType.RBRACE) ||
-               this.check(TokenType.EOF);
+               this.check(TokenType.RBRACE);
     }
 
     /**

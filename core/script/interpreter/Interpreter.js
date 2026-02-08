@@ -812,7 +812,7 @@ export class Interpreter {
             return await this.callUserFunction(name, args);
         }
 
-        throw new ScriptReferenceError(name, {
+        throw new RuntimeError(`Unknown function: '${name}'`, {
             hint: `Function '${name}' is not defined. Check spelling or define it with 'def ${name}() { ... }'`
         });
     }

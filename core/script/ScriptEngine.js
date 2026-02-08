@@ -171,17 +171,16 @@ class ScriptEngineClass {
         } catch (error) {
             const errorInfo = this.formatError(error);
 
-            // For legacy callbacks, also pass line number if available
-            if (legacyErrorCallback && errorInfo.line) {
-                // Already called via emitError
-            }
-
             this.emitError(errorInfo.message);
             this.emitComplete({ success: false, error: errorInfo });
 
+            // Include variables even on error for debugging
+            const variables = this.interpreter ? this.interpreter.getVariables() : {};
+
             return {
                 success: false,
-                error: errorInfo
+                error: errorInfo,
+                variables
             };
         } finally {
             this.isRunning = false;
@@ -391,6 +390,7 @@ class ScriptEngineClass {
      */
     reset() {
         this.cleanup();
+        this.isRunning = false;
         this.interpreter = new Interpreter({
             limits: this.limits,
             context: this.context,
