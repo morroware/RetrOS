@@ -36,7 +36,8 @@ export function registerObjectBuiltins(interpreter) {
 
     interpreter.registerBuiltin('set', (obj, key, value) => {
         if (typeof obj === 'object' && obj !== null) {
-            return { ...obj, [String(key)]: value };
+            obj[String(key)] = value;
+            return obj;
         }
         return obj;
     });
@@ -50,9 +51,8 @@ export function registerObjectBuiltins(interpreter) {
 
     interpreter.registerBuiltin('delete', (obj, key) => {
         if (typeof obj === 'object' && obj !== null) {
-            const copy = { ...obj };
-            delete copy[String(key)];
-            return copy;
+            delete obj[String(key)];
+            return obj;
         }
         return obj;
     });
