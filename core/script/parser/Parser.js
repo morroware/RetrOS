@@ -239,9 +239,38 @@ export class Parser {
             TokenType.RBRACE      // }
         ]);
 
-        // Collect tokens until end of statement
-        while (!this.isStatementEnd()) {
+        // Track nesting depth so that }, ) and ] inside balanced
+        // delimiters don't prematurely end the text.
+        // e.g. "print typeof({a:1}) = ok" should not stop at the }.
+        let braceDepth = 0;
+        let parenDepth = 0;
+        let bracketDepth = 0;
+
+        // Collect tokens until end of statement (respecting nesting)
+        while (true) {
+            // Only treat RBRACE as statement-end at the top level (depth 0)
+            if (braceDepth <= 0 && parenDepth <= 0 && bracketDepth <= 0 && this.isStatementEnd()) {
+                break;
+            }
+            // Always stop at true end-of-input or newline regardless of depth
+            if (this.isAtEnd() || this.check(TokenType.NEWLINE)) {
+                break;
+            }
             const token = this.peek();
+
+            // Track delimiter nesting
+            if (token.type === TokenType.LBRACE) braceDepth++;
+            else if (token.type === TokenType.RBRACE) braceDepth--;
+            else if (token.type === TokenType.LPAREN) parenDepth++;
+            else if (token.type === TokenType.RPAREN) parenDepth--;
+            else if (token.type === TokenType.LBRACKET) bracketDepth++;
+            else if (token.type === TokenType.RBRACKET) bracketDepth--;
+
+            // If a closing delimiter would go below zero, it belongs to
+            // the enclosing context (e.g. the block's }), so stop here.
+            if (braceDepth < 0 || parenDepth < 0 || bracketDepth < 0) {
+                break;
+            }
 
             if (token.type === TokenType.VARIABLE) {
                 // Save accumulated text as a literal (with trailing space for separation)
