@@ -21,8 +21,8 @@ ScriptEngine.initialize({
     FileSystemManager: {
         readFile: (path) => files[path] ?? null,
         writeFile: (path, content) => { files[path] = String(content); },
-        mkdir: (path) => { dirs.add(path); },
-        delete: (path) => { delete files[path]; dirs.delete(path); },
+        createDirectory: (path) => { dirs.add(path); },
+        deleteFile: (path) => { delete files[path]; },
         exists: (path) => files.hasOwnProperty(path) || dirs.has(path)
     }
 });

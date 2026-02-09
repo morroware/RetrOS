@@ -492,7 +492,7 @@ export class Interpreter {
         if (!FileSystem) return;
 
         const path = await this.visitExpression(stmt.path);
-        FileSystem.mkdir(path);
+        FileSystem.createDirectory(path);
     }
 
     async visitDeleteStatement(stmt) {
@@ -500,7 +500,7 @@ export class Interpreter {
         if (!FileSystem) return;
 
         const path = await this.visitExpression(stmt.path);
-        FileSystem.delete(path);
+        FileSystem.deleteFile(path);
     }
 
     async visitAlertStatement(stmt) {

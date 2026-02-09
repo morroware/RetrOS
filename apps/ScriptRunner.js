@@ -2866,11 +2866,6 @@ Type your script or click "Help" for full reference.
 
             console.log('[ScriptRunner] Calling ScriptEngine.run...');
             const result = await ScriptEngine.run(script, {
-                onOutput: (msg) => this.appendOutput(msg, 'success'),
-                onError: (err, line) => {
-                    this.appendOutput(`Error${line ? ` at line ${line}` : ''}: ${err}`, 'error');
-                    if (line) this.highlightErrorLine(line);
-                },
                 onVariables: (vars) => {
                     this.variables = vars || {};
                 }
