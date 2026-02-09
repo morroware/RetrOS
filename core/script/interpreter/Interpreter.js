@@ -500,7 +500,12 @@ export class Interpreter {
         if (!FileSystem) return;
 
         const path = await this.visitExpression(stmt.path);
-        FileSystem.deleteFile(path);
+        try {
+            FileSystem.deleteFile(path);
+        } catch (e) {
+            // If not a file, try deleting as directory
+            FileSystem.deleteDirectory(path, true);
+        }
     }
 
     async visitAlertStatement(stmt) {
