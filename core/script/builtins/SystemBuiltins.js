@@ -51,9 +51,10 @@ export function registerSystemBuiltins(interpreter) {
 
     // Window management
     interpreter.registerBuiltin('getWindows', () => {
-        const WindowManager = interpreter.context.WindowManager;
-        if (WindowManager) {
-            return WindowManager.getWindows().map(w => ({
+        const StateManager = interpreter.context.StateManager;
+        if (StateManager) {
+            const windows = StateManager.getState('windows') || [];
+            return windows.map(w => ({
                 id: w.id,
                 appId: w.appId,
                 title: w.title,
