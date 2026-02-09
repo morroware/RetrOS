@@ -158,7 +158,11 @@ async function initializeOS(onProgress = () => {}) {
     await initComponent('ScriptEngine', () => ScriptEngine.initialize({
         FileSystemManager,
         EventBus,
-        CommandBus
+        CommandBus,
+        WindowManager,
+        AppRegistry,
+        StateManager,
+        StorageManager
     }));
 
     // === Phase 1.5: Sync Filesystem with Apps and Desktop ===
