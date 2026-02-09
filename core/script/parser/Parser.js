@@ -239,9 +239,32 @@ export class Parser {
             TokenType.RBRACE      // }
         ]);
 
-        // Collect tokens until end of statement
-        while (!this.isStatementEnd()) {
+        // Track nesting depth so matched delimiters in text (e.g. typeof({a:1}))
+        // don't prematurely end parsing. An unmatched } at depth 0 IS the block end.
+        let braceDepth = 0;
+        let parenDepth = 0;
+        let bracketDepth = 0;
+
+        // Collect tokens until end of line (or unmatched closing delimiter)
+        while (!this.isAtEnd() && !this.check(TokenType.NEWLINE) && !this.check(TokenType.SEMICOLON)) {
             const token = this.peek();
+
+            // Track nesting and stop at unmatched closing braces
+            if (token.type === TokenType.LBRACE) braceDepth++;
+            else if (token.type === TokenType.RBRACE) {
+                if (braceDepth === 0) break; // unmatched } = end of containing block
+                braceDepth--;
+            }
+            else if (token.type === TokenType.LPAREN) parenDepth++;
+            else if (token.type === TokenType.RPAREN) {
+                if (parenDepth === 0) break;
+                parenDepth--;
+            }
+            else if (token.type === TokenType.LBRACKET) bracketDepth++;
+            else if (token.type === TokenType.RBRACKET) {
+                if (bracketDepth === 0) break;
+                bracketDepth--;
+            }
 
             if (token.type === TokenType.VARIABLE) {
                 // Save accumulated text as a literal (with trailing space for separation)

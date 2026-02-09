@@ -669,6 +669,16 @@ export class Interpreter {
     // ==================== EXPRESSION VISITORS ====================
 
     async visitLiteralExpression(expr) {
+        // Interpolate $variables in strings (e.g., "Hello, $name!")
+        if (typeof expr.value === 'string' && expr.value.includes('$')) {
+            return expr.value.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (match, varName) => {
+                if (this.currentEnv.has(varName)) {
+                    const val = this.currentEnv.get(varName);
+                    return val !== null && val !== undefined ? String(val) : '';
+                }
+                return match;
+            });
+        }
         return expr.value;
     }
 
