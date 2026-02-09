@@ -155,7 +155,11 @@ async function initializeOS(onProgress = () => {}) {
 
     // Initialize scripting infrastructure
     await initComponent('CommandBus', () => CommandBus.initialize());
-    await initComponent('ScriptEngine', () => ScriptEngine.initialize());
+    await initComponent('ScriptEngine', () => ScriptEngine.initialize({
+        FileSystemManager,
+        EventBus,
+        CommandBus
+    }));
 
     // === Phase 1.5: Sync Filesystem with Apps and Desktop ===
     console.log('[IlluminatOS!] Phase 1.5: Filesystem Sync');
