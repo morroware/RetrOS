@@ -226,6 +226,7 @@ export class Parser {
         const parts = [];
         let currentText = '';
         let lastWasVariable = false;
+        let lastWasOpenDelim = false;
 
         // Punctuation tokens that should NOT have a space before them
         const noSpaceBeforeTokens = new Set([
@@ -234,9 +235,19 @@ export class Parser {
             TokenType.DOT,        // .
             TokenType.COMMA,      // ,
             TokenType.SEMICOLON,  // ;
+            TokenType.LPAREN,     // (
             TokenType.RPAREN,     // )
+            TokenType.LBRACKET,   // [
             TokenType.RBRACKET,   // ]
+            TokenType.LBRACE,     // {
             TokenType.RBRACE      // }
+        ]);
+
+        // Tokens after which the NEXT token should NOT get a space
+        const noSpaceAfterTokens = new Set([
+            TokenType.LPAREN,     // (
+            TokenType.LBRACKET,   // [
+            TokenType.LBRACE      // {
         ]);
 
         // Track nesting depth so that }, ) and ] inside balanced
@@ -283,9 +294,10 @@ export class Parser {
                 this.advance();
                 parts.push(new AST.VariableExpression(token.value, location));
                 lastWasVariable = true;
+                lastWasOpenDelim = false;
             } else {
                 // Check if this token should NOT have a space before it
-                const shouldAddSpace = !noSpaceBeforeTokens.has(token.type);
+                const shouldAddSpace = !noSpaceBeforeTokens.has(token.type) && !lastWasOpenDelim;
 
                 // Accumulate text from token
                 // Add space before this token if:
@@ -304,6 +316,7 @@ export class Parser {
                 currentText += text;
                 this.advance();
                 lastWasVariable = false;
+                lastWasOpenDelim = noSpaceAfterTokens.has(token.type);
             }
         }
 
